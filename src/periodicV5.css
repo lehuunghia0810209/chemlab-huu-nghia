@@ -1,0 +1,2802 @@
+/* =========================================================
+   CHEMLAB 5.0
+   PERIODIC EXPLORER
+========================================================= */
+
+
+/* =========================================================
+   ROOT
+========================================================= */
+
+.pv5 {
+  width: 100%;
+
+  display: grid;
+
+  gap: 14px;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.pv5-head {
+  min-height: 112px;
+
+  padding: 17px 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 24px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle at 85% 0%,
+      rgba(124,58,237,.08),
+      transparent 33%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(17,21,31,.94),
+      rgba(12,15,23,.96)
+    );
+
+  box-shadow:
+    0 15px 45px
+    rgba(0,0,0,.14);
+}
+
+
+.pv5-eyebrow {
+  color: #9183b6;
+
+  font-size: 10px;
+
+  font-weight: 850;
+
+  letter-spacing: .11em;
+}
+
+
+.pv5-head h1 {
+  margin: 5px 0 4px;
+
+  color: #f7f7fa;
+
+  font-size: 30px;
+
+  line-height: 1.1;
+
+  letter-spacing: -.04em;
+}
+
+
+.pv5-head p {
+  margin: 0;
+
+  color: #7c879c;
+
+  font-size: 13px;
+
+  line-height: 1.55;
+}
+
+
+.pv5-head-stats {
+  flex: 0 0 auto;
+
+  display: flex;
+
+  gap: 8px;
+}
+
+
+.pv5-head-stats > div {
+  min-width: 83px;
+
+  min-height: 67px;
+
+  padding: 9px 11px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 12px;
+
+  background:
+    rgba(255,255,255,.018);
+}
+
+
+.pv5-head-stats strong {
+  color: #f0eef7;
+
+  font-size: 19px;
+}
+
+
+.pv5-head-stats span {
+  margin-top: 2px;
+
+  color: #687287;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.pv5-toolbar {
+  display: grid;
+
+  grid-template-columns:
+    minmax(240px,1fr)
+    auto
+    auto;
+
+  gap: 8px;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.pv5-search {
+  min-height: 48px;
+
+  padding: 0 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.075);
+
+  border-radius: 12px;
+
+  background:
+    rgba(15,18,27,.78);
+
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease;
+}
+
+
+.pv5-search:focus-within {
+  border-color:
+    rgba(155,124,255,.42);
+
+  box-shadow:
+    0 0 0 4px
+    rgba(124,58,237,.065);
+}
+
+
+.pv5-search svg {
+  width: 17px;
+
+  height: 17px;
+
+  flex: 0 0 auto;
+
+  color: #6d627f;
+}
+
+
+.pv5-search input {
+  width: 100%;
+
+  min-width: 0;
+
+  min-height: 45px !important;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+
+  outline: 0 !important;
+
+  background:
+    transparent !important;
+
+  box-shadow:
+    none !important;
+
+  color: #e8e9ef;
+
+  font-size: 13px !important;
+}
+
+
+.pv5-search input::placeholder {
+  color: #596378;
+}
+
+
+.pv5-search kbd {
+  padding: 3px 7px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius: 6px;
+
+  background:
+    rgba(255,255,255,.02);
+
+  color: #626c80;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   SEGMENTED
+========================================================= */
+
+.pv5-segmented {
+  padding: 4px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 3px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius: 12px;
+
+  background:
+    rgba(15,18,27,.72);
+}
+
+
+.pv5-segmented button {
+  min-height: 38px;
+
+  padding: 0 11px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #6e788e;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+.pv5-segmented button:hover {
+  color: #c2c7d2;
+}
+
+
+.pv5-segmented button.active {
+  background:
+    rgba(124,58,237,.11);
+
+  color: #dcd4f7;
+
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(155,124,255,.15);
+}
+
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+.pv5-category-filter {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+}
+
+
+.pv5-filter-chip {
+  --chip-color: #a78bfa;
+
+  min-height: 38px;
+
+  padding: 0 9px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.012);
+
+  color: #768097;
+
+  cursor: pointer;
+
+  transition:
+    border-color .17s ease,
+    background .17s ease,
+    color .17s ease;
+}
+
+
+.pv5-filter-chip i {
+  width: 6px;
+
+  height: 6px;
+
+  border-radius: 50%;
+
+  background:
+    var(--chip-color);
+
+  opacity: .55;
+}
+
+
+.pv5-filter-chip span {
+  font-size: 10px;
+
+  font-weight: 650;
+}
+
+
+.pv5-filter-chip b {
+  padding: 2px 5px;
+
+  border-radius: 5px;
+
+  background:
+    rgba(255,255,255,.025);
+
+  color: #566176;
+
+  font-size: 8px;
+}
+
+
+.pv5-filter-chip:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--chip-color)
+      22%,
+      rgba(255,255,255,.08)
+    );
+
+  color: #b4bac8;
+}
+
+
+.pv5-filter-chip.active {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--chip-color)
+      36%,
+      transparent
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--chip-color)
+      7%,
+      transparent
+    );
+
+  color: #f2f2f6;
+}
+
+
+.pv5-filter-chip.active i {
+  opacity: 1;
+
+  box-shadow:
+    0 0 8px
+    color-mix(
+      in srgb,
+      var(--chip-color)
+      60%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   RESULT
+========================================================= */
+
+.pv5-result-bar {
+  min-height: 35px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  color: #596378;
+}
+
+
+.pv5-result-bar > span {
+  font-size: 9px;
+
+  font-weight: 850;
+
+  letter-spacing: .08em;
+}
+
+
+.pv5-result-bar strong {
+  color: #8993a8;
+
+  font-size: 10px;
+}
+
+
+.pv5-result-bar button {
+  margin-left: auto;
+
+  min-height: 31px;
+
+  padding: 0 8px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #636d82;
+
+  font-size: 9px;
+
+  cursor: pointer;
+}
+
+
+.pv5-result-bar button:hover {
+  color: #c2c7d2;
+
+  border-color:
+    rgba(255,255,255,.12);
+}
+
+
+/* =========================================================
+   TABLE SHELL
+========================================================= */
+
+.pv5-table-shell {
+  width: 100%;
+
+  overflow-x: auto;
+
+  overflow-y: hidden;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(124,58,237,.035),
+      transparent 34%
+    ),
+    rgba(10,12,18,.54);
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255,255,255,.018);
+}
+
+
+.pv5-main-table {
+  min-width: 1180px;
+
+  padding: 12px 14px 14px;
+
+  display: grid;
+
+  grid-template-columns:
+    25px
+    repeat(
+      18,
+      minmax(54px,1fr)
+    );
+
+  grid-template-rows:
+    20px
+    repeat(
+      7,
+      78px
+    );
+
+  gap: 5px;
+}
+
+
+/* =========================================================
+   GROUP / PERIOD
+========================================================= */
+
+.pv5-group-label,
+.pv5-period-label {
+  display: grid;
+
+  place-items: center;
+
+  color: #475166;
+
+  font-size: 8px;
+
+  font-weight: 750;
+}
+
+
+/* =========================================================
+   ELEMENT
+========================================================= */
+
+.pv5-element {
+  min-width: 0;
+
+  min-height: 0;
+
+  padding: 6px 5px;
+
+  position: relative;
+
+  overflow: hidden;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      12%,
+      rgba(255,255,255,.055)
+    ) !important;
+
+  border-radius: 10px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--element-accent)
+        4%,
+        #121620
+      ),
+      #0e1119
+    ) !important;
+
+  color: #fff;
+
+  cursor: pointer;
+
+  isolation: isolate;
+
+  transition:
+    transform .18s
+    cubic-bezier(.22,.8,.28,1),
+    border-color .18s ease,
+    box-shadow .18s ease !important;
+}
+
+
+.pv5-element::before {
+  content: "";
+
+  position: absolute;
+
+  inset: auto 0 0;
+
+  height: 2px;
+
+  z-index: 1;
+
+  background:
+    var(--element-accent);
+
+  opacity: .48;
+}
+
+
+.pv5-element-glow {
+  width: 55px;
+
+  height: 55px;
+
+  position: absolute;
+
+  right: -29px;
+
+  top: -28px;
+
+  z-index: -1;
+
+  border-radius: 50%;
+
+  background:
+    var(--element-accent);
+
+  opacity: .025;
+
+  filter: blur(8px);
+}
+
+
+.pv5-element:hover {
+  z-index: 10;
+
+  transform:
+    translateY(-3px)
+    scale(1.025);
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      42%,
+      transparent
+    ) !important;
+
+  box-shadow:
+    0 13px 26px
+    rgba(0,0,0,.30),
+    0 0 18px
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      7%,
+      transparent
+    ) !important;
+}
+
+
+.pv5-element-number {
+  position: absolute;
+
+  top: 5px;
+
+  left: 6px;
+
+  color: #5e687d;
+
+  font-size: 7px;
+}
+
+
+.pv5-element-symbol {
+  margin-top: 3px;
+
+  color: #f0f1f5;
+
+  font-size: 20px;
+
+  line-height: 1;
+
+  letter-spacing: -.035em;
+}
+
+
+.pv5-element-name {
+  width: 100%;
+
+  margin-top: 4px;
+
+  overflow: hidden;
+
+  color: #8f98ab;
+
+  font-size: 7px;
+
+  text-align: center;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+.pv5-element-mass {
+  margin-top: 2px;
+
+  color: #525c70;
+
+  font-size: 6px;
+}
+
+
+.pv5-element[hidden] {
+  display: none !important;
+}
+
+
+/* =========================================================
+   COMPACT
+========================================================= */
+
+.pv5-table-shell.compact
+.pv5-main-table {
+  grid-template-rows:
+    20px
+    repeat(
+      7,
+      61px
+    );
+}
+
+
+.pv5-table-shell.compact
+.pv5-element-name,
+.pv5-table-shell.compact
+.pv5-element-mass {
+  display: none;
+}
+
+
+/* =========================================================
+   SERIES CARD
+========================================================= */
+
+.pv5-series-card {
+  min-width: 0;
+
+  min-height: 0;
+
+  padding: 6px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px dashed
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      32%,
+      transparent
+    ) !important;
+
+  border-radius: 10px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      5%,
+      transparent
+    ) !important;
+
+  color: #fff;
+
+  cursor: pointer;
+
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    background .18s ease;
+}
+
+
+.pv5-series-card span {
+  color:
+    var(--element-accent);
+
+  font-size: 7px;
+
+  font-weight: 750;
+}
+
+
+.pv5-series-card strong {
+  margin-top: 3px;
+
+  color: #eeeef3;
+
+  font-size: 14px;
+}
+
+
+.pv5-series-card small {
+  margin-top: 2px;
+
+  color: #707a90;
+
+  font-size: 7px;
+}
+
+
+.pv5-series-card b {
+  margin-top: 2px;
+
+  color:
+    var(--element-accent);
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  opacity: .8;
+}
+
+
+.pv5-series-card:hover {
+  transform:
+    translateY(-2px);
+
+  border-style:
+    solid !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      9%,
+      transparent
+    ) !important;
+}
+
+
+/* =========================================================
+   F BLOCK
+========================================================= */
+
+.pv5-fblock-divider {
+  min-width: 1180px;
+
+  padding: 3px 14px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  color: #4c566b;
+
+  font-size: 8px;
+
+  font-weight: 850;
+
+  letter-spacing: .09em;
+}
+
+
+.pv5-fblock-divider i {
+  height: 1px;
+
+  flex: 1;
+
+  background:
+    rgba(255,255,255,.045);
+}
+
+
+.pv5-f-table {
+  min-width: 1180px;
+
+  padding: 6px 14px 15px;
+
+  display: grid;
+
+  gap: 6px;
+}
+
+
+.pv5-f-row {
+  display: grid;
+
+  grid-template-columns:
+    105px
+    minmax(0,1fr);
+
+  gap: 8px;
+
+  border-radius: 12px;
+
+  transition:
+    background .22s ease,
+    box-shadow .22s ease;
+}
+
+
+.pv5-f-row.pv5-series-focus {
+  background:
+    rgba(124,58,237,.065);
+
+  box-shadow:
+    0 0 0 1px
+    rgba(167,139,250,.20),
+    0 0 25px
+    rgba(124,58,237,.08);
+}
+
+
+.pv5-f-label {
+  padding: 8px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.04);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+
+.pv5-f-label span {
+  color: #5d677c;
+
+  font-size: 8px;
+}
+
+
+.pv5-f-label strong {
+  margin-top: 3px;
+
+  color: #9aa3b6;
+
+  font-size: 10px;
+}
+
+
+.pv5-f-elements {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      15,
+      minmax(54px,1fr)
+    );
+
+  gap: 5px;
+}
+
+
+.pv5-f-elements
+.pv5-element {
+  min-height: 70px;
+}
+
+
+/* =========================================================
+   LEGEND
+========================================================= */
+
+.pv5-legend {
+  padding: 10px 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.05);
+
+  border-radius: 13px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+
+.pv5-legend > div:first-child > span {
+  display: block;
+
+  color: #4e586c;
+
+  font-size: 8px;
+
+  font-weight: 850;
+}
+
+
+.pv5-legend > div:first-child strong {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #717b90;
+
+  font-size: 9px;
+}
+
+
+.pv5-legend > div:first-child b {
+  color: #a096bb;
+}
+
+
+.pv5-legend-items {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  justify-content: flex-end;
+
+  gap: 5px 11px;
+}
+
+
+.pv5-legend-items span {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  color: #687287;
+
+  font-size: 8px;
+}
+
+
+.pv5-legend-items i {
+  width: 6px;
+
+  height: 6px;
+
+  border-radius: 50%;
+}
+
+
+/* =========================================================
+   CRITICAL DRAWER FIX
+
+   Drawer và backdrop cùng nằm trong
+   workspace-app nên z-index hoạt động đúng.
+========================================================= */
+
+.element-drawer {
+  width:
+    min(
+      590px,
+      96vw
+    ) !important;
+
+  height: 100vh !important;
+
+  max-height: 100vh !important;
+
+  padding: 0 !important;
+
+  position: fixed !important;
+
+  top: 0 !important;
+
+  right: 0 !important;
+
+  bottom: 0 !important;
+
+  left: auto !important;
+
+  z-index: 5001 !important;
+
+  overflow-x: hidden !important;
+
+  overflow-y: auto !important;
+
+  pointer-events: auto !important;
+
+  background:
+    rgba(10,12,19,.985) !important;
+
+  border-left:
+    1px solid
+    rgba(255,255,255,.08) !important;
+
+  box-shadow:
+    -30px 0 80px
+    rgba(0,0,0,.46) !important;
+
+  backdrop-filter:
+    blur(25px)
+    saturate(120%);
+
+  isolation: isolate;
+}
+
+
+.element-drawer.open {
+  z-index: 5001 !important;
+
+  pointer-events: auto !important;
+}
+
+
+/*
+  Quan trọng:
+  tất cả nội dung drawer luôn nhận click.
+*/
+
+.element-drawer *,
+.ew5,
+.ew5 * {
+  pointer-events: auto;
+}
+
+
+/* =========================================================
+   BACKDROP FIX
+========================================================= */
+
+#element-drawer-backdrop,
+.ew5-backdrop {
+  width: auto !important;
+
+  height: auto !important;
+
+  margin: 0 !important;
+
+  padding: 0 !important;
+
+  position: fixed !important;
+
+  inset: 0 !important;
+
+  z-index: 5000 !important;
+
+  display: block;
+
+  border: 0 !important;
+
+  border-radius: 0 !important;
+
+  outline: 0 !important;
+
+  pointer-events: auto !important;
+
+  cursor: default;
+
+  background:
+    rgba(2,4,8,.52) !important;
+
+  backdrop-filter:
+    blur(3px);
+
+  appearance: none;
+
+  -webkit-appearance: none;
+}
+
+
+#element-drawer-backdrop[hidden],
+.ew5-backdrop[hidden] {
+  display: none !important;
+}
+
+
+/* =========================================================
+   DRAWER CONTENT
+========================================================= */
+
+.ew5 {
+  min-height: 100%;
+
+  padding:
+    0 20px 18px;
+
+  position: relative;
+
+  z-index: 2;
+
+  color: #f3f4f8;
+}
+
+
+/* =========================================================
+   DRAWER TOP
+========================================================= */
+
+.ew5-top {
+  min-height: 65px;
+
+  margin: 0 -20px;
+
+  padding: 0 18px;
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 20;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.065);
+
+  background:
+    rgba(10,12,19,.96);
+
+  backdrop-filter:
+    blur(20px);
+}
+
+
+.ew5-top > div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+
+.ew5-top span {
+  color:
+    var(--element-accent);
+
+  font-size: 9px;
+
+  font-weight: 850;
+
+  letter-spacing: .11em;
+}
+
+
+.ew5-top strong {
+  padding: 3px 6px;
+
+  border-radius: 5px;
+
+  background:
+    rgba(255,255,255,.025);
+
+  color: #596378;
+
+  font-size: 8px;
+}
+
+
+.ew5-close {
+  width: 39px;
+
+  height: 39px;
+
+  display: grid;
+
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.018);
+
+  color: #8d96a9;
+
+  font-size: 19px;
+
+  cursor: pointer;
+}
+
+
+.ew5-close:hover {
+  color: #fff;
+
+  border-color:
+    rgba(255,255,255,.14);
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.ew5-hero {
+  margin-top: 18px;
+
+  padding: 16px;
+
+  display: grid;
+
+  grid-template-columns:
+    112px
+    minmax(0,1fr);
+
+  align-items: center;
+
+  gap: 17px;
+
+  overflow: hidden;
+
+  position: relative;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      18%,
+      rgba(255,255,255,.05)
+    );
+
+  border-radius: 16px;
+
+  background:
+    radial-gradient(
+      circle at 7% 50%,
+      color-mix(
+        in srgb,
+        var(--element-accent)
+        10%,
+        transparent
+      ),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      #131720,
+      #0f121a
+    );
+}
+
+
+.ew5-symbol {
+  width: 108px;
+
+  height: 114px;
+
+  padding: 9px;
+
+  position: relative;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      30%,
+      transparent
+    );
+
+  border-radius: 14px;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      5%,
+      #11151e
+    );
+}
+
+
+.ew5-symbol > span {
+  position: absolute;
+
+  left: 9px;
+
+  top: 7px;
+
+  color: #69738a;
+
+  font-size: 9px;
+}
+
+
+.ew5-symbol > strong {
+  color: #fff;
+
+  font-size: 38px;
+
+  line-height: 1;
+}
+
+
+.ew5-symbol > small {
+  margin-top: 7px;
+
+  color: #727c90;
+
+  font-size: 9px;
+}
+
+
+.ew5-hero-copy {
+  min-width: 0;
+}
+
+
+.ew5-category {
+  --category-color: #a78bfa;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  color:
+    color-mix(
+      in srgb,
+      var(--category-color)
+      70%,
+      white
+    );
+
+  font-size: 9px;
+
+  font-weight: 750;
+}
+
+
+.ew5-category i {
+  width: 6px;
+
+  height: 6px;
+
+  border-radius: 50%;
+
+  background:
+    var(--category-color);
+}
+
+
+.ew5-hero h2 {
+  margin: 7px 0 5px;
+
+  overflow-wrap: anywhere;
+
+  color: #f7f7fa;
+
+  font-size: 29px;
+
+  line-height: 1.1;
+}
+
+
+.ew5-hero p {
+  margin: 0;
+
+  color: #707b91;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+
+.ew5-hero p strong {
+  color: #aab1c0;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.ew5-tabs {
+  margin-top: 12px;
+
+  padding: 4px;
+
+  display: grid !important;
+
+  grid-template-columns:
+    repeat(
+      6,
+      minmax(0,1fr)
+    );
+
+  gap: 3px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 11px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+
+.ew5-tabs button {
+  min-width: 0;
+
+  min-height: 39px;
+
+  padding: 0 4px;
+
+  border: 0;
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #677187;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+.ew5-tabs button:hover {
+  color: #b5bac6;
+}
+
+
+.ew5-tabs button.active {
+  background:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      9%,
+      transparent
+    );
+
+  color:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      55%,
+      white
+    );
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.ew5-content {
+  min-height: 430px;
+
+  padding-top: 17px;
+}
+
+
+.ew5-section-head {
+  margin-bottom: 11px;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+
+.ew5-section-head
+> div
+> span {
+  color:
+    var(--element-accent);
+
+  font-size: 8px;
+
+  font-weight: 850;
+
+  letter-spacing: .10em;
+}
+
+
+.ew5-section-head h3 {
+  margin: 4px 0 0;
+
+  color: #eeeef2;
+
+  font-size: 17px;
+}
+
+
+/* =========================================================
+   STAT
+========================================================= */
+
+.ew5-stat-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap: 7px;
+}
+
+
+.ew5-stat-grid > div {
+  min-width: 0;
+
+  min-height: 77px;
+
+  padding: 10px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 10px;
+
+  background:
+    rgba(255,255,255,.015);
+}
+
+
+.ew5-stat-grid span {
+  color: #687287;
+
+  font-size: 8px;
+}
+
+
+.ew5-stat-grid strong {
+  margin-top: 5px;
+
+  overflow-wrap: anywhere;
+
+  color: #e6e8ee;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   PROPERTY
+========================================================= */
+
+.ew5-property-list,
+.ew5-electron-facts {
+  margin-top: 10px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 11px;
+
+  overflow: hidden;
+}
+
+
+.ew5-property-list > div,
+.ew5-electron-facts > div {
+  min-height: 45px;
+
+  padding: 0 11px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.045);
+}
+
+
+.ew5-property-list
+> div:last-child,
+.ew5-electron-facts
+> div:last-child {
+  border-bottom: 0;
+}
+
+
+.ew5-property-list span,
+.ew5-electron-facts span {
+  color: #687287;
+
+  font-size: 9px;
+}
+
+
+.ew5-property-list strong,
+.ew5-electron-facts strong {
+  max-width: 60%;
+
+  color: #c8ccd6;
+
+  font-size: 10px;
+
+  text-align: right;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   ELECTRON
+========================================================= */
+
+.ew5-electron-config {
+  min-height: 92px;
+
+  padding: 13px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 12px;
+
+  background: #10131c;
+}
+
+
+.ew5-electron-config span {
+  color: #69738a;
+
+  font-size: 8px;
+}
+
+
+.ew5-electron-config strong {
+  margin-top: 7px;
+
+  color: #ded8ee;
+
+  font-family:
+    Consolas,
+    monospace;
+
+  font-size: 13px;
+
+  line-height: 1.65;
+
+  overflow-wrap: anywhere;
+}
+
+
+.ew5-shells {
+  margin-top: 9px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(72px,1fr)
+    );
+
+  gap: 6px;
+}
+
+
+.ew5-shells > div {
+  min-height: 72px;
+
+  padding: 8px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.05);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.013);
+}
+
+
+.ew5-shells span {
+  color: #646f84;
+
+  font-size: 7px;
+}
+
+
+.ew5-shells strong {
+  color: #fff;
+
+  font-size: 19px;
+}
+
+
+.ew5-shells small {
+  color: #555f74;
+
+  font-size: 7px;
+}
+
+
+/* =========================================================
+   ION
+========================================================= */
+
+.ew5-ion-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap: 8px;
+}
+
+
+.ew5-ion-card {
+  min-height: 110px;
+
+  padding: 12px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 12px;
+
+  background: #10131c;
+}
+
+
+.ew5-ion-card strong {
+  color: #f5f5f8;
+
+  font-family:
+    Consolas,
+    monospace;
+
+  font-size: 24px;
+}
+
+
+.ew5-ion-card span {
+  margin-top: 6px;
+
+  color: #818a9f;
+
+  font-size: 9px;
+}
+
+
+.ew5-ion-card small {
+  margin-top: 3px;
+
+  color:
+    var(--element-accent);
+
+  font-size: 8px;
+}
+
+
+.ew5-subsection {
+  margin-top: 17px;
+}
+
+
+.ew5-subsection > span {
+  color: #69738a;
+
+  font-size: 8px;
+
+  font-weight: 850;
+}
+
+
+.ew5-oxidation-list {
+  margin-top: 7px;
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+}
+
+
+.ew5-oxidation-list b {
+  min-width: 39px;
+
+  min-height: 35px;
+
+  padding: 0 7px;
+
+  display: grid;
+
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 8px;
+
+  background:
+    rgba(255,255,255,.018);
+
+  color: #cbc6dc;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.ew5-empty {
+  min-height: 150px;
+
+  padding: 20px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px dashed
+    rgba(255,255,255,.08);
+
+  border-radius: 12px;
+
+  text-align: center;
+}
+
+
+.ew5-empty.large {
+  min-height: 260px;
+}
+
+
+.ew5-empty strong {
+  color: #d1d5de;
+
+  font-size: 12px;
+}
+
+
+.ew5-empty p {
+  max-width: 370px;
+
+  margin: 6px 0 0;
+
+  color: #687287;
+
+  font-size: 9px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   ISOTOPE
+========================================================= */
+
+.ew5-isotope-list {
+  display: grid;
+
+  gap: 7px;
+}
+
+
+.ew5-isotope-card {
+  min-height: 78px;
+
+  padding: 10px;
+
+  display: grid;
+
+  grid-template-columns:
+    60px
+    minmax(0,1fr)
+    minmax(0,1.2fr)
+    auto;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 10px;
+
+  background:
+    rgba(255,255,255,.013);
+}
+
+
+.ew5-isotope-card
+> strong {
+  color: #f2f2f5;
+
+  font-size: 17px;
+}
+
+
+.ew5-isotope-card
+> div span {
+  display: block;
+
+  color: #5e687d;
+
+  font-size: 7px;
+}
+
+
+.ew5-isotope-card
+> div b {
+  color: #9ea6b7;
+
+  font-size: 9px;
+}
+
+
+.ew5-isotope-card
+> small {
+  padding: 4px 6px;
+
+  border-radius: 6px;
+
+  font-size: 7px;
+
+  font-weight: 700;
+}
+
+
+.ew5-isotope-card
+> small.stable {
+  background:
+    rgba(34,197,94,.07);
+
+  color: #86efac;
+}
+
+
+.ew5-isotope-card
+> small.radioactive {
+  background:
+    rgba(245,158,11,.07);
+
+  color: #fcd34d;
+}
+
+
+/* =========================================================
+   3D
+========================================================= */
+
+.ew5-3d-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap: 8px;
+}
+
+
+.ew5-3d-card {
+  min-width: 0;
+
+  min-height: 225px;
+
+  padding: 15px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  justify-content: flex-end;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #151923,
+      #0e1119
+    );
+
+  color: #fff;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform .2s ease,
+    border-color .2s ease;
+}
+
+
+.ew5-3d-card:hover {
+  transform:
+    translateY(-3px);
+
+  border-color:
+    rgba(167,139,250,.28);
+}
+
+
+.ew5-3d-icon {
+  width: 59px;
+
+  height: 59px;
+
+  margin-bottom: auto;
+
+  display: grid;
+
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(167,139,250,.20);
+
+  border-radius: 50%;
+
+  color:
+    var(--element-accent);
+
+  font-size: 25px;
+}
+
+
+.ew5-3d-card > span {
+  color:
+    var(--element-accent);
+
+  font-size: 7px;
+
+  font-weight: 850;
+}
+
+
+.ew5-3d-card > strong {
+  margin-top: 5px;
+
+  color: #f0f1f4;
+
+  font-size: 14px;
+}
+
+
+.ew5-3d-card p {
+  margin: 5px 0 8px;
+
+  color: #747e92;
+
+  font-size: 9px;
+
+  line-height: 1.5;
+}
+
+
+.ew5-3d-card > i {
+  color: #8d96aa;
+
+  font-size: 9px;
+
+  font-style: normal;
+}
+
+
+/* =========================================================
+   NOTE
+========================================================= */
+
+.ew5-note {
+  margin-top: 12px;
+
+  padding: 11px;
+
+  display: flex;
+
+  gap: 8px;
+
+  border:
+    1px solid
+    rgba(155,124,255,.09);
+
+  border-radius: 9px;
+
+  background:
+    rgba(124,58,237,.025);
+}
+
+
+.ew5-note > span {
+  color: #998cb5;
+}
+
+
+.ew5-note p {
+  margin: 0;
+
+  color: #687287;
+
+  font-size: 9px;
+
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   COMPARE
+========================================================= */
+
+.ew5-section-head.compare {
+  align-items: center;
+}
+
+
+.ew5-section-head.compare label {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+.ew5-section-head.compare label span {
+  color: #606a7f;
+
+  font-size: 7px;
+}
+
+
+.ew5-section-head.compare select {
+  min-width: 170px;
+
+  min-height: 38px;
+
+  padding: 0 9px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius: 8px;
+
+  background: #11151e;
+
+  color: #c5cad4;
+
+  font-size: 9px;
+}
+
+
+.ew5-compare-head {
+  min-height: 92px;
+
+  padding: 12px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr auto 1fr;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 11px;
+}
+
+
+.ew5-compare-head
+> div {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+}
+
+
+.ew5-compare-head strong {
+  color: #fff;
+
+  font-size: 25px;
+}
+
+
+.ew5-compare-head span {
+  color: #737d91;
+
+  font-size: 8px;
+}
+
+
+.ew5-compare-head > b {
+  color: #504a5e;
+
+  font-size: 9px;
+}
+
+
+.ew5-compare-table {
+  margin-top: 8px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 11px;
+
+  overflow: hidden;
+}
+
+
+.ew5-compare-table > div {
+  min-height: 43px;
+
+  padding: 0 10px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    .8fr
+    .8fr;
+
+  align-items: center;
+
+  gap: 8px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.045);
+}
+
+
+.ew5-compare-table
+> div:last-child {
+  border-bottom: 0;
+}
+
+
+.ew5-compare-table span {
+  color: #69738a;
+
+  font-size: 8px;
+}
+
+
+.ew5-compare-table strong {
+  color: #c4c8d2;
+
+  font-size: 9px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   BOTTOM
+========================================================= */
+
+.ew5-bottom {
+  min-height: 58px;
+
+  margin-top: 10px;
+
+  padding-top: 10px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    auto
+    1fr;
+
+  align-items: center;
+
+  gap: 8px;
+
+  border-top:
+    1px solid
+    rgba(255,255,255,.055);
+}
+
+
+.ew5-bottom button {
+  min-height: 39px;
+
+  padding: 0 9px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.055);
+
+  border-radius: 8px;
+
+  background:
+    rgba(255,255,255,.015);
+
+  color: #7c8599;
+
+  font-size: 8px;
+
+  cursor: pointer;
+}
+
+
+.ew5-bottom
+button:hover:not(:disabled) {
+  color: #c9ccd4;
+
+  border-color:
+    rgba(167,139,250,.20);
+}
+
+
+.ew5-bottom button:disabled {
+  opacity: .25;
+
+  cursor: not-allowed;
+}
+
+
+.ew5-bottom > span {
+  color: #525c70;
+
+  font-size: 8px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width:1100px
+) {
+
+  .pv5-toolbar {
+    grid-template-columns:
+      1fr
+      auto;
+  }
+
+
+  .pv5-toolbar
+  > .pv5-segmented:last-child {
+    grid-column:
+      1 / -1;
+  }
+
+
+  .pv5-head-stats {
+    display: none;
+  }
+
+}
+
+
+@media (
+  max-width:700px
+) {
+
+  .pv5-head {
+    min-height: auto;
+
+    padding: 15px;
+  }
+
+
+  .pv5-head h1 {
+    font-size: 25px;
+  }
+
+
+  .pv5-toolbar {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .pv5-toolbar
+  > .pv5-segmented,
+  .pv5-toolbar
+  > .pv5-segmented:last-child {
+    width: 100%;
+
+    grid-column: auto;
+  }
+
+
+  .pv5-segmented button {
+    flex: 1;
+  }
+
+
+  .pv5-category-filter {
+    flex-wrap: nowrap;
+
+    overflow-x: auto;
+  }
+
+
+  .pv5-filter-chip {
+    flex: 0 0 auto;
+  }
+
+
+  .pv5-legend {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+
+  .pv5-legend-items {
+    justify-content: flex-start;
+  }
+
+
+  .element-drawer {
+    width: 100vw !important;
+
+    max-width: none !important;
+  }
+
+
+  .ew5 {
+    padding:
+      0 14px 16px;
+  }
+
+
+  .ew5-top {
+    margin:
+      0 -14px;
+
+    padding:
+      0 14px;
+  }
+
+
+  .ew5-hero {
+    grid-template-columns:
+      92px
+      minmax(0,1fr);
+
+    gap: 12px;
+  }
+
+
+  .ew5-symbol {
+    width: 90px;
+
+    height: 96px;
+  }
+
+
+  .ew5-symbol > strong {
+    font-size: 31px;
+  }
+
+
+  .ew5-hero h2 {
+    font-size: 23px;
+  }
+
+
+  .ew5-tabs {
+    grid-template-columns:
+      repeat(
+        3,
+        1fr
+      );
+  }
+
+
+  .ew5-stat-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      );
+  }
+
+
+  .ew5-3d-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ew5-isotope-card {
+    grid-template-columns:
+      50px
+      1fr
+      auto;
+  }
+
+
+  .ew5-isotope-card
+  > div:nth-child(3) {
+    display: none;
+  }
+
+
+  .ew5-section-head.compare {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+
+  .ew5-section-head.compare label,
+  .ew5-section-head.compare select {
+    width: 100%;
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
+  .pv5-element,
+  .pv5-series-card,
+  .ew5-3d-card,
+  .pv5-f-row {
+    transition:
+      none !important;
+  }
+
+}

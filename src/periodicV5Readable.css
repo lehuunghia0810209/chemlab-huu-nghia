@@ -1,0 +1,1260 @@
+/* =========================================================
+   CHEMLAB 5.0
+   PERIODIC READABILITY UPGRADE
+========================================================= */
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.pv5-eyebrow {
+  font-size:
+    12px !important;
+
+  letter-spacing:
+    .10em !important;
+}
+
+
+.pv5-head {
+  min-height:
+    132px !important;
+
+  padding:
+    22px 24px !important;
+}
+
+
+.pv5-head h1 {
+  margin-top:
+    7px !important;
+
+  font-size:
+    38px !important;
+
+  line-height:
+    1.08 !important;
+}
+
+
+.pv5-head p {
+  margin-top:
+    6px !important;
+
+  font-size:
+    15px !important;
+
+  line-height:
+    1.55 !important;
+}
+
+
+.pv5-head-stats > div {
+  min-width:
+    96px !important;
+
+  min-height:
+    78px !important;
+}
+
+
+.pv5-head-stats strong {
+  font-size:
+    24px !important;
+}
+
+
+.pv5-head-stats span {
+  font-size:
+    11px !important;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.pv5-search {
+  min-height:
+    54px !important;
+
+  padding:
+    0 15px !important;
+}
+
+
+.pv5-search svg {
+  width:
+    19px !important;
+
+  height:
+    19px !important;
+}
+
+
+.pv5-search input {
+  min-height:
+    51px !important;
+
+  font-size:
+    15px !important;
+}
+
+
+.pv5-search kbd {
+  padding:
+    4px 8px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+/* =========================================================
+   DISPLAY CONTROLS
+========================================================= */
+
+.pv5-segmented button {
+  min-height:
+    44px !important;
+
+  padding:
+    0 14px !important;
+
+  font-size:
+    12px !important;
+}
+
+
+.pv5-filter-chip {
+  min-height:
+    43px !important;
+
+  padding:
+    0 11px !important;
+
+  gap:
+    7px !important;
+}
+
+
+.pv5-filter-chip i {
+  width:
+    7px !important;
+
+  height:
+    7px !important;
+}
+
+
+.pv5-filter-chip span {
+  font-size:
+    11px !important;
+}
+
+
+.pv5-filter-chip b {
+  font-size:
+    9px !important;
+}
+
+
+.pv5-result-bar {
+  min-height:
+    44px !important;
+}
+
+
+.pv5-result-bar > span {
+  font-size:
+    10px !important;
+}
+
+
+.pv5-result-bar strong {
+  font-size:
+    12px !important;
+}
+
+
+.pv5-result-bar button {
+  min-height:
+    38px !important;
+
+  padding:
+    0 11px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+/* =========================================================
+   PERIODIC TABLE SIZE
+========================================================= */
+
+.pv5-main-table {
+  min-width:
+    1420px !important;
+
+  padding:
+    16px 18px 18px !important;
+
+  grid-template-columns:
+    31px
+    repeat(
+      18,
+      minmax(66px,1fr)
+    ) !important;
+
+  grid-template-rows:
+    27px
+    repeat(
+      7,
+      94px
+    ) !important;
+
+  gap:
+    6px !important;
+}
+
+
+.pv5-group-label,
+.pv5-period-label {
+  font-size:
+    10px !important;
+}
+
+
+/* =========================================================
+   ELEMENT CARDS
+========================================================= */
+
+.pv5-element {
+  padding:
+    9px 6px !important;
+
+  border-radius:
+    12px !important;
+}
+
+
+.pv5-element-number {
+  top:
+    7px !important;
+
+  left:
+    8px !important;
+
+  font-size:
+    9px !important;
+
+  font-weight:
+    650 !important;
+}
+
+
+.pv5-element-symbol {
+  margin-top:
+    5px !important;
+
+  font-size:
+    26px !important;
+
+  font-weight:
+    750 !important;
+
+  letter-spacing:
+    -.025em !important;
+}
+
+
+.pv5-element-name {
+  margin-top:
+    6px !important;
+
+  font-size:
+    9px !important;
+
+  font-weight:
+    600 !important;
+
+  line-height:
+    1.3 !important;
+}
+
+
+.pv5-element-mass {
+  margin-top:
+    3px !important;
+
+  font-size:
+    8px !important;
+
+  line-height:
+    1.2 !important;
+}
+
+
+/* =========================================================
+   COMPACT MODE
+========================================================= */
+
+.pv5-table-shell.compact
+.pv5-main-table {
+  grid-template-rows:
+    27px
+    repeat(
+      7,
+      75px
+    ) !important;
+}
+
+
+.pv5-table-shell.compact
+.pv5-element-symbol {
+  font-size:
+    23px !important;
+}
+
+
+/* =========================================================
+   SERIES CARD
+========================================================= */
+
+.pv5-series-card span {
+  font-size:
+    9px !important;
+}
+
+
+.pv5-series-card strong {
+  margin-top:
+    4px !important;
+
+  font-size:
+    17px !important;
+}
+
+
+.pv5-series-card small {
+  margin-top:
+    3px !important;
+
+  font-size:
+    9px !important;
+}
+
+
+.pv5-series-card b {
+  margin-top:
+    4px !important;
+
+  font-size:
+    13px !important;
+}
+
+
+/* =========================================================
+   F BLOCK
+========================================================= */
+
+.pv5-fblock-divider,
+.pv5-f-table {
+  min-width:
+    1420px !important;
+}
+
+
+.pv5-fblock-divider {
+  padding:
+    7px 18px !important;
+
+  font-size:
+    10px !important;
+}
+
+
+.pv5-f-row {
+  grid-template-columns:
+    125px
+    minmax(0,1fr) !important;
+
+  gap:
+    10px !important;
+}
+
+
+.pv5-f-label span {
+  font-size:
+    10px !important;
+}
+
+
+.pv5-f-label strong {
+  font-size:
+    12px !important;
+}
+
+
+.pv5-f-elements {
+  grid-template-columns:
+    repeat(
+      15,
+      minmax(70px,1fr)
+    ) !important;
+
+  gap:
+    6px !important;
+}
+
+
+.pv5-f-elements
+.pv5-element {
+  min-height:
+    90px !important;
+}
+
+
+/* =========================================================
+   LEGEND
+========================================================= */
+
+.pv5-legend {
+  padding:
+    14px 16px !important;
+}
+
+
+.pv5-legend
+> div:first-child
+> span {
+  font-size:
+    10px !important;
+}
+
+
+.pv5-legend
+> div:first-child
+strong {
+  margin-top:
+    4px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+.pv5-legend-items {
+  gap:
+    8px 15px !important;
+}
+
+
+.pv5-legend-items span {
+  gap:
+    6px !important;
+
+  font-size:
+    10px !important;
+}
+
+
+.pv5-legend-items i {
+  width:
+    7px !important;
+
+  height:
+    7px !important;
+}
+
+
+/* =========================================================
+   ELEMENT DRAWER
+========================================================= */
+
+.element-drawer {
+  width:
+    min(
+      650px,
+      96vw
+    ) !important;
+}
+
+
+.ew5 {
+  padding:
+    0 24px 22px !important;
+}
+
+
+.ew5-top {
+  min-height:
+    72px !important;
+
+  margin:
+    0 -24px !important;
+
+  padding:
+    0 22px !important;
+}
+
+
+.ew5-top span {
+  font-size:
+    11px !important;
+}
+
+
+.ew5-top strong {
+  font-size:
+    10px !important;
+}
+
+
+.ew5-close {
+  width:
+    44px !important;
+
+  height:
+    44px !important;
+
+  font-size:
+    22px !important;
+}
+
+
+/* =========================================================
+   ELEMENT HERO
+========================================================= */
+
+.ew5-hero {
+  margin-top:
+    20px !important;
+
+  padding:
+    19px !important;
+
+  grid-template-columns:
+    128px
+    minmax(0,1fr) !important;
+
+  gap:
+    20px !important;
+}
+
+
+.ew5-symbol {
+  width:
+    124px !important;
+
+  height:
+    130px !important;
+}
+
+
+.ew5-symbol > span {
+  top:
+    10px !important;
+
+  left:
+    11px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+.ew5-symbol > strong {
+  font-size:
+    45px !important;
+}
+
+
+.ew5-symbol > small {
+  margin-top:
+    9px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+.ew5-category {
+  font-size:
+    11px !important;
+}
+
+
+.ew5-category i {
+  width:
+    7px !important;
+
+  height:
+    7px !important;
+}
+
+
+.ew5-hero h2 {
+  margin:
+    8px 0 7px !important;
+
+  font-size:
+    34px !important;
+}
+
+
+.ew5-hero p {
+  font-size:
+    12px !important;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.ew5-tabs {
+  margin-top:
+    14px !important;
+
+  padding:
+    5px !important;
+}
+
+
+.ew5-tabs button {
+  min-height:
+    45px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+/* =========================================================
+   CONTENT TITLES
+========================================================= */
+
+.ew5-content {
+  min-height:
+    470px !important;
+
+  padding-top:
+    21px !important;
+}
+
+
+.ew5-section-head
+> div
+> span {
+  font-size:
+    10px !important;
+}
+
+
+.ew5-section-head h3 {
+  margin-top:
+    6px !important;
+
+  font-size:
+    22px !important;
+}
+
+
+/* =========================================================
+   PROPERTY CARDS
+========================================================= */
+
+.ew5-stat-grid {
+  gap:
+    9px !important;
+}
+
+
+.ew5-stat-grid > div {
+  min-height:
+    91px !important;
+
+  padding:
+    13px !important;
+}
+
+
+.ew5-stat-grid span {
+  font-size:
+    10px !important;
+}
+
+
+.ew5-stat-grid strong {
+  margin-top:
+    7px !important;
+
+  font-size:
+    16px !important;
+}
+
+
+/* =========================================================
+   PROPERTY ROW
+========================================================= */
+
+.ew5-property-list > div,
+.ew5-electron-facts > div {
+  min-height:
+    54px !important;
+
+  padding:
+    0 14px !important;
+}
+
+
+.ew5-property-list span,
+.ew5-electron-facts span {
+  font-size:
+    11px !important;
+}
+
+
+.ew5-property-list strong,
+.ew5-electron-facts strong {
+  font-size:
+    12px !important;
+}
+
+
+/* =========================================================
+   ELECTRON
+========================================================= */
+
+.ew5-electron-config {
+  min-height:
+    110px !important;
+
+  padding:
+    16px !important;
+}
+
+
+.ew5-electron-config span {
+  font-size:
+    10px !important;
+}
+
+
+.ew5-electron-config strong {
+  margin-top:
+    9px !important;
+
+  font-size:
+    15px !important;
+
+  line-height:
+    1.7 !important;
+}
+
+
+.ew5-shells {
+  margin-top:
+    11px !important;
+
+  gap:
+    8px !important;
+}
+
+
+.ew5-shells > div {
+  min-height:
+    87px !important;
+}
+
+
+.ew5-shells span {
+  font-size:
+    9px !important;
+}
+
+
+.ew5-shells strong {
+  margin-top:
+    3px !important;
+
+  font-size:
+    23px !important;
+}
+
+
+.ew5-shells small {
+  font-size:
+    9px !important;
+}
+
+
+/* =========================================================
+   ION
+========================================================= */
+
+.ew5-ion-grid {
+  gap:
+    10px !important;
+}
+
+
+.ew5-ion-card {
+  min-height:
+    130px !important;
+
+  padding:
+    15px !important;
+}
+
+
+.ew5-ion-card strong {
+  font-size:
+    29px !important;
+}
+
+
+.ew5-ion-card span {
+  margin-top:
+    8px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+.ew5-ion-card small {
+  margin-top:
+    4px !important;
+
+  font-size:
+    10px !important;
+}
+
+
+.ew5-subsection {
+  margin-top:
+    21px !important;
+}
+
+
+.ew5-subsection > span {
+  font-size:
+    10px !important;
+}
+
+
+.ew5-oxidation-list {
+  margin-top:
+    9px !important;
+
+  gap:
+    8px !important;
+}
+
+
+.ew5-oxidation-list b {
+  min-width:
+    47px !important;
+
+  min-height:
+    41px !important;
+
+  font-size:
+    12px !important;
+}
+
+
+/* =========================================================
+   ISOTOPE
+========================================================= */
+
+.ew5-isotope-list {
+  gap:
+    9px !important;
+}
+
+
+.ew5-isotope-card {
+  min-height:
+    94px !important;
+
+  padding:
+    13px !important;
+
+  grid-template-columns:
+    72px
+    minmax(0,.75fr)
+    minmax(0,1.3fr)
+    auto !important;
+}
+
+
+.ew5-isotope-card
+> strong {
+  font-size:
+    21px !important;
+}
+
+
+.ew5-isotope-card
+> div span {
+  font-size:
+    9px !important;
+}
+
+
+.ew5-isotope-card
+> div b {
+  margin-top:
+    4px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+.ew5-isotope-card
+> small {
+  padding:
+    6px 8px !important;
+
+  font-size:
+    9px !important;
+}
+
+
+.ew5-isotope-card
+> small.reference {
+  background:
+    rgba(96,165,250,.08);
+
+  color:
+    #93c5fd;
+}
+
+
+.ew5-isotope-card
+> small.natural {
+  background:
+    rgba(34,197,94,.08);
+
+  color:
+    #86efac;
+}
+
+
+/* =========================================================
+   EMPTY / NOTE
+========================================================= */
+
+.ew5-empty {
+  min-height:
+    180px !important;
+}
+
+
+.ew5-empty strong {
+  font-size:
+    14px !important;
+}
+
+
+.ew5-empty p {
+  margin-top:
+    7px !important;
+
+  font-size:
+    11px !important;
+
+  line-height:
+    1.6 !important;
+}
+
+
+.ew5-note {
+  margin-top:
+    15px !important;
+
+  padding:
+    14px !important;
+}
+
+
+.ew5-note > span {
+  font-size:
+    14px !important;
+}
+
+
+.ew5-note p {
+  font-size:
+    11px !important;
+
+  line-height:
+    1.6 !important;
+}
+
+
+/* =========================================================
+   3D
+========================================================= */
+
+.ew5-3d-grid {
+  gap:
+    10px !important;
+}
+
+
+.ew5-3d-card {
+  min-height:
+    245px !important;
+
+  padding:
+    18px !important;
+}
+
+
+.ew5-3d-icon {
+  width:
+    65px !important;
+
+  height:
+    65px !important;
+
+  font-size:
+    28px !important;
+}
+
+
+.ew5-3d-card > span {
+  font-size:
+    9px !important;
+}
+
+
+.ew5-3d-card > strong {
+  margin-top:
+    7px !important;
+
+  font-size:
+    17px !important;
+}
+
+
+.ew5-3d-card p {
+  margin:
+    7px 0 11px !important;
+
+  font-size:
+    11px !important;
+
+  line-height:
+    1.55 !important;
+}
+
+
+.ew5-3d-card > i {
+  font-size:
+    11px !important;
+}
+
+
+/* =========================================================
+   COMPARE
+========================================================= */
+
+.ew5-section-head.compare
+label span {
+  font-size:
+    9px !important;
+}
+
+
+.ew5-section-head.compare
+select {
+  min-height:
+    43px !important;
+
+  font-size:
+    11px !important;
+}
+
+
+.ew5-compare-head {
+  min-height:
+    110px !important;
+}
+
+
+.ew5-compare-head strong {
+  font-size:
+    30px !important;
+}
+
+
+.ew5-compare-head span {
+  margin-top:
+    5px !important;
+
+  font-size:
+    10px !important;
+}
+
+
+.ew5-compare-table > div {
+  min-height:
+    51px !important;
+}
+
+
+.ew5-compare-table span {
+  font-size:
+    10px !important;
+}
+
+
+.ew5-compare-table strong {
+  font-size:
+    11px !important;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.ew5-bottom {
+  min-height:
+    70px !important;
+
+  margin-top:
+    14px !important;
+
+  padding-top:
+    13px !important;
+}
+
+
+.ew5-bottom button {
+  min-height:
+    47px !important;
+
+  padding:
+    0 12px !important;
+
+  font-size:
+    10px !important;
+}
+
+
+.ew5-bottom > span {
+  font-size:
+    10px !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (
+  max-width:700px
+) {
+
+  .pv5-head h1 {
+    font-size:
+      30px !important;
+  }
+
+
+  .pv5-main-table {
+    min-width:
+      1340px !important;
+  }
+
+
+  .element-drawer {
+    width:
+      100vw !important;
+  }
+
+
+  .ew5 {
+    padding:
+      0 16px 20px !important;
+  }
+
+
+  .ew5-top {
+    margin:
+      0 -16px !important;
+
+    padding:
+      0 16px !important;
+  }
+
+
+  .ew5-hero {
+    grid-template-columns:
+      103px
+      minmax(0,1fr) !important;
+  }
+
+
+  .ew5-symbol {
+    width:
+      100px !important;
+
+    height:
+      108px !important;
+  }
+
+
+  .ew5-symbol > strong {
+    font-size:
+      36px !important;
+  }
+
+
+  .ew5-hero h2 {
+    font-size:
+      27px !important;
+  }
+
+
+  .ew5-tabs {
+    grid-template-columns:
+      repeat(
+        3,
+        1fr
+      ) !important;
+  }
+
+
+  .ew5-stat-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      ) !important;
+  }
+
+
+  .ew5-isotope-card {
+    grid-template-columns:
+      65px
+      1fr
+      auto !important;
+  }
+
+
+  .ew5-isotope-card
+  > div:nth-child(3) {
+    display: none;
+  }
+
+}

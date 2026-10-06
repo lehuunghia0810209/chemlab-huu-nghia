@@ -1,0 +1,938 @@
+/* =========================================================
+   CHEMLAB 5.0
+   ATOM 3D VISUAL SYSTEM
+========================================================= */
+
+.a3v5-overlay {
+  position:
+    fixed;
+
+  inset:
+    0;
+
+  z-index:
+    30000;
+
+  padding:
+    18px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  background:
+    rgba(2,3,8,.84);
+
+  backdrop-filter:
+    blur(12px);
+}
+
+
+/* =========================================================
+   WINDOW
+========================================================= */
+
+.a3v5-window {
+  width:
+    min(
+      1280px,
+      100%
+    );
+
+  height:
+    min(
+      820px,
+      calc(
+        100vh -
+        36px
+      )
+    );
+
+  min-height:
+    620px;
+
+  overflow:
+    hidden;
+
+  display:
+    grid;
+
+  grid-template-rows:
+    auto
+    auto
+    minmax(0,1fr)
+    auto
+    auto;
+
+  border:
+    1px solid
+    rgba(168,85,247,.34);
+
+  border-radius:
+    22px;
+
+  background:
+    radial-gradient(
+      circle at 50% 40%,
+      rgba(91,33,182,.06),
+      transparent 40%
+    ),
+    #04050a;
+
+  box-shadow:
+    0 50px 150px
+    rgba(0,0,0,.72);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.a3v5-header {
+  min-height:
+    88px;
+
+  padding:
+    17px 22px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    20px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.055);
+}
+
+
+.a3v5-heading > span {
+  color:
+    #c084fc;
+
+  font-size:
+    13px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    .14em;
+}
+
+
+.a3v5-heading h2 {
+  margin:
+    5px 0 2px;
+
+  color:
+    #f7f7fa;
+
+  font-size:
+    28px;
+
+  line-height:
+    1.1;
+}
+
+
+.a3v5-heading p {
+  margin:
+    0;
+
+  color:
+    #788298;
+
+  font-size:
+    13px;
+}
+
+
+.a3v5-header-right {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    18px;
+}
+
+
+.a3v5-big-symbol {
+  min-width:
+    65px;
+
+  color:
+    #c084fc;
+
+  font-size:
+    45px;
+
+  line-height:
+    1;
+
+  text-align:
+    center;
+
+  text-shadow:
+    0 0 24px
+    rgba(168,85,247,.42);
+}
+
+
+.a3v5-close {
+  width:
+    44px;
+
+  height:
+    44px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.13);
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(255,255,255,.05);
+
+  color:
+    #b9bfcc;
+
+  font-size:
+    25px;
+
+  cursor:
+    pointer;
+
+  transition:
+    border-color .16s ease,
+    background .16s ease,
+    color .16s ease;
+}
+
+
+.a3v5-close:hover {
+  border-color:
+    rgba(192,132,252,.40);
+
+  background:
+    rgba(168,85,247,.10);
+
+  color:
+    #fff;
+}
+
+
+/* =========================================================
+   SHELL BAR
+========================================================= */
+
+.a3v5-shell-section {
+  min-height:
+    67px;
+
+  padding:
+    10px 22px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    18px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.045);
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+
+.a3v5-shell-title {
+  flex:
+    0 0 auto;
+
+  color:
+    #667087;
+
+  font-size:
+    11px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    .08em;
+}
+
+
+.a3v5-shell-list {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+}
+
+
+.a3v5-shell-chip {
+  min-height:
+    38px;
+
+  padding:
+    0 12px;
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  border:
+    1px solid
+    rgba(168,85,247,.24);
+
+  border-radius:
+    9px;
+
+  background:
+    rgba(126,34,206,.055);
+}
+
+
+.a3v5-shell-chip strong {
+  color:
+    #c084fc;
+
+  font-size:
+    14px;
+}
+
+
+.a3v5-shell-chip span {
+  color:
+    #d7d9e0;
+
+  font-size:
+    13px;
+
+  font-weight:
+    650;
+}
+
+
+/* =========================================================
+   MAIN / STAGE
+========================================================= */
+
+.a3v5-main {
+  min-height:
+    0;
+
+  padding:
+    0 14px;
+}
+
+
+.a3v5-stage {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  min-height:
+    330px;
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    16px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(88,28,135,.07),
+      transparent 40%
+    );
+}
+
+
+.a3v5-stage canvas {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  display:
+    block;
+}
+
+
+/* =========================================================
+   LEGEND
+========================================================= */
+
+.a3v5-legend {
+  position:
+    absolute;
+
+  left:
+    14px;
+
+  bottom:
+    14px;
+
+  z-index:
+    10;
+
+  padding:
+    9px 12px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    16px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.075);
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(5,7,12,.78);
+
+  backdrop-filter:
+    blur(12px);
+}
+
+
+.a3v5-legend span {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  color:
+    #b2b7c3;
+
+  font-size:
+    13px;
+
+  white-space:
+    nowrap;
+}
+
+
+.a3v5-legend i {
+  width:
+    9px;
+
+  height:
+    9px;
+
+  flex:
+    0 0 9px;
+
+  border-radius:
+    50%;
+}
+
+
+.a3v5-legend
+i.proton {
+  background:
+    #f43f5e;
+
+  box-shadow:
+    0 0 8px
+    rgba(244,63,94,.55);
+}
+
+
+.a3v5-legend
+i.neutron {
+  background:
+    #3b82f6;
+
+  box-shadow:
+    0 0 8px
+    rgba(59,130,246,.5);
+}
+
+
+.a3v5-legend
+i.electron {
+  background:
+    #22d3ee;
+
+  box-shadow:
+    0 0 8px
+    rgba(34,211,238,.6);
+}
+
+
+/* =========================================================
+   HINT
+========================================================= */
+
+.a3v5-hint {
+  position:
+    absolute;
+
+  right:
+    14px;
+
+  bottom:
+    14px;
+
+  z-index:
+    10;
+
+  padding:
+    9px 12px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(5,7,12,.76);
+
+  color:
+    #8992a4;
+
+  font-size:
+    12px;
+
+  backdrop-filter:
+    blur(10px);
+}
+
+
+.a3v5-hint b {
+  padding:
+    0 4px;
+
+  color:
+    #554c68;
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.a3v5-stats {
+  padding:
+    12px 22px;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0,1fr)
+    );
+
+  gap:
+    10px;
+}
+
+
+.a3v5-stat {
+  min-width:
+    0;
+
+  min-height:
+    80px;
+
+  padding:
+    12px;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.11);
+
+  border-radius:
+    12px;
+
+  background:
+    rgba(255,255,255,.018);
+}
+
+
+.a3v5-stat span {
+  color:
+    #99a1b2;
+
+  font-size:
+    13px;
+}
+
+
+.a3v5-stat strong {
+  margin-top:
+    6px;
+
+  color:
+    #f3f4f7;
+
+  font-size:
+    19px;
+
+  line-height:
+    1.1;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.a3v5-footer {
+  min-height:
+    64px;
+
+  padding:
+    10px 22px 15px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    18px;
+}
+
+
+.a3v5-footer > div:first-child {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    flex-start;
+
+  gap:
+    9px;
+}
+
+
+.a3v5-info-icon {
+  width:
+    21px;
+
+  height:
+    21px;
+
+  flex:
+    0 0 21px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.10);
+
+  border-radius:
+    50%;
+
+  color:
+    #7e8799;
+
+  font-size:
+    11px;
+}
+
+
+.a3v5-footer p {
+  max-width:
+    580px;
+
+  margin:
+    1px 0 0;
+
+  color:
+    #717b8e;
+
+  font-size:
+    11px;
+
+  line-height:
+    1.55;
+}
+
+
+.a3v5-controls {
+  flex:
+    0 0 auto;
+
+  display:
+    flex;
+
+  gap:
+    7px;
+}
+
+
+.a3v5-controls button {
+  min-height:
+    40px;
+
+  padding:
+    0 12px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    9px;
+
+  background:
+    rgba(255,255,255,.02);
+
+  color:
+    #959dac;
+
+  font-size:
+    11px;
+
+  cursor:
+    pointer;
+}
+
+
+.a3v5-controls button:hover,
+.a3v5-controls button.active {
+  border-color:
+    rgba(168,85,247,.28);
+
+  background:
+    rgba(126,34,206,.08);
+
+  color:
+    #ded4f6;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  max-width:800px
+) {
+
+  .a3v5-overlay {
+    padding:
+      7px;
+  }
+
+
+  .a3v5-window {
+    height:
+      calc(
+        100vh -
+        14px
+      );
+
+    min-height:
+      0;
+
+    overflow-y:
+      auto;
+  }
+
+
+  .a3v5-shell-section {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+    gap:
+      7px;
+  }
+
+
+  .a3v5-main {
+    min-height:
+      440px;
+  }
+
+
+  .a3v5-stats {
+    grid-template-columns:
+      repeat(
+        2,
+        1fr
+      );
+  }
+
+
+  .a3v5-stat:last-child {
+    grid-column:
+      1 / -1;
+  }
+
+
+  .a3v5-footer {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+}
+
+
+/* =========================================================
+   PHONE
+========================================================= */
+
+@media (
+  max-width:520px
+) {
+
+  .a3v5-heading h2 {
+    font-size:
+      23px;
+  }
+
+
+  .a3v5-big-symbol {
+    display:
+      none;
+  }
+
+
+  .a3v5-stage {
+    min-height:
+      400px;
+  }
+
+
+  .a3v5-legend {
+    left:
+      8px;
+
+    right:
+      8px;
+
+    bottom:
+      46px;
+
+    justify-content:
+      center;
+
+    gap:
+      11px;
+  }
+
+
+  .a3v5-legend span {
+    font-size:
+      11px;
+  }
+
+
+  .a3v5-hint {
+    left:
+      8px;
+
+    right:
+      8px;
+
+    bottom:
+      7px;
+
+    text-align:
+      center;
+  }
+
+}

@@ -1,0 +1,816 @@
+/* =========================================================
+   CHEMLAB 4.5
+   TOOL HUB
+========================================================= */
+
+.chem-tool-hub {
+  width:
+    100%;
+
+  display:
+    grid;
+
+  gap:
+    1rem;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.tool-hub-header {
+  padding:
+    1.3rem 1.4rem;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    1.5rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    1.2rem;
+
+  background:
+    radial-gradient(
+      circle at 88% 0%,
+      rgba(124,58,237,.10),
+      transparent 28%
+    ),
+    linear-gradient(
+      145deg,
+      #121620,
+      #0d1018
+    );
+}
+
+
+.tool-hub-eyebrow {
+  color:
+    #a78bfa;
+
+  font-size:
+    .72rem;
+
+  font-weight:
+    850;
+
+  letter-spacing:
+    .11em;
+}
+
+
+.tool-hub-header h2 {
+  margin:
+    .4rem 0 .3rem;
+
+  color:
+    #fff;
+
+  font-size:
+    1.65rem;
+
+  line-height:
+    1.15;
+
+  letter-spacing:
+    -.035em;
+}
+
+
+.tool-hub-header p {
+  margin:
+    0;
+
+  max-width:
+    650px;
+
+  color:
+    #8993aa;
+
+  font-size:
+    .9rem;
+
+  line-height:
+    1.6;
+}
+
+
+.tool-hub-status {
+  min-height:
+    40px;
+
+  padding:
+    0 .85rem;
+
+  flex:
+    0 0 auto;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    .45rem;
+
+  border:
+    1px solid
+    rgba(168,85,247,.22);
+
+  border-radius:
+    999px;
+
+  background:
+    rgba(124,58,237,.055);
+
+  color:
+    #afa3cf;
+
+  font-size:
+    .78rem;
+}
+
+
+.tool-hub-status i {
+  width:
+    7px;
+
+  height:
+    7px;
+
+  border-radius:
+    50%;
+
+  background:
+    #a855f7;
+
+  box-shadow:
+    0 0 10px
+    rgba(168,85,247,.65);
+}
+
+
+/* =========================================================
+   SELECTOR GRID
+========================================================= */
+
+.tool-selector {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
+
+  gap:
+    .7rem;
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
+.tool-selector-card {
+  --tool-color:
+    #a855f7;
+
+  min-width:
+    0;
+
+  min-height:
+    136px;
+
+  padding:
+    1rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    46px
+    minmax(0,1fr)
+    30px;
+
+  align-items:
+    center;
+
+  gap:
+    .8rem;
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    1rem;
+
+  background:
+    linear-gradient(
+      145deg,
+      #121620,
+      #0d1018
+    );
+
+  color:
+    #fff;
+
+  text-align:
+    left;
+
+  cursor:
+    pointer;
+
+  transition:
+    transform .2s ease,
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .2s ease;
+}
+
+
+.tool-selector-card.violet {
+  --tool-color:
+    #a855f7;
+}
+
+
+.tool-selector-card.blue {
+  --tool-color:
+    #38bdf8;
+}
+
+
+.tool-selector-card.green {
+  --tool-color:
+    #22c55e;
+}
+
+
+.tool-selector-card.orange {
+  --tool-color:
+    #f59e0b;
+}
+
+
+.tool-selector-card::before {
+  content:
+    "";
+
+  width:
+    150px;
+
+  height:
+    150px;
+
+  position:
+    absolute;
+
+  right:
+    -70px;
+
+  top:
+    -80px;
+
+  border-radius:
+    50%;
+
+  background:
+    var(--tool-color);
+
+  opacity:
+    .035;
+
+  pointer-events:
+    none;
+}
+
+
+.tool-selector-card::after {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  left:
+    0;
+
+  right:
+    0;
+
+  bottom:
+    0;
+
+  height:
+    3px;
+
+  opacity:
+    .32;
+
+  background:
+    var(--tool-color);
+
+  transition:
+    opacity .2s ease,
+    box-shadow .2s ease;
+}
+
+
+.tool-selector-card:hover {
+  transform:
+    translateY(-3px);
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      30%,
+      rgba(255,255,255,.10)
+    );
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--tool-color)
+        6%,
+        #141821
+      ),
+      #0f121a
+    );
+
+  box-shadow:
+    0 14px 30px
+    rgba(0,0,0,.20);
+}
+
+
+.tool-selector-card:hover::after {
+  opacity:
+    .85;
+}
+
+
+.tool-selector-card.active {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      55%,
+      transparent
+    );
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--tool-color)
+        12%,
+        #151823
+      ),
+      #0f121a
+    );
+
+  box-shadow:
+    0 10px 30px
+    rgba(0,0,0,.20),
+    inset 0 1px 0
+    rgba(255,255,255,.04);
+}
+
+
+.tool-selector-card.active::after {
+  opacity:
+    1;
+
+  box-shadow:
+    0 0 16px
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      45%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.tool-selector-icon {
+  width:
+    46px;
+
+  height:
+    46px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  flex:
+    0 0 auto;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      25%,
+      transparent
+    );
+
+  border-radius:
+    .8rem;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      8%,
+      #121620
+    );
+
+  color:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      78%,
+      white
+    );
+
+  font-size:
+    1.25rem;
+
+  font-weight:
+    850;
+}
+
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+.tool-selector-copy {
+  min-width:
+    0;
+}
+
+
+.tool-selector-copy strong {
+  display:
+    block;
+
+  color:
+    #f2f3f8;
+
+  font-size:
+    .95rem;
+
+  line-height:
+    1.3;
+}
+
+
+.tool-selector-copy small {
+  display:
+    block;
+
+  margin-top:
+    .35rem;
+
+  color:
+    #788298;
+
+  font-size:
+    .75rem;
+
+  line-height:
+    1.45;
+}
+
+
+.tool-selector-arrow {
+  width:
+    30px;
+
+  height:
+    30px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border-radius:
+    .55rem;
+
+  background:
+    rgba(255,255,255,.03);
+
+  color:
+    #626d84;
+
+  transition:
+    transform .2s ease,
+    color .2s ease,
+    background .2s ease;
+}
+
+
+.tool-selector-card:hover
+.tool-selector-arrow,
+.tool-selector-card.active
+.tool-selector-arrow {
+  transform:
+    translateX(2px);
+
+  color:
+    var(--tool-color);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      8%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   ACTIVE BAR
+========================================================= */
+
+.tool-active-bar {
+  min-height:
+    66px;
+
+  padding:
+    .75rem 1rem;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    1rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    .9rem;
+
+  background:
+    rgba(15,18,27,.82);
+}
+
+
+.tool-active-bar
+> div:first-child {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    .7rem;
+}
+
+
+.tool-active-bar span {
+  color:
+    #69748a;
+
+  font-size:
+    .67rem;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    .06em;
+}
+
+
+.tool-active-bar strong {
+  color:
+    #e7e3f5;
+
+  font-size:
+    .9rem;
+}
+
+
+.tool-active-help span {
+  font-weight:
+    500;
+
+  letter-spacing:
+    0;
+}
+
+
+/* =========================================================
+   STAGE
+========================================================= */
+
+.tool-stage {
+  min-width:
+    0;
+}
+
+
+.tool-hub-module {
+  width:
+    100% !important;
+
+  max-width:
+    none !important;
+
+  margin:
+    0 !important;
+}
+
+
+.tool-hub-module[hidden] {
+  display:
+    none !important;
+}
+
+
+.tool-hub-module.active {
+  animation:
+    toolModuleIn
+    .28s
+    cubic-bezier(
+      .22,
+      .8,
+      .25,
+      1
+    )
+    both;
+}
+
+
+@keyframes toolModuleIn {
+
+  from {
+    opacity:
+      0;
+
+    transform:
+      translateY(7px);
+  }
+
+  to {
+    opacity:
+      1;
+
+    transform:
+      translateY(0);
+  }
+
+}
+
+
+/* =========================================================
+   FIX MODULE TOP BORDER
+========================================================= */
+
+.tool-stage
+:is(
+  .balance-tool,
+  .chem-calc-v4,
+  .sol-tool,
+  .ion-engine
+) {
+  border-radius:
+    1.25rem;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  max-width:1150px
+) {
+
+  .tool-selector {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      );
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width:650px
+) {
+
+  .tool-hub-header {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+
+  .tool-selector {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .tool-selector-card {
+    min-height:
+      105px;
+  }
+
+
+  .tool-active-help {
+    display:
+      none;
+  }
+
+
+  .tool-active-bar {
+    min-height:
+      58px;
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
+  .tool-hub-module.active {
+    animation:
+      none;
+  }
+
+}
+.tool-selector {
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px,1fr)
+    );
+}
+
+.tool-selector-card.pink {
+  --tool-color: #ec4899;
+}

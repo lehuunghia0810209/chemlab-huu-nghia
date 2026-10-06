@@ -1,0 +1,1337 @@
+/* =========================================================
+   CHEMLAB
+   PERIODIC TABLE + ELEMENT MODAL
+========================================================= */
+
+
+/* =========================================================
+   PERIODIC SECTION
+========================================================= */
+
+#periodic.periodic-page {
+  width: 100% !important;
+  max-width: 1600px !important;
+
+  min-height: auto !important;
+
+  margin: 0 auto !important;
+
+  padding:
+    90px 35px 90px !important;
+
+  overflow-x: auto;
+
+  box-sizing: border-box;
+}
+
+
+#periodic.periodic-page::before {
+  content: "PERIODIC TABLE";
+
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: #a855f7;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 2px;
+
+  text-align: center;
+}
+
+
+#periodic.periodic-page > h1 {
+  margin:
+    0 0 8px !important;
+
+  color: #fafafa;
+
+  font-size:
+    clamp(30px, 4vw, 44px);
+
+  font-weight: 800;
+
+  line-height: 1.1;
+
+  text-align: center;
+}
+
+
+#periodic.periodic-page > p {
+  margin:
+    0 auto !important;
+
+  color: #71717a;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+#periodic .search-container {
+  width: min(
+    580px,
+    100%
+  );
+
+  margin:
+    28px auto 22px !important;
+}
+
+
+#periodic #element-search {
+  width: 100% !important;
+
+  height: 46px;
+
+  padding:
+    0 16px !important;
+
+  border:
+    1px solid #3f3f46 !important;
+
+  border-radius:
+    11px !important;
+
+  outline:
+    none !important;
+
+  background:
+    #111114 !important;
+
+  color:
+    #f4f4f5 !important;
+
+  font-family:
+    inherit;
+
+  font-size:
+    12px !important;
+
+  box-sizing:
+    border-box;
+
+  transition:
+    0.2s;
+}
+
+
+#periodic #element-search::placeholder {
+  color:
+    #52525b;
+}
+
+
+#periodic #element-search:focus {
+  border-color:
+    #9333ea !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(147, 51, 234, 0.10);
+}
+
+
+/* =========================================================
+   LEGEND
+========================================================= */
+
+#periodic .periodic-legend {
+  width: 100%;
+
+  margin:
+    0 auto 25px !important;
+
+  display:
+    flex !important;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    9px 18px !important;
+}
+
+
+#periodic .periodic-legend span {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  color:
+    #71717a;
+
+  font-size:
+    9px;
+}
+
+
+#periodic .legend-dot {
+  width:
+    7px;
+
+  height:
+    7px;
+
+  display:
+    inline-block;
+
+  border-radius:
+    50%;
+}
+
+
+#periodic .legend-dot.nonmetal {
+  background:
+    #06b6d4;
+}
+
+
+#periodic .legend-dot.noble-gas {
+  background:
+    #a855f7;
+}
+
+
+#periodic .legend-dot.alkali-metal {
+  background:
+    #ef4444;
+}
+
+
+#periodic .legend-dot.alkaline-earth-metal {
+  background:
+    #f97316;
+}
+
+
+#periodic .legend-dot.transition-metal {
+  background:
+    #eab308;
+}
+
+
+#periodic .legend-dot.metalloid {
+  background:
+    #10b981;
+}
+
+
+#periodic .legend-dot.halogen {
+  background:
+    #3b82f6;
+}
+
+
+/* =========================================================
+   PERIODIC TABLE
+========================================================= */
+
+#periodic .periodic-table {
+  width: 100% !important;
+
+  min-width:
+    1120px;
+
+  display:
+    grid !important;
+
+  grid-template-columns:
+    repeat(
+      18,
+      minmax(0, 1fr)
+    ) !important;
+
+  grid-template-rows:
+    repeat(
+      7,
+      auto
+    );
+
+  gap:
+    6px !important;
+
+  align-items:
+    stretch;
+}
+
+
+/* =========================================================
+   ELEMENT
+========================================================= */
+
+#periodic .element {
+  width:
+    100% !important;
+
+  min-width:
+    0 !important;
+
+  min-height:
+    88px !important;
+
+  aspect-ratio:
+    0.78;
+
+  position:
+    relative;
+
+  padding:
+    7px 4px !important;
+
+  display:
+    flex !important;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    2px;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid #3f3f46;
+
+  border-radius:
+    8px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #111114,
+      #0c0c0f
+    ) !important;
+
+  color:
+    white;
+
+  font-family:
+    inherit;
+
+  cursor:
+    pointer;
+
+  box-sizing:
+    border-box;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+
+#periodic .element:hover {
+  z-index:
+    10;
+
+  transform:
+    translateY(-4px)
+    scale(1.04);
+
+  background:
+    #16161a !important;
+
+  box-shadow:
+    0 10px 25px
+    rgba(0,0,0,0.30);
+}
+
+
+#periodic .element-number {
+  position:
+    absolute;
+
+  top:
+    6px;
+
+  left:
+    7px;
+
+  color:
+    #d4d4d8;
+
+  font-size:
+    8px;
+
+  font-weight:
+    600;
+}
+
+
+#periodic .element-symbol {
+  margin-top:
+    8px;
+
+  color:
+    #ffffff;
+
+  font-size:
+    clamp(
+      16px,
+      1.7vw,
+      25px
+    );
+
+  font-weight:
+    800;
+
+  line-height:
+    1;
+}
+
+
+#periodic .element-name {
+  max-width:
+    100%;
+
+  overflow:
+    hidden;
+
+  color:
+    #a1a1aa;
+
+  font-size:
+    6.5px;
+
+  line-height:
+    1.2;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+/* =========================================================
+   ELEMENT CATEGORY COLORS
+========================================================= */
+
+#periodic .element.nonmetal {
+  border-color:
+    #06b6d4;
+}
+
+
+#periodic .element.noble-gas {
+  border-color:
+    #a855f7;
+}
+
+
+#periodic .element.alkali-metal {
+  border-color:
+    #ef4444;
+}
+
+
+#periodic .element.alkaline-earth-metal {
+  border-color:
+    #f97316;
+}
+
+
+#periodic .element.transition-metal {
+  border-color:
+    #eab308;
+}
+
+
+#periodic .element.metalloid {
+  border-color:
+    #10b981;
+}
+
+
+#periodic .element.halogen {
+  border-color:
+    #3b82f6;
+}
+
+
+#periodic .element.post-transition-metal {
+  border-color:
+    #84cc16;
+}
+
+
+#periodic .element.lanthanide {
+  border-color:
+    #ec4899;
+}
+
+
+#periodic .element.actinide {
+  border-color:
+    #f43f5e;
+}
+
+
+/* =========================================================
+   F BLOCK
+========================================================= */
+
+#periodic .f-block-wrapper {
+  width:
+    min(
+      1180px,
+      86%
+    ) !important;
+
+  min-width:
+    900px;
+
+  margin:
+    32px auto 0 !important;
+}
+
+
+#periodic .f-block-label {
+  margin:
+    14px 0 7px !important;
+
+  color:
+    #71717a;
+
+  font-size:
+    9px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    1px;
+}
+
+
+#periodic .f-block {
+  width:
+    100% !important;
+
+  display:
+    grid !important;
+
+  grid-template-columns:
+    repeat(
+      15,
+      minmax(0, 1fr)
+    ) !important;
+
+  grid-auto-flow:
+    column !important;
+
+  gap:
+    6px !important;
+
+  margin:
+    0 !important;
+}
+
+
+#periodic .f-block .element {
+  min-height:
+    78px !important;
+
+  aspect-ratio:
+    0.82;
+}
+
+
+/* =========================================================
+   SEARCH EFFECT
+========================================================= */
+
+#periodic .element.search-hidden {
+  opacity:
+    0.10 !important;
+
+  filter:
+    grayscale(1);
+
+  transform:
+    scale(0.96);
+}
+
+
+#periodic .element.search-match {
+  z-index:
+    30;
+
+  opacity:
+    1 !important;
+
+  transform:
+    translateY(-4px)
+    scale(1.05);
+
+  box-shadow:
+    0 0 22px
+    rgba(168,85,247,0.40);
+}
+
+
+/* =========================================================
+   ELEMENT MODAL
+========================================================= */
+
+#modal.modal {
+  position:
+    fixed !important;
+
+  inset:
+    0 !important;
+
+  z-index:
+    5000 !important;
+
+  display:
+    flex !important;
+
+  align-items:
+    center !important;
+
+  justify-content:
+    center !important;
+
+  padding:
+    25px;
+
+  box-sizing:
+    border-box;
+}
+
+
+#modal.modal.hidden {
+  display:
+    none !important;
+}
+
+
+/* =========================================================
+   BACKDROP
+========================================================= */
+
+#modal .modal-backdrop {
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  background:
+    rgba(0,0,0,0.76);
+
+  backdrop-filter:
+    blur(8px);
+}
+
+
+/* =========================================================
+   MODAL WINDOW
+========================================================= */
+
+#modal .modal-content {
+  width:
+    min(
+      780px,
+      94vw
+    ) !important;
+
+  max-height:
+    90vh;
+
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  overflow-y:
+    auto;
+
+  padding:
+    30px !important;
+
+  border:
+    1px solid #3f3f46 !important;
+
+  border-radius:
+    22px !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #18181b,
+      #111114
+    ) !important;
+
+  box-shadow:
+    0 35px 100px
+    rgba(0,0,0,0.58);
+
+  box-sizing:
+    border-box;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+========================================================= */
+
+#modal .modal-close {
+  width:
+    34px;
+
+  height:
+    34px;
+
+  position:
+    absolute;
+
+  top:
+    15px;
+
+  right:
+    15px;
+
+  z-index:
+    10;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  padding:
+    0;
+
+  border:
+    1px solid #3f3f46;
+
+  border-radius:
+    9px;
+
+  background:
+    #09090b;
+
+  color:
+    #a1a1aa;
+
+  font-size:
+    22px;
+
+  line-height:
+    1;
+
+  cursor:
+    pointer;
+
+  transition:
+    0.2s;
+}
+
+
+#modal .modal-close:hover {
+  border-color:
+    #71717a;
+
+  color:
+    white;
+
+  background:
+    #27272a;
+}
+
+
+/* =========================================================
+   DETAIL
+========================================================= */
+
+#modal .element-detail {
+  width:
+    100%;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+#modal .element-hero {
+  display:
+    flex !important;
+
+  align-items:
+    center;
+
+  gap:
+    22px;
+
+  padding-right:
+    45px;
+
+  margin-bottom:
+    25px;
+}
+
+
+#modal .element-big-symbol {
+  width:
+    105px;
+
+  height:
+    105px;
+
+  position:
+    relative;
+
+  flex:
+    0 0 105px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid #a855f7;
+
+  border-radius:
+    16px;
+
+  background:
+    #0b0b0e;
+
+  box-sizing:
+    border-box;
+}
+
+
+#modal .element-big-symbol > span {
+  position:
+    absolute;
+
+  top:
+    9px;
+
+  left:
+    10px;
+
+  color:
+    #a1a1aa;
+
+  font-size:
+    11px;
+}
+
+
+#modal .element-big-symbol > strong {
+  color:
+    white;
+
+  font-size:
+    44px;
+
+  line-height:
+    1;
+}
+
+
+#modal .element-category {
+  margin:
+    0 0 4px;
+
+  color:
+    #c084fc;
+
+  font-size:
+    10px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    1px;
+
+  text-transform:
+    uppercase;
+}
+
+
+#modal .element-hero h2 {
+  margin:
+    0;
+
+  color:
+    white;
+
+  font-size:
+    32px;
+
+  line-height:
+    1.1;
+}
+
+
+#modal .element-mass {
+  margin:
+    8px 0 0;
+
+  color:
+    #71717a;
+
+  font-size:
+    11px;
+}
+
+
+#modal .element-mass strong {
+  color:
+    #d4d4d8;
+}
+
+
+/* =========================================================
+   DETAILS GRID
+========================================================= */
+
+#modal .element-details-grid {
+  display:
+    grid !important;
+
+  grid-template-columns:
+    repeat(
+      4,
+      1fr
+    ) !important;
+
+  gap:
+    9px;
+
+  margin-bottom:
+    15px;
+}
+
+
+#modal .element-details-grid > div {
+  padding:
+    13px;
+
+  border:
+    1px solid #27272a;
+
+  border-radius:
+    10px;
+
+  background:
+    #0d0d10;
+}
+
+
+#modal .element-details-grid span {
+  display:
+    block;
+
+  margin-bottom:
+    5px;
+
+  color:
+    #52525b;
+
+  font-size:
+    8px;
+
+  letter-spacing:
+    1px;
+
+  text-transform:
+    uppercase;
+}
+
+
+#modal .element-details-grid strong {
+  color:
+    #f4f4f5;
+
+  font-size:
+    15px;
+}
+
+
+/* =========================================================
+   ELECTRON CONFIG
+========================================================= */
+
+#modal .electron-box {
+  margin-bottom:
+    15px;
+
+  padding:
+    16px;
+
+  border:
+    1px solid
+    rgba(168,85,247,0.22);
+
+  border-radius:
+    11px;
+
+  background:
+    #09090b;
+}
+
+
+#modal .electron-box > span {
+  display:
+    block;
+
+  margin-bottom:
+    7px;
+
+  color:
+    #a855f7;
+
+  font-size:
+    8px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    1.5px;
+}
+
+
+#modal .electron-box > strong {
+  color:
+    #e9d5ff;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.7;
+}
+
+
+/* =========================================================
+   PARTICLES
+========================================================= */
+
+#modal .particle-count {
+  display:
+    grid !important;
+
+  grid-template-columns:
+    repeat(
+      3,
+      1fr
+    ) !important;
+
+  gap:
+    9px;
+
+  margin-bottom:
+    18px;
+}
+
+
+#modal .particle-count > div {
+  padding:
+    13px;
+
+  border:
+    1px solid #27272a;
+
+  border-radius:
+    10px;
+
+  background:
+    #0d0d10;
+
+  text-align:
+    center;
+}
+
+
+#modal .particle-count span {
+  display:
+    block;
+
+  margin-bottom:
+    5px;
+
+  color:
+    #71717a;
+
+  font-size:
+    9px;
+}
+
+
+#modal .particle-count strong {
+  color:
+    #ffffff;
+
+  font-size:
+    20px;
+}
+
+
+/* =========================================================
+   ACTION BUTTONS
+========================================================= */
+
+#modal .atom-actions {
+  display:
+    grid !important;
+
+  grid-template-columns:
+    1fr 1fr !important;
+
+  gap:
+    10px;
+}
+
+
+#modal .open-atom-button,
+#modal .open-orbital-button {
+  height:
+    48px;
+
+  border-radius:
+    10px;
+
+  color:
+    white;
+
+  font-family:
+    inherit;
+
+  font-size:
+    12px;
+
+  font-weight:
+    700;
+
+  cursor:
+    pointer;
+
+  transition:
+    transform 0.2s,
+    filter 0.2s;
+}
+
+
+#modal .open-atom-button {
+  border:
+    1px solid #9333ea;
+
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #9333ea
+    );
+}
+
+
+#modal .open-orbital-button {
+  border:
+    1px solid #3b82f6;
+
+  background:
+    linear-gradient(
+      135deg,
+      #1e3a8a,
+      #312e81
+    );
+}
+
+
+#modal .open-atom-button:hover,
+#modal .open-orbital-button:hover {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.12);
+}
+
+
+/* =========================================================
+   BIG SYMBOL CATEGORY COLORS
+========================================================= */
+
+#modal .element-big-symbol.nonmetal {
+  border-color:
+    #06b6d4;
+}
+
+
+#modal .element-big-symbol.noble-gas {
+  border-color:
+    #a855f7;
+}
+
+
+#modal .element-big-symbol.alkali-metal {
+  border-color:
+    #ef4444;
+}
+
+
+#modal .element-big-symbol.alkaline-earth-metal {
+  border-color:
+    #f97316;
+}
+
+
+#modal .element-big-symbol.transition-metal {
+  border-color:
+    #eab308;
+}
+
+
+#modal .element-big-symbol.metalloid {
+  border-color:
+    #10b981;
+}
+
+
+#modal .element-big-symbol.halogen {
+  border-color:
+    #3b82f6;
+}
+
+
+#modal .element-big-symbol.post-transition-metal {
+  border-color:
+    #84cc16;
+}
+
+
+#modal .element-big-symbol.lanthanide {
+  border-color:
+    #ec4899;
+}
+
+
+#modal .element-big-symbol.actinide {
+  border-color:
+    #f43f5e;
+}
+
+
+/* =========================================================
+   MOBILE / SMALL SCREENS
+========================================================= */
+
+@media (
+  max-width: 900px
+) {
+
+  #periodic.periodic-page {
+    padding:
+      70px 20px 80px !important;
+  }
+
+
+  #periodic .periodic-table {
+    min-width:
+      1050px;
+  }
+
+
+  #periodic .f-block-wrapper {
+    min-width:
+      850px;
+  }
+
+}
+
+
+@media (
+  max-width: 650px
+) {
+
+  #modal .modal-content {
+    padding:
+      22px !important;
+  }
+
+
+  #modal .element-hero {
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+  }
+
+
+  #modal .element-details-grid {
+    grid-template-columns:
+      1fr 1fr !important;
+  }
+
+
+  #modal .particle-count {
+    grid-template-columns:
+      1fr 1fr 1fr !important;
+  }
+
+
+  #modal .atom-actions {
+    grid-template-columns:
+      1fr !important;
+  }
+
+}

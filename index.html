@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="description"
+    content="ChemLab 5.2 — nền tảng học và khám phá hóa học tương tác do Huu Nghia phát triển."
+  >
+
+  <meta
+    name="author"
+    content="Huu Nghia"
+  >
+
+  <meta
+    name="application-name"
+    content="ChemLab"
+  >
+
+  <meta
+    name="theme-color"
+    content="#090c13"
+  >
+
+  <meta
+    name="color-scheme"
+    content="dark"
+  >
+
+  <meta
+    name="robots"
+    content="index, follow"
+  >
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+
+  <meta
+    name="apple-mobile-web-app-title"
+    content="ChemLab"
+  >
+
+
+  <!-- Open Graph -->
+
+  <meta
+    property="og:type"
+    content="website"
+  >
+
+  <meta
+    property="og:title"
+    content="ChemLab 5.2 — Huu Nghia Edition"
+  >
+
+  <meta
+    property="og:description"
+    content="Khám phá bảng tuần hoàn, ion, orbital, phản ứng, phòng thí nghiệm và các công cụ hóa học trong một workspace tương tác."
+  >
+
+  <meta
+    property="og:locale"
+    content="vi_VN"
+  >
+
+
+  <!-- Twitter / social -->
+
+  <meta
+    name="twitter:card"
+    content="summary"
+  >
+
+  <meta
+    name="twitter:title"
+    content="ChemLab 5.2"
+  >
+
+  <meta
+    name="twitter:description"
+    content="Interactive Chemistry Workspace — Huu Nghia Edition"
+  >
+
+
+  <!-- PWA -->
+
+  <link
+    rel="manifest"
+    href="/manifest.webmanifest"
+  >
+
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="/favicon.svg"
+  >
+
+
+  <title>
+    ChemLab 5.2 | Huu Nghiaaa
+  </title>
+
+
+  <!-- Minimal startup screen -->
+
+  <style>
+
+    #chemlab-production-boot {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+
+      display: grid;
+      place-items: center;
+
+      background:
+        radial-gradient(
+          circle at 50% 40%,
+          rgba(124,58,237,.14),
+          transparent 32%
+        ),
+        #07090f;
+
+      transition:
+        opacity .35s ease,
+        visibility .35s ease;
+
+      animation:
+        chemBootFallback
+        .4s ease
+        3s forwards;
+    }
+
+
+    #chemlab-production-boot.is-done {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .chem-boot-inner {
+      text-align: center;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+
+    .chem-boot-logo {
+      width: 76px;
+      height: 76px;
+
+      margin:
+        0 auto 18px;
+
+      display: grid;
+      place-items: center;
+
+      border:
+        1px solid
+        rgba(168,85,247,.28);
+
+      border-radius: 22px;
+
+      background:
+        rgba(124,58,237,.08);
+
+      color: #c4b5fd;
+
+      font-size: 35px;
+
+      box-shadow:
+        0 0 60px
+        rgba(124,58,237,.10);
+    }
+
+
+    .chem-boot-inner strong {
+      display: block;
+
+      color: #f5f3ff;
+
+      font-size: 24px;
+    }
+
+
+    .chem-boot-inner span {
+      display: block;
+
+      margin-top: 7px;
+
+      color: #81899b;
+
+      font-size: 13px;
+    }
+
+
+    .chem-boot-line {
+      width: 140px;
+      height: 3px;
+
+      margin:
+        20px auto 0;
+
+      overflow: hidden;
+
+      border-radius: 999px;
+
+      background:
+        rgba(255,255,255,.06);
+    }
+
+
+    .chem-boot-line::after {
+      content: "";
+
+      width: 45%;
+      height: 100%;
+
+      display: block;
+
+      border-radius: inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          #7c3aed,
+          #22d3ee
+        );
+
+      animation:
+        chemBootMove
+        1s ease-in-out
+        infinite alternate;
+    }
+
+
+    @keyframes chemBootMove {
+
+      from {
+        transform:
+          translateX(-20%);
+      }
+
+      to {
+        transform:
+          translateX(145%);
+      }
+
+    }
+
+
+    @keyframes chemBootFallback {
+
+      to {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <div id="app"></div>
+
+
+  <div
+    id="chemlab-production-boot"
+    aria-hidden="true"
+  >
+
+    <div class="chem-boot-inner">
+
+      <div class="chem-boot-logo">
+        ⚗
+      </div>
+
+      <strong>
+        ChemLab
+      </strong>
+
+      <span>
+        Hữu Nghĩa Edition • 5.2
+      </span>
+
+      <div class="chem-boot-line"></div>
+
+    </div>
+
+  </div>
+
+
+  <noscript>
+    ChemLab cần JavaScript để hoạt động.
+    Vui lòng bật JavaScript trong trình duyệt.
+  </noscript>
+
+
+  <script
+    type="module"
+    src="/src/main.js"
+  ></script>
+
+  <script
+    type="module"
+    src="/src/production.js"
+  ></script>
+
+</body>
+
+</html>

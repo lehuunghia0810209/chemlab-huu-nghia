@@ -1,0 +1,1797 @@
+/* =========================================================
+   CHEMLAB 4.4 — ELEMENT WORKSPACE
+========================================================= */
+
+.ew-periodic {
+  --ew-panel:
+    #11141e;
+
+  --ew-panel-2:
+    #161a27;
+
+  --ew-border:
+    rgba(255,255,255,.09);
+}
+
+
+/* =========================================================
+   PERIODIC CARDS
+========================================================= */
+
+.ew-periodic
+.workspace-element-card {
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  background:
+    linear-gradient(
+      155deg,
+      rgba(21,24,36,.98),
+      rgba(11,13,21,.98)
+    );
+
+  cursor:
+    pointer;
+}
+
+
+.ew-periodic
+.workspace-element-card::after {
+  content:
+    "";
+
+  position:
+    absolute;
+
+  left:
+    0;
+
+  right:
+    0;
+
+  bottom:
+    0;
+
+  height:
+    3px;
+
+  opacity:
+    .55;
+
+  background:
+    var(
+      --element-accent,
+      #a78bfa
+    );
+}
+
+
+.ew-periodic
+.workspace-element-card:hover::after {
+  opacity:
+    1;
+
+  box-shadow:
+    0 0 14px
+    var(
+      --element-accent,
+      #a78bfa
+    );
+}
+
+
+.ew-periodic
+.series-placeholder {
+  cursor:
+    default;
+
+  opacity:
+    .85;
+}
+
+
+.ew-periodic
+.compact-layout
+.workspace-periodic-table {
+  grid-template-rows:
+    repeat(
+      7,
+      88px
+    );
+}
+
+
+.ew-periodic
+.compact-layout
+.workspace-frow
+.workspace-element-card {
+  height:
+    88px;
+}
+
+
+.ew-periodic
+.compact-layout
+.workspace-element-card {
+  padding-top:
+    22px;
+}
+
+
+.ew-periodic
+.compact-layout
+.workspace-element-symbol {
+  font-size:
+    1.55rem;
+}
+
+
+.ew-periodic
+.compact-layout
+.workspace-element-name {
+  display:
+    none;
+}
+
+
+.ew-periodic
+.compact-layout
+.workspace-element-mass {
+  font-size:
+    .7rem;
+}
+
+
+/* =========================================================
+   FILTER LEGEND
+========================================================= */
+
+.ew-legend-item {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    .4rem;
+}
+
+
+.ew-legend-item i,
+.ew-legend-dot {
+  width:
+    9px;
+
+  height:
+    9px;
+
+  display:
+    inline-block;
+
+  border-radius:
+    50%;
+
+  background:
+    var(
+      --legend-color,
+      #a78bfa
+    );
+
+  box-shadow:
+    0 0 9px
+    color-mix(
+      in srgb,
+      var(--legend-color)
+      50%,
+      transparent
+    );
+}
+
+
+/* =========================================================
+   DRAWER
+========================================================= */
+
+.ew-drawer {
+  --drawer-accent:
+    var(
+      --element-accent,
+      #a78bfa
+    );
+}
+
+
+.ew-drawer
+.drawer-symbol-card {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      35%,
+      transparent
+    );
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--element-accent)
+        14%,
+        #11141e
+      ),
+      #0d1018
+    );
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255,255,255,.05),
+    0 14px 30px
+    rgba(0,0,0,.18);
+}
+
+
+.ew-drawer
+.drawer-symbol {
+  color:
+    #fff;
+}
+
+
+.ew-drawer
+.drawer-category {
+  color:
+    var(
+      --element-accent
+    );
+
+  font-size:
+    .86rem;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    .03em;
+}
+
+
+.ew-drawer
+.drawer-mass,
+.ew-drawer
+.drawer-number {
+  color:
+    #98a1b7;
+
+  font-size:
+    .82rem;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.ew-tabs {
+  display:
+    flex;
+
+  overflow-x:
+    auto;
+
+  scrollbar-width:
+    none;
+}
+
+
+.ew-tabs::-webkit-scrollbar {
+  display:
+    none;
+}
+
+
+.ew-tabs button {
+  flex:
+    0 0 auto;
+
+  min-width:
+    max-content;
+}
+
+
+.ew-tabs button.active {
+  color:
+    #fff;
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      42%,
+      transparent
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      12%,
+      #11141d
+    );
+}
+
+
+.ew-tab-content {
+  min-height:
+    360px;
+}
+
+
+.ew-panel {
+  padding-bottom:
+    1rem;
+
+  animation:
+    ewPanelIn
+    .22s
+    cubic-bezier(
+      .22,
+      .8,
+      .25,
+      1
+    );
+}
+
+
+@keyframes ewPanelIn {
+
+  from {
+    opacity:
+      0;
+
+    transform:
+      translateY(5px);
+  }
+
+  to {
+    opacity:
+      1;
+
+    transform:
+      translateY(0);
+  }
+
+}
+
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+.ew-section-head {
+  margin-top:
+    1.25rem;
+
+  margin-bottom:
+    1rem;
+}
+
+
+.ew-section-head
+> span {
+  color:
+    var(
+      --element-accent
+    );
+
+  font-size:
+    .78rem;
+
+  font-weight:
+    850;
+
+  letter-spacing:
+    .09em;
+}
+
+
+.ew-section-head h3 {
+  margin:
+    .4rem 0;
+
+  color:
+    #fff;
+
+  font-size:
+    1.45rem;
+
+  line-height:
+    1.2;
+}
+
+
+.ew-section-head p {
+  margin:
+    0;
+
+  color:
+    #9ba4b9;
+
+  font-size:
+    .95rem;
+
+  line-height:
+    1.6;
+}
+
+
+/* =========================================================
+   PARTICLES
+========================================================= */
+
+.ew-particle-grid {
+  margin-top:
+    1rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap:
+    .65rem;
+}
+
+
+.ew-particle-grid
+.particle-card {
+  min-height:
+    110px;
+
+  padding:
+    .9rem;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    1rem;
+
+  background:
+    #11141d;
+
+  text-align:
+    center;
+}
+
+
+.ew-particle-grid
+.particle-card
+> span {
+  color:
+    var(
+      --element-accent
+    );
+
+  font-size:
+    .9rem;
+
+  font-weight:
+    800;
+}
+
+
+.ew-particle-grid
+.particle-card
+> strong {
+  margin:
+    .25rem 0;
+
+  color:
+    #fff;
+
+  font-size:
+    1.65rem;
+}
+
+
+.ew-particle-grid
+.particle-card
+> small {
+  color:
+    #818ba3;
+
+  font-size:
+    .82rem;
+}
+
+
+/* =========================================================
+   NOTE
+========================================================= */
+
+.ew-note {
+  margin:
+    1rem 0 0;
+
+  padding:
+    .8rem .9rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    .75rem;
+
+  background:
+    rgba(255,255,255,.025);
+
+  color:
+    #8993aa;
+
+  font-size:
+    .83rem;
+
+  line-height:
+    1.55;
+}
+
+
+.ew-note.warning {
+  border-color:
+    rgba(245,158,11,.18);
+
+  background:
+    rgba(245,158,11,.045);
+}
+
+
+/* =========================================================
+   ELECTRON
+========================================================= */
+
+.ew-config-hero {
+  padding:
+    1rem;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      24%,
+      transparent
+    );
+
+  border-radius:
+    1rem;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--element-accent)
+        8%,
+        #11141e
+      ),
+      #0e1119
+    );
+}
+
+
+.ew-config-hero
+> span {
+  display:
+    block;
+
+  color:
+    #7e889f;
+
+  font-size:
+    .76rem;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    .08em;
+}
+
+
+.ew-config-hero
+> strong {
+  display:
+    block;
+
+  margin-top:
+    .65rem;
+
+  color:
+    #f6f4ff;
+
+  font-family:
+    Consolas,
+    "Courier New",
+    monospace;
+
+  font-size:
+    1.05rem;
+
+  line-height:
+    1.8;
+
+  overflow-wrap:
+    anywhere;
+}
+
+
+.ew-config-hero sup {
+  color:
+    var(
+      --element-accent
+    );
+}
+
+
+.ew-shell-title {
+  margin:
+    1.25rem 0 .7rem;
+
+  color:
+    #c8cedd;
+
+  font-size:
+    .9rem;
+
+  font-weight:
+    750;
+}
+
+
+.ew-shell-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(100px,1fr)
+    );
+
+  gap:
+    .6rem;
+}
+
+
+.ew-shell-grid
+.shell-card {
+  min-height:
+    94px;
+
+  padding:
+    .8rem;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    .9rem;
+
+  background:
+    #11141d;
+}
+
+
+.ew-shell-grid
+.shell-card span {
+  color:
+    #7f899f;
+
+  font-size:
+    .76rem;
+}
+
+
+.ew-shell-grid
+.shell-card strong {
+  margin:
+    .15rem 0;
+
+  color:
+    #fff;
+
+  font-size:
+    1.5rem;
+}
+
+
+.ew-shell-grid
+.shell-card small {
+  color:
+    #7e879d;
+
+  font-size:
+    .72rem;
+}
+
+
+.ew-orbital-list {
+  margin-top:
+    1rem;
+
+  display:
+    grid;
+
+  gap:
+    .5rem;
+}
+
+
+.ew-orbital-row {
+  min-height:
+    46px;
+
+  padding:
+    .55rem .7rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    44px
+    minmax(0,1fr)
+    54px;
+
+  align-items:
+    center;
+
+  gap:
+    .7rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius:
+    .7rem;
+
+  background:
+    #10131c;
+}
+
+
+.ew-orbital-row
+> strong {
+  color:
+    #ddd5f5;
+
+  font-family:
+    Consolas,
+    monospace;
+}
+
+
+.ew-orbital-row
+> span {
+  color:
+    #8e97ac;
+
+  font-size:
+    .8rem;
+
+  text-align:
+    right;
+}
+
+
+.ew-orbital-track {
+  height:
+    6px;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    999px;
+
+  background:
+    #262b38;
+}
+
+
+.ew-orbital-track i {
+  height:
+    100%;
+
+  display:
+    block;
+
+  border-radius:
+    inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--element-accent),
+      #8b5cf6
+    );
+}
+
+
+/* =========================================================
+   IONS
+========================================================= */
+
+.ew-ion-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap:
+    .7rem;
+}
+
+
+.ew-ion-card {
+  min-height:
+    145px;
+
+  padding:
+    1rem;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    1rem;
+
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(
+        in srgb,
+        var(--element-accent)
+        7%,
+        #11141d
+      ),
+      #0e1119
+    );
+}
+
+
+.ew-ion-card
+> strong {
+  color:
+    #fff;
+
+  font-size:
+    2rem;
+
+  line-height:
+    1;
+}
+
+
+.ew-ion-card
+> strong sup {
+  color:
+    var(
+      --element-accent
+    );
+
+  font-size:
+    .55em;
+}
+
+
+.ew-ion-card
+> span {
+  margin-top:
+    .65rem;
+
+  color:
+    #abb3c6;
+
+  font-size:
+    .88rem;
+}
+
+
+.ew-ion-card
+> div {
+  margin-top:
+    .7rem;
+
+  color:
+    #7f899f;
+
+  font-size:
+    .82rem;
+}
+
+
+.ew-ion-card
+> div b {
+  color:
+    #fff;
+
+  font-size:
+    1.05rem;
+}
+
+
+.ew-ion-summary {
+  margin-top:
+    .8rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap:
+    .7rem;
+}
+
+
+.ew-ion-summary
+> div {
+  padding:
+    .9rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    .85rem;
+
+  background:
+    #10131c;
+}
+
+
+.ew-ion-summary span {
+  display:
+    block;
+
+  color:
+    #7c869d;
+
+  font-size:
+    .76rem;
+}
+
+
+.ew-ion-summary strong {
+  display:
+    block;
+
+  margin-top:
+    .3rem;
+
+  color:
+    #f3f4f8;
+
+  font-size:
+    1rem;
+}
+
+
+.ew-empty-panel {
+  min-height:
+    180px;
+
+  padding:
+    1rem;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px dashed
+    rgba(255,255,255,.10);
+
+  border-radius:
+    1rem;
+
+  text-align:
+    center;
+}
+
+
+.ew-empty-panel strong {
+  color:
+    #e5e7ef;
+
+  font-size:
+    1rem;
+}
+
+
+.ew-empty-panel span {
+  max-width:
+    330px;
+
+  margin-top:
+    .45rem;
+
+  color:
+    #7e889f;
+
+  font-size:
+    .86rem;
+}
+
+
+/* =========================================================
+   ISOTOPES
+========================================================= */
+
+.ew-isotope-list {
+  display:
+    grid;
+
+  gap:
+    .6rem;
+}
+
+
+.ew-isotope-row {
+  min-height:
+    86px;
+
+  padding:
+    .7rem .8rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    70px
+    minmax(0,1fr)
+    auto;
+
+  align-items:
+    center;
+
+  gap:
+    .75rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    .9rem;
+
+  background:
+    #10131c;
+}
+
+
+.ew-isotope-symbol {
+  min-height:
+    160px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  color:
+    #fff;
+
+  font-size:
+    3.2rem;
+}
+
+
+.ew-isotope-symbol.small {
+  min-height:
+    0;
+
+  font-size:
+    1.65rem;
+}
+
+
+.ew-isotope-symbol sup {
+  align-self:
+    flex-start;
+
+  margin-top:
+    1.8rem;
+
+  color:
+    var(
+      --element-accent
+    );
+
+  font-size:
+    .4em;
+}
+
+
+.ew-isotope-symbol.small sup {
+  margin-top:
+    .2rem;
+}
+
+
+.ew-isotope-symbol sub {
+  align-self:
+    flex-end;
+
+  margin-bottom:
+    1.8rem;
+
+  color:
+    #7f899f;
+
+  font-size:
+    .4em;
+}
+
+
+.ew-isotope-symbol.small sub {
+  margin-bottom:
+    .2rem;
+}
+
+
+.ew-isotope-card {
+  padding:
+    1rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    1.2fr 1fr 1fr;
+
+  align-items:
+    center;
+
+  gap:
+    .75rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius:
+    1rem;
+
+  background:
+    #10131c;
+}
+
+
+.ew-isotope-card
+> div:not(
+  .ew-isotope-symbol
+)
+span {
+  display:
+    block;
+
+  color:
+    #7f899f;
+
+  font-size:
+    .77rem;
+}
+
+
+.ew-isotope-card
+> div:not(
+  .ew-isotope-symbol
+)
+strong {
+  display:
+    block;
+
+  margin-top:
+    .25rem;
+
+  color:
+    #fff;
+
+  font-size:
+    1.2rem;
+}
+
+
+.ew-isotope-data strong,
+.ew-isotope-abundance strong {
+  display:
+    block;
+
+  color:
+    #fff;
+
+  font-size:
+    .9rem;
+}
+
+
+.ew-isotope-data span,
+.ew-isotope-abundance span {
+  display:
+    block;
+
+  margin-top:
+    .2rem;
+
+  color:
+    #7f899f;
+
+  font-size:
+    .77rem;
+}
+
+
+.ew-isotope-abundance {
+  text-align:
+    right;
+}
+
+
+/* =========================================================
+   3D
+========================================================= */
+
+.ew-3d-preview {
+  height:
+    250px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    1.1rem;
+
+  background:
+    radial-gradient(
+      circle at center,
+      color-mix(
+        in srgb,
+        var(--element-accent)
+        12%,
+        #141823
+      ),
+      #0c0f17 70%
+    );
+}
+
+
+.ew-atom-preview {
+  width:
+    180px;
+
+  height:
+    180px;
+
+  position:
+    relative;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+}
+
+
+.ew-preview-nucleus {
+  width:
+    66px;
+
+  height:
+    66px;
+
+  z-index:
+    3;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border-radius:
+    50%;
+
+  background:
+    var(
+      --element-accent
+    );
+
+  color:
+    #fff;
+
+  font-size:
+    1.25rem;
+
+  font-weight:
+    900;
+
+  box-shadow:
+    0 0 30px
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      38%,
+      transparent
+    );
+}
+
+
+.ew-atom-preview
+.orbit {
+  position:
+    absolute;
+
+  inset:
+    25px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.22);
+
+  border-radius:
+    50%;
+}
+
+
+.ew-atom-preview
+.orbit.one {
+  transform:
+    rotate(0deg)
+    scaleY(.45);
+}
+
+
+.ew-atom-preview
+.orbit.two {
+  transform:
+    rotate(60deg)
+    scaleY(.45);
+}
+
+
+.ew-atom-preview
+.orbit.three {
+  transform:
+    rotate(-60deg)
+    scaleY(.45);
+}
+
+
+.ew-drawer
+.drawer-actions {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+}
+
+
+.ew-drawer
+.drawer-action.primary {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      40%,
+      transparent
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--element-accent)
+      15%,
+      #141721
+    );
+
+  color:
+    #fff;
+}
+
+
+/* =========================================================
+   COMPARE
+========================================================= */
+
+.ew-compare-picker {
+  display:
+    grid;
+
+  gap:
+    .45rem;
+}
+
+
+.ew-compare-picker
+> span {
+  color:
+    #8993aa;
+
+  font-size:
+    .82rem;
+}
+
+
+.ew-compare-picker select {
+  width:
+    100%;
+
+  min-height:
+    50px;
+
+  padding:
+    0 .8rem;
+
+  border:
+    1px solid
+    rgba(255,255,255,.10);
+
+  border-radius:
+    .8rem;
+
+  outline:
+    0;
+
+  background:
+    #0d1018;
+
+  color:
+    #f3f4f7;
+}
+
+
+.ew-compare-head {
+  margin-top:
+    1rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    1fr auto 1fr;
+
+  align-items:
+    center;
+
+  gap:
+    .65rem;
+}
+
+
+.ew-compare-element {
+  min-height:
+    118px;
+
+  padding:
+    .9rem;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--compare-color)
+      25%,
+      transparent
+    );
+
+  border-radius:
+    1rem;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--compare-color)
+      7%,
+      #11141d
+    );
+
+  text-align:
+    center;
+}
+
+
+.ew-compare-element strong {
+  color:
+    #fff;
+
+  font-size:
+    2rem;
+}
+
+
+.ew-compare-element span {
+  margin-top:
+    .3rem;
+
+  color:
+    #9da6ba;
+
+  font-size:
+    .8rem;
+
+  overflow-wrap:
+    anywhere;
+}
+
+
+.ew-versus {
+  color:
+    #616b82;
+
+  font-size:
+    .7rem;
+
+  font-weight:
+    850;
+}
+
+
+.ew-compare-table {
+  margin-top:
+    .8rem;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+
+  border-radius:
+    .9rem;
+}
+
+
+.ew-compare-row {
+  min-height:
+    54px;
+
+  padding:
+    .65rem .8rem;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    1fr 1fr 1fr;
+
+  align-items:
+    center;
+
+  gap:
+    .5rem;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.055);
+}
+
+
+.ew-compare-row:last-child {
+  border-bottom:
+    0;
+}
+
+
+.ew-compare-row
+> strong {
+  color:
+    #f3f4f7;
+
+  font-size:
+    .9rem;
+}
+
+
+.ew-compare-row
+> strong:last-child {
+  text-align:
+    right;
+}
+
+
+.ew-compare-row
+> span {
+  color:
+    #737e95;
+
+  font-size:
+    .76rem;
+
+  text-align:
+    center;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width: 650px
+) {
+
+  .ew-ion-grid,
+  .ew-ion-summary {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ew-isotope-card {
+    grid-template-columns:
+      1fr 1fr;
+
+    text-align:
+      center;
+  }
+
+
+  .ew-isotope-card
+  .ew-isotope-symbol {
+    grid-column:
+      1 / -1;
+
+    min-height:
+      110px;
+  }
+
+
+  .ew-isotope-row {
+    grid-template-columns:
+      58px 1fr;
+  }
+
+
+  .ew-isotope-abundance {
+    grid-column:
+      2;
+
+    text-align:
+      left;
+  }
+
+
+  .ew-drawer
+  .drawer-actions {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ew-compare-head {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ew-versus {
+    text-align:
+      center;
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
+  .ew-panel {
+    animation:
+      none;
+  }
+
+}

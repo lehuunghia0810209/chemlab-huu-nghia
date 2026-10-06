@@ -1,0 +1,75 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171025"/>
+      <stop offset="1" stop-color="#080b12"/>
+    </linearGradient>
+
+    <linearGradient id="liquid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+
+  <rect
+    width="512"
+    height="512"
+    rx="108"
+    fill="url(#bg)"
+  />
+
+  <path
+    d="
+      M205 105
+      H307
+      M226 105
+      V205
+      L153 338
+      C138 365 157 398 188 398
+      H324
+      C355 398 374 365 359 338
+      L286 205
+      V105
+    "
+    fill="none"
+    stroke="#f5f3ff"
+    stroke-width="24"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="
+      M177 314
+      C208 291 235 326 268 308
+      C298 292 323 299 344 316
+      L360 346
+      C373 370 355 397 328 397
+      H184
+      C157 397 139 370 152 346
+      Z
+    "
+    fill="url(#liquid)"
+  />
+
+  <circle cx="226" cy="270" r="10" fill="#22d3ee"/>
+  <circle cx="286" cy="250" r="7" fill="#c084fc"/>
+
+  <text
+    x="256"
+    y="462"
+    text-anchor="middle"
+    fill="#b7a6ce"
+    font-family="Arial, sans-serif"
+    font-size="31"
+    font-weight="700"
+    letter-spacing="7"
+  >
+    HN
+  </text>
+</svg>

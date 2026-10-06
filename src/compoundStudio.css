@@ -1,0 +1,1379 @@
+/* =========================================================
+   CHEMLAB 5.1
+   COMPOUND STUDIO
+========================================================= */
+
+.cs5-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40000;
+
+  padding: 18px;
+
+  display: grid;
+  place-items: center;
+
+  background:
+    rgba(2,4,9,.86);
+
+  backdrop-filter:
+    blur(13px);
+}
+
+
+/* =========================================================
+   WINDOW
+========================================================= */
+
+.cs5-window {
+  width:
+    min(
+      1280px,
+      100%
+    );
+
+  height:
+    min(
+      860px,
+      calc(100vh - 36px)
+    );
+
+  min-height: 650px;
+
+  overflow: hidden;
+
+  display: grid;
+
+  grid-template-rows:
+    auto
+    auto
+    auto
+    minmax(0,1fr)
+    auto;
+
+  border:
+    1px solid
+    rgba(139,92,246,.20);
+
+  border-radius: 20px;
+
+  background:
+    radial-gradient(
+      circle at 18% 0%,
+      rgba(124,58,237,.065),
+      transparent 30%
+    ),
+    #0a0d14;
+
+  box-shadow:
+    0 50px 150px
+    rgba(0,0,0,.7);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.cs5-header {
+  min-height: 91px;
+
+  padding:
+    16px 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    space-between;
+
+  gap: 20px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.065);
+}
+
+
+.cs5-brand {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+}
+
+
+.cs5-brand-icon {
+  width: 49px;
+  height: 49px;
+
+  flex: 0 0 49px;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(167,139,250,.24);
+
+  border-radius: 13px;
+
+  background:
+    rgba(124,58,237,.065);
+
+  color: #c4b5fd;
+
+  font-size: 25px;
+}
+
+
+.cs5-brand span {
+  color: #8473a9;
+
+  font-size: 10px;
+  font-weight: 850;
+
+  letter-spacing: .11em;
+}
+
+
+.cs5-brand h2 {
+  margin:
+    3px 0 1px;
+
+  color: #f3f4f7;
+
+  font-size: 24px;
+
+  line-height: 1.15;
+}
+
+
+.cs5-brand p {
+  margin: 0;
+
+  color: #7f899c;
+
+  font-size: 12px;
+}
+
+
+.cs5-close {
+  width: 44px;
+  height: 44px;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.08);
+
+  border-radius: 11px;
+
+  background:
+    rgba(255,255,255,.02);
+
+  color: #9da5b4;
+
+  font-size: 22px;
+
+  cursor: pointer;
+}
+
+
+.cs5-close:hover {
+  border-color:
+    rgba(167,139,250,.30);
+
+  background:
+    rgba(124,58,237,.07);
+
+  color: #fff;
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+.cs5-input-section {
+  padding:
+    14px 20px 13px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.055);
+}
+
+
+.cs5-formula-input > span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #76678f;
+
+  font-size: 10px;
+  font-weight: 850;
+
+  letter-spacing: .10em;
+}
+
+
+.cs5-formula-input > div {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0,1fr)
+    auto;
+
+  gap: 8px;
+}
+
+
+.cs5-formula-input input {
+  width: 100%;
+
+  min-height: 52px;
+
+  padding:
+    0 15px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.09);
+
+  border-radius: 11px;
+
+  outline: none;
+
+  background:
+    rgba(255,255,255,.018);
+
+  color: #eef0f4;
+
+  font-size: 18px;
+  font-weight: 650;
+
+  letter-spacing: .015em;
+}
+
+
+.cs5-formula-input input:focus {
+  border-color:
+    rgba(139,92,246,.44);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(124,58,237,.07);
+}
+
+
+.cs5-formula-input
+> div
+> button {
+  min-width: 118px;
+
+  min-height: 52px;
+
+  padding:
+    0 16px;
+
+  border:
+    1px solid
+    rgba(139,92,246,.32);
+
+  border-radius: 11px;
+
+  background:
+    rgba(124,58,237,.10);
+
+  color: #ddd6fe;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+.cs5-formula-input
+> small {
+  display: block;
+
+  margin-top: 7px;
+
+  color: #707a8e;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   PRESETS
+========================================================= */
+
+.cs5-presets {
+  margin-top: 11px;
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+}
+
+
+.cs5-presets button {
+  min-height: 35px;
+
+  padding:
+    0 10px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  border-radius: 8px;
+
+  background:
+    rgba(255,255,255,.012);
+
+  color: #939bad;
+
+  font-size: 12px;
+
+  cursor: pointer;
+}
+
+
+.cs5-presets button:hover {
+  border-color:
+    rgba(139,92,246,.25);
+
+  color: #d9d4ed;
+}
+
+
+.cs5-presets sub {
+  font-size: .72em;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.cs5-error {
+  margin:
+    11px 20px 0;
+
+  padding:
+    11px 13px;
+
+  border:
+    1px solid
+    rgba(244,63,94,.22);
+
+  border-radius: 10px;
+
+  background:
+    rgba(244,63,94,.045);
+
+  color: #fda4af;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.cs5-main {
+  min-height: 0;
+
+  padding: 14px 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0,1.55fr)
+    340px;
+
+  gap: 13px;
+
+  overflow-y: auto;
+}
+
+
+.cs5-primary,
+.cs5-sidebar {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+
+/* =========================================================
+   FORMULA HERO
+========================================================= */
+
+.cs5-formula-hero {
+  min-height: 130px;
+
+  padding: 18px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(139,92,246,.16);
+
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(124,58,237,.055),
+      rgba(14,18,27,.5)
+    );
+}
+
+
+.cs5-formula-hero > span {
+  color: #77688e;
+
+  font-size: 10px;
+  font-weight: 850;
+
+  letter-spacing: .10em;
+}
+
+
+.cs5-formula-hero > strong {
+  margin-top: 7px;
+
+  color: #fff;
+
+  font-size: 38px;
+  font-weight: 760;
+
+  line-height: 1.12;
+}
+
+
+.cs5-formula-hero sub {
+  font-size: .58em;
+
+  vertical-align: sub;
+}
+
+
+.cs5-formula-hero > small {
+  margin-top: 8px;
+
+  color: #8d96a8;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   METRICS
+========================================================= */
+
+.cs5-metrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap: 9px;
+}
+
+
+.cs5-metrics article {
+  min-height: 93px;
+
+  padding: 12px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  border-radius: 12px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+
+.cs5-metrics span {
+  color: #717b8f;
+
+  font-size: 10px;
+  font-weight: 750;
+
+  letter-spacing: .05em;
+}
+
+
+.cs5-metrics strong {
+  margin-top: 5px;
+
+  color: #f0f2f6;
+
+  font-size: 22px;
+}
+
+
+.cs5-metrics small {
+  margin-top: 2px;
+
+  color: #697386;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
+.cs5-card {
+  padding: 14px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  border-radius: 13px;
+
+  background:
+    rgba(255,255,255,.011);
+}
+
+
+.cs5-card > header {
+  margin-bottom: 11px;
+}
+
+
+.cs5-card
+> header
+span {
+  color: #71638a;
+
+  font-size: 9px;
+  font-weight: 850;
+
+  letter-spacing: .10em;
+}
+
+
+.cs5-card
+> header
+h3 {
+  margin:
+    3px 0 0;
+
+  color: #d9dce5;
+
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   COMPOSITION
+========================================================= */
+
+.cs5-composition {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+
+.cs5-element-row {
+  min-height: 69px;
+
+  padding: 8px 10px;
+
+  display: grid;
+
+  grid-template-columns:
+    46px
+    minmax(0,1fr)
+    112px;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.045);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.009);
+}
+
+
+.cs5-element-symbol {
+  width: 43px;
+  height: 43px;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid
+    rgba(45,212,191,.20);
+
+  border-radius: 9px;
+
+  background:
+    rgba(45,212,191,.04);
+
+  color: #dffbf5;
+
+  font-size: 18px;
+  font-weight: 750;
+}
+
+
+.cs5-element-info {
+  min-width: 0;
+}
+
+
+.cs5-element-info
+> div:first-child {
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    space-between;
+
+  gap: 10px;
+}
+
+
+.cs5-element-info strong {
+  overflow: hidden;
+
+  color: #cfd3dc;
+
+  font-size: 12px;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+.cs5-element-info span {
+  color: #737d90;
+
+  font-size: 10px;
+
+  white-space: nowrap;
+}
+
+
+.cs5-element-bar {
+  width: 100%;
+  height: 5px;
+
+  margin-top: 8px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255,255,255,.045);
+}
+
+
+.cs5-element-bar i {
+  height: 100%;
+
+  display: block;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #7c3aed,
+      #22d3ee
+    );
+}
+
+
+.cs5-element-percent {
+  text-align: right;
+}
+
+
+.cs5-element-percent strong {
+  display: block;
+
+  color: #e8e9ef;
+
+  font-size: 13px;
+}
+
+
+.cs5-element-percent span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #737c90;
+
+  font-size: 9.5px;
+}
+
+
+/* =========================================================
+   GROUPS
+========================================================= */
+
+.cs5-groups {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 7px;
+}
+
+
+.cs5-group-chip {
+  min-height: 53px;
+
+  padding:
+    7px 11px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(34,211,238,.14);
+
+  border-radius: 9px;
+
+  background:
+    rgba(34,211,238,.025);
+}
+
+
+.cs5-group-chip strong {
+  color: #bff8ff;
+
+  font-size: 14px;
+}
+
+
+.cs5-group-chip span {
+  margin-top: 2px;
+
+  color: #737f91;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   CONVERTER
+========================================================= */
+
+.cs5-converter label
+> span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #8790a2;
+
+  font-size: 11px;
+}
+
+
+.cs5-converter label
+> div {
+  height: 46px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0,1fr)
+    42px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.075);
+
+  border-radius: 9px;
+
+  overflow: hidden;
+}
+
+
+.cs5-converter input {
+  min-width: 0;
+
+  padding:
+    0 11px;
+
+  border: 0;
+
+  outline: 0;
+
+  background:
+    rgba(255,255,255,.014);
+
+  color: #eef0f4;
+
+  font-size: 14px;
+}
+
+
+.cs5-converter label b {
+  display: grid;
+
+  place-items: center;
+
+  border-left:
+    1px solid
+    rgba(255,255,255,.055);
+
+  color: #727c8e;
+
+  font-size: 11px;
+}
+
+
+.cs5-conversion-result {
+  margin-top: 10px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    1fr;
+
+  gap: 7px;
+}
+
+
+.cs5-conversion-result > div {
+  min-height: 68px;
+
+  padding: 9px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(255,255,255,.045);
+
+  border-radius: 9px;
+}
+
+
+.cs5-conversion-result span {
+  color: #747e91;
+
+  font-size: 10px;
+}
+
+
+.cs5-conversion-result strong {
+  margin-top: 5px;
+
+  overflow-wrap: anywhere;
+
+  color: #dddfe6;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+.cs5-history {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+
+.cs5-history button {
+  min-height: 45px;
+
+  padding:
+    0 10px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    space-between;
+
+  border:
+    1px solid
+    rgba(255,255,255,.045);
+
+  border-radius: 8px;
+
+  background:
+    rgba(255,255,255,.008);
+
+  color: #afb5c1;
+
+  cursor: pointer;
+}
+
+
+.cs5-history button:hover {
+  border-color:
+    rgba(139,92,246,.18);
+
+  background:
+    rgba(124,58,237,.025);
+}
+
+
+.cs5-history strong {
+  font-size: 13px;
+}
+
+
+.cs5-history sub {
+  font-size: .7em;
+}
+
+
+.cs5-history span {
+  color: #6f788a;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   WORKFLOW
+========================================================= */
+
+.cs5-workflow
+> button {
+  width: 100%;
+
+  min-height: 59px;
+
+  margin-top: 7px;
+
+  padding:
+    8px 9px;
+
+  display: grid;
+
+  grid-template-columns:
+    38px
+    minmax(0,1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 9px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.045);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255,255,255,.008);
+
+  color: #aeb5c2;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+
+.cs5-workflow
+> button:hover {
+  border-color:
+    rgba(139,92,246,.22);
+
+  background:
+    rgba(124,58,237,.03);
+}
+
+
+.cs5-workflow
+> button
+> span {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 8px;
+
+  background:
+    rgba(124,58,237,.055);
+
+  color: #b79df5;
+
+  font-size: 17px;
+}
+
+
+.cs5-workflow
+div strong {
+  display: block;
+
+  color: #d3d6de;
+
+  font-size: 11px;
+}
+
+
+.cs5-workflow
+div small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #747e90;
+
+  font-size: 9.5px;
+}
+
+
+.cs5-workflow
+> button
+> b {
+  color: #687184;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.cs5-empty {
+  min-height: 61px;
+
+  padding: 11px;
+
+  display: flex;
+
+  align-items: center;
+
+  border:
+    1px dashed
+    rgba(255,255,255,.06);
+
+  border-radius: 9px;
+
+  color: #717b8e;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+.cs5-empty.small {
+  min-height: 45px;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.cs5-footer {
+  min-height: 70px;
+
+  padding:
+    10px 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    space-between;
+
+  gap: 14px;
+
+  border-top:
+    1px solid
+    rgba(255,255,255,.06);
+}
+
+
+.cs5-footer
+> div:first-child {
+  color: #6f788a;
+
+  font-size: 10px;
+}
+
+
+.cs5-footer
+> div:first-child
+span {
+  padding:
+    4px 6px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 5px;
+
+  color: #8a93a5;
+}
+
+
+.cs5-footer
+> div:last-child {
+  display: flex;
+
+  gap: 7px;
+}
+
+
+.cs5-footer button {
+  min-height: 42px;
+
+  padding:
+    0 14px;
+
+  border-radius: 9px;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+
+.cs5-footer
+button.secondary {
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  background:
+    transparent;
+
+  color: #939bad;
+}
+
+
+.cs5-footer
+button.primary {
+  border:
+    1px solid
+    rgba(139,92,246,.30);
+
+  background:
+    rgba(124,58,237,.10);
+
+  color: #ddd6fe;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  max-width:900px
+) {
+
+  .cs5-window {
+    height:
+      calc(
+        100vh -
+        18px
+      );
+
+    min-height: 0;
+  }
+
+
+  .cs5-overlay {
+    padding: 9px;
+  }
+
+
+  .cs5-main {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .cs5-sidebar {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      );
+  }
+
+
+  .cs5-workflow {
+    grid-column:
+      1 / -1;
+  }
+
+}
+
+
+/* =========================================================
+   PHONE
+========================================================= */
+
+@media (
+  max-width:600px
+) {
+
+  .cs5-header {
+    padding:
+      13px 14px;
+  }
+
+
+  .cs5-brand-icon {
+    display: none;
+  }
+
+
+  .cs5-brand h2 {
+    font-size: 20px;
+  }
+
+
+  .cs5-input-section,
+  .cs5-main,
+  .cs5-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+
+  .cs5-formula-input
+  > div {
+    grid-template-columns: 1fr;
+  }
+
+
+  .cs5-formula-input
+  > div
+  > button {
+    min-height: 45px;
+  }
+
+
+  .cs5-metrics {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .cs5-sidebar {
+    display: flex;
+  }
+
+
+  .cs5-element-row {
+    grid-template-columns:
+      43px
+      minmax(0,1fr);
+  }
+
+
+  .cs5-element-percent {
+    grid-column:
+      2;
+
+    text-align: left;
+  }
+
+
+  .cs5-footer {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+
+  .cs5-footer
+  > div:last-child {
+    width: 100%;
+  }
+
+
+  .cs5-footer button {
+    flex: 1;
+  }
+
+}

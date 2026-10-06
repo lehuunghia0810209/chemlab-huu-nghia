@@ -1,0 +1,111 @@
+{
+  "id": "/",
+  "name": "ChemLab 5.2 — Hữu Nghĩa Edition",
+  "short_name": "ChemLab",
+  "description": "Interactive Chemistry Workspace — Bảng tuần hoàn, Ion Engine, Compound Studio, Reaction Studio và Virtual Lab.",
+  "lang": "vi",
+  "start_url": "/#periodic",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07090f",
+  "theme_color": "#090c13",
+  "orientation": "any",
+
+  "categories": [
+    "education",
+    "productivity"
+  ],
+
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ChemLab Periodic Explorer trên máy tính"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "ChemLab trên thiết bị di động"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name": "Bảng tuần hoàn",
+      "short_name": "Bảng",
+      "description": "Mở Periodic Explorer",
+      "url": "/#periodic",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Công cụ hóa học",
+      "short_name": "Công cụ",
+      "description": "Mở bộ công cụ ChemLab",
+      "url": "/#tools",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Học tập",
+      "short_name": "Học tập",
+      "description": "Mở trung tâm học tập",
+      "url": "/#learning",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Phòng thí nghiệm",
+      "short_name": "Lab",
+      "description": "Mở Virtual Lab",
+      "url": "/#lab",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
