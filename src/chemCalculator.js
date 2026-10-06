@@ -378,8 +378,8 @@ export function initChemCalculator() {
               <h3>Tính thể tích khí</h3>
               <p>
                 Sử dụng thể tích mol
-                <strong>22,4 L/mol</strong>
-                ở 0 °C và 1 atm.
+                <strong>24,79 L/mol</strong>
+                ở 25 °C và 1 bar.
               </p>
             </div>
           </div>
@@ -435,13 +435,13 @@ export function initChemCalculator() {
             </div>
 
             <div class="cc-equation">
-              V = n × 22,4
+              V = n × 24,79
             </div>
 
           </div>
 
           <div class="cc-note">
-            Giá trị 22,4 L/mol áp dụng ở 0 °C và 1 atm.
+            Giá trị 24,79 L/mol áp dụng ở 25 °C và 1 bar.
           </div>
 
           <div id="cc-gas-error" class="cc-error hidden"></div>
@@ -949,7 +949,7 @@ export function initChemCalculator() {
         }
 
         const volume =
-          n * 22.4
+          n * 24.79
 
         tools.querySelector(
           '#cc-gas-n'

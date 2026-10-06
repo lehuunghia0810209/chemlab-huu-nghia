@@ -1,0 +1,2463 @@
+/* =========================================================
+   CHEMLAB 5 — ZPERIOD INSPIRED LIGHT THEME
+
+   Load AFTER:
+   - workspace.css
+   - design-system.css
+   - chemlab5.css
+   - responsive/*.css
+   - userPreferences.css
+
+   Only affects:
+   html[data-theme="light"]
+
+   Dark mode remains unchanged.
+========================================================= */
+
+
+/* =========================================================
+   1. GLOBAL LIGHT TOKENS
+========================================================= */
+
+html[data-theme="light"] {
+
+  color-scheme:
+    light;
+
+  /* page */
+
+  --zp-page:
+    #edf1f6;
+
+  --zp-page-deep:
+    #e6ebf2;
+
+  --zp-page-soft:
+    #f4f6fa;
+
+
+  /* surface */
+
+  --zp-surface:
+    rgba(255,255,255,.82);
+
+  --zp-surface-strong:
+    rgba(255,255,255,.94);
+
+  --zp-surface-soft:
+    rgba(248,250,253,.82);
+
+  --zp-surface-muted:
+    rgba(236,240,247,.82);
+
+
+  /* text */
+
+  --zp-text:
+    #202635;
+
+  --zp-text-2:
+    #4c566d;
+
+  --zp-text-3:
+    #778198;
+
+  --zp-text-4:
+    #9aa3b4;
+
+
+  /* border */
+
+  --zp-border:
+    rgba(76,86,109,.13);
+
+  --zp-border-strong:
+    rgba(76,86,109,.19);
+
+  --zp-border-soft:
+    rgba(76,86,109,.08);
+
+
+  /* purple */
+
+  --zp-purple:
+    #8b6be8;
+
+  --zp-purple-dark:
+    #7356d6;
+
+  --zp-purple-soft:
+    rgba(139,107,232,.10);
+
+  --zp-purple-soft-2:
+    rgba(139,107,232,.17);
+
+  --zp-purple-border:
+    rgba(139,107,232,.28);
+
+
+  /* blue */
+
+  --zp-blue:
+    #5e8bd8;
+
+  --zp-blue-soft:
+    rgba(94,139,216,.11);
+
+
+  /* shadows */
+
+  --zp-shadow-xs:
+    0 1px 2px
+    rgba(43,53,72,.035);
+
+  --zp-shadow-sm:
+    0 5px 16px
+    rgba(43,53,72,.055);
+
+  --zp-shadow:
+    0 12px 34px
+    rgba(43,53,72,.075);
+
+  --zp-shadow-lg:
+    0 24px 64px
+    rgba(43,53,72,.13);
+
+
+  /* remap ChemLab tokens */
+
+  --cl-bg:
+    var(--zp-page);
+
+  --cl-bg-soft:
+    var(--zp-page-soft);
+
+  --cl-surface:
+    var(--zp-surface-strong);
+
+  --cl-surface-2:
+    var(--zp-surface-soft);
+
+  --cl-surface-3:
+    var(--zp-surface-muted);
+
+  --cl-border:
+    var(--zp-border);
+
+  --cl-border-soft:
+    var(--zp-border-soft);
+
+  --cl-border-strong:
+    var(--zp-border-strong);
+
+  --cl-text:
+    var(--zp-text);
+
+  --cl-text-primary:
+    var(--zp-text);
+
+  --cl-text-soft:
+    var(--zp-text-2);
+
+  --cl-text-secondary:
+    var(--zp-text-2);
+
+  --cl-text-muted:
+    var(--zp-text-3);
+
+  --cl-muted:
+    var(--zp-text-3);
+
+  --cl-muted-2:
+    var(--zp-text-4);
+
+  --cl-primary:
+    var(--zp-purple);
+
+  --cl-primary-soft:
+    var(--zp-purple-soft);
+
+  --cl-primary-border:
+    var(--zp-purple-border);
+
+
+  --v4-bg:
+    var(--zp-page);
+
+  --v4-text:
+    var(--zp-text);
+
+  --v4-text-2:
+    var(--zp-text-2);
+
+  --v4-text-3:
+    var(--zp-text-3);
+
+  --v4-border:
+    var(--zp-border);
+}
+
+
+/* =========================================================
+   2. PAGE
+========================================================= */
+
+html[data-theme="light"],
+html[data-theme="light"] body {
+
+  background:
+    var(--zp-page)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"] body {
+
+  background-image:
+
+    radial-gradient(
+      circle at 8% -8%,
+      rgba(139,107,232,.07),
+      transparent 31%
+    ),
+
+    radial-gradient(
+      circle at 95% 18%,
+      rgba(94,139,216,.055),
+      transparent 28%
+    ),
+
+    linear-gradient(
+      180deg,
+      #f2f4f8 0%,
+      #edf1f6 48%,
+      #e9eef4 100%
+    )
+    !important;
+
+  background-attachment:
+    fixed;
+}
+
+
+/* =========================================================
+   3. APP SHELL
+========================================================= */
+
+html[data-theme="light"]
+.workspace-app {
+
+  background:
+    transparent
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-main {
+
+  background:
+    transparent
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-view {
+
+  background:
+    transparent
+    !important;
+}
+
+
+/* =========================================================
+   4. TOP BAR
+========================================================= */
+
+html[data-theme="light"]
+.workspace-topbar {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(247,249,252,.84)
+    !important;
+
+  box-shadow:
+    0 1px 0
+    rgba(255,255,255,.8),
+    0 6px 22px
+    rgba(55,65,81,.045)
+    !important;
+
+  backdrop-filter:
+    blur(24px)
+    saturate(125%)
+    !important;
+
+  -webkit-backdrop-filter:
+    blur(24px)
+    saturate(125%)
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-brand {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-brand-mark {
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(139,107,232,.12),
+      rgba(139,107,232,.055)
+    )
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  box-shadow:
+    inset 0 1px 0
+    rgba(255,255,255,.75)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-brand-name {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-version {
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  background:
+    var(--zp-purple-soft)
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-title-area strong {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-title-area span {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+/* =========================================================
+   5. TOP BUTTONS
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  .v5-command-button,
+  .v5-top-button
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.70)
+    !important;
+
+  color:
+    var(--zp-text-2)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .v5-command-button,
+  .v5-top-button
+):hover {
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.96)
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-top-button.primary {
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(139,107,232,.15),
+      rgba(139,107,232,.08)
+    )
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-command-button kbd {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    var(--zp-page-soft)
+    !important;
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+/* =========================================================
+   6. SIDEBAR
+========================================================= */
+
+html[data-theme="light"]
+.workspace-sidebar {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(244,247,251,.82)
+    !important;
+
+  backdrop-filter:
+    blur(24px)
+    !important;
+
+  -webkit-backdrop-filter:
+    blur(24px)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-sidebar-label {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.sidebar-button {
+
+  color:
+    #69758b
+    !important;
+
+  background:
+    transparent
+    !important;
+
+  border-color:
+    transparent
+    !important;
+}
+
+
+html[data-theme="light"]
+.sidebar-button:hover {
+
+  background:
+    rgba(255,255,255,.58)
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+}
+
+
+html[data-theme="light"]
+.sidebar-button.active {
+
+  border-color:
+    rgba(139,107,232,.19)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(139,107,232,.12),
+      rgba(255,255,255,.62)
+    )
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm),
+    inset 0 1px 0
+    rgba(255,255,255,.72)
+    !important;
+}
+
+
+html[data-theme="light"]
+.sidebar-bottom-status {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+/* =========================================================
+   7. PAGE HEADINGS
+========================================================= */
+
+html[data-theme="light"]
+.v4-page-head span,
+
+html[data-theme="light"]
+.periodic-top > span {
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .v4-page-head h1,
+  .periodic-top h1,
+  .tool-hub-header h2,
+  .balance-header h2,
+  .cc-header h2,
+  .sol-head h2,
+  .learning-heading h2,
+  .vl-head h2
+) {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .v4-page-head p,
+  .periodic-top p,
+  .tool-hub-header p,
+  .balance-header p,
+  .cc-header p,
+  .sol-head p,
+  .learning-heading p,
+  .vl-head p
+) {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+/* =========================================================
+   8. PERIODIC CONTROLS
+========================================================= */
+
+html[data-theme="light"]
+.periodic-search {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.70)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-search:focus-within {
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.96)
+    !important;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(139,107,232,.08)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-search input {
+
+  background:
+    transparent
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-display-toolbar {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.52)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-segmented {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(227,233,242,.68)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-segmented button {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-segmented button:hover {
+
+  color:
+    var(--zp-text)
+    !important;
+
+  background:
+    rgba(255,255,255,.62)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-segmented button.active {
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  background:
+    rgba(255,255,255,.94)
+    !important;
+
+  box-shadow:
+    0 2px 7px
+    rgba(65,76,95,.08),
+    inset 0 0 0 1px
+    var(--zp-purple-border)
+    !important;
+}
+
+
+html[data-theme="light"]
+.periodic-reset-view {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.58)
+    !important;
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+/* =========================================================
+   9. CATEGORY FILTERS
+========================================================= */
+
+html[data-theme="light"]
+.category-filter {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.58)
+    !important;
+
+  color:
+    var(--zp-text-2)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+html[data-theme="light"]
+.category-filter:hover {
+
+  background:
+    rgba(255,255,255,.90)
+    !important;
+
+  border-color:
+    var(--zp-border-strong)
+    !important;
+}
+
+
+html[data-theme="light"]
+.category-filter.active {
+
+  background:
+    rgba(255,255,255,.98)
+    !important;
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  box-shadow:
+    0 4px 14px
+    rgba(72,63,130,.07)
+    !important;
+}
+
+
+/* =========================================================
+   10. PERIODIC TABLE AREA
+========================================================= */
+
+html[data-theme="light"]
+.periodic-scroll {
+
+  border-radius:
+    20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(223,229,238,.54),
+      rgba(233,237,244,.70)
+    )
+    !important;
+
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(73,84,104,.08)
+    !important;
+
+  padding:
+    20px
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-periodic-table {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+/* =========================================================
+   11. PERIODIC ELEMENT CARDS
+========================================================= */
+
+html[data-theme="light"]
+.workspace-element-card {
+
+  border:
+    1px solid
+    rgba(82,94,116,.13)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.92),
+      rgba(244,247,251,.94)
+    )
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    0 4px 13px
+    rgba(45,57,75,.055),
+    inset 0 1px 0
+    rgba(255,255,255,.86)
+    !important;
+}
+
+
+html[data-theme="light"]
+button.workspace-element-card:hover {
+
+  transform:
+    translateY(-4px)
+    scale(1.035)
+    !important;
+
+  background:
+    #ffffff
+    !important;
+
+  box-shadow:
+    0 12px 28px
+    rgba(45,57,75,.13),
+    inset 0 1px 0
+    rgba(255,255,255,.95)
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-number {
+
+  color:
+    #7b879c
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-symbol {
+
+  color:
+    #252b39
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-name {
+
+  color:
+    #657188
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-mass {
+
+  color:
+    #8c96a8
+    !important;
+}
+
+
+/* =========================================================
+   12. ELEMENT CATEGORY TINTS
+========================================================= */
+
+html[data-theme="light"]
+.workspace-element-card.nonmetal {
+
+  border-color:
+    rgba(8,145,178,.34)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f1fcfe,
+      #e9f7fa
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.noble-gas {
+
+  border-color:
+    rgba(147,51,234,.31)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #faf7ff,
+      #f1eafa
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.alkali-metal {
+
+  border-color:
+    rgba(220,38,38,.28)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fff8f8,
+      #fceced
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.alkaline-earth-metal {
+
+  border-color:
+    rgba(234,88,12,.28)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffaf5,
+      #fdf0e5
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.transition-metal {
+
+  border-color:
+    rgba(202,138,4,.30)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffdf4,
+      #f9f2dc
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.post-transition-metal {
+
+  border-color:
+    rgba(101,163,13,.27)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fbfff4,
+      #eef7df
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.metalloid {
+
+  border-color:
+    rgba(5,150,105,.29)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f3fdf9,
+      #e5f5ee
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.halogen {
+
+  border-color:
+    rgba(37,99,235,.27)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f5f8ff,
+      #e9effb
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.lanthanide {
+
+  border-color:
+    rgba(219,39,119,.26)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fff7fb,
+      #faeaf2
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+.workspace-element-card.actinide {
+
+  border-color:
+    rgba(225,29,72,.26)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fff7f8,
+      #f9e9ed
+    )
+    !important;
+}
+
+
+/* =========================================================
+   13. SERIES CARDS
+========================================================= */
+
+html[data-theme="light"]
+.series-card {
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.60),
+      rgba(232,237,244,.60)
+    )
+    !important;
+
+  color:
+    var(--zp-text-2)
+    !important;
+}
+
+
+/* =========================================================
+   14. TOOL HUB
+========================================================= */
+
+html[data-theme="light"]
+.tool-hub-header {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    radial-gradient(
+      circle at 94% 0%,
+      rgba(139,107,232,.10),
+      transparent 32%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.85),
+      rgba(244,247,251,.82)
+    )
+    !important;
+
+  box-shadow:
+    var(--zp-shadow)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-hub-header
+:is(
+  h2,
+  strong
+) {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-hub-header p {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+/* =========================================================
+   15. TOOL SELECTOR CARDS
+========================================================= */
+
+html[data-theme="light"]
+.tool-selector-card {
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      20%,
+      var(--zp-border)
+    )
+    !important;
+
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      color-mix(
+        in srgb,
+        var(--tool-color)
+        10%,
+        transparent
+      ),
+      transparent 43%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.92),
+      rgba(243,246,250,.91)
+    )
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm),
+    inset 0 1px 0
+    rgba(255,255,255,.86)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-selector-card:hover {
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      42%,
+      rgba(82,94,116,.12)
+    )
+    !important;
+
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      color-mix(
+        in srgb,
+        var(--tool-color)
+        15%,
+        transparent
+      ),
+      transparent 43%
+    ),
+    #ffffff
+    !important;
+
+  box-shadow:
+    0 13px 32px
+    rgba(45,57,75,.11)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-selector-card.active {
+
+  border-color:
+    color-mix(
+      in srgb,
+      var(--tool-color)
+      55%,
+      rgba(82,94,116,.12)
+    )
+    !important;
+
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      color-mix(
+        in srgb,
+        var(--tool-color)
+        18%,
+        transparent
+      ),
+      transparent 43%
+    ),
+    rgba(255,255,255,.98)
+    !important;
+
+  box-shadow:
+    0 13px 34px
+    rgba(45,57,75,.10)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-selector-copy strong {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-selector-copy small {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.tool-active-bar {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.62)
+    !important;
+
+  color:
+    var(--zp-text-2)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+/* =========================================================
+   16. GENERIC TOOL SURFACES
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  .balance-shell,
+  .cc-workspace,
+  .sol-shell,
+  .learning-shell,
+  .learning-start,
+  .learning-question-card,
+  .virtual-lab-v2 .panel
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.88),
+      rgba(246,248,252,.86)
+    )
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+/* =========================================================
+   17. INPUTS
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  input,
+  select,
+  textarea
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.82)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    inset 0 1px 2px
+    rgba(38,48,65,.025)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  input,
+  select,
+  textarea
+):focus {
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  background:
+    #ffffff
+    !important;
+
+  outline:
+    none
+    !important;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(139,107,232,.075)
+    !important;
+}
+
+
+html[data-theme="light"]
+input::placeholder,
+
+html[data-theme="light"]
+textarea::placeholder {
+
+  color:
+    #9ca5b5
+    !important;
+}
+
+
+/* =========================================================
+   18. BUTTONS
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  #view-tools,
+  #view-learning,
+  #view-lab
+)
+button:not(
+  .cc-primary
+):not(
+  .primary-btn
+):not(
+  .learning-start-button
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+}
+
+
+html[data-theme="light"]
+.cc-primary,
+
+html[data-theme="light"]
+.primary-btn,
+
+html[data-theme="light"]
+.learning-start-button {
+
+  border-color:
+    rgba(115,86,214,.30)
+    !important;
+
+  background:
+    linear-gradient(
+      135deg,
+      #8063dc,
+      #9678ea
+    )
+    !important;
+
+  color:
+    #ffffff
+    !important;
+
+  box-shadow:
+    0 8px 18px
+    rgba(112,84,198,.17)
+    !important;
+}
+
+
+html[data-theme="light"]
+.cc-primary:hover,
+
+html[data-theme="light"]
+.primary-btn:hover,
+
+html[data-theme="light"]
+.learning-start-button:hover {
+
+  background:
+    linear-gradient(
+      135deg,
+      #7558d3,
+      #8969df
+    )
+    !important;
+
+  box-shadow:
+    0 10px 22px
+    rgba(112,84,198,.23)
+    !important;
+}
+
+
+/* =========================================================
+   19. CHEM CALCULATOR
+========================================================= */
+
+html[data-theme="light"]
+.cc-tabs {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(229,234,242,.58)
+    !important;
+}
+
+
+html[data-theme="light"]
+.cc-tabs button {
+
+  background:
+    transparent
+    !important;
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.cc-tabs button.active {
+
+  background:
+    rgba(255,255,255,.96)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .cc-input-card,
+  .cc-formula-box,
+  .cc-answer,
+  .cc-result,
+  .cc-element-row,
+  .cc-note
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.62)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+/* =========================================================
+   20. BALANCER
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  .balance-card,
+  .balance-input-card,
+  .balance-result,
+  .balance-equation,
+  .balance-stage
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.65)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+/* =========================================================
+   21. SOLUBILITY
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  .sol-query,
+  .sol-table-scroll,
+  .sol-matrix-head,
+  .sol-note
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.62)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.sol-table-scroll table {
+
+  background:
+    transparent
+    !important;
+}
+
+
+html[data-theme="light"]
+.sol-table-scroll
+:is(
+  th,
+  td
+) {
+
+  border-color:
+    var(--zp-border-soft)
+    !important;
+
+  color:
+    var(--zp-text-2)
+    !important;
+}
+
+
+/* =========================================================
+   22. LEARNING
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  .learning-mode,
+  .difficulty-button,
+  .learning-option
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.64)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .learning-mode,
+  .difficulty-button,
+  .learning-option
+):hover {
+
+  background:
+    rgba(255,255,255,.94)
+    !important;
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+/* =========================================================
+   23. VIRTUAL LAB
+========================================================= */
+
+html[data-theme="light"]
+.virtual-lab-v2 {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.virtual-lab-v2
+.panel {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.90),
+      rgba(243,246,250,.88)
+    )
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+html[data-theme="light"]
+.reagent-card {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.62)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.reagent-card:hover {
+
+  background:
+    #ffffff
+    !important;
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+html[data-theme="light"]
+.reagent-card.active {
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(139,107,232,.11),
+      rgba(255,255,255,.94)
+    )
+    !important;
+
+  border-color:
+    var(--zp-purple-border)
+    !important;
+}
+
+
+html[data-theme="light"]
+.reagent-text strong {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.reagent-text span {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .info-box,
+  .meter,
+  .stage-note,
+  .stage-badge,
+  .vl-controls
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.58)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+/* keep laboratory scene darker for contrast */
+
+html[data-theme="light"]
+.vl-stage {
+
+  background:
+    radial-gradient(
+      circle at 50% 25%,
+      #f6f8fb,
+      #e9edf4
+    )
+    !important;
+}
+
+
+/* =========================================================
+   24. ELEMENT DRAWER
+========================================================= */
+
+html[data-theme="light"]
+.element-drawer {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(246,248,252,.96)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    -24px 0 58px
+    rgba(46,56,75,.15)
+    !important;
+
+  backdrop-filter:
+    blur(28px)
+    !important;
+
+  -webkit-backdrop-filter:
+    blur(28px)
+    !important;
+}
+
+
+html[data-theme="light"]
+.drawer-topbar {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(247,249,252,.91)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .drawer-card,
+  .drawer-stat-card,
+  .drawer-property-card
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.69)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-xs)
+    !important;
+}
+
+
+html[data-theme="light"]
+.drawer-tabs {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(228,233,241,.58)
+    !important;
+}
+
+
+html[data-theme="light"]
+.drawer-tabs button {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.drawer-tabs button.active {
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  background:
+    rgba(255,255,255,.94)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-sm)
+    !important;
+}
+
+
+/* =========================================================
+   25. ATOM / ORBITAL MODALS
+========================================================= */
+
+html[data-theme="light"]
+:is(
+  .atom-modal,
+  .orbital-modal
+) {
+
+  background:
+    rgba(40,49,66,.28)
+    !important;
+
+  backdrop-filter:
+    blur(16px)
+    !important;
+
+  -webkit-backdrop-filter:
+    blur(16px)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .atom-window,
+  .orbital-window
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(247,249,252,.97)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-lg)
+    !important;
+}
+
+
+/* keep 3D render dark — much cleaner */
+
+html[data-theme="light"]
+:is(
+  .atom-canvas,
+  .orbital-canvas
+) {
+
+  border-color:
+    rgba(139,107,232,.20)
+    !important;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #151929,
+      #080b12 72%
+    )
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .atom-info,
+  .orbital-info,
+  .shell-display,
+  .subshell-panel,
+  .orbital-current,
+  .atom-legend,
+  .orbital-phase-legend
+) {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+/* =========================================================
+   26. COMMAND PALETTE
+========================================================= */
+
+html[data-theme="light"]
+.v5-command-layer {
+
+  background:
+    rgba(50,59,77,.26)
+    !important;
+
+  backdrop-filter:
+    blur(14px)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-command-panel {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(248,250,253,.97)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-lg)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-command-search {
+
+  border-color:
+    var(--zp-border)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-command-search input {
+
+  background:
+    transparent
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    none
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-command-item {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.v5-command-item:hover,
+
+html[data-theme="light"]
+.v5-command-item:focus {
+
+  background:
+    rgba(139,107,232,.085)
+    !important;
+}
+
+
+/* =========================================================
+   27. SETTINGS
+========================================================= */
+
+html[data-theme="light"]
+.user-settings-layer {
+
+  background:
+    rgba(45,54,71,.28)
+    !important;
+}
+
+
+html[data-theme="light"]
+.user-settings-panel {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(247,249,252,.97)
+    !important;
+
+  color:
+    var(--zp-text)
+    !important;
+
+  box-shadow:
+    var(--zp-shadow-lg)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .user-settings-head,
+  .user-settings-footer
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(247,249,252,.94)
+    !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .setting-group,
+  .setting-toggle
+) {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(255,255,255,.62)
+    !important;
+}
+
+
+html[data-theme="light"]
+.setting-copy strong {
+
+  color:
+    var(--zp-text)
+    !important;
+}
+
+
+html[data-theme="light"]
+.setting-copy span {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.setting-segmented {
+
+  border-color:
+    var(--zp-border)
+    !important;
+
+  background:
+    rgba(228,233,241,.66)
+    !important;
+}
+
+
+html[data-theme="light"]
+.setting-segmented button {
+
+  color:
+    var(--zp-text-3)
+    !important;
+}
+
+
+html[data-theme="light"]
+.setting-segmented button.active {
+
+  background:
+    rgba(255,255,255,.96)
+    !important;
+
+  color:
+    var(--zp-purple-dark)
+    !important;
+
+  box-shadow:
+    0 2px 8px
+    rgba(45,57,75,.075),
+    inset 0 0 0 1px
+    var(--zp-purple-border)
+    !important;
+}
+
+
+/* =========================================================
+   28. SCROLLBAR
+========================================================= */
+
+html[data-theme="light"]
+* {
+
+  scrollbar-color:
+    rgba(110,120,140,.36)
+    transparent;
+}
+
+
+html[data-theme="light"]
+*::-webkit-scrollbar {
+
+  width:
+    10px;
+
+  height:
+    10px;
+}
+
+
+html[data-theme="light"]
+*::-webkit-scrollbar-track {
+
+  background:
+    transparent;
+}
+
+
+html[data-theme="light"]
+*::-webkit-scrollbar-thumb {
+
+  border:
+    3px solid
+    transparent;
+
+  border-radius:
+    999px;
+
+  background:
+    rgba(110,120,140,.34);
+
+  background-clip:
+    padding-box;
+}
+
+
+html[data-theme="light"]
+*::-webkit-scrollbar-thumb:hover {
+
+  background:
+    rgba(98,108,128,.46);
+
+  background-clip:
+    padding-box;
+}
+
+
+/* =========================================================
+   29. TEXT SELECTION
+========================================================= */
+
+html[data-theme="light"]
+::selection {
+
+  background:
+    rgba(139,107,232,.20);
+
+  color:
+    #29233c;
+}
+
+
+/* =========================================================
+   30. MOBILE
+========================================================= */
+
+@media (
+  max-width:
+    767px
+) {
+
+  html[data-theme="light"]
+  .workspace-topbar {
+
+    background:
+      rgba(246,248,252,.92)
+      !important;
+
+  }
+
+
+  html[data-theme="light"]
+  .workspace-sidebar {
+
+    background:
+      rgba(246,248,252,.94)
+      !important;
+
+    box-shadow:
+      0 -10px 30px
+      rgba(50,60,80,.07)
+      !important;
+
+  }
+
+
+  html[data-theme="light"]
+  .periodic-scroll {
+
+    padding:
+      12px
+      !important;
+
+    border-radius:
+      16px;
+
+  }
+
+
+  html[data-theme="light"]
+  .workspace-element-card {
+
+    box-shadow:
+      0 3px 10px
+      rgba(45,57,75,.06)
+      !important;
+
+  }
+
+
+  html[data-theme="light"]
+  .user-settings-panel {
+
+    background:
+      #f4f7fb
+      !important;
+
+  }
+
+}
+
+
+/* =========================================================
+   31. TABLET
+========================================================= */
+
+@media (
+  min-width:
+    768px
+) and (
+  max-width:
+    1023px
+) {
+
+  html[data-theme="light"]
+  .workspace-sidebar {
+
+    background:
+      rgba(243,246,250,.92)
+      !important;
+
+  }
+
+}

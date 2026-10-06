@@ -23,7 +23,8 @@ import {
 
 
 /* =========================================================
-   TOOLS========================================================= */
+   TOOLS
+========================================================= */
 
 import {
   initEquationBalancer
@@ -87,6 +88,8 @@ import './design-system.css'
 import './chemlab5.css'
 import './responsive/tablet.css'
 import './responsive/mobile.css'
+import './userPreferences.css'
+import './zperiodLight.css'
 
 
 /* =========================================================
@@ -96,6 +99,11 @@ import './responsive/mobile.css'
 import {
   initAccessibility
 } from './accessibility.js'
+
+import {
+  applySavedPreferences,
+  initUserPreferences
+} from './userPreferences.js'
 
 
 /* =========================================================
@@ -116,6 +124,13 @@ const STORAGE_KEYS = {
     'chemlab-v5-last-view'
 
 }
+
+
+/* =========================================================
+   USER PREFERENCES
+========================================================= */
+
+applySavedPreferences()
 
 
 /* =========================================================
@@ -1401,6 +1416,12 @@ safeInit(
 )
 
 
+safeInit(
+  'User Preferences',
+  initUserPreferences
+)
+
+
 /* =========================================================
    VIEW SWITCH
 ========================================================= */
@@ -2103,7 +2124,7 @@ document.addEventListener(
       if (
         event.key ===
         'ArrowDown'
-    ) {
+      ) {
 
         event.preventDefault()
 
