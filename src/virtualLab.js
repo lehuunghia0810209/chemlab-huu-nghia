@@ -1,5 +1,18 @@
 import './virtualLab.css'
 
+import {
+  CHEMICALS,
+  CHEMICAL_ORDER
+} from './lab/chemicals.js'
+
+import {
+  REACTIONS
+} from './lab/reactions.js'
+
+import {
+  findAvailableReactions
+} from './lab/reactionEngine.js'
+
 
 export function initVirtualLab() {
 
@@ -11,1070 +24,27 @@ export function initVirtualLab() {
       'main'
     )
 
+
   if (!host) return
 
 
   document
-    .querySelector('#lab')
+    .querySelector(
+      '#lab'
+    )
     ?.remove()
 
 
-  /* =========================================================
-     CHEMICAL LIBRARY
-  ========================================================= */
+  const reagents =
+    CHEMICALS
 
-  const reagents = {
 
-    water: {
-      name:
-        'Water',
+  const reactions =
+    REACTIONS
 
-      formula:
-        'H₂O',
 
-      color:
-        '#dff7ff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    hcl: {
-      name:
-        'Hydrochloric acid',
-
-      formula:
-        'HCl',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        -1,
-
-      group:
-        'inorganic'
-    },
-
-
-    h2so4: {
-      name:
-        'Sulfuric acid',
-
-      formula:
-        'H₂SO₄',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        -1.2,
-
-      group:
-        'inorganic'
-    },
-
-
-    hno3: {
-      name:
-        'Nitric acid',
-
-      formula:
-        'HNO₃',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        -1,
-
-      group:
-        'inorganic'
-    },
-
-
-    naoh: {
-      name:
-        'Sodium hydroxide',
-
-      formula:
-        'NaOH',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        1,
-
-      group:
-        'inorganic'
-    },
-
-
-    koh: {
-      name:
-        'Potassium hydroxide',
-
-      formula:
-        'KOH',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        1,
-
-      group:
-        'inorganic'
-    },
-
-
-    caoh2: {
-      name:
-        'Calcium hydroxide',
-
-      formula:
-        'Ca(OH)₂',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        .8,
-
-      group:
-        'inorganic'
-    },
-
-
-    nh3: {
-      name:
-        'Ammonia solution',
-
-      formula:
-        'NH₃(aq)',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        .65,
-
-      group:
-        'inorganic'
-    },
-
-
-    nh4cl: {
-      name:
-        'Ammonium chloride',
-
-      formula:
-        'NH₄Cl',
-
-      color:
-        '#f4fbff',
-
-      acidBase:
-        -.22,
-
-      group:
-        'inorganic'
-    },
-
-
-    cuso4: {
-      name:
-        'Copper(II) sulfate',
-
-      formula:
-        'CuSO₄',
-
-      color:
-        '#2d8fff',
-
-      acidBase:
-        -.1,
-
-      group:
-        'inorganic'
-    },
-
-
-    fecl3: {
-      name:
-        'Iron(III) chloride',
-
-      formula:
-        'FeCl₃',
-
-      color:
-        '#d29a3e',
-
-      acidBase:
-        -.15,
-
-      group:
-        'inorganic'
-    },
-
-
-    feso4: {
-      name:
-        'Iron(II) sulfate',
-
-      formula:
-        'FeSO₄',
-
-      color:
-        '#8db487',
-
-      acidBase:
-        -.05,
-
-      group:
-        'inorganic'
-    },
-
-
-    nacl: {
-      name:
-        'Sodium chloride',
-
-      formula:
-        'NaCl',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    agno3: {
-      name:
-        'Silver nitrate',
-
-      formula:
-        'AgNO₃',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        -.05,
-
-      group:
-        'inorganic'
-    },
-
-
-    bacl2: {
-      name:
-        'Barium chloride',
-
-      formula:
-        'BaCl₂',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    bano3: {
-      name:
-        'Barium nitrate',
-
-      formula:
-        'Ba(NO₃)₂',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    pbno3: {
-      name:
-        'Lead(II) nitrate',
-
-      formula:
-        'Pb(NO₃)₂',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    na2co3: {
-      name:
-        'Sodium carbonate',
-
-      formula:
-        'Na₂CO₃',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        .45,
-
-      group:
-        'inorganic'
-    },
-
-
-    nahco3: {
-      name:
-        'Sodium hydrogen carbonate',
-
-      formula:
-        'NaHCO₃',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        .25,
-
-      group:
-        'inorganic'
-    },
-
-
-    na2so4: {
-      name:
-        'Sodium sulfate',
-
-      formula:
-        'Na₂SO₄',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    /* KI — COLORLESS */
-
-    ki: {
-      name:
-        'Potassium iodide',
-
-      formula:
-        'KI',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    kscn: {
-      name:
-        'Potassium thiocyanate',
-
-      formula:
-        'KSCN',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    kmno4: {
-      name:
-        'Potassium permanganate',
-
-      formula:
-        'KMnO₄',
-
-      color:
-        '#7b2cbf',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    k2cr2o7: {
-      name:
-        'Potassium dichromate',
-
-      formula:
-        'K₂Cr₂O₇',
-
-      color:
-        '#f08a24',
-
-      acidBase:
-        0,
-
-      group:
-        'inorganic'
-    },
-
-
-    /* PHENOLPHTHALEIN — COLORLESS */
-
-    indicator: {
-      name:
-        'Phenolphthalein',
-
-      formula:
-        'C₂₀H₁₂O₄',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      indicator:
-        true,
-
-      group:
-        'indicator'
-    },
-
-
-    iodine: {
-      name:
-        'Iodine solution',
-
-      formula:
-        'I₂',
-
-      color:
-        '#9a5b2e',
-
-      acidBase:
-        0,
-
-      group:
-        'indicator'
-    },
-
-
-    /* ORGANIC */
-
-    ethanol: {
-      name:
-        'Ethanol',
-
-      formula:
-        'C₂H₅OH',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'organic'
-    },
-
-
-    ethanoic: {
-      name:
-        'Ethanoic acid',
-
-      formula:
-        'CH₃COOH',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        -.45,
-
-      group:
-        'organic'
-    },
-
-
-    glucose: {
-      name:
-        'Glucose solution',
-
-      formula:
-        'C₆H₁₂O₆',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'organic'
-    },
-
-
-    glycerol: {
-      name:
-        'Glycerol',
-
-      formula:
-        'C₃H₈O₃',
-
-      color:
-        '#f8fbff',
-
-      acidBase:
-        0,
-
-      group:
-        'organic'
-    },
-
-
-    starch: {
-      name:
-        'Starch solution',
-
-      formula:
-        '(C₆H₁₀O₅)ₙ',
-
-      color:
-        '#f3f5fb',
-
-      acidBase:
-        0,
-
-      group:
-        'organic'
-    }
-
-  }
-
-
-  /* =========================================================
-     REACTIONS
-  ========================================================= */
-
-  const reactions = [
-
-    {
-      needs:
-        ['hcl','naoh'],
-
-      title:
-        'Phản ứng trung hòa',
-
-      equation:
-        'HCl + NaOH → NaCl + H₂O',
-
-      desc:
-        'Hydrochloric acid và sodium hydroxide tạo muối và nước.',
-
-      effect:
-        'neutral'
-    },
-
-
-    {
-      needs:
-        ['hcl','koh'],
-
-      title:
-        'Phản ứng trung hòa',
-
-      equation:
-        'HCl + KOH → KCl + H₂O',
-
-      desc:
-        'Hydrochloric acid và potassium hydroxide tạo muối và nước.',
-
-      effect:
-        'neutral'
-    },
-
-
-    {
-      needs:
-        ['h2so4','naoh'],
-
-      title:
-        'Phản ứng trung hòa',
-
-      equation:
-        'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O',
-
-      desc:
-        'Sulfuric acid phản ứng với sodium hydroxide.',
-
-      effect:
-        'neutral'
-    },
-
-
-    {
-      needs:
-        ['cuso4','naoh'],
-
-      title:
-        'Xuất hiện kết tủa xanh',
-
-      equation:
-        'CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄',
-
-      desc:
-        'Tạo kết tủa copper(II) hydroxide màu xanh.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#39a9ff'
-    },
-
-
-    {
-      needs:
-        ['fecl3','naoh'],
-
-      title:
-        'Xuất hiện kết tủa nâu đỏ',
-
-      equation:
-        'FeCl₃ + 3NaOH → Fe(OH)₃↓ + 3NaCl',
-
-      desc:
-        'Tạo kết tủa iron(III) hydroxide màu nâu đỏ.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#a15431'
-    },
-
-
-    {
-      needs:
-        ['feso4','naoh'],
-
-      title:
-        'Xuất hiện kết tủa xanh lục',
-
-      equation:
-        'FeSO₄ + 2NaOH → Fe(OH)₂↓ + Na₂SO₄',
-
-      desc:
-        'Tạo kết tủa iron(II) hydroxide màu xanh lục.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#7aa66d'
-    },
-
-
-    {
-      needs:
-        ['agno3','nacl'],
-
-      title:
-        'Xuất hiện kết tủa trắng',
-
-      equation:
-        'AgNO₃ + NaCl → AgCl↓ + NaNO₃',
-
-      desc:
-        'Tạo kết tủa silver chloride màu trắng.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#f5f5f5'
-    },
-
-
-    {
-      needs:
-        ['agno3','ki'],
-
-      title:
-        'Xuất hiện kết tủa vàng',
-
-      equation:
-        'AgNO₃ + KI → AgI↓ + KNO₃',
-
-      desc:
-        'Tạo kết tủa silver iodide màu vàng.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#efd03f'
-    },
-
-
-    {
-      needs:
-        ['pbno3','ki'],
-
-      title:
-        'Xuất hiện kết tủa vàng',
-
-      equation:
-        'Pb(NO₃)₂ + 2KI → PbI₂↓ + 2KNO₃',
-
-      desc:
-        'Tạo kết tủa lead(II) iodide màu vàng.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#f4d03f'
-    },
-
-
-    {
-      needs:
-        ['bacl2','na2so4'],
-
-      title:
-        'Xuất hiện kết tủa trắng',
-
-      equation:
-        'BaCl₂ + Na₂SO₄ → BaSO₄↓ + 2NaCl',
-
-      desc:
-        'Tạo kết tủa barium sulfate màu trắng.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#f4f4f4'
-    },
-
-
-    {
-      needs:
-        ['na2co3','hcl'],
-
-      title:
-        'Khí CO₂ thoát ra',
-
-      equation:
-        'Na₂CO₃ + 2HCl → 2NaCl + H₂O + CO₂↑',
-
-      desc:
-        'Dung dịch sủi bọt do carbon dioxide được tạo thành.',
-
-      effect:
-        'gas'
-    },
-
-
-    {
-      needs:
-        ['nahco3','hcl'],
-
-      title:
-        'Khí CO₂ thoát ra',
-
-      equation:
-        'NaHCO₃ + HCl → NaCl + H₂O + CO₂↑',
-
-      desc:
-        'Sodium hydrogen carbonate phản ứng với acid tạo carbon dioxide.',
-
-      effect:
-        'gas'
-    },
-
-
-    {
-      needs:
-        ['nh4cl','naoh'],
-
-      title:
-        'Khí NH₃ thoát ra',
-
-      equation:
-        'NH₄Cl + NaOH → NH₃↑ + NaCl + H₂O',
-
-      desc:
-        'Khi gia nhiệt, ammonia được giải phóng.',
-
-      effect:
-        'gas',
-
-      requiresHeat:
-        true,
-
-      minTemp:
-        45
-    },
-
-
-    {
-      needs:
-        ['fecl3','kscn'],
-
-      title:
-        'Dung dịch chuyển đỏ',
-
-      equation:
-        'Fe³⁺ + SCN⁻ ⇌ FeSCN²⁺',
-
-      desc:
-        'Xuất hiện màu đỏ đặc trưng của phức iron(III) thiocyanate.',
-
-      effect:
-        'solutionColor',
-
-      color:
-        '#b71d3d'
-    },
-
-
-    /* ======================
-       ORGANIC REACTIONS
-    ====================== */
-
-    {
-      needs:
-        ['ethanoic','nahco3'],
-
-      title:
-        'Ethanoic acid + bicarbonate',
-
-      equation:
-        'CH₃COOH + NaHCO₃ → CH₃COONa + H₂O + CO₂↑',
-
-      desc:
-        'Phản ứng tạo nhiều bọt carbon dioxide.',
-
-      effect:
-        'gas'
-    },
-
-
-    {
-      needs:
-        ['ethanol','ethanoic','h2so4'],
-
-      title:
-        'Esterification',
-
-      equation:
-        'CH₃COOH + C₂H₅OH ⇌ CH₃COOC₂H₅ + H₂O',
-
-      desc:
-        'Ethanol và ethanoic acid tạo ethyl ethanoate khi gia nhiệt với sulfuric acid làm xúc tác.',
-
-      effect:
-        'ester',
-
-      requiresHeat:
-        true,
-
-      minTemp:
-        55
-    },
-
-
-    {
-      needs:
-        [
-          'glucose',
-          'cuso4',
-          'naoh'
-        ],
-
-      title:
-        'Glucose tạo phức xanh lam',
-
-      equation:
-        'Glucose + Cu(OH)₂ → phức Cu(II) màu xanh lam',
-
-      desc:
-        'Ở nhiệt độ thường glucose hòa tan Cu(OH)₂ tạo dung dịch xanh lam.',
-
-      effect:
-        'dissolvePrecipitate',
-
-      color:
-        '#185adb'
-    },
-
-
-    {
-      needs:
-        [
-          'glucose',
-          'cuso4',
-          'naoh'
-        ],
-
-      title:
-        'Glucose khử Cu(II)',
-
-      equation:
-        'C₆H₁₂O₆ + 2Cu(OH)₂ → C₆H₁₂O₇ + Cu₂O↓ + 2H₂O',
-
-      desc:
-        'Khi đun nóng, xuất hiện kết tủa Cu₂O màu đỏ gạch.',
-
-      effect:
-        'precipitate',
-
-      color:
-        '#c85a32',
-
-      requiresHeat:
-        true,
-
-      minTemp:
-        65
-    },
-
-
-    {
-      needs:
-        [
-          'glycerol',
-          'cuso4',
-          'naoh'
-        ],
-
-      title:
-        'Glycerol tạo phức xanh lam',
-
-      equation:
-        'Glycerol + Cu(OH)₂ → phức Cu(II)',
-
-      desc:
-        'Glycerol hòa tan Cu(OH)₂ tạo dung dịch xanh lam đậm.',
-
-      effect:
-        'dissolvePrecipitate',
-
-      color:
-        '#195ecf'
-    },
-
-
-    {
-      needs:
-        ['starch','iodine'],
-
-      title:
-        'Starch–iodine test',
-
-      equation:
-        'Starch + I₂ → starch–iodine complex',
-
-      desc:
-        'Xuất hiện màu xanh tím đậm đặc trưng của starch.',
-
-      effect:
-        'solutionColor',
-
-      color:
-        '#18204d'
-    }
-
-  ]
-
-
-  const chemOrder = [
-
-    'water',
-
-    'hcl',
-    'h2so4',
-    'hno3',
-
-    'naoh',
-    'koh',
-    'caoh2',
-    'nh3',
-    'nh4cl',
-
-    'cuso4',
-    'fecl3',
-    'feso4',
-
-    'nacl',
-    'agno3',
-    'bacl2',
-    'bano3',
-    'pbno3',
-
-    'na2co3',
-    'nahco3',
-    'na2so4',
-
-    'ki',
-    'kscn',
-    'kmno4',
-    'k2cr2o7',
-
-    'indicator',
-    'iodine',
-
-    'ethanol',
-    'ethanoic',
-    'glucose',
-    'glycerol',
-    'starch'
-
-  ]
+  const chemOrder =
+    CHEMICAL_ORDER
 
 
   /* =========================================================
@@ -1102,7 +72,7 @@ export function initVirtualLab() {
       <div>
 
         <span>
-          CHEMLAB V2
+          CHEMLAB V3
         </span>
 
         <h2>
@@ -1110,8 +80,8 @@ export function initVirtualLab() {
         </h2>
 
         <p>
-          Chọn hoặc kéo hóa chất vào cốc để quan sát
-          phản ứng, pH và nhiệt độ theo thời gian thực.
+          Khám phá phản ứng vô cơ và hữu cơ bằng mô phỏng.
+          Chọn hóa chất, điều chỉnh lượng, gia nhiệt và quan sát hiện tượng.
         </p>
 
       </div>
@@ -1132,11 +102,17 @@ export function initVirtualLab() {
 
     <div class="vl-layout">
 
+
+      <!-- ==================================================
+           CHEMICAL LIBRARY
+      =================================================== -->
+
       <aside class="vl-shelf panel">
 
         <div class="panel-label">
           HÓA CHẤT
         </div>
+
 
         <h3>
           Kho thí nghiệm
@@ -1148,12 +124,16 @@ export function initVirtualLab() {
           <input
             id="lab-reagent-search"
             type="search"
-            placeholder="Tìm HCl, Ethanol..."
+            placeholder="Tìm HCl, Ethanol, Glucose..."
             autocomplete="off"
+            aria-label="Tìm hóa chất"
           >
 
 
-          <select id="lab-reagent-group">
+          <select
+            id="lab-reagent-group"
+            aria-label="Lọc nhóm chính"
+          >
 
             <option value="all">
               Tất cả
@@ -1168,12 +148,28 @@ export function initVirtualLab() {
             </option>
 
             <option value="indicator">
-              Chỉ thị
+              Chỉ thị / thuốc thử
             </option>
 
           </select>
 
         </div>
+
+
+        <select
+          id="lab-reagent-family"
+          aria-label="Lọc họ hóa chất"
+          style="
+            width:100%;
+            margin:0 0 10px;
+          "
+        >
+
+          <option value="all">
+            Tất cả nhóm chức / họ chất
+          </option>
+
+        </select>
 
 
         <div
@@ -1188,11 +184,18 @@ export function initVirtualLab() {
             LƯỢNG THÊM
           </span>
 
+
           <div>
+
+            <button data-volume="1">
+              1 mL
+            </button>
+
 
             <button data-volume="10">
               10 mL
             </button>
+
 
             <button
               data-volume="25"
@@ -1200,6 +203,7 @@ export function initVirtualLab() {
             >
               25 mL
             </button>
+
 
             <button data-volume="50">
               50 mL
@@ -1221,7 +225,12 @@ export function initVirtualLab() {
       </aside>
 
 
+      <!-- ==================================================
+           MAIN LAB
+      =================================================== -->
+
       <div class="vl-main">
+
 
         <div
           class="vl-stage panel"
@@ -1259,6 +268,7 @@ export function initVirtualLab() {
 
           <div class="beaker-scene">
 
+
             <div
               class="steam-layer"
               id="steam-layer"
@@ -1277,12 +287,24 @@ export function initVirtualLab() {
 
                 <div class="beaker-inner">
 
+
                   <div class="beaker-scale">
 
-                    <span>100</span>
-                    <span>75</span>
-                    <span>50</span>
-                    <span>25</span>
+                    <span>
+                      250
+                    </span>
+
+                    <span>
+                      188
+                    </span>
+
+                    <span>
+                      125
+                    </span>
+
+                    <span>
+                      63
+                    </span>
 
                   </div>
 
@@ -1296,10 +318,12 @@ export function initVirtualLab() {
 
                       <div class="liquid-top"></div>
 
+
                       <div
                         class="bubble-layer"
                         id="bubble-layer"
                       ></div>
+
 
                       <div
                         class="precipitate-layer"
@@ -1357,23 +381,31 @@ export function initVirtualLab() {
         </div>
 
 
+        <!-- ==================================================
+             CONTROLS
+        =================================================== -->
+
         <div class="vl-controls panel">
 
           <button id="stir-button">
             Khuấy
           </button>
 
+
           <button id="heat-button">
             Bật lửa
           </button>
+
 
           <button id="empty-button">
             Đổ bỏ
           </button>
 
+
           <button id="reset-lab">
             Đặt lại
           </button>
+
 
           <span>
             Kéo ngang trên cốc để nghiêng
@@ -1382,13 +414,19 @@ export function initVirtualLab() {
         </div>
 
 
+        <!-- ==================================================
+             DASHBOARD
+        =================================================== -->
+
         <div class="vl-dashboard">
+
 
           <div class="meter panel">
 
             <span>
               NHIỆT ĐỘ
             </span>
+
 
             <strong>
 
@@ -1400,8 +438,11 @@ export function initVirtualLab() {
 
             </strong>
 
+
             <div class="bar">
+
               <i id="temperature-bar"></i>
+
             </div>
 
           </div>
@@ -1413,12 +454,16 @@ export function initVirtualLab() {
               ĐỘ pH
             </span>
 
+
             <strong id="ph-value">
               7.0
             </strong>
 
+
             <div class="ph-bar">
+
               <i id="ph-marker"></i>
+
             </div>
 
           </div>
@@ -1430,9 +475,11 @@ export function initVirtualLab() {
               DUNG DỊCH
             </span>
 
+
             <strong id="solution-count">
               0 chất
             </strong>
+
 
             <small id="selected-name">
               Chưa chọn hóa chất
@@ -1445,11 +492,16 @@ export function initVirtualLab() {
       </div>
 
 
+      <!-- ==================================================
+           ANALYSIS
+      =================================================== -->
+
       <aside class="vl-side panel">
 
         <div class="panel-label">
           PHÂN TÍCH
         </div>
+
 
         <h3>
           Quan sát
@@ -1462,9 +514,11 @@ export function initVirtualLab() {
             HIỆN TƯỢNG
           </span>
 
+
           <strong id="observation-title">
             Chưa có hiện tượng
           </strong>
+
 
           <p id="observation-text">
             Thêm hóa chất vào cốc để bắt đầu mô phỏng.
@@ -1479,6 +533,7 @@ export function initVirtualLab() {
             PHƯƠNG TRÌNH
           </span>
 
+
           <strong id="reaction-equation">
             —
           </strong>
@@ -1491,6 +546,7 @@ export function initVirtualLab() {
           <span>
             TRONG CỐC
           </span>
+
 
           <div
             id="composition-list"
@@ -1513,6 +569,7 @@ export function initVirtualLab() {
             <span>
               NHẬT KÝ
             </span>
+
 
             <button id="clear-log">
               Xóa
@@ -1537,7 +594,6 @@ export function initVirtualLab() {
       </aside>
 
     </div>
-
   `
 
 
@@ -1547,7 +603,7 @@ export function initVirtualLab() {
 
 
   /* =========================================================
-     ELEMENT REFERENCES
+     REFERENCES
   ========================================================= */
 
   const reagentList =
@@ -1565,6 +621,12 @@ export function initVirtualLab() {
   const reagentGroup =
     section.querySelector(
       '#lab-reagent-group'
+    )
+
+
+  const reagentFamily =
+    section.querySelector(
+      '#lab-reagent-family'
     )
 
 
@@ -1746,6 +808,10 @@ export function initVirtualLab() {
     {}
 
 
+  let additionHistory =
+    []
+
+
   let triggeredReactions =
     new Set()
 
@@ -1758,8 +824,8 @@ export function initVirtualLab() {
     '#7ecbff'
 
 
-  let indicatorAdded =
-    false
+  let lastIndicator =
+    null
 
 
   let tiltCurrent =
@@ -1783,109 +849,270 @@ export function initVirtualLab() {
 
 
   /* =========================================================
+     FAMILY FILTER
+  ========================================================= */
+
+  buildFamilyOptions()
+
+
+  function buildFamilyOptions() {
+
+    const families =
+      [
+        ...new Set(
+
+          chemOrder
+            .map(
+              id =>
+                reagents[id]
+                  ?.family
+            )
+            .filter(
+              Boolean
+            )
+
+        )
+      ]
+        .sort(
+          (
+            a,
+            b
+          ) =>
+            a.localeCompare(
+              b
+            )
+        )
+
+
+    families.forEach(
+      family => {
+
+        const option =
+          document.createElement(
+            'option'
+          )
+
+
+        option.value =
+          family
+
+
+        option.textContent =
+          formatFamilyName(
+            family
+          )
+
+
+        reagentFamily.appendChild(
+          option
+        )
+
+      }
+    )
+
+  }
+
+
+  /* =========================================================
      CHEMICAL CARDS
   ========================================================= */
 
-  chemOrder.forEach(
-    id => {
-
-      const reagent =
-        reagents[id]
+  renderChemicalCards()
 
 
-      const card =
-        document.createElement(
-          'button'
-        )
+  function renderChemicalCards() {
+
+    reagentList.innerHTML =
+      ''
 
 
-      card.className =
-        'reagent-card'
+    chemOrder.forEach(
+      id => {
+
+        const reagent =
+          reagents[id]
 
 
-      card.draggable =
-        true
-
-
-      card.dataset.reagent =
-        id
-
-
-      card.dataset.group =
-        reagent.group
-
-
-      card.dataset.search =
-        (
-          reagent.formula +
-          ' ' +
-          reagent.name
-        )
-          .toLowerCase()
-
-
-      card.innerHTML = `
-
-        <div
-          class="bottle"
-          style="--c:${reagent.color}"
-        >
-
-          <i></i>
-          <b></b>
-
-        </div>
-
-
-        <div class="reagent-text">
-
-          <strong>
-            ${reagent.formula}
-          </strong>
-
-          <span>
-            ${reagent.name}
-          </span>
-
-        </div>
-
-      `
-
-
-      card.addEventListener(
-        'click',
-
-        () => {
-          selectReagent(id)
+        if (!reagent) {
+          return
         }
-      )
 
 
-      card.addEventListener(
-        'dragstart',
+        const card =
+          document.createElement(
+            'button'
+          )
 
-        event => {
 
-          event
-            .dataTransfer
-            .setData(
-              'text/plain',
-              id
+        card.type =
+          'button'
+
+
+        card.className =
+          'reagent-card'
+
+
+        card.draggable =
+          true
+
+
+        card.dataset.reagent =
+          id
+
+
+        card.dataset.group =
+          reagent.category ||
+          'inorganic'
+
+
+        card.dataset.family =
+          reagent.family ||
+          'other'
+
+
+        card.dataset.search =
+          [
+
+            reagent.formula,
+
+            reagent.name,
+
+            reagent.category,
+
+            reagent.family,
+
+            ...(
+              reagent.tags ||
+              []
+            )
+
+          ]
+
+            .filter(
+              Boolean
+            )
+
+            .join(
+              ' '
+            )
+
+            .toLowerCase()
+
+
+        const hazardText =
+          (
+            reagent.hazards ||
+            []
+          )
+            .join(
+              ', '
             )
 
 
-          selectReagent(id)
+        card.title =
+          [
 
-        }
-      )
+            reagent.name,
+
+            reagent.family
+              ? formatFamilyName(
+                  reagent.family
+                )
+              : '',
+
+            hazardText
+              ? `Simulation warning: ${hazardText}`
+              : ''
+
+          ]
+
+            .filter(
+              Boolean
+            )
+
+            .join(
+              ' · '
+            )
 
 
-      reagentList.appendChild(
-        card
-      )
+        card.innerHTML = `
 
-    }
-  )
+          <div
+            class="bottle"
+            style="
+              --c:${
+                reagent.solutionColor ||
+                reagent.color ||
+                '#f8fbff'
+              }
+            "
+          >
+
+            <i></i>
+
+            <b></b>
+
+          </div>
+
+
+          <div class="reagent-text">
+
+            <strong>
+              ${reagent.formula}
+            </strong>
+
+
+            <span>
+              ${reagent.name}
+            </span>
+
+          </div>
+
+        `
+
+
+        card.addEventListener(
+          'click',
+
+          () => {
+
+            selectReagent(
+              id
+            )
+
+          }
+        )
+
+
+        card.addEventListener(
+          'dragstart',
+
+          event => {
+
+            event
+              .dataTransfer
+              ?.setData(
+                'text/plain',
+                id
+              )
+
+
+            selectReagent(
+              id
+            )
+
+          }
+        )
+
+
+        reagentList.appendChild(
+          card
+        )
+
+      }
+    )
+
+  }
 
 
   /* =========================================================
@@ -1899,12 +1126,18 @@ export function initVirtualLab() {
         reagentSearch.value ||
         ''
       )
+
         .trim()
+
         .toLowerCase()
 
 
     const group =
       reagentGroup.value
+
+
+    const family =
+      reagentFamily.value
 
 
     reagentList
@@ -1919,19 +1152,34 @@ export function initVirtualLab() {
             card
               .dataset
               .search
-              .includes(query)
+              .includes(
+                query
+              )
 
 
           const groupMatch =
-            group === 'all' ||
-            card.dataset.group ===
+            group ===
+              'all' ||
+            card
+              .dataset
+              .group ===
               group
+
+
+          const familyMatch =
+            family ===
+              'all' ||
+            card
+              .dataset
+              .family ===
+              family
 
 
           card.hidden =
             !(
               queryMatch &&
-              groupMatch
+              groupMatch &&
+              familyMatch
             )
 
         }
@@ -1952,13 +1200,28 @@ export function initVirtualLab() {
   )
 
 
+  reagentFamily.addEventListener(
+    'change',
+    applyReagentFilter
+  )
+
+
   /* =========================================================
-     SELECT
+     SELECT CHEMICAL
   ========================================================= */
 
   function selectReagent(
     id
   ) {
+
+    const reagent =
+      reagents[id]
+
+
+    if (!reagent) {
+      return
+    }
+
 
     selectedReagent =
       id
@@ -1972,10 +1235,14 @@ export function initVirtualLab() {
         card => {
 
           card.classList.toggle(
+
             'active',
 
-            card.dataset.reagent ===
+            card
+              .dataset
+              .reagent ===
               id
+
           )
 
         }
@@ -1987,15 +1254,18 @@ export function initVirtualLab() {
 
 
     selectedName.textContent =
-      reagents[id].name
+      reagent.name
 
 
     messageTitle.textContent =
-      reagents[id].formula
+      reagent.formula
 
 
     message.textContent =
-      'Nhấn “Thêm vào cốc” hoặc kéo hóa chất vào cốc.'
+      `${reagent.name} · ${formatFamilyName(
+        reagent.family ||
+        'other'
+      )}. Nhấn “Thêm vào cốc” hoặc kéo hóa chất vào cốc.`
 
   }
 
@@ -2018,7 +1288,9 @@ export function initVirtualLab() {
 
             selectedVolume =
               Number(
-                button.dataset.volume
+                button
+                  .dataset
+                  .volume
               )
 
 
@@ -2031,7 +1303,8 @@ export function initVirtualLab() {
 
                   item.classList.toggle(
                     'active',
-                    item === button
+                    item ===
+                      button
                   )
 
                 }
@@ -2045,7 +1318,7 @@ export function initVirtualLab() {
 
 
   /* =========================================================
-     ADD CHEMICAL
+     ADD BUTTON
   ========================================================= */
 
   addButton.addEventListener(
@@ -2068,12 +1341,17 @@ export function initVirtualLab() {
   )
 
 
+  /* =========================================================
+     DRAG DROP
+  ========================================================= */
+
   beakerArea.addEventListener(
     'dragover',
 
     event => {
 
       event.preventDefault()
+
 
       beakerArea
         .classList
@@ -2118,12 +1396,13 @@ export function initVirtualLab() {
       const id =
         event
           .dataTransfer
-          .getData(
+          ?.getData(
             'text/plain'
           )
 
 
       if (
+        id &&
         reagents[id]
       ) {
 
@@ -2138,6 +1417,10 @@ export function initVirtualLab() {
   )
 
 
+  /* =========================================================
+     ADD CHEMICAL
+  ========================================================= */
+
   function addReagent(
     id,
     amount
@@ -2145,6 +1428,51 @@ export function initVirtualLab() {
 
     const reagent =
       reagents[id]
+
+
+    if (!reagent) {
+      return
+    }
+
+
+    const acceptedAmount =
+      Math.min(
+
+        Math.max(
+          Number(
+            amount
+          ) ||
+          0,
+
+          0
+        ),
+
+        Math.max(
+          250 -
+          totalVolume,
+
+          0
+        )
+
+      )
+
+
+    if (
+      acceptedAmount <=
+      0
+    ) {
+
+      messageTitle.textContent =
+        'Cốc đã đầy'
+
+
+      message.textContent =
+        'Cốc mô phỏng chỉ chứa tối đa 250 mL.'
+
+
+      return
+
+    }
 
 
     const wasEmpty =
@@ -2157,41 +1485,56 @@ export function initVirtualLab() {
         mixture[id] ||
         0
       ) +
-      amount
+      acceptedAmount
 
 
-    totalVolume =
-      Math.min(
-        250,
+    totalVolume +=
+      acceptedAmount
 
-        totalVolume +
-        amount
+
+    if (
+      !additionHistory
+        .includes(
+          id
+        )
+    ) {
+
+      additionHistory.push(
+        id
       )
+
+    }
 
 
     if (
       reagent.indicator
     ) {
 
-      indicatorAdded =
-        true
+      lastIndicator =
+        reagent.indicator
 
     }
 
 
+    const reagentColor =
+      reagent.solutionColor ||
+      reagent.color ||
+      '#f8fbff'
+
+
     animateDrop(
-      reagent.color
+      reagentColor
     )
 
 
     currentColor =
       wasEmpty
 
-        ? reagent.color
+        ? reagentColor
 
         : mixColors(
             currentColor,
-            reagent.color
+            reagentColor
           )
 
 
@@ -2203,7 +1546,9 @@ export function initVirtualLab() {
 
 
     addLog(
-      `Đã thêm ${amount} mL ${reagent.formula}.`
+      `Đã thêm ${formatNumber(
+        acceptedAmount
+      )} mL ${reagent.formula}.`
     )
 
 
@@ -2212,10 +1557,16 @@ export function initVirtualLab() {
 
 
     message.textContent =
-      `${reagent.name} đã được thêm vào cốc.`
+      `${formatNumber(
+        acceptedAmount
+      )} mL ${reagent.name} đã được thêm vào cốc.`
 
   }
 
+
+  /* =========================================================
+     DROP EFFECT
+  ========================================================= */
 
   function animateDrop(
     color
@@ -2240,7 +1591,11 @@ export function initVirtualLab() {
 
 
       drop.style.left =
-        `${47 + Math.random() * 6}%`
+        `${
+          47 +
+          Math.random() *
+          6
+        }%`
 
 
       drop.style.animationDelay =
@@ -2254,7 +1609,9 @@ export function initVirtualLab() {
 
       setTimeout(
         () => {
+
           drop.remove()
+
         },
 
         1000
@@ -2283,22 +1640,26 @@ export function initVirtualLab() {
 
 
   /* =========================================================
-     LIQUID COLOR
+     LIQUID
   ========================================================= */
 
   function updateLiquid() {
 
     const height =
       Math.max(
+
         0,
 
         Math.min(
+
           78,
 
           totalVolume /
           250 *
           78
+
         )
+
       )
 
 
@@ -2307,13 +1668,17 @@ export function initVirtualLab() {
 
 
     liquid.style.setProperty(
+
       '--liquid-color',
+
       getDisplayedColor()
+
     )
 
 
     stateText.textContent =
-      totalVolume > 0
+      totalVolume >
+      0
 
         ? 'Có dung dịch'
 
@@ -2321,23 +1686,94 @@ export function initVirtualLab() {
 
 
     volumeText.textContent =
-      `${Math.round(totalVolume)} mL`
+      `${formatNumber(
+        totalVolume
+      )} mL`
 
   }
 
 
+  /* =========================================================
+     INDICATORS
+  ========================================================= */
+
   function getDisplayedColor() {
 
-    const ph =
+    const pH =
       calculatePH()
 
 
     if (
-      indicatorAdded &&
-      ph > 8.2
+      lastIndicator ===
+      'phenolphthalein'
     ) {
 
-      return '#ef4da0'
+      return pH >
+        8.2
+
+        ? '#ef4da0'
+
+        : currentColor
+
+    }
+
+
+    if (
+      lastIndicator ===
+      'methylOrange'
+    ) {
+
+      if (
+        pH <
+        3.1
+      ) {
+
+        return '#e24735'
+
+      }
+
+
+      if (
+        pH <
+        4.4
+      ) {
+
+        return '#ee8c35'
+
+      }
+
+
+      return '#e4c33d'
+
+    }
+
+
+    if (
+      lastIndicator ===
+      'litmus'
+    ) {
+
+      if (
+        pH <
+        5
+      ) {
+
+        return '#d34a55'
+
+      }
+
+
+      if (
+        pH >
+        8
+      ) {
+
+        return '#4b64d8'
+
+      }
+
+
+      return '#806bb0'
 
     }
 
@@ -2353,70 +1789,52 @@ export function initVirtualLab() {
 
   function checkReactions() {
 
-    reactions.forEach(
-      (
-        reaction,
-        index
-      ) => {
-
-        const ready =
-          reaction
-            .needs
-            .every(
-              id =>
-                mixture[id] > 0
-            )
+    const pH =
+      calculatePH()
 
 
-        const blocked =
-          reaction
-            .forbids
-            ?.some(
-              id =>
-                mixture[id] > 0
-            )
+    const available =
+      findAvailableReactions(
 
+        reactions,
 
-        const key =
-          `${index}-${reaction.needs.join('-')}`
+        {
 
+          mixture,
 
-        if (
-          !ready ||
-          blocked ||
-          triggeredReactions.has(
-            key
-          )
-        ) {
+          temperature,
 
-          return
+          heating,
+
+          pH,
+
+          additionHistory,
+
+          triggeredIds:
+            triggeredReactions,
+
+          lightOn:
+            false
 
         }
 
-
-        if (
-          reaction.requiresHeat &&
-          !heating
-        ) {
-
-          return
-
-        }
+      )
 
 
-        if (
-          reaction.minTemp &&
-          temperature <
-            reaction.minTemp
-        ) {
+    if (
+      !available.length
+    ) {
 
-          return
+      return
 
-        }
+    }
 
+
+    available.forEach(
+      reaction => {
 
         triggeredReactions.add(
-          key
+          reaction.id
         )
 
 
@@ -2425,11 +1843,14 @@ export function initVirtualLab() {
 
 
         observationText.textContent =
-          reaction.desc
+          reaction.description ||
+          reaction.desc ||
+          ''
 
 
         equationText.textContent =
-          reaction.equation
+          reaction.equation ||
+          '—'
 
 
         messageTitle.textContent =
@@ -2437,99 +1858,21 @@ export function initVirtualLab() {
 
 
         message.textContent =
-          reaction.equation
+          reaction.equation ||
+          reaction.description ||
+          'Phản ứng đã xảy ra.'
 
 
-        if (
-          reaction.effect ===
-          'neutral'
-        ) {
+        reaction.effects
+          ?.forEach(
+            effect => {
 
-          flashReaction()
+              applyReactionEffect(
+                effect
+              )
 
-        }
-
-
-        if (
-          reaction.effect ===
-          'precipitate'
-        ) {
-
-          precipitate =
-            reaction.color
-
-
-          createPrecipitate(
-            reaction.color
+            }
           )
-
-        }
-
-
-        if (
-          reaction.effect ===
-          'gas'
-        ) {
-
-          createBubbles(
-            28
-          )
-
-        }
-
-
-        if (
-          reaction.effect ===
-          'solutionColor'
-        ) {
-
-          currentColor =
-            reaction.color
-
-
-          updateLiquid()
-
-          flashReaction()
-
-        }
-
-
-        if (
-          reaction.effect ===
-          'dissolvePrecipitate'
-        ) {
-
-          precipitate =
-            null
-
-
-          precipitateLayer.innerHTML =
-            ''
-
-
-          currentColor =
-            reaction.color
-
-
-          updateLiquid()
-
-          flashReaction()
-
-        }
-
-
-        if (
-          reaction.effect ===
-          'ester'
-        ) {
-
-          flashReaction()
-
-          createBubbles(
-            8
-          )
-
-        }
 
 
         addLog(
@@ -2537,15 +1880,129 @@ export function initVirtualLab() {
         )
 
 
-        addLog(
+        if (
           reaction.equation
-        )
+        ) {
+
+          addLog(
+            reaction.equation
+          )
+
+        }
 
       }
     )
 
   }
 
+
+  /* =========================================================
+     EFFECTS
+  ========================================================= */
+
+  function applyReactionEffect(
+    effect
+  ) {
+
+    if (!effect) {
+      return
+    }
+
+
+    switch (
+      effect.type
+    ) {
+
+
+      case 'gas':
+
+        createBubbles(
+          effect.amount ||
+          20
+        )
+
+        break
+
+
+      case 'precipitate':
+
+        precipitate =
+          effect.color ||
+          '#f5f5f5'
+
+
+        createPrecipitate(
+          precipitate
+        )
+
+        break
+
+
+      case 'removePrecipitate':
+
+        precipitate =
+          null
+
+
+        precipitateLayer.innerHTML =
+          ''
+
+        break
+
+
+      case 'solutionColor':
+
+        if (
+          effect.color
+        ) {
+
+          currentColor =
+            effect.color
+
+
+          updateLiquid()
+
+        }
+
+        break
+
+
+      case 'flash':
+
+        flashReaction()
+
+        break
+
+
+      case 'message':
+
+        if (
+          effect.text
+        ) {
+
+          message.textContent =
+            effect.text
+
+        }
+
+        break
+
+
+      default:
+
+        console.warn(
+          '[Virtual Lab] Unknown reaction effect:',
+          effect
+        )
+
+    }
+
+  }
+
+
+  /* =========================================================
+     GAS
+  ========================================================= */
 
   function createBubbles(
     count = 12
@@ -2603,7 +2060,9 @@ export function initVirtualLab() {
 
           setTimeout(
             () => {
+
               bubble.remove()
+
             },
 
             3000
@@ -2611,13 +2070,18 @@ export function initVirtualLab() {
 
         },
 
-        i * 55
+        i *
+        55
       )
 
     }
 
   }
 
+
+  /* =========================================================
+     PRECIPITATE
+  ========================================================= */
 
   function createPrecipitate(
     color
@@ -2654,7 +2118,10 @@ export function initVirtualLab() {
 
 
       particle.style.animationDelay =
-        `${Math.random() * 500}ms`
+        `${
+          Math.random() *
+          500
+        }ms`
 
 
       precipitateLayer.appendChild(
@@ -2665,6 +2132,10 @@ export function initVirtualLab() {
 
   }
 
+
+  /* =========================================================
+     FLASH
+  ========================================================= */
 
   function flashReaction() {
 
@@ -2719,8 +2190,11 @@ export function initVirtualLab() {
         ) => {
 
           balance +=
-            reagents[id]
-              .acidBase *
+            Number(
+              reagents[id]
+                ?.acidBase ||
+              0
+            ) *
             volume
 
         }
@@ -2728,6 +2202,7 @@ export function initVirtualLab() {
 
 
     return clamp(
+
       7 +
       balance /
       Math.max(
@@ -2737,7 +2212,9 @@ export function initVirtualLab() {
       6,
 
       1,
+
       13
+
     )
 
   }
@@ -2749,43 +2226,24 @@ export function initVirtualLab() {
 
   function updateDashboard() {
 
-    const ph =
+    const pH =
       calculatePH()
 
 
     phText.textContent =
-      ph.toFixed(1)
+      pH.toFixed(
+        1
+      )
 
 
     phMarker.style.left =
-      `${ph / 14 * 100}%`
+      `${pH / 14 * 100}%`
 
 
     liquid.style.setProperty(
       '--liquid-color',
       getDisplayedColor()
     )
-
-
-    const count =
-      Object
-        .keys(
-          mixture
-        )
-        .filter(
-          id =>
-            mixture[id] >
-            0
-        )
-        .length
-
-
-    solutionCount.textContent =
-      `${count} chất`
-
-
-    compositionList.innerHTML =
-      ''
 
 
     const entries =
@@ -2800,8 +2258,17 @@ export function initVirtualLab() {
               volume
             ]
           ) =>
-            volume > 0
+            volume >
+            0
         )
+
+
+    solutionCount.textContent =
+      `${entries.length} chất`
+
+
+    compositionList.innerHTML =
+      ''
 
 
     if (
@@ -2834,11 +2301,18 @@ export function initVirtualLab() {
         row.innerHTML = `
 
           <span>
-            ${reagents[id].formula}
+            ${
+              reagents[id]
+                ?.formula ||
+              id
+            }
           </span>
 
+
           <strong>
-            ${Math.round(volume)} mL
+            ${formatNumber(
+              volume
+            )} mL
           </strong>
 
         `
@@ -2882,9 +2356,11 @@ export function initVirtualLab() {
     const time =
       new Date()
         .toLocaleTimeString(
+
           'vi-VN',
 
           {
+
             hour:
               '2-digit',
 
@@ -2893,7 +2369,9 @@ export function initVirtualLab() {
 
             second:
               '2-digit'
+
           }
+
         )
 
 
@@ -2903,8 +2381,11 @@ export function initVirtualLab() {
         ${time}
       </span>
 
+
       <p>
-        ${text}
+        ${escapeHTML(
+          text
+        )}
       </p>
 
     `
@@ -2978,6 +2459,7 @@ export function initVirtualLab() {
 
 
         void beakerWrap.offsetWidth
+
         void liquid.offsetWidth
 
 
@@ -3026,6 +2508,14 @@ export function initVirtualLab() {
         addLog(
           'Đã khuấy dung dịch.'
         )
+
+
+        messageTitle.textContent =
+          'Đang khuấy'
+
+
+        message.textContent =
+          'Dung dịch đang được trộn đều.'
 
       }
     )
@@ -3129,6 +2619,10 @@ export function initVirtualLab() {
       {}
 
 
+    additionHistory =
+      []
+
+
     totalVolume =
       0
 
@@ -3137,8 +2631,8 @@ export function initVirtualLab() {
       null
 
 
-    indicatorAdded =
-      false
+    lastIndicator =
+      null
 
 
     currentColor =
@@ -3166,6 +2660,14 @@ export function initVirtualLab() {
 
     equationText.textContent =
       '—'
+
+
+    messageTitle.textContent =
+      'Cốc đã trống'
+
+
+    message.textContent =
+      'Bạn có thể bắt đầu một thí nghiệm mới.'
 
 
     updateLiquid()
@@ -3223,6 +2725,10 @@ export function initVirtualLab() {
       null
 
 
+    selectedVolume =
+      25
+
+
     addButton.disabled =
       true
 
@@ -3248,95 +2754,168 @@ export function initVirtualLab() {
       )
 
 
+    section
+      .querySelectorAll(
+        '[data-volume]'
+      )
+      .forEach(
+        button => {
+
+          button.classList.toggle(
+
+            'active',
+
+            Number(
+              button
+                .dataset
+                .volume
+            ) ===
+              25
+
+          )
+
+        }
+      )
+
+
+    reagentSearch.value =
+      ''
+
+
+    reagentGroup.value =
+      'all'
+
+
+    reagentFamily.value =
+      'all'
+
+
+    applyReagentFilter()
+
+
     logList.innerHTML =
       '<p class="log-empty">Chưa có hoạt động.</p>'
+
+
+    messageTitle.textContent =
+      'Bắt đầu thí nghiệm'
+
+
+    message.textContent =
+      'Chọn một hóa chất bên trái để bắt đầu.'
 
   }
 
 
   /* =========================================================
-     TEMPERATURE ENGINE
+     TEMPERATURE
   ========================================================= */
 
-  setInterval(
-    () => {
+  const temperatureTimer =
+    window.setInterval(
+      () => {
 
-      if (
-        heating &&
-        totalVolume > 0
-      ) {
+        if (
+          heating &&
+          totalVolume >
+          0
+        ) {
 
-        temperature =
-          Math.min(
-            100,
+          temperature =
+            Math.min(
 
-            temperature +
-            .2
-          )
+              100,
 
-      }
+              temperature +
+              0.2
 
-      else if (
-        temperature > 25
-      ) {
+            )
 
-        temperature =
-          Math.max(
-            25,
+        }
 
-            temperature -
-            .08
-          )
+        else if (
+          temperature >
+          25
+        ) {
 
-      }
+          temperature =
+            Math.max(
 
+              25,
 
-      tempText.textContent =
-        temperature
-          .toFixed(1)
-
-
-      tempBar.style.width =
-        `${
-          clamp(
-            (
               temperature -
-              25
-            ) /
-            75 *
-            100,
+              0.08
 
-            0,
-            100
+            )
+
+        }
+
+
+        tempText.textContent =
+          temperature
+            .toFixed(
+              1
+            )
+
+
+        tempBar.style.width =
+          `${
+            clamp(
+
+              (
+                temperature -
+                25
+              ) /
+              75 *
+              100,
+
+              0,
+
+              100
+
+            )
+          }%`
+
+
+        if (
+          heating &&
+          totalVolume >
+          0
+        ) {
+
+          checkReactions()
+
+        }
+
+
+        if (
+          temperature >
+            75 &&
+          totalVolume >
+            0 &&
+          Math.random() >
+            0.72
+        ) {
+
+          createSteam()
+
+        }
+
+
+        if (
+          !section.isConnected
+        ) {
+
+          window.clearInterval(
+            temperatureTimer
           )
-        }%`
 
+        }
 
-      if (
-        heating &&
-        totalVolume > 0
-      ) {
+      },
 
-        checkReactions()
-
-      }
-
-
-      if (
-        temperature > 75 &&
-        totalVolume > 0 &&
-        Math.random() >
-          .72
-      ) {
-
-        createSteam()
-
-      }
-
-    },
-
-    300
-  )
+      300
+    )
 
 
   function createSteam() {
@@ -3374,7 +2953,7 @@ export function initVirtualLab() {
 
 
   /* =========================================================
-     BEAKER DRAG
+     TILT
   ========================================================= */
 
   beakerWrap.addEventListener(
@@ -3390,9 +2969,10 @@ export function initVirtualLab() {
         event.clientX
 
 
-      beakerWrap.setPointerCapture(
-        event.pointerId
-      )
+      beakerWrap
+        .setPointerCapture(
+          event.pointerId
+        )
 
 
       beakerWrap
@@ -3426,9 +3006,14 @@ export function initVirtualLab() {
 
       tiltTarget =
         clamp(
-          dx / 10,
+
+          dx /
+          10,
+
           -12,
+
           12
+
         )
 
     }
@@ -3439,16 +3024,22 @@ export function initVirtualLab() {
     event
   ) {
 
-    try {
+    if (
+      event?.pointerId
+    ) {
 
-      beakerWrap
-        .releasePointerCapture(
-          event.pointerId
-        )
+      try {
+
+        beakerWrap
+          .releasePointerCapture(
+            event.pointerId
+          )
+
+      }
+
+      catch {}
 
     }
-
-    catch {}
 
 
     dragging =
@@ -3480,57 +3071,115 @@ export function initVirtualLab() {
   )
 
 
+  beakerWrap.addEventListener(
+    'lostpointercapture',
+
+    () => {
+
+      dragging =
+        false
+
+
+      tiltTarget =
+        0
+
+
+      beakerWrap
+        .classList
+        .remove(
+          'dragging'
+        )
+
+    }
+  )
+
+
   /* =========================================================
      ANIMATION
   ========================================================= */
 
-  function loop() {
+  function animationLoop() {
 
     tiltCurrent +=
       (
         tiltTarget -
         tiltCurrent
       ) *
-      .11
+      0.11
 
 
     liquidTilt +=
       (
         (
           -tiltCurrent *
-          .82
+          0.82
         ) -
         liquidTilt
       ) *
-      .11
+      0.11
+
+
+    if (
+      !dragging &&
+      Math.abs(
+        tiltCurrent
+      ) <
+      0.02
+    ) {
+
+      tiltCurrent =
+        0
+
+    }
+
+
+    if (
+      !dragging &&
+      Math.abs(
+        liquidTilt
+      ) <
+      0.02
+    ) {
+
+      liquidTilt =
+        0
+
+    }
 
 
     beakerWrap.style.setProperty(
+
       '--tilt',
+
       `${tiltCurrent}deg`
+
     )
 
 
     liquid.style.setProperty(
+
       '--liquid-tilt',
+
       `${liquidTilt}deg`
+
     )
 
 
-    requestAnimationFrame(
-      loop
-    )
+    if (
+      section.isConnected
+    ) {
+
+      requestAnimationFrame(
+        animationLoop
+      )
+
+    }
 
   }
 
 
-  requestAnimationFrame(
-    loop
-  )
-
-
   /* =========================================================
-     COLOR HELPERS
+     COLOR
   ========================================================= */
 
   function mixColors(
@@ -3539,11 +3188,25 @@ export function initVirtualLab() {
   ) {
 
     const c1 =
-      hexToRgb(a)
+      hexToRgb(
+        a
+      )
 
 
     const c2 =
-      hexToRgb(b)
+      hexToRgb(
+        b
+      )
+
+
+    if (!c1) {
+      return b
+    }
+
+
+    if (!c2) {
+      return a
+    }
 
 
     return rgbToHex(
@@ -3582,10 +3245,29 @@ export function initVirtualLab() {
   ) {
 
     const value =
-      hex.replace(
-        '#',
+      String(
+        hex ||
         ''
       )
+
+        .replace(
+          '#',
+          ''
+        )
+
+        .trim()
+
+
+    if (
+      !/^[0-9a-f]{6}$/i
+        .test(
+          value
+        )
+    ) {
+
+      return null
+
+    }
 
 
     return {
@@ -3639,21 +3321,41 @@ export function initVirtualLab() {
 
         .map(
           value =>
-            value
+
+            clamp(
+
+              Math.round(
+                value
+              ),
+
+              0,
+
+              255
+
+            )
+
               .toString(
                 16
               )
+
               .padStart(
                 2,
                 '0'
               )
+
         )
 
-        .join('')
+        .join(
+          ''
+        )
     )
 
   }
 
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
 
   function clamp(
     value,
@@ -3662,18 +3364,110 @@ export function initVirtualLab() {
   ) {
 
     return Math.max(
+
       min,
 
       Math.min(
         max,
         value
       )
+
     )
 
   }
 
 
+  function formatNumber(
+    value
+  ) {
+
+    return Number(
+      value
+    )
+      .toLocaleString(
+
+        'vi-VN',
+
+        {
+          maximumFractionDigits:
+            2
+        }
+
+      )
+
+  }
+
+
+  function formatFamilyName(
+    value
+  ) {
+
+    return String(
+      value ||
+      'other'
+    )
+
+      .replace(
+        /-/g,
+        ' '
+      )
+
+      .replace(
+        /\b\w/g,
+        char =>
+          char.toUpperCase()
+      )
+
+  }
+
+
+  function escapeHTML(
+    text
+  ) {
+
+    return String(
+      text
+    )
+
+      .replace(
+        /&/g,
+        '&amp;'
+      )
+
+      .replace(
+        /</g,
+        '&lt;'
+      )
+
+      .replace(
+        />/g,
+        '&gt;'
+      )
+
+      .replace(
+        /"/g,
+        '&quot;'
+      )
+
+      .replace(
+        /'/g,
+        '&#039;'
+      )
+
+  }
+
+
+  /* =========================================================
+     START
+  ========================================================= */
+
   updateLiquid()
+
   updateDashboard()
+
+
+  requestAnimationFrame(
+    animationLoop
+  )
 
 }
