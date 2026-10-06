@@ -1,0 +1,498 @@
+/* =========================================================
+   CHEMLAB 5.2 — TABLET UI
+   768px — 1023px
+
+   Tablet:
+   - Sidebar trái dạng rail
+   - Header gọn
+   - Main scroll dọc
+   - Bảng tuần hoàn scroll ngang
+========================================================= */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+
+  :root {
+    --tablet-header-h: 70px;
+    --tablet-sidebar-w: 82px;
+
+    --cl-header-height:
+      var(--tablet-header-h);
+
+    --cl-sidebar-width:
+      var(--tablet-sidebar-w);
+
+    --cl-page-pad:
+      1.1rem;
+  }
+
+
+  html,
+  body,
+  #app {
+    width:
+      100%;
+
+    height:
+      100%;
+
+    overflow:
+      hidden;
+  }
+
+
+  /* =========================================================
+     APP
+  ========================================================= */
+
+  .workspace-app {
+    width:
+      100% !important;
+
+    height:
+      100dvh !important;
+
+    min-height:
+      0 !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      var(--tablet-sidebar-w)
+      minmax(0,1fr) !important;
+
+    grid-template-rows:
+      var(--tablet-header-h)
+      minmax(0,1fr) !important;
+
+    overflow:
+      hidden !important;
+  }
+
+
+  /* =========================================================
+     HEADER
+  ========================================================= */
+
+  .workspace-topbar {
+    grid-column:
+      1 / -1 !important;
+
+    grid-row:
+      1 !important;
+
+    height:
+      var(--tablet-header-h) !important;
+
+    min-height:
+      var(--tablet-header-h) !important;
+
+    padding:
+      10px 14px !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      auto
+      minmax(0,1fr)
+      auto !important;
+
+    gap:
+      14px !important;
+  }
+
+
+  .workspace-brand,
+  .workspace-brand.v5-brand {
+    min-width:
+      0 !important;
+  }
+
+
+  .v5-brand-name {
+    font-size:
+      1.08rem !important;
+  }
+
+
+  .workspace-title-area {
+    display:
+      block !important;
+
+    min-width:
+      0 !important;
+  }
+
+
+  .workspace-title-area strong {
+    font-size:
+      .98rem !important;
+  }
+
+
+  .workspace-title-area span {
+    display:
+      none !important;
+  }
+
+
+  .v5-command-button {
+    width:
+      44px !important;
+
+    min-width:
+      44px !important;
+
+    padding:
+      0 !important;
+  }
+
+
+  .v5-command-button > span,
+  .v5-command-button kbd {
+    display:
+      none !important;
+  }
+
+
+  /* =========================================================
+     SIDEBAR
+  ========================================================= */
+
+  .workspace-sidebar {
+    grid-column:
+      1 !important;
+
+    grid-row:
+      2 !important;
+
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    width:
+      var(--tablet-sidebar-w) !important;
+
+    height:
+      100% !important;
+
+    min-height:
+      0 !important;
+
+    display:
+      flex !important;
+
+    flex-direction:
+      column !important;
+
+    align-items:
+      center !important;
+
+    overflow:
+      hidden !important;
+
+    padding:
+      10px 7px !important;
+  }
+
+
+  .v5-sidebar-label {
+    width:
+      100% !important;
+
+    margin:
+      0 0 8px !important;
+
+    padding:
+      0 !important;
+
+    text-align:
+      center !important;
+
+    font-size:
+      .58rem !important;
+
+    letter-spacing:
+      .08em !important;
+  }
+
+
+  .workspace-sidebar
+  .sidebar-button {
+    width:
+      66px !important;
+
+    min-width:
+      66px !important;
+
+    min-height:
+      64px !important;
+
+    margin:
+      3px 0 !important;
+
+    padding:
+      7px 3px !important;
+
+    display:
+      flex !important;
+
+    flex-direction:
+      column !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      center !important;
+
+    gap:
+      5px !important;
+  }
+
+
+  .workspace-sidebar
+  .sidebar-button
+  > span:last-child {
+    font-size:
+      .68rem !important;
+  }
+
+
+  .sidebar-bottom-status {
+    margin-top:
+      auto !important;
+
+    padding-bottom:
+      4px !important;
+
+    font-size:
+      .6rem !important;
+  }
+
+
+  /* =========================================================
+     MAIN SCROLL
+  ========================================================= */
+
+  .workspace-main {
+    grid-column:
+      2 !important;
+
+    grid-row:
+      2 !important;
+
+    min-width:
+      0 !important;
+
+    min-height:
+      0 !important;
+
+    width:
+      100% !important;
+
+    height:
+      100% !important;
+
+    overflow-x:
+      hidden !important;
+
+    overflow-y:
+      auto !important;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+    touch-action:
+      pan-y;
+  }
+
+
+  .workspace-view,
+  .workspace-view.active {
+    min-width:
+      0 !important;
+  }
+
+
+  /* =========================================================
+     PAGE
+  ========================================================= */
+
+  .periodic-workspace,
+  .v4-page-head {
+    width:
+      100% !important;
+
+    max-width:
+      none !important;
+  }
+
+
+  .periodic-top {
+    align-items:
+      flex-start !important;
+  }
+
+
+  /* =========================================================
+     CONTROLS
+  ========================================================= */
+
+  .periodic-controls {
+    display:
+      grid !important;
+
+    grid-template-columns:
+      minmax(0,1fr) !important;
+
+    gap:
+      10px !important;
+  }
+
+
+  .periodic-search {
+    width:
+      100% !important;
+  }
+
+
+  /* =========================================================
+     CATEGORY FILTERS
+  ========================================================= */
+
+  .periodic-category-filters {
+    display:
+      flex !important;
+
+    flex-wrap:
+      nowrap !important;
+
+    overflow-x:
+      auto !important;
+
+    overflow-y:
+      hidden !important;
+
+    padding-bottom:
+      6px !important;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+    scrollbar-width:
+      none;
+  }
+
+
+  .periodic-category-filters::-webkit-scrollbar {
+    display:
+      none;
+  }
+
+
+  .periodic-category-filters
+  .category-filter {
+    flex:
+      0 0 auto !important;
+  }
+
+
+  /* =========================================================
+     PERIODIC TABLE
+  ========================================================= */
+
+  .periodic-scroll {
+    width:
+      100% !important;
+
+    overflow-x:
+      auto !important;
+
+    overflow-y:
+      visible !important;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+    touch-action:
+      pan-x pan-y;
+  }
+
+
+  .workspace-periodic-table {
+    min-width:
+      1220px !important;
+
+    grid-template-columns:
+      repeat(
+        18,
+        minmax(62px,1fr)
+      ) !important;
+
+    grid-template-rows:
+      repeat(
+        7,
+        102px
+      ) !important;
+
+    gap:
+      6px !important;
+  }
+
+
+  .workspace-element-symbol {
+    font-size:
+      1.5rem !important;
+  }
+
+
+  .workspace-fblock {
+    min-width:
+      980px !important;
+
+    margin-left:
+      190px !important;
+  }
+
+
+  /* =========================================================
+     LEARNING
+  ========================================================= */
+
+  .learning-dashboard,
+  .learning-mode-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      ) !important;
+  }
+
+
+  /* =========================================================
+     LAB
+  ========================================================= */
+
+  .vl-layout {
+    grid-template-columns:
+      minmax(0,1fr) !important;
+  }
+
+
+  /* =========================================================
+     DRAWER
+  ========================================================= */
+
+  .element-drawer {
+    width:
+      min(
+        520px,
+        72vw
+      ) !important;
+  }
+
+}
