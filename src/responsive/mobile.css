@@ -1121,3 +1121,1153 @@
   }
 
 }
+/* =========================================================
+   CHEMLAB MOBILE — ELEMENT DRAWER + 3D FIX
+========================================================= */
+
+@media (max-width: 767px) {
+
+  /* =======================================================
+     KHI DRAWER / 3D ĐANG MỞ
+     Không cho trang phía sau tiếp tục cuộn
+  ======================================================= */
+
+  body:has(.element-drawer.open),
+  body:has(.atom-modal),
+  body:has(.orbital-modal) {
+    overflow:
+      hidden !important;
+  }
+
+
+  /* =======================================================
+     ELEMENT DRAWER
+  ======================================================= */
+
+  .element-drawer {
+    position:
+      fixed !important;
+
+    top:
+      0 !important;
+
+    right:
+      0 !important;
+
+    bottom:
+      0 !important;
+
+    left:
+      0 !important;
+
+    width:
+      100vw !important;
+
+    height:
+      100dvh !important;
+
+    max-width:
+      none !important;
+
+    max-height:
+      none !important;
+
+    z-index:
+      90000 !important;
+
+    overflow-x:
+      hidden !important;
+
+    overflow-y:
+      auto !important;
+
+    overscroll-behavior:
+      contain !important;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+    background:
+      #080910 !important;
+
+    backdrop-filter:
+      none !important;
+
+    -webkit-backdrop-filter:
+      none !important;
+
+    border:
+      0 !important;
+
+    border-radius:
+      0 !important;
+
+    padding-top:
+      env(safe-area-inset-top);
+
+    padding-bottom:
+      env(safe-area-inset-bottom);
+
+    touch-action:
+      pan-y;
+  }
+
+
+  .element-drawer.open {
+    transform:
+      translateX(0) !important;
+  }
+
+
+  .element-drawer-inner {
+    width:
+      100% !important;
+
+    min-height:
+      max-content !important;
+
+    height:
+      auto !important;
+
+    padding:
+      16px
+      16px
+      32px !important;
+
+    background:
+      #080910 !important;
+  }
+
+
+  .drawer-topbar {
+    position:
+      sticky !important;
+
+    top:
+      0 !important;
+
+    z-index:
+      30 !important;
+
+    padding:
+      8px 0 !important;
+
+    background:
+      rgba(8, 9, 16, .96) !important;
+
+    backdrop-filter:
+      blur(15px);
+
+    -webkit-backdrop-filter:
+      blur(15px);
+  }
+
+
+  .drawer-tabs {
+    width:
+      100% !important;
+
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap:
+      5px !important;
+  }
+
+
+  .drawer-tabs button {
+    min-width:
+      0 !important;
+  }
+
+
+  .drawer-tab-panel,
+  .drawer-tab-panel.active {
+    width:
+      100% !important;
+  }
+
+
+  /* =======================================================
+     ATOM 3D MODAL
+  ======================================================= */
+
+  .atom-modal {
+    position:
+      fixed !important;
+
+    inset:
+      0 !important;
+
+    z-index:
+      110000 !important;
+
+    width:
+      100vw !important;
+
+    height:
+      100dvh !important;
+
+    padding:
+      0 !important;
+
+    display:
+      block !important;
+
+    overflow-x:
+      hidden !important;
+
+    overflow-y:
+      auto !important;
+
+    overscroll-behavior:
+      contain !important;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+    background:
+      #050509 !important;
+  }
+
+
+  .atom-window {
+    position:
+      relative !important;
+
+    width:
+      100% !important;
+
+    min-width:
+      0 !important;
+
+    max-width:
+      none !important;
+
+    height:
+      auto !important;
+
+    min-height:
+      100dvh !important;
+
+    max-height:
+      none !important;
+
+    display:
+      flex !important;
+
+    flex-direction:
+      column !important;
+
+    gap:
+      16px !important;
+
+    overflow:
+      visible !important;
+
+    margin:
+      0 !important;
+
+    padding:
+      calc(
+        env(safe-area-inset-top)
+        + 20px
+      )
+      16px
+      calc(
+        env(safe-area-inset-bottom)
+        + 28px
+      ) !important;
+
+    border:
+      0 !important;
+
+    border-radius:
+      0 !important;
+
+    background:
+      radial-gradient(
+        circle at 50% 35%,
+        rgba(88, 28, 135, .14),
+        transparent 45%
+      ),
+      #050509 !important;
+  }
+
+
+  /* đóng modal luôn nằm trên cùng */
+
+  .atom-close {
+    position:
+      fixed !important;
+
+    top:
+      calc(
+        env(safe-area-inset-top)
+        + 14px
+      ) !important;
+
+    right:
+      14px !important;
+
+    z-index:
+      110010 !important;
+
+    width:
+      48px !important;
+
+    height:
+      48px !important;
+  }
+
+
+  /* HEADER */
+
+  .atom-header {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    min-height:
+      90px;
+
+    display:
+      block !important;
+
+    padding-right:
+      60px !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  .atom-header h2 {
+    margin:
+      6px 0 !important;
+
+    font-size:
+      2rem !important;
+
+    line-height:
+      1.1 !important;
+  }
+
+
+  .atom-symbol {
+    display:
+      none !important;
+  }
+
+
+  /* ELECTRON SHELLS */
+
+  .shell-display {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    max-width:
+      none !important;
+
+    display:
+      flex !important;
+
+    flex-wrap:
+      wrap !important;
+
+    gap:
+      8px !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  .shell-display div {
+    padding:
+      9px 12px !important;
+  }
+
+
+  /* 3D CANVAS */
+
+  .atom-canvas {
+    position:
+      relative !important;
+
+    inset:
+      auto !important;
+
+    width:
+      100% !important;
+
+    height:
+      clamp(
+        300px,
+        82vw,
+        390px
+      ) !important;
+
+    min-height:
+      300px !important;
+
+    flex:
+      0 0 auto !important;
+
+    overflow:
+      hidden !important;
+
+    border:
+      1px solid
+      rgba(168, 85, 247, .12);
+
+    border-radius:
+      18px;
+
+    background:
+      radial-gradient(
+        circle,
+        rgba(88, 28, 135, .12),
+        transparent 62%
+      );
+
+    touch-action:
+      none;
+  }
+
+
+  .atom-canvas canvas {
+    width:
+      100% !important;
+
+    height:
+      100% !important;
+  }
+
+
+  /* THÔNG SỐ */
+
+  .atom-info {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap:
+      10px !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  .atom-info div {
+    min-height:
+      92px !important;
+
+    display:
+      flex !important;
+
+    flex-direction:
+      column !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      center !important;
+
+    padding:
+      12px 8px !important;
+  }
+
+
+  .atom-info strong {
+    font-size:
+      1.45rem !important;
+  }
+
+
+  /* nếu có 5 ô thì ô cuối chiếm hết hàng */
+
+  .atom-info
+  > div:last-child:nth-child(odd) {
+    grid-column:
+      1 / -1;
+  }
+
+
+  /* LEGEND */
+
+  .atom-legend {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    display:
+      flex !important;
+
+    align-items:
+      center !important;
+
+    justify-content:
+      center !important;
+
+    flex-wrap:
+      wrap !important;
+
+    gap:
+      16px !important;
+
+    padding:
+      12px !important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.08);
+
+    border-radius:
+      14px;
+
+    background:
+      rgba(9,9,14,.72);
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  /* HINT */
+
+  .atom-hint {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    margin:
+      0 !important;
+
+    padding:
+      12px 10px !important;
+
+    border:
+      1px solid
+      rgba(255,255,255,.07);
+
+    border-radius:
+      12px;
+
+    text-align:
+      center !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  /* các phần mới của Atom 3D */
+
+  .atom-note,
+  .atom-controls,
+  .atom-actions {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+  }
+
+
+  .atom-controls,
+  .atom-actions {
+    display:
+      flex !important;
+
+    flex-wrap:
+      wrap !important;
+
+    gap:
+      10px !important;
+  }
+
+
+  /* =======================================================
+     ORBITAL 3D
+  ======================================================= */
+
+  .orbital-modal {
+    position:
+      fixed !important;
+
+    inset:
+      0 !important;
+
+    z-index:
+      110000 !important;
+
+    width:
+      100vw !important;
+
+    height:
+      100dvh !important;
+
+    padding:
+      0 !important;
+
+    display:
+      block !important;
+
+    overflow-x:
+      hidden !important;
+
+    overflow-y:
+      auto !important;
+
+    overscroll-behavior:
+      contain !important;
+
+    -webkit-overflow-scrolling:
+      touch;
+
+    background:
+      #020205 !important;
+  }
+
+
+  .orbital-window {
+    position:
+      relative !important;
+
+    width:
+      100% !important;
+
+    min-width:
+      0 !important;
+
+    max-width:
+      none !important;
+
+    min-height:
+      100dvh !important;
+
+    height:
+      auto !important;
+
+    max-height:
+      none !important;
+
+    display:
+      flex !important;
+
+    flex-direction:
+      column !important;
+
+    gap:
+      16px !important;
+
+    overflow:
+      visible !important;
+
+    margin:
+      0 !important;
+
+    padding:
+      calc(
+        env(safe-area-inset-top)
+        + 20px
+      )
+      16px
+      calc(
+        env(safe-area-inset-bottom)
+        + 28px
+      ) !important;
+
+    border:
+      0 !important;
+
+    border-radius:
+      0 !important;
+
+    background:
+      radial-gradient(
+        circle at 50% 40%,
+        rgba(88, 28, 135, .12),
+        transparent 48%
+      ),
+      #020205 !important;
+  }
+
+
+  .orbital-close {
+    position:
+      fixed !important;
+
+    top:
+      calc(
+        env(safe-area-inset-top)
+        + 14px
+      ) !important;
+
+    right:
+      14px !important;
+
+    z-index:
+      110010 !important;
+
+    width:
+      48px !important;
+
+    height:
+      48px !important;
+  }
+
+
+  /* HEADER */
+
+  .orbital-header {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    display:
+      block !important;
+
+    padding-right:
+      60px !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  .orbital-header h2 {
+    font-size:
+      1.9rem !important;
+
+    line-height:
+      1.1 !important;
+  }
+
+
+  .orbital-element-symbol {
+    display:
+      none !important;
+  }
+
+
+  /* CHỌN ORBITAL */
+
+  .subshell-panel,
+  .orbital-variant-panel {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    max-width:
+      none !important;
+  }
+
+
+  .subshell-buttons {
+    width:
+      100% !important;
+
+    display:
+      flex !important;
+
+    flex-wrap:
+      wrap !important;
+
+    gap:
+      7px !important;
+  }
+
+
+  /* ORBITAL ĐANG CHỌN */
+
+  .orbital-current {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    padding:
+      12px !important;
+
+    border:
+      1px solid
+      rgba(168,85,247,.16);
+
+    border-radius:
+      12px;
+
+    background:
+      rgba(20,15,30,.55);
+
+    text-align:
+      left !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  /* CANVAS */
+
+  .orbital-canvas {
+    position:
+      relative !important;
+
+    inset:
+      auto !important;
+
+    width:
+      100% !important;
+
+    height:
+      clamp(
+        320px,
+        86vw,
+        420px
+      ) !important;
+
+    min-height:
+      320px !important;
+
+    flex:
+      0 0 auto !important;
+
+    overflow:
+      hidden !important;
+
+    border:
+      1px solid
+      rgba(168,85,247,.12);
+
+    border-radius:
+      18px;
+
+    background:
+      radial-gradient(
+        circle,
+        rgba(88,28,135,.13),
+        transparent 64%
+      );
+
+    touch-action:
+      none;
+  }
+
+
+  .orbital-canvas canvas {
+    width:
+      100% !important;
+
+    height:
+      100% !important;
+  }
+
+
+  /* INFO */
+
+  .orbital-info {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    display:
+      grid !important;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+
+    gap:
+      10px !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  .orbital-info div {
+    min-height:
+      86px !important;
+
+    display:
+      flex !important;
+
+    flex-direction:
+      column !important;
+
+    justify-content:
+      center !important;
+
+    align-items:
+      center !important;
+  }
+
+
+  /* PHA ORBITAL */
+
+  .orbital-phase-legend {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    display:
+      flex !important;
+
+    justify-content:
+      center !important;
+
+    flex-wrap:
+      wrap !important;
+
+    gap:
+      16px !important;
+
+    padding:
+      12px !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  /* NOTE */
+
+  .orbital-note,
+  .orbital-hint {
+    position:
+      relative !important;
+
+    top:
+      auto !important;
+
+    right:
+      auto !important;
+
+    bottom:
+      auto !important;
+
+    left:
+      auto !important;
+
+    width:
+      100% !important;
+
+    max-width:
+      none !important;
+
+    margin:
+      0 !important;
+
+    padding:
+      12px !important;
+
+    text-align:
+      left !important;
+
+    pointer-events:
+      auto !important;
+  }
+
+
+  .orbital-hint {
+    text-align:
+      center !important;
+  }
+
+
+  /* =======================================================
+     MODAL PHẢI NẰM TRÊN HN + BOTTOM NAV
+  ======================================================= */
+
+  body:has(.element-drawer.open)
+  .workspace-sidebar,
+
+  body:has(.element-drawer.open)
+  .workspace-topbar,
+
+  body:has(.atom-modal)
+  .workspace-sidebar,
+
+  body:has(.atom-modal)
+  .workspace-topbar,
+
+  body:has(.orbital-modal)
+  .workspace-sidebar,
+
+  body:has(.orbital-modal)
+  .workspace-topbar {
+    pointer-events:
+      none !important;
+  }
+
+}
