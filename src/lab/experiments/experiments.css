@@ -1,0 +1,2916 @@
+/* =========================================================
+   CHEMLAB GUIDED EXPERIMENTS
+   experiments.css
+========================================================= */
+
+.guided-lab-shell {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0 18px;
+}
+
+
+/* =========================================================
+   HARD VISIBILITY RULES
+========================================================= */
+
+.virtual-lab-v2 .vl-layout[hidden],
+.virtual-lab-v2 .vl-layout.guided-lab-hidden,
+.virtual-lab-v2 .guided-panel[hidden] {
+  display: none !important;
+}
+
+
+/* =========================================================
+   MODE SWITCH
+========================================================= */
+
+.guided-modebar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.guided-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cl-text-secondary, #9ca6ba);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background .16s ease,
+    border-color .16s ease,
+    color .16s ease,
+    transform .16s ease;
+}
+
+.guided-mode-btn:hover {
+  background: rgba(139, 92, 246, .06);
+  color: var(--cl-text-primary, #f2f4f8);
+}
+
+.guided-mode-btn.active {
+  border-color: rgba(139, 92, 246, .28);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(139, 92, 246, .16),
+      rgba(80, 66, 160, .07)
+    );
+  color: var(--cl-text-primary, #fff);
+}
+
+.guided-mode-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, .11);
+}
+
+.guided-mode-btn > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guided-mode-btn strong {
+  font-size: .82rem;
+}
+
+.guided-mode-btn small {
+  overflow: hidden;
+  color: #778196;
+  font-size: .66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   PANEL / HEADINGS
+========================================================= */
+
+.guided-panel {
+  padding: 18px;
+}
+
+.guided-hero,
+.guided-toolbar,
+.guided-coach-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.guided-hero h3,
+.guided-toolbar h3,
+.guided-coach h3 {
+  margin: 4px 0 0;
+  color: var(--cl-text-primary, #f5f7fb);
+  font-size: clamp(1.08rem, 2vw, 1.45rem);
+}
+
+.guided-hero p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--cl-text-secondary, #9ca6ba);
+  line-height: 1.6;
+}
+
+.guided-eyebrow,
+.guided-overview-label,
+.guided-step-kicker {
+  color: #a98bff;
+  font-size: .64rem;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+
+.guided-save-badge,
+.guided-save-mini,
+.guided-score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid rgba(46, 204, 113, .18);
+  border-radius: 999px;
+  background: rgba(46, 204, 113, .07);
+  color: #7bd89c;
+  font-size: .68rem;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   GRADE CARDS
+========================================================= */
+
+.guided-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.guided-grade-card,
+.guided-experiment-card,
+.guided-overview-main,
+.guided-resume-card {
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 15px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(20, 23, 34, .82),
+      rgba(11, 13, 21, .72)
+    );
+}
+
+.guided-grade-card {
+  padding: 16px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform .15s ease,
+    border-color .15s ease,
+    background .15s ease;
+}
+
+.guided-grade-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, .35);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(26, 28, 42, .92),
+      rgba(13, 15, 24, .82)
+    );
+}
+
+.guided-grade-top,
+.guided-grade-meta,
+.guided-experiment-card-head,
+.guided-overview-stats,
+.guided-coach-actions,
+.guided-complete-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.guided-grade-number {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: rgba(139, 92, 246, .13);
+  color: #c0a6ff;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.guided-grade-progress {
+  color: #a98bff;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.guided-grade-card > strong {
+  display: block;
+  margin-top: 14px;
+  color: var(--cl-text-primary, #fff);
+}
+
+.guided-grade-card > p {
+  min-height: 40px;
+  margin: 5px 0 12px;
+  color: #96a0b4;
+  font-size: .76rem;
+  line-height: 1.5;
+}
+
+.guided-grade-meta {
+  color: #778196;
+  font-size: .65rem;
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.guided-progress-track {
+  height: 5px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+}
+
+.guided-progress-track.large {
+  height: 7px;
+}
+
+.guided-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      #805ad5,
+      #a78bfa
+    );
+}
+
+.guided-note {
+  margin-top: 13px;
+  padding: 11px 13px;
+  border: 1px solid rgba(139, 92, 246, .12);
+  border-radius: 11px;
+  background: rgba(139, 92, 246, .04);
+  color: #9ca6ba;
+  font-size: .72rem;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.guided-back-btn,
+.guided-secondary-btn,
+.guided-primary-btn {
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform .14s ease,
+    border-color .14s ease,
+    background .14s ease,
+    box-shadow .14s ease;
+}
+
+.guided-back-btn,
+.guided-secondary-btn {
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .035);
+  color: #a6aec0;
+}
+
+.guided-back-btn {
+  padding: 8px 11px;
+}
+
+.guided-secondary-btn {
+  padding: 8px 12px;
+}
+
+.guided-primary-btn {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid rgba(139, 92, 246, .30);
+  background:
+    linear-gradient(
+      135deg,
+      #7c4dff,
+      #6750c7
+    );
+  color: white;
+  font-weight: 800;
+}
+
+.guided-primary-btn:hover,
+.guided-secondary-btn:hover,
+.guided-back-btn:hover {
+  transform: translateY(-1px);
+}
+
+.guided-primary-btn:hover {
+  box-shadow: 0 8px 22px rgba(99, 64, 190, .20);
+}
+
+.guided-primary-btn:focus-visible,
+.guided-secondary-btn:focus-visible,
+.guided-back-btn:focus-visible,
+.guided-prediction-options button:focus-visible {
+  outline: 2px solid rgba(167, 139, 250, .8);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   CHAPTERS
+========================================================= */
+
+.guided-chapter-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.guided-chapter {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .065);
+  border-radius: 13px;
+  background: rgba(12, 14, 22, .58);
+}
+
+.guided-chapter summary {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.guided-chapter summary::-webkit-details-marker {
+  display: none;
+}
+
+.guided-chapter summary > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.guided-chapter summary strong {
+  color: #f4f6fa;
+  font-size: .82rem;
+}
+
+.guided-chapter summary small {
+  color: #778196;
+  font-size: .65rem;
+}
+
+.guided-chapter summary i {
+  color: #7f899d;
+  font-style: normal;
+  transition: transform .15s ease;
+}
+
+.guided-chapter[open] summary i {
+  transform: rotate(180deg);
+}
+
+.guided-chapter-number,
+.guided-lesson-number {
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(139, 92, 246, .10);
+  color: #ae92f7;
+  font-weight: 850;
+}
+
+.guided-chapter-number {
+  width: 34px;
+  height: 34px;
+}
+
+.guided-chapter-lessons {
+  display: grid;
+  gap: 6px;
+  padding: 0 9px 9px;
+}
+
+.guided-lesson-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .018);
+  color: inherit;
+  text-align: left;
+}
+
+.guided-lesson-row.is-ready {
+  cursor: pointer;
+}
+
+.guided-lesson-row.is-ready:hover {
+  border-color: rgba(139, 92, 246, .19);
+  background: rgba(139, 92, 246, .055);
+}
+
+.guided-lesson-row.is-planned {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.guided-lesson-number {
+  width: 30px;
+  height: 30px;
+  font-size: .68rem;
+}
+
+.guided-lesson-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guided-lesson-copy strong {
+  overflow: hidden;
+  color: #ecf0f7;
+  font-size: .75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guided-lesson-copy small,
+.guided-lesson-status {
+  color: #7b8498;
+  font-size: .63rem;
+}
+
+
+/* =========================================================
+   LESSON / ACTIVITY CARDS
+========================================================= */
+
+.guided-experiment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.guided-experiment-card {
+  padding: 15px;
+}
+
+.guided-experiment-card h4 {
+  margin: 12px 0 5px;
+  color: white;
+}
+
+.guided-experiment-card > p,
+.guided-exp-objective p,
+.guided-overview-main > p,
+.guided-resume-card p,
+.guided-action-step p {
+  color: #97a1b4;
+  font-size: .74rem;
+  line-height: 1.55;
+}
+
+.guided-exp-objective {
+  margin: 13px 0;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.guided-exp-objective span {
+  color: #9677e8;
+  font-size: .58rem;
+  font-weight: 850;
+  letter-spacing: .1em;
+}
+
+.guided-chemical-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 13px;
+}
+
+.guided-chemical-chips span,
+.guided-target-chip {
+  display: inline-flex;
+  padding: 5px 8px;
+  border: 1px solid rgba(139, 92, 246, .14);
+  border-radius: 999px;
+  background: rgba(139, 92, 246, .06);
+  color: #b69cf4;
+  font-size: .63rem;
+  font-weight: 750;
+}
+
+
+/* =========================================================
+   OVERVIEW
+========================================================= */
+
+.guided-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(240px, .7fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.guided-overview-main,
+.guided-resume-card {
+  padding: 16px;
+}
+
+.guided-overview-stats {
+  justify-content: flex-start;
+  margin-top: 14px;
+  color: #8993a7;
+  font-size: .66rem;
+}
+
+.guided-resume-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.guided-resume-card strong {
+  color: white;
+}
+
+
+/* =========================================================
+   COACH
+========================================================= */
+
+.guided-running .guided-panel {
+  position: sticky;
+  top: 10px;
+  z-index: 20;
+  border-color: rgba(139, 92, 246, .18);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .18);
+}
+
+.guided-coach {
+  display: grid;
+  gap: 12px;
+}
+
+.guided-coach-complete {
+  gap: 16px;
+}
+
+.guided-step-progress {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22px, 1fr));
+  gap: 5px;
+}
+
+.guided-step-progress i {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+}
+
+.guided-step-progress i.done {
+  background: #7656cf;
+}
+
+.guided-step-progress i.active {
+  background: #a78bfa;
+}
+
+.guided-step-content {
+  padding: 12px 13px;
+  border: 1px solid rgba(255, 255, 255, .06);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .022);
+}
+
+.guided-action-step,
+.guided-prediction,
+.guided-learning-step {
+  display: grid;
+  gap: 10px;
+}
+
+.guided-action-step strong,
+.guided-prediction > strong {
+  color: #f5f7fb;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   THEORY / LEARNING CONTENT
+========================================================= */
+
+.guided-learning-step h4 {
+  margin: 0;
+  color: var(--cl-text-primary, #f4f6fb);
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.guided-learning-step > p {
+  max-width: 820px;
+  margin: 0;
+  color: var(--cl-text-secondary, #a1aabd);
+  font-size: .8rem;
+  line-height: 1.75;
+}
+
+.guided-learning-formula {
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 14px;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(139, 92, 246, .18);
+  border-radius: 10px;
+  background: rgba(139, 92, 246, .07);
+  color: #c7b4ff;
+  font-size: .92rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.guided-learning-points {
+  display: grid;
+  gap: 7px;
+  max-width: 860px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--cl-text-secondary, #9da6b8);
+  font-size: .77rem;
+  line-height: 1.6;
+}
+
+.guided-learning-points li::marker {
+  color: #9f7aea;
+}
+
+.guided-learning-step .guided-primary-btn {
+  justify-self: start;
+  min-width: 130px;
+  margin-top: 3px;
+}
+
+
+/* =========================================================
+   QUIZ / PREDICTION
+========================================================= */
+
+.guided-prediction-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.guided-prediction-options button {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .025);
+  color: #a4adbd;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color .15s ease,
+    background .15s ease,
+    color .15s ease,
+    transform .15s ease;
+}
+
+.guided-prediction-options button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(139, 92, 246, .30);
+  background: rgba(139, 92, 246, .07);
+  color: white;
+}
+
+
+/* =========================================================
+   FEEDBACK
+========================================================= */
+
+.guided-feedback {
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: .7rem;
+  line-height: 1.5;
+}
+
+.guided-feedback.success {
+  background: rgba(46, 204, 113, .055);
+  color: #79d49a;
+}
+
+.guided-feedback.error {
+  background: rgba(239, 68, 68, .055);
+  color: #ef9a9a;
+}
+
+
+/* =========================================================
+   LIGHT MODE
+========================================================= */
+
+html[data-theme="light"] .guided-grade-card,
+html[data-theme="light"] .guided-experiment-card,
+html[data-theme="light"] .guided-overview-main,
+html[data-theme="light"] .guided-resume-card,
+html[data-theme="light"] .guided-chapter {
+  border-color: rgba(54, 64, 84, .09);
+  background: rgba(255, 255, 255, .78);
+}
+
+html[data-theme="light"] .guided-chapter summary strong,
+html[data-theme="light"] .guided-lesson-copy strong,
+html[data-theme="light"] .guided-experiment-card h4,
+html[data-theme="light"] .guided-resume-card strong,
+html[data-theme="light"] .guided-action-step strong,
+html[data-theme="light"] .guided-prediction > strong,
+html[data-theme="light"] .guided-learning-step h4 {
+  color: #1f2430;
+}
+
+html[data-theme="light"] .guided-learning-step > p,
+html[data-theme="light"] .guided-learning-points,
+html[data-theme="light"] .guided-action-step p {
+  color: #596275;
+}
+
+html[data-theme="light"] .guided-learning-formula {
+  border-color: rgba(109, 74, 198, .18);
+  background: rgba(109, 74, 198, .07);
+  color: #6846b6;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1023px) {
+
+  .guided-grade-grid,
+  .guided-experiment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guided-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 767px) {
+
+  .guided-lab-shell {
+    gap: 10px;
+    margin: 10px 0 14px;
+  }
+
+  .guided-modebar {
+    grid-template-columns: 1fr 1fr;
+    padding: 6px;
+  }
+
+  .guided-mode-btn {
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .guided-mode-icon {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+
+  .guided-mode-btn small {
+    display: none;
+  }
+
+  .guided-panel {
+    padding: 12px;
+  }
+
+  .guided-hero,
+  .guided-toolbar,
+  .guided-coach-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .guided-grade-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .guided-chapter summary {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    padding: 10px;
+  }
+
+  .guided-lesson-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .guided-lesson-status {
+    grid-column: 2;
+  }
+
+  .guided-prediction-options {
+    grid-template-columns: 1fr;
+  }
+
+  .guided-coach-actions,
+  .guided-complete-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .guided-running .guided-panel {
+    position: static;
+  }
+
+  .guided-learning-step > p {
+    font-size: .78rem;
+  }
+
+  .guided-learning-step .guided-primary-btn {
+    width: 100%;
+  }
+
+  .guided-learning-formula {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+}
+/* =========================================================
+   CHEMLAB GUIDED UX 2.0
+   Larger · clearer · easier to use
+========================================================= */
+
+
+/* =========================================================
+   MAIN GUIDED PANEL
+========================================================= */
+
+.guided-panel {
+  padding: 24px !important;
+}
+
+
+.guided-lab-shell {
+  gap: 18px !important;
+}
+
+
+/* =========================================================
+   MODE SELECTOR
+========================================================= */
+
+.guided-modebar {
+  padding: 10px !important;
+  gap: 10px !important;
+}
+
+
+.guided-mode-btn {
+  min-height: 64px !important;
+
+  padding:
+    12px
+    16px !important;
+
+  gap: 13px !important;
+
+  border-radius:
+    14px !important;
+}
+
+
+.guided-mode-icon {
+  width: 40px !important;
+  height: 40px !important;
+
+  flex:
+    0 0 40px !important;
+
+  border-radius:
+    11px !important;
+
+  font-size:
+    1.05rem !important;
+}
+
+
+.guided-mode-btn strong {
+  font-size:
+    .95rem !important;
+
+  font-weight:
+    800 !important;
+}
+
+
+.guided-mode-btn small {
+  margin-top:
+    2px;
+
+  font-size:
+    .74rem !important;
+
+  line-height:
+    1.4;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.guided-hero {
+  min-height:
+    120px;
+}
+
+
+.guided-eyebrow,
+.guided-overview-label,
+.guided-step-kicker {
+
+  font-size:
+    .72rem !important;
+
+  font-weight:
+    900 !important;
+
+  letter-spacing:
+    .13em !important;
+
+}
+
+
+.guided-hero h3,
+.guided-toolbar h3,
+.guided-coach h3 {
+
+  margin-top:
+    6px !important;
+
+  font-size:
+    clamp(
+      1.5rem,
+      2.4vw,
+      2rem
+    ) !important;
+
+  line-height:
+    1.25 !important;
+
+}
+
+
+.guided-hero p {
+
+  font-size:
+    .95rem !important;
+
+  line-height:
+    1.7 !important;
+
+}
+
+
+/* =========================================================
+   GRADE CARDS
+========================================================= */
+
+.guided-grade-grid {
+
+  gap:
+    16px !important;
+
+  margin-top:
+    22px !important;
+
+}
+
+
+.guided-grade-card {
+
+  min-height:
+    230px;
+
+  padding:
+    20px !important;
+
+  border-radius:
+    17px !important;
+
+}
+
+
+.guided-grade-number {
+
+  width:
+    48px !important;
+
+  height:
+    48px !important;
+
+  font-size:
+    1.12rem !important;
+
+}
+
+
+.guided-grade-progress {
+
+  font-size:
+    .86rem !important;
+
+}
+
+
+.guided-grade-card > strong {
+
+  margin-top:
+    18px !important;
+
+  font-size:
+    1.08rem !important;
+
+}
+
+
+.guided-grade-card > p {
+
+  margin-top:
+    8px !important;
+
+  font-size:
+    .85rem !important;
+
+  line-height:
+    1.55 !important;
+
+}
+
+
+.guided-grade-meta {
+
+  margin-top:
+    auto;
+
+  font-size:
+    .76rem !important;
+
+  line-height:
+    1.45;
+
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.guided-progress-track {
+
+  height:
+    7px !important;
+
+  margin-top:
+    13px !important;
+
+}
+
+
+.guided-progress-track.large {
+
+  height:
+    9px !important;
+
+}
+
+
+.guided-note {
+
+  margin-top:
+    17px !important;
+
+  padding:
+    14px
+    16px !important;
+
+  font-size:
+    .82rem !important;
+
+  line-height:
+    1.6 !important;
+
+}
+
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.guided-toolbar {
+
+  min-height:
+    70px;
+
+  margin-bottom:
+    8px;
+
+}
+
+
+.guided-back-btn {
+
+  min-height:
+    44px;
+
+  padding:
+    10px
+    14px !important;
+
+  font-size:
+    .86rem !important;
+
+}
+
+
+/* =========================================================
+   CHAPTER
+========================================================= */
+
+.guided-chapter-list {
+
+  gap:
+    13px !important;
+
+  margin-top:
+    20px !important;
+
+}
+
+
+.guided-chapter {
+
+  border-radius:
+    16px !important;
+
+}
+
+
+.guided-chapter summary {
+
+  min-height:
+    68px;
+
+  grid-template-columns:
+    44px
+    minmax(0, 1fr)
+    auto !important;
+
+  gap:
+    14px !important;
+
+  padding:
+    13px
+    16px !important;
+
+}
+
+
+.guided-chapter-number {
+
+  width:
+    42px !important;
+
+  height:
+    42px !important;
+
+  border-radius:
+    11px !important;
+
+  font-size:
+    .92rem !important;
+
+}
+
+
+.guided-chapter summary strong {
+
+  font-size:
+    .98rem !important;
+
+  line-height:
+    1.4 !important;
+
+}
+
+
+.guided-chapter summary small {
+
+  margin-top:
+    3px;
+
+  font-size:
+    .74rem !important;
+
+}
+
+
+/* =========================================================
+   LESSON ROW
+========================================================= */
+
+.guided-chapter-lessons {
+
+  gap:
+    9px !important;
+
+  padding:
+    0
+    11px
+    11px !important;
+
+}
+
+
+.guided-lesson-row {
+
+  min-height:
+    64px !important;
+
+  grid-template-columns:
+    38px
+    minmax(0, 1fr)
+    auto !important;
+
+  gap:
+    13px !important;
+
+  padding:
+    11px
+    13px !important;
+
+  border-radius:
+    12px !important;
+
+}
+
+
+.guided-lesson-number {
+
+  width:
+    36px !important;
+
+  height:
+    36px !important;
+
+  font-size:
+    .78rem !important;
+
+}
+
+
+.guided-lesson-copy {
+
+  gap:
+    4px !important;
+
+}
+
+
+.guided-lesson-copy strong {
+
+  font-size:
+    .9rem !important;
+
+  line-height:
+    1.4;
+
+  white-space:
+    normal !important;
+
+}
+
+
+.guided-lesson-copy small {
+
+  font-size:
+    .73rem !important;
+
+}
+
+
+.guided-lesson-status {
+
+  min-width:
+    86px;
+
+  font-size:
+    .72rem !important;
+
+  text-align:
+    right;
+
+}
+
+
+/* =========================================================
+   EXPERIMENT CARDS
+========================================================= */
+
+.guided-experiment-grid {
+
+  gap:
+    16px !important;
+
+  margin-top:
+    20px !important;
+
+}
+
+
+.guided-experiment-card {
+
+  padding:
+    20px !important;
+
+  border-radius:
+    17px !important;
+
+}
+
+
+.guided-experiment-card-head {
+
+  font-size:
+    .8rem;
+
+}
+
+
+.guided-experiment-card h4 {
+
+  margin:
+    15px
+    0
+    8px !important;
+
+  font-size:
+    1.12rem !important;
+
+  line-height:
+    1.4;
+
+}
+
+
+.guided-experiment-card > p {
+
+  font-size:
+    .85rem !important;
+
+  line-height:
+    1.65 !important;
+
+}
+
+
+.guided-exp-objective {
+
+  margin:
+    16px
+    0 !important;
+
+  padding:
+    14px !important;
+
+}
+
+
+.guided-exp-objective span {
+
+  font-size:
+    .67rem !important;
+
+}
+
+
+.guided-exp-objective p {
+
+  margin-bottom:
+    0;
+
+  font-size:
+    .84rem !important;
+
+  line-height:
+    1.65 !important;
+
+}
+
+
+/* =========================================================
+   CHEMICAL CHIPS
+========================================================= */
+
+.guided-chemical-chips {
+
+  gap:
+    8px !important;
+
+  margin-bottom:
+    16px !important;
+
+}
+
+
+.guided-chemical-chips span,
+.guided-target-chip {
+
+  min-height:
+    30px;
+
+  align-items:
+    center;
+
+  padding:
+    6px
+    10px !important;
+
+  font-size:
+    .73rem !important;
+
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.guided-primary-btn {
+
+  min-height:
+    46px !important;
+
+  padding:
+    10px
+    17px !important;
+
+  border-radius:
+    11px !important;
+
+  font-size:
+    .9rem !important;
+
+}
+
+
+.guided-secondary-btn {
+
+  min-height:
+    44px !important;
+
+  padding:
+    9px
+    15px !important;
+
+  font-size:
+    .84rem !important;
+
+}
+
+
+/* =========================================================
+   OVERVIEW
+========================================================= */
+
+.guided-overview-grid {
+
+  gap:
+    16px !important;
+
+  margin-top:
+    20px !important;
+
+}
+
+
+.guided-overview-main,
+.guided-resume-card {
+
+  padding:
+    20px !important;
+
+}
+
+
+.guided-overview-main > p {
+
+  font-size:
+    .9rem !important;
+
+  line-height:
+    1.7 !important;
+
+}
+
+
+.guided-overview-stats {
+
+  gap:
+    15px !important;
+
+  font-size:
+    .77rem !important;
+
+}
+
+
+.guided-resume-card {
+
+  gap:
+    13px !important;
+
+}
+
+
+.guided-resume-card strong {
+
+  font-size:
+    1.05rem !important;
+
+}
+
+
+.guided-resume-card p {
+
+  font-size:
+    .86rem !important;
+
+}
+
+
+/* =========================================================
+   COACH
+========================================================= */
+
+.guided-coach {
+
+  gap:
+    15px !important;
+
+}
+
+
+.guided-coach-top {
+
+  min-height:
+    62px;
+
+}
+
+
+.guided-save-mini {
+
+  font-size:
+    .76rem !important;
+
+}
+
+
+.guided-step-progress {
+
+  gap:
+    7px !important;
+
+}
+
+
+.guided-step-progress i {
+
+  height:
+    7px !important;
+
+}
+
+
+.guided-step-content {
+
+  padding:
+    18px !important;
+
+  border-radius:
+    14px !important;
+
+}
+
+
+/* =========================================================
+   THEORY
+========================================================= */
+
+.guided-learning-step {
+
+  gap:
+    14px !important;
+
+}
+
+
+.guided-learning-step h4 {
+
+  font-size:
+    1.25rem !important;
+
+  line-height:
+    1.4 !important;
+
+}
+
+
+.guided-learning-step > p {
+
+  max-width:
+    960px !important;
+
+  font-size:
+    .95rem !important;
+
+  line-height:
+    1.8 !important;
+
+}
+
+
+.guided-learning-formula {
+
+  padding:
+    13px
+    17px !important;
+
+  font-size:
+    1.05rem !important;
+
+}
+
+
+.guided-learning-points {
+
+  max-width:
+    960px !important;
+
+  gap:
+    9px !important;
+
+  padding-left:
+    24px !important;
+
+  font-size:
+    .9rem !important;
+
+  line-height:
+    1.7 !important;
+
+}
+
+
+/* =========================================================
+   PREDICTION / QUIZ
+========================================================= */
+
+.guided-prediction {
+
+  gap:
+    15px !important;
+
+}
+
+
+.guided-prediction > strong {
+
+  max-width:
+    950px;
+
+  font-size:
+    1.04rem !important;
+
+  line-height:
+    1.55 !important;
+
+}
+
+
+.guided-prediction-options {
+
+  gap:
+    10px !important;
+
+}
+
+
+.guided-prediction-options button {
+
+  min-height:
+    54px !important;
+
+  padding:
+    11px
+    14px !important;
+
+  border-radius:
+    11px !important;
+
+  font-size:
+    .9rem !important;
+
+  line-height:
+    1.45 !important;
+
+}
+
+
+/* =========================================================
+   LAB ACTION STEP
+========================================================= */
+
+.guided-action-step {
+
+  gap:
+    10px !important;
+
+}
+
+
+.guided-action-step strong {
+
+  font-size:
+    1rem !important;
+
+  line-height:
+    1.55 !important;
+
+}
+
+
+.guided-action-step p {
+
+  font-size:
+    .87rem !important;
+
+  line-height:
+    1.65 !important;
+
+}
+
+
+/* =========================================================
+   FEEDBACK
+========================================================= */
+
+.guided-feedback {
+
+  padding:
+    12px
+    14px !important;
+
+  font-size:
+    .83rem !important;
+
+  line-height:
+    1.6 !important;
+
+}
+
+
+/* =========================================================
+   VIRTUAL LAB FONT IMPROVEMENTS
+========================================================= */
+
+.virtual-lab-v2 .panel-label {
+
+  font-size:
+    .74rem !important;
+
+}
+
+
+.virtual-lab-v2 h3 {
+
+  font-size:
+    1.18rem;
+
+}
+
+
+.virtual-lab-v2 .reagent-text strong {
+
+  font-size:
+    .94rem !important;
+
+}
+
+
+.virtual-lab-v2 .reagent-text span {
+
+  font-size:
+    .76rem !important;
+
+}
+
+
+.virtual-lab-v2 .stage-note strong {
+
+  font-size:
+    .95rem !important;
+
+}
+
+
+.virtual-lab-v2 .stage-note span {
+
+  font-size:
+    .79rem !important;
+
+}
+
+
+.virtual-lab-v2 .meter > span {
+
+  font-size:
+    .72rem !important;
+
+}
+
+
+.virtual-lab-v2 .meter strong {
+
+  font-size:
+    1.06rem !important;
+
+}
+
+
+.virtual-lab-v2 .info-box > span {
+
+  font-size:
+    .7rem !important;
+
+}
+
+
+.virtual-lab-v2 .info-box strong {
+
+  font-size:
+    .93rem !important;
+
+}
+
+
+.virtual-lab-v2 .info-box p {
+
+  font-size:
+    .8rem !important;
+
+  line-height:
+    1.6 !important;
+
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  min-width: 768px
+) and (
+  max-width: 1100px
+) {
+
+  .guided-panel {
+
+    padding:
+      18px !important;
+
+  }
+
+
+  .guided-grade-grid {
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+
+  }
+
+
+  .guided-grade-card:last-child {
+
+    grid-column:
+      1 / -1;
+
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE UX
+========================================================= */
+
+@media (
+  max-width: 767px
+) {
+
+  .guided-panel {
+
+    padding:
+      12px !important;
+
+  }
+
+
+  .guided-modebar {
+
+    gap:
+      6px !important;
+
+  }
+
+
+  .guided-mode-btn {
+
+    min-height:
+      54px !important;
+
+    padding:
+      8px
+      10px !important;
+
+  }
+
+
+  .guided-mode-icon {
+
+    width:
+      34px !important;
+
+    height:
+      34px !important;
+
+    flex-basis:
+      34px !important;
+
+  }
+
+
+  .guided-mode-btn strong {
+
+    font-size:
+      .84rem !important;
+
+  }
+
+
+  .guided-hero h3,
+  .guided-toolbar h3,
+  .guided-coach h3 {
+
+    font-size:
+      1.35rem !important;
+
+  }
+
+
+  .guided-hero p {
+
+    font-size:
+      .86rem !important;
+
+  }
+
+
+  .guided-grade-card {
+
+    min-height:
+      auto;
+
+    padding:
+      16px !important;
+
+  }
+
+
+  .guided-chapter summary {
+
+    min-height:
+      62px;
+
+  }
+
+
+  .guided-lesson-row {
+
+    min-height:
+      65px !important;
+
+    grid-template-columns:
+      36px
+      minmax(0, 1fr) !important;
+
+  }
+
+
+  .guided-lesson-status {
+
+    grid-column:
+      2;
+
+    min-width:
+      0;
+
+    text-align:
+      left;
+
+  }
+
+
+  .guided-lesson-copy strong {
+
+    font-size:
+      .9rem !important;
+
+  }
+
+
+  .guided-learning-step h4 {
+
+    font-size:
+      1.08rem !important;
+
+  }
+
+
+  .guided-learning-step > p {
+
+    font-size:
+      .88rem !important;
+
+  }
+
+
+  .guided-learning-points {
+
+    font-size:
+      .84rem !important;
+
+  }
+
+
+  .guided-prediction-options {
+
+    grid-template-columns:
+      1fr !important;
+
+  }
+
+
+  .guided-prediction-options button {
+
+    min-height:
+      52px !important;
+
+    font-size:
+      .88rem !important;
+
+  }
+
+
+  .guided-primary-btn,
+  .guided-secondary-btn {
+
+    min-height:
+      46px !important;
+
+  }
+
+}
+/* =========================================================
+   GUIDED LEARNING 2.1
+   Progress · Search · Filters · Continue learning
+========================================================= */
+
+
+/* =========================================================
+   GRADE HOME RESUME
+========================================================= */
+
+.guided-grade-resume {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 13px;
+  padding-top: 11px;
+
+  border-top:
+    1px solid
+    rgba(255,255,255,.055);
+
+  color: #a894df;
+
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+
+.guided-grade-resume > span:first-child {
+  color: #9b7ff0;
+}
+
+
+/* =========================================================
+   GRADE HEADER
+========================================================= */
+
+.guided-grade-toolbar {
+  display: grid !important;
+
+  grid-template-columns:
+    auto
+    minmax(0,1fr)
+    auto;
+
+  align-items: center !important;
+}
+
+
+.guided-grade-title {
+  min-width: 0;
+}
+
+
+.guided-grade-title p {
+  margin: 6px 0 0;
+
+  color: #8e98ac;
+
+  font-size: .82rem;
+}
+
+
+.guided-grade-progress-ring {
+  display: grid;
+  place-items: center;
+
+  min-width: 78px;
+  min-height: 62px;
+
+  padding: 8px 13px;
+
+  border:
+    1px solid
+    rgba(139,92,246,.16);
+
+  border-radius: 13px;
+
+  background:
+    rgba(139,92,246,.055);
+}
+
+
+.guided-grade-progress-ring strong {
+  color: #b69cff;
+
+  font-size: 1rem;
+}
+
+
+.guided-grade-progress-ring span {
+  margin-top: 1px;
+
+  color: #707b90;
+
+  font-size: .62rem;
+}
+
+
+/* =========================================================
+   CONTINUE CARD
+========================================================= */
+
+.guided-continue-card {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    minmax(0,1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 14px;
+
+  margin: 18px 0;
+
+  padding: 15px 17px;
+
+  border:
+    1px solid
+    rgba(139,92,246,.20);
+
+  border-radius: 15px;
+
+  background:
+    radial-gradient(
+      circle at 0 0,
+      rgba(139,92,246,.12),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(22,20,37,.88),
+      rgba(12,14,22,.78)
+    );
+}
+
+
+.guided-continue-card.complete {
+  border-color:
+    rgba(46,204,113,.16);
+
+  background:
+    rgba(46,204,113,.035);
+}
+
+
+.guided-continue-icon {
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(139,92,246,.12);
+
+  color: #b89eff;
+
+  font-size: .95rem;
+}
+
+
+.guided-continue-card.complete
+.guided-continue-icon {
+  background:
+    rgba(46,204,113,.08);
+
+  color: #72d696;
+}
+
+
+.guided-continue-copy {
+  display: grid;
+  gap: 3px;
+
+  min-width: 0;
+}
+
+
+.guided-continue-copy > span {
+  color: #9d7cec;
+
+  font-size: .62rem;
+
+  font-weight: 900;
+
+  letter-spacing: .12em;
+}
+
+
+.guided-continue-copy strong {
+  overflow: hidden;
+
+  color: #f3f5fa;
+
+  font-size: .95rem;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+.guided-continue-copy small {
+  color: #7e899e;
+
+  font-size: .7rem;
+}
+
+
+/* =========================================================
+   SEARCH + FILTERS
+========================================================= */
+
+.guided-grade-tools {
+  display: grid;
+
+  grid-template-columns:
+    minmax(220px,1fr)
+    auto
+    auto;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin:
+    0
+    0
+    15px;
+}
+
+
+.guided-search {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+}
+
+
+.guided-search > span {
+  position: absolute;
+
+  left: 13px;
+
+  color: #737e92;
+
+  pointer-events: none;
+}
+
+
+.guided-search input {
+  width: 100%;
+  min-height: 44px;
+
+  box-sizing: border-box;
+
+  padding:
+    9px
+    13px
+    9px
+    38px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.075);
+
+  border-radius: 11px;
+
+  outline: none;
+
+  background:
+    rgba(11,13,21,.80);
+
+  color: #edf0f7;
+
+  font: inherit;
+
+  font-size: .82rem;
+
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease,
+    background .15s ease;
+}
+
+
+.guided-search input::placeholder {
+  color: #687286;
+}
+
+
+.guided-search input:focus {
+  border-color:
+    rgba(157,125,255,.58);
+
+  background:
+    rgba(14,16,25,.96);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(139,92,246,.09);
+}
+
+
+.guided-filter-tabs {
+  display: flex;
+
+  gap: 5px;
+
+  padding: 4px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius: 11px;
+
+  background:
+    rgba(255,255,255,.02);
+}
+
+
+.guided-filter-tabs button {
+  min-height: 35px;
+
+  padding:
+    7px
+    11px;
+
+  border:
+    1px solid transparent;
+
+  border-radius: 8px;
+
+  background:
+    transparent;
+
+  color: #818ba0;
+
+  font: inherit;
+
+  font-size: .7rem;
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    color .15s ease;
+}
+
+
+.guided-filter-tabs button:hover {
+  color: #eceff6;
+}
+
+
+.guided-filter-tabs button.active {
+  border-color:
+    rgba(139,92,246,.18);
+
+  background:
+    rgba(139,92,246,.11);
+
+  color: #c6b3ff;
+}
+
+
+.guided-result-count {
+  min-width: 48px;
+
+  color: #737d90;
+
+  font-size: .69rem;
+
+  text-align: right;
+}
+
+
+/* =========================================================
+   CHAPTER PROGRESS
+========================================================= */
+
+.guided-chapter-title {
+  display: grid;
+  gap: 3px;
+}
+
+
+.guided-chapter-summary-progress {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+}
+
+
+.guided-chapter-summary-progress b {
+  color: #a98bff;
+
+  font-size: .72rem;
+}
+
+
+.guided-chapter-summary-progress i {
+  color: #748096;
+
+  font-style: normal;
+
+  transition:
+    transform .16s ease;
+}
+
+
+.guided-chapter[open]
+.guided-chapter-summary-progress i {
+  transform:
+    rotate(180deg);
+}
+
+
+.guided-chapter-progress {
+  padding:
+    0
+    14px
+    10px;
+}
+
+
+.guided-chapter-progress > span {
+  display: block;
+
+  height: 4px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255,255,255,.055);
+}
+
+
+.guided-chapter-progress i {
+  display: block;
+
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #7554d5,
+      #a687ff
+    );
+}
+
+
+/* =========================================================
+   LESSON STATUS
+========================================================= */
+
+.guided-lesson-row.status-active {
+  border-color:
+    rgba(139,92,246,.12);
+
+  background:
+    rgba(139,92,246,.035);
+}
+
+
+.guided-lesson-row.status-active
+.guided-lesson-status {
+  color: #a98bff;
+}
+
+
+.guided-lesson-row.status-completed
+.guided-lesson-status {
+  color: #67cb8d;
+}
+
+
+.guided-lesson-row.status-completed
+.guided-lesson-number {
+  background:
+    rgba(46,204,113,.08);
+
+  color: #72d696;
+}
+
+
+/* =========================================================
+   ACTIVITY STATUS
+========================================================= */
+
+.guided-experiment-card.is-active {
+  border-color:
+    rgba(139,92,246,.20);
+}
+
+
+.guided-experiment-card.is-completed {
+  border-color:
+    rgba(46,204,113,.14);
+}
+
+
+.guided-activity-info {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin:
+    -3px
+    0
+    13px;
+
+  color: #7f899d;
+
+  font-size: .7rem;
+}
+
+
+.guided-experiment-card.is-active
+.guided-activity-info span:last-child {
+  color: #aa8dff;
+}
+
+
+.guided-experiment-card.is-completed
+.guided-activity-info span:last-child {
+  color: #70d494;
+}
+
+
+/* =========================================================
+   LESSON HEADER PROGRESS
+========================================================= */
+
+.guided-lesson-head-progress {
+  display: grid;
+
+  justify-items: end;
+
+  min-width: 72px;
+}
+
+
+.guided-lesson-head-progress strong {
+  color: #b499ff;
+
+  font-size: 1rem;
+}
+
+
+.guided-lesson-head-progress span {
+  color: #707b8f;
+
+  font-size: .62rem;
+}
+
+
+/* =========================================================
+   NO RESULT
+========================================================= */
+
+.guided-empty-search {
+  padding: 28px 16px;
+
+  border:
+    1px dashed
+    rgba(255,255,255,.09);
+
+  border-radius: 13px;
+
+  color: #778196;
+
+  font-size: .8rem;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   LIGHT MODE
+========================================================= */
+
+html[data-theme="light"]
+.guided-search input {
+  border-color:
+    rgba(45,55,75,.11);
+
+  background:
+    rgba(255,255,255,.88);
+
+  color: #222938;
+}
+
+
+html[data-theme="light"]
+.guided-filter-tabs {
+  border-color:
+    rgba(45,55,75,.08);
+
+  background:
+    rgba(55,65,85,.035);
+}
+
+
+html[data-theme="light"]
+.guided-continue-copy strong {
+  color: #252b38;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (
+  max-width: 1023px
+) {
+
+  .guided-grade-tools {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .guided-filter-tabs {
+    width: fit-content;
+  }
+
+
+  .guided-result-count {
+    text-align: left;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width: 767px
+) {
+
+  .guided-grade-toolbar {
+    grid-template-columns:
+      1fr !important;
+
+    gap: 12px;
+  }
+
+
+  .guided-grade-progress-ring {
+    justify-self: start;
+
+    grid-template-columns:
+      auto
+      auto;
+
+    gap: 7px;
+
+    min-width: 0;
+    min-height: 0;
+
+    padding:
+      8px
+      11px;
+  }
+
+
+  .guided-continue-card {
+    grid-template-columns:
+      auto
+      minmax(0,1fr);
+
+    padding:
+      13px;
+  }
+
+
+  .guided-continue-card
+  .guided-primary-btn {
+    grid-column:
+      1 / -1;
+
+    width: 100%;
+  }
+
+
+  .guided-continue-copy strong {
+    white-space: normal;
+
+    line-height: 1.4;
+  }
+
+
+  .guided-grade-tools {
+    gap: 8px;
+  }
+
+
+  .guided-filter-tabs {
+    width: 100%;
+
+    box-sizing: border-box;
+  }
+
+
+  .guided-filter-tabs button {
+    flex: 1;
+  }
+
+
+  .guided-result-count {
+    padding-left: 2px;
+  }
+
+
+  .guided-chapter-summary-progress b {
+    display: none;
+  }
+
+
+  .guided-lesson-head-progress {
+    justify-items: start;
+  }
+
+}

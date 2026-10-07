@@ -73,6 +73,20 @@ import {
 } from './virtualLab.js'
 
 
+import {
+  initGuidedExperiments
+} from './lab/experiments/guidedExperiments.js'
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+import {
+  initProgressStorage
+} from './progress/progressStorage.js'
+
+
 /* =========================================================
    OLD COMPATIBILITY DESIGN
 ========================================================= */
@@ -1320,6 +1334,16 @@ safeInit(
 
 
 /* =========================================================
+   PROGRESS
+========================================================= */
+
+safeInit(
+  'Progress Storage',
+  initProgressStorage
+)
+
+
+/* =========================================================
    LEARNING
 ========================================================= */
 
@@ -1402,6 +1426,18 @@ if (labReady) {
       'PHÒNG THÍ NGHIỆM ẢO'
 
   }
+
+
+  /*
+    Guided Experiments phải chạy sau Virtual Lab
+    vì module này cần #lab tồn tại.
+  */
+
+  safeInit(
+    'Guided Experiments',
+    initGuidedExperiments,
+    labHost
+  )
 
 }
 

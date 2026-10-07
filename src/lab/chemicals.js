@@ -1,1404 +1,1900 @@
 /* =========================================================
-   CHEMLAB VIRTUAL LAB 3
-   EXPANDED CHEMICAL DATABASE
+   CHEMLAB VIRTUAL LAB 3.1
+   101-CHEMICAL DATABASE
 ========================================================= */
 
-export const CHEMICALS = {
+function C(
+  id,
+  name,
+  formula,
+  category,
+  family,
+  color = '#f8fbff',
+  acidBase = 0,
+  state = 'solution',
+  hazards = [],
+  tags = [],
+  indicator = null
+) {
 
-  /* =======================================================
-     WATER
-  ======================================================= */
+  return {
+    id,
+    name,
+    formula,
+    category,
+    family,
+    state,
 
-  water: {
-    id: 'water',
+    color,
 
-    name: 'Water',
-    formula: 'H₂O',
+    solutionColor:
+      color,
 
-    category: 'inorganic',
-    family: 'water',
+    acidBase,
 
-    state: 'liquid',
+    hazards,
 
-    color: '#dff7ff',
-    solutionColor: '#dff7ff',
+    tags,
 
-    acidBase: 0,
+    ...(
+      indicator
+        ? {
+            indicator
+          }
+        : {}
+    )
+  }
 
-    molarMass: 18.015,
+}
 
-    hazards: [],
 
-    tags: [
+const LIST = [
+
+  C(
+    'water',
+    'Water',
+    'H₂O',
+    'inorganic',
+    'water',
+    '#dff7ff',
+    0,
+    'liquid',
+    [],
+    [
       'water',
       'H2O'
     ]
-  },
+  ),
 
 
   /* =======================================================
      ACIDS
   ======================================================= */
 
-  hcl: {
-    id: 'hcl',
-
-    name: 'Hydrochloric acid',
-    formula: 'HCl',
-
-    category: 'inorganic',
-    family: 'acid',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -1,
-
-    molarMass: 36.46,
-
-    hazards: [
+  C(
+    'hcl',
+    'Hydrochloric acid',
+    'HCl',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -1,
+    'solution',
+    [
       'corrosive'
     ],
-
-    tags: [
+    [
       'acid',
-      'hydrochloric',
-      'HCl'
+      'chloride'
     ]
-  },
+  ),
 
 
-  h2so4: {
-    id: 'h2so4',
-
-    name: 'Sulfuric acid',
-    formula: 'H₂SO₄',
-
-    category: 'inorganic',
-    family: 'acid',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -1.2,
-
-    molarMass: 98.079,
-
-    hazards: [
+  C(
+    'h2so4',
+    'Sulfuric acid',
+    'H₂SO₄',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -1.2,
+    'solution',
+    [
       'corrosive'
     ],
-
-    tags: [
+    [
       'acid',
-      'sulfuric',
-      'H2SO4'
+      'sulfate'
     ]
-  },
+  ),
 
 
-  hno3: {
-    id: 'hno3',
-
-    name: 'Nitric acid',
-    formula: 'HNO₃',
-
-    category: 'inorganic',
-    family: 'acid',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -1,
-
-    molarMass: 63.012,
-
-    hazards: [
+  C(
+    'hno3',
+    'Nitric acid',
+    'HNO₃',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -1,
+    'solution',
+    [
       'corrosive',
       'oxidizing'
     ],
-
-    tags: [
+    [
       'acid',
-      'nitric',
-      'HNO3'
+      'nitrate'
     ]
-  },
+  ),
 
 
-  h3po4: {
-    id: 'h3po4',
-
-    name: 'Phosphoric acid',
-    formula: 'H₃PO₄',
-
-    category: 'inorganic',
-    family: 'acid',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -0.65,
-
-    molarMass: 97.994,
-
-    hazards: [
+  C(
+    'h3po4',
+    'Phosphoric acid',
+    'H₃PO₄',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -.65,
+    'solution',
+    [
       'irritant'
     ],
-
-    tags: [
+    [
       'acid',
-      'phosphoric',
-      'H3PO4'
+      'phosphate'
     ]
-  },
+  ),
 
 
-  ethanoic: {
-    id: 'ethanoic',
+  C(
+    'h2co3',
+    'Carbonic acid',
+    'H₂CO₃',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -.35,
+    'solution',
+    [],
+    [
+      'acid',
+      'carbonate'
+    ]
+  ),
 
-    name: 'Ethanoic acid',
-    formula: 'CH₃COOH',
 
-    category: 'organic',
-    family: 'carboxylic-acid',
-
-    state: 'liquid',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -0.45,
-
-    molarMass: 60.052,
-
-    hazards: [
+  C(
+    'h2so3',
+    'Sulfurous acid',
+    'H₂SO₃',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -.55,
+    'solution',
+    [
       'irritant'
     ],
-
-    tags: [
-      'organic',
+    [
       'acid',
-      'ethanoic',
-      'acetic acid',
-      'CH3COOH'
+      'sulfite'
     ]
-  },
+  ),
 
 
-  propanoic: {
-    id: 'propanoic',
+  C(
+    'hf',
+    'Hydrofluoric acid',
+    'HF',
+    'inorganic',
+    'acid',
+    '#f8fbff',
+    -.7,
+    'solution',
+    [
+      'corrosive',
+      'toxic'
+    ],
+    [
+      'acid',
+      'fluoride'
+    ]
+  ),
 
-    name: 'Propanoic acid',
-    formula: 'C₂H₅COOH',
 
-    category: 'organic',
-    family: 'carboxylic-acid',
-
-    state: 'liquid',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -0.42,
-
-    molarMass: 74.079,
-
-    hazards: [
+  C(
+    'oxalic',
+    'Oxalic acid',
+    'H₂C₂O₄',
+    'organic',
+    'dicarboxylic-acid',
+    '#f8fbff',
+    -.55,
+    'solution',
+    [
       'irritant'
     ],
-
-    tags: [
-      'acid',
-      'propanoic'
+    [
+      'oxalic',
+      'dicarboxylic'
     ]
-  },
+  ),
 
 
-  benzoic: {
-    id: 'benzoic',
-
-    name: 'Benzoic acid',
-    formula: 'C₆H₅COOH',
-
-    category: 'organic',
-    family: 'carboxylic-acid',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: -0.3,
-
-    molarMass: 122.123,
-
-    hazards: [
+  C(
+    'methanoic',
+    'Methanoic acid',
+    'HCOOH',
+    'organic',
+    'carboxylic-acid',
+    '#f8fbff',
+    -.45,
+    'liquid',
+    [
       'irritant'
     ],
-
-    tags: [
-      'acid',
-      'benzoic'
+    [
+      'formic acid'
     ]
-  },
+  ),
+
+
+  C(
+    'ethanoic',
+    'Ethanoic acid',
+    'CH₃COOH',
+    'organic',
+    'carboxylic-acid',
+    '#f8fbff',
+    -.45,
+    'liquid',
+    [
+      'irritant'
+    ],
+    [
+      'acetic acid'
+    ]
+  ),
+
+
+  C(
+    'propanoic',
+    'Propanoic acid',
+    'C₂H₅COOH',
+    'organic',
+    'carboxylic-acid',
+    '#f8fbff',
+    -.42,
+    'liquid',
+    [
+      'irritant'
+    ]
+  ),
+
+
+  C(
+    'benzoic',
+    'Benzoic acid',
+    'C₆H₅COOH',
+    'organic',
+    'carboxylic-acid',
+    '#f8fbff',
+    -.3,
+    'solution',
+    [
+      'irritant'
+    ]
+  ),
 
 
   /* =======================================================
      BASES
   ======================================================= */
 
-  naoh: {
-    id: 'naoh',
-
-    name: 'Sodium hydroxide',
-    formula: 'NaOH',
-
-    category: 'inorganic',
-    family: 'base',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: 1,
-
-    molarMass: 40,
-
-    hazards: [
+  C(
+    'naoh',
+    'Sodium hydroxide',
+    'NaOH',
+    'inorganic',
+    'base',
+    '#f8fbff',
+    1,
+    'solution',
+    [
       'corrosive'
     ],
-
-    tags: [
-      'base',
-      'NaOH'
-    ]
-  },
-
-
-  koh: {
-    id: 'koh',
-
-    name: 'Potassium hydroxide',
-    formula: 'KOH',
-
-    category: 'inorganic',
-    family: 'base',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: 1,
-
-    molarMass: 56.106,
-
-    hazards: [
-      'corrosive'
-    ],
-
-    tags: [
-      'base',
-      'KOH'
-    ]
-  },
-
-
-  caoh2: {
-    id: 'caoh2',
-
-    name: 'Calcium hydroxide',
-    formula: 'Ca(OH)₂',
-
-    category: 'inorganic',
-    family: 'base',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: 0.8,
-
-    molarMass: 74.093,
-
-    hazards: [
-      'irritant'
-    ],
-
-    tags: [
-      'limewater',
+    [
       'base'
     ]
-  },
+  ),
 
 
-  nh3: {
-    id: 'nh3',
+  C(
+    'koh',
+    'Potassium hydroxide',
+    'KOH',
+    'inorganic',
+    'base',
+    '#f8fbff',
+    1,
+    'solution',
+    [
+      'corrosive'
+    ],
+    [
+      'base'
+    ]
+  ),
 
-    name: 'Ammonia solution',
-    formula: 'NH₃(aq)',
 
-    category: 'inorganic',
-    family: 'base',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: 0.65,
-
-    molarMass: 17.031,
-
-    hazards: [
+  C(
+    'caoh2',
+    'Calcium hydroxide',
+    'Ca(OH)₂',
+    'inorganic',
+    'base',
+    '#f8fbff',
+    .8,
+    'solution',
+    [
       'irritant'
     ],
-
-    tags: [
-      'ammonia',
-      'NH3'
+    [
+      'limewater'
     ]
-  },
+  ),
+
+
+  C(
+    'baoh2',
+    'Barium hydroxide',
+    'Ba(OH)₂',
+    'inorganic',
+    'base',
+    '#f8fbff',
+    .85,
+    'solution',
+    [
+      'toxic',
+      'corrosive'
+    ]
+  ),
+
+
+  C(
+    'nh3',
+    'Ammonia solution',
+    'NH₃(aq)',
+    'inorganic',
+    'base',
+    '#f8fbff',
+    .65,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'ammonia'
+    ]
+  ),
+
+
+  C(
+    'mgoh2',
+    'Magnesium hydroxide',
+    'Mg(OH)₂',
+    'inorganic',
+    'base',
+    '#f8fbff',
+    .35,
+    'suspension'
+  ),
+
+
+  C(
+    'aloh3',
+    'Aluminium hydroxide',
+    'Al(OH)₃',
+    'inorganic',
+    'amphoteric-hydroxide',
+    '#f5f5f5',
+    0,
+    'suspension'
+  ),
+
+
+  C(
+    'znoh2',
+    'Zinc hydroxide',
+    'Zn(OH)₂',
+    'inorganic',
+    'amphoteric-hydroxide',
+    '#f5f5f5',
+    0,
+    'suspension'
+  ),
 
 
   /* =======================================================
      SALTS
   ======================================================= */
 
-  nacl: {
-    id: 'nacl',
-    name: 'Sodium chloride',
-    formula: 'NaCl',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 58.44,
-    hazards: [],
-    tags: ['salt', 'NaCl']
-  },
+  C(
+    'nacl',
+    'Sodium chloride',
+    'NaCl',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'chloride'
+    ]
+  ),
 
 
-  kcl: {
-    id: 'kcl',
-    name: 'Potassium chloride',
-    formula: 'KCl',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 74.551,
-    hazards: [],
-    tags: ['salt', 'KCl']
-  },
+  C(
+    'kcl',
+    'Potassium chloride',
+    'KCl',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'chloride'
+    ]
+  ),
 
 
-  cuso4: {
-    id: 'cuso4',
-    name: 'Copper(II) sulfate',
-    formula: 'CuSO₄',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#278cff',
-    solutionColor: '#278cff',
-    acidBase: -0.1,
-    molarMass: 159.609,
-    hazards: ['irritant'],
-    tags: ['copper', 'CuSO4']
-  },
+  C(
+    'cacl2',
+    'Calcium chloride',
+    'CaCl₂',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'chloride'
+    ]
+  ),
 
 
-  cucl2: {
-    id: 'cucl2',
-    name: 'Copper(II) chloride',
-    formula: 'CuCl₂',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#38b7a2',
-    solutionColor: '#38b7a2',
-    acidBase: -0.08,
-    molarMass: 134.45,
-    hazards: ['irritant'],
-    tags: ['copper', 'CuCl2']
-  },
+  C(
+    'mgcl2',
+    'Magnesium chloride',
+    'MgCl₂',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'chloride'
+    ]
+  ),
 
 
-  fecl3: {
-    id: 'fecl3',
-    name: 'Iron(III) chloride',
-    formula: 'FeCl₃',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#d59a38',
-    solutionColor: '#d59a38',
-    acidBase: -0.15,
-    molarMass: 162.204,
-    hazards: ['irritant'],
-    tags: ['iron', 'FeCl3']
-  },
+  C(
+    'nh4cl',
+    'Ammonium chloride',
+    'NH₄Cl',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    -.22,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'ammonium'
+    ]
+  ),
 
 
-  feso4: {
-    id: 'feso4',
-    name: 'Iron(II) sulfate',
-    formula: 'FeSO₄',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#95bd8e',
-    solutionColor: '#95bd8e',
-    acidBase: -0.05,
-    molarMass: 151.908,
-    hazards: ['irritant'],
-    tags: ['iron', 'FeSO4']
-  },
+  C(
+    'cuso4',
+    'Copper(II) sulfate',
+    'CuSO₄',
+    'inorganic',
+    'salt',
+    '#278cff',
+    -.1,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'copper',
+      'sulfate'
+    ]
+  ),
 
 
-  agno3: {
-    id: 'agno3',
-    name: 'Silver nitrate',
-    formula: 'AgNO₃',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: -0.05,
-    molarMass: 169.873,
-    hazards: ['oxidizing'],
-    tags: ['silver', 'AgNO3']
-  },
+  C(
+    'cucl2',
+    'Copper(II) chloride',
+    'CuCl₂',
+    'inorganic',
+    'salt',
+    '#38b7a2',
+    -.08,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'copper',
+      'chloride'
+    ]
+  ),
 
 
-  bacl2: {
-    id: 'bacl2',
-    name: 'Barium chloride',
-    formula: 'BaCl₂',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 208.23,
-    hazards: ['toxic'],
-    tags: ['barium', 'BaCl2']
-  },
+  C(
+    'fecl3',
+    'Iron(III) chloride',
+    'FeCl₃',
+    'inorganic',
+    'salt',
+    '#d59a38',
+    -.15,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'iron',
+      'chloride'
+    ]
+  ),
 
 
-  bano3: {
-    id: 'bano3',
-    name: 'Barium nitrate',
-    formula: 'Ba(NO₃)₂',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 261.337,
-    hazards: ['oxidizing', 'toxic'],
-    tags: ['barium', 'nitrate']
-  },
+  C(
+    'fecl2',
+    'Iron(II) chloride',
+    'FeCl₂',
+    'inorganic',
+    'salt',
+    '#9eb48a',
+    -.05,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'iron',
+      'chloride'
+    ]
+  ),
 
 
-  pbno3: {
-    id: 'pbno3',
-    name: 'Lead(II) nitrate',
-    formula: 'Pb(NO₃)₂',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 331.2,
-    hazards: ['toxic'],
-    tags: ['lead', 'PbNO3']
-  },
+  C(
+    'feso4',
+    'Iron(II) sulfate',
+    'FeSO₄',
+    'inorganic',
+    'salt',
+    '#95bd8e',
+    -.05,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'iron',
+      'sulfate'
+    ]
+  ),
 
 
-  na2co3: {
-    id: 'na2co3',
-    name: 'Sodium carbonate',
-    formula: 'Na₂CO₃',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0.45,
-    molarMass: 105.988,
-    hazards: [],
-    tags: ['carbonate', 'Na2CO3']
-  },
+  C(
+    'fe2so43',
+    'Iron(III) sulfate',
+    'Fe₂(SO₄)₃',
+    'inorganic',
+    'salt',
+    '#d6b45e',
+    -.12,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'iron',
+      'sulfate'
+    ]
+  ),
 
 
-  nahco3: {
-    id: 'nahco3',
-    name: 'Sodium hydrogen carbonate',
-    formula: 'NaHCO₃',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0.25,
-    molarMass: 84.007,
-    hazards: [],
-    tags: ['bicarbonate', 'NaHCO3']
-  },
-
-
-  na2so4: {
-    id: 'na2so4',
-    name: 'Sodium sulfate',
-    formula: 'Na₂SO₄',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 142.04,
-    hazards: [],
-    tags: ['sulfate', 'Na2SO4']
-  },
-
-
-  na2s: {
-    id: 'na2s',
-    name: 'Sodium sulfide',
-    formula: 'Na₂S',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0.35,
-    molarMass: 78.045,
-    hazards: ['irritant'],
-    tags: ['sulfide', 'Na2S']
-  },
-
-
-  nh4cl: {
-    id: 'nh4cl',
-    name: 'Ammonium chloride',
-    formula: 'NH₄Cl',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: -0.22,
-    molarMass: 53.491,
-    hazards: ['irritant'],
-    tags: ['ammonium', 'NH4Cl']
-  },
-
-
-  ki: {
-    id: 'ki',
-    name: 'Potassium iodide',
-    formula: 'KI',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 166.003,
-    hazards: [],
-    tags: ['iodide', 'KI']
-  },
-
-
-  kbr: {
-    id: 'kbr',
-    name: 'Potassium bromide',
-    formula: 'KBr',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 119.002,
-    hazards: [],
-    tags: ['bromide', 'KBr']
-  },
-
-
-  kscn: {
-    id: 'kscn',
-    name: 'Potassium thiocyanate',
-    formula: 'KSCN',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 97.18,
-    hazards: ['irritant'],
-    tags: ['thiocyanate', 'KSCN']
-  },
-
-
-  mgcl2: {
-    id: 'mgcl2',
-    name: 'Magnesium chloride',
-    formula: 'MgCl₂',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 95.211,
-    hazards: [],
-    tags: ['magnesium', 'MgCl2']
-  },
-
-
-  cacl2: {
-    id: 'cacl2',
-    name: 'Calcium chloride',
-    formula: 'CaCl₂',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 110.98,
-    hazards: [],
-    tags: ['calcium', 'CaCl2']
-  },
-
-
-  znso4: {
-    id: 'znso4',
-    name: 'Zinc sulfate',
-    formula: 'ZnSO₄',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: -0.03,
-    molarMass: 161.47,
-    hazards: ['irritant'],
-    tags: ['zinc', 'ZnSO4']
-  },
-
-
-  alcl3: {
-    id: 'alcl3',
-    name: 'Aluminium chloride',
-    formula: 'AlCl₃',
-    category: 'inorganic',
-    family: 'salt',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: -0.2,
-    molarMass: 133.34,
-    hazards: ['irritant'],
-    tags: ['aluminium', 'AlCl3']
-  },
-
-
-  /* =======================================================
-     OXIDIZERS / REAGENTS
-  ======================================================= */
-
-  kmno4: {
-    id: 'kmno4',
-
-    name: 'Potassium permanganate',
-    formula: 'KMnO₄',
-
-    category: 'inorganic',
-    family: 'oxidizer',
-
-    state: 'solution',
-
-    color: '#7737b7',
-    solutionColor: '#7737b7',
-
-    acidBase: 0,
-
-    molarMass: 158.034,
-
-    hazards: [
+  C(
+    'agno3',
+    'Silver nitrate',
+    'AgNO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    -.05,
+    'solution',
+    [
       'oxidizing'
     ],
-
-    tags: [
-      'permanganate',
-      'KMnO4'
+    [
+      'silver',
+      'nitrate'
     ]
-  },
+  ),
 
 
-  k2cr2o7: {
-    id: 'k2cr2o7',
+  C(
+    'bacl2',
+    'Barium chloride',
+    'BaCl₂',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [
+      'toxic'
+    ],
+    [
+      'barium',
+      'chloride'
+    ]
+  ),
 
-    name: 'Potassium dichromate',
-    formula: 'K₂Cr₂O₇',
 
-    category: 'inorganic',
-    family: 'oxidizer',
-
-    state: 'solution',
-
-    color: '#ef8426',
-    solutionColor: '#ef8426',
-
-    acidBase: 0,
-
-    molarMass: 294.185,
-
-    hazards: [
+  C(
+    'bano3',
+    'Barium nitrate',
+    'Ba(NO₃)₂',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [
       'oxidizing',
       'toxic'
     ],
-
-    tags: [
-      'dichromate',
-      'K2Cr2O7'
+    [
+      'barium',
+      'nitrate'
     ]
-  },
+  ),
 
 
-  h2o2: {
-    id: 'h2o2',
+  C(
+    'pbno3',
+    'Lead(II) nitrate',
+    'Pb(NO₃)₂',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [
+      'toxic'
+    ],
+    [
+      'lead',
+      'nitrate'
+    ]
+  ),
 
-    name: 'Hydrogen peroxide',
-    formula: 'H₂O₂',
 
-    category: 'inorganic',
-    family: 'oxidizer',
+  C(
+    'na2co3',
+    'Sodium carbonate',
+    'Na₂CO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    .45,
+    'solution',
+    [],
+    [
+      'carbonate'
+    ]
+  ),
 
-    state: 'solution',
 
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
+  C(
+    'nahco3',
+    'Sodium hydrogen carbonate',
+    'NaHCO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    .25,
+    'solution',
+    [],
+    [
+      'bicarbonate',
+      'hydrogen carbonate'
+    ]
+  ),
 
-    acidBase: 0,
 
-    molarMass: 34.0147,
+  C(
+    'na2so4',
+    'Sodium sulfate',
+    'Na₂SO₄',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'sulfate'
+    ]
+  ),
 
-    hazards: [
+
+  C(
+    'k2so4',
+    'Potassium sulfate',
+    'K₂SO₄',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'sulfate'
+    ]
+  ),
+
+
+  C(
+    'na2so3',
+    'Sodium sulfite',
+    'Na₂SO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    .25,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'sulfite'
+    ]
+  ),
+
+
+  C(
+    'na2s',
+    'Sodium sulfide',
+    'Na₂S',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    .35,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'sulfide'
+    ]
+  ),
+
+
+  C(
+    'na2s2o3',
+    'Sodium thiosulfate',
+    'Na₂S₂O₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'thiosulfate'
+    ]
+  ),
+
+
+  C(
+    'ki',
+    'Potassium iodide',
+    'KI',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'iodide'
+    ]
+  ),
+
+
+  C(
+    'kbr',
+    'Potassium bromide',
+    'KBr',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'bromide'
+    ]
+  ),
+
+
+  C(
+    'kscn',
+    'Potassium thiocyanate',
+    'KSCN',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'thiocyanate'
+    ]
+  ),
+
+
+  C(
+    'znso4',
+    'Zinc sulfate',
+    'ZnSO₄',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    -.03,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'zinc',
+      'sulfate'
+    ]
+  ),
+
+
+  C(
+    'alcl3',
+    'Aluminium chloride',
+    'AlCl₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    -.2,
+    'solution',
+    [
+      'irritant'
+    ],
+    [
+      'aluminium',
+      'chloride'
+    ]
+  ),
+
+
+  C(
+    'kno3',
+    'Potassium nitrate',
+    'KNO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [
       'oxidizing'
     ],
-
-    tags: [
-      'peroxide',
-      'H2O2'
+    [
+      'nitrate'
     ]
-  },
+  ),
+
+
+  C(
+    'nano3',
+    'Sodium nitrate',
+    'NaNO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    0,
+    'solution',
+    [
+      'oxidizing'
+    ],
+    [
+      'nitrate'
+    ]
+  ),
+
+
+  C(
+    'na3po4',
+    'Sodium phosphate',
+    'Na₃PO₄',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    .35,
+    'solution',
+    [],
+    [
+      'phosphate'
+    ]
+  ),
+
+
+  C(
+    'k3po4',
+    'Potassium phosphate',
+    'K₃PO₄',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    .35,
+    'solution',
+    [],
+    [
+      'phosphate'
+    ]
+  ),
+
+
+  C(
+    'caco3',
+    'Calcium carbonate',
+    'CaCO₃',
+    'inorganic',
+    'carbonate',
+    '#f4f4f4',
+    0,
+    'suspension',
+    [],
+    [
+      'carbonate'
+    ]
+  ),
+
+
+  C(
+    'mgco3',
+    'Magnesium carbonate',
+    'MgCO₃',
+    'inorganic',
+    'carbonate',
+    '#f4f4f4',
+    0,
+    'suspension',
+    [],
+    [
+      'carbonate'
+    ]
+  ),
+
+
+  C(
+    'cuco3',
+    'Copper(II) carbonate',
+    'CuCO₃',
+    'inorganic',
+    'carbonate',
+    '#67a889',
+    0,
+    'suspension',
+    [
+      'irritant'
+    ],
+    [
+      'copper',
+      'carbonate'
+    ]
+  ),
+
+
+  C(
+    'nh4no3',
+    'Ammonium nitrate',
+    'NH₄NO₃',
+    'inorganic',
+    'salt',
+    '#f8fbff',
+    -.15,
+    'solution',
+    [
+      'oxidizing'
+    ],
+    [
+      'ammonium',
+      'nitrate'
+    ]
+  ),
 
 
   /* =======================================================
-     INDICATORS
+     OXIDIZERS
   ======================================================= */
 
-  phenolphthalein: {
-    id: 'phenolphthalein',
-
-    name: 'Phenolphthalein',
-    formula: 'C₂₀H₁₂O₄',
-
-    category: 'indicator',
-    family: 'indicator',
-
-    state: 'solution',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: 0,
-
-    indicator:
-      'phenolphthalein',
-
-    molarMass: 318.328,
-
-    hazards: [],
-
-    tags: [
-      'indicator',
-      'phenolphthalein'
+  C(
+    'kmno4',
+    'Potassium permanganate',
+    'KMnO₄',
+    'inorganic',
+    'oxidizer',
+    '#7737b7',
+    0,
+    'solution',
+    [
+      'oxidizing'
+    ],
+    [
+      'permanganate'
     ]
-  },
+  ),
 
 
-  methylOrange: {
-    id: 'methylOrange',
-
-    name: 'Methyl orange',
-    formula: 'C₁₄H₁₄N₃NaO₃S',
-
-    category: 'indicator',
-    family: 'indicator',
-
-    state: 'solution',
-
-    color: '#f0b43c',
-    solutionColor: '#f0b43c',
-
-    acidBase: 0,
-
-    indicator:
-      'methylOrange',
-
-    molarMass: 327.33,
-
-    hazards: [],
-
-    tags: [
-      'indicator',
-      'methyl orange'
+  C(
+    'k2cr2o7',
+    'Potassium dichromate',
+    'K₂Cr₂O₇',
+    'inorganic',
+    'oxidizer',
+    '#ef8426',
+    0,
+    'solution',
+    [
+      'oxidizing',
+      'toxic'
+    ],
+    [
+      'dichromate'
     ]
-  },
+  ),
 
 
-  litmus: {
-    id: 'litmus',
-
-    name: 'Litmus solution',
-    formula: 'Indicator',
-
-    category: 'indicator',
-    family: 'indicator',
-
-    state: 'solution',
-
-    color: '#7f6db7',
-    solutionColor: '#7f6db7',
-
-    acidBase: 0,
-
-    indicator:
-      'litmus',
-
-    molarMass: null,
-
-    hazards: [],
-
-    tags: [
-      'indicator',
-      'litmus'
+  C(
+    'h2o2',
+    'Hydrogen peroxide',
+    'H₂O₂',
+    'inorganic',
+    'oxidizer',
+    '#f8fbff',
+    0,
+    'solution',
+    [
+      'oxidizing'
+    ],
+    [
+      'peroxide'
     ]
-  },
+  ),
 
 
-  iodine: {
-    id: 'iodine',
+  /* =======================================================
+     INDICATORS / REAGENTS
+  ======================================================= */
 
-    name: 'Iodine solution',
-    formula: 'I₂',
-
-    category: 'indicator',
-    family: 'reagent',
-
-    state: 'solution',
-
-    color: '#995e33',
-    solutionColor: '#995e33',
-
-    acidBase: 0,
-
-    molarMass: 253.809,
-
-    hazards: [
+  C(
+    'iodine',
+    'Iodine solution',
+    'I₂',
+    'indicator',
+    'reagent',
+    '#995e33',
+    0,
+    'solution',
+    [
       'irritant'
     ],
-
-    tags: [
+    [
       'iodine',
       'starch test'
     ]
-  },
+  ),
 
 
-  bromineWater: {
-    id: 'bromineWater',
-
-    name: 'Bromine water',
-    formula: 'Br₂(aq)',
-
-    category: 'indicator',
-    family: 'reagent',
-
-    state: 'solution',
-
-    color: '#b66a2a',
-    solutionColor: '#b66a2a',
-
-    acidBase: 0,
-
-    molarMass: 159.808,
-
-    hazards: [
+  C(
+    'bromineWater',
+    'Bromine water',
+    'Br₂(aq)',
+    'indicator',
+    'reagent',
+    '#b66a2a',
+    0,
+    'solution',
+    [
       'irritant'
     ],
-
-    tags: [
+    [
       'bromine',
-      'alkene test'
+      'unsaturation'
     ]
-  },
+  ),
+
+
+  C(
+    'phenolphthalein',
+    'Phenolphthalein',
+    'C₂₀H₁₂O₄',
+    'indicator',
+    'indicator',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'indicator'
+    ],
+    'phenolphthalein'
+  ),
+
+
+  C(
+    'methylOrange',
+    'Methyl orange',
+    'C₁₄H₁₄N₃NaO₃S',
+    'indicator',
+    'indicator',
+    '#e9b13f',
+    0,
+    'solution',
+    [],
+    [
+      'indicator'
+    ],
+    'methylOrange'
+  ),
+
+
+  C(
+    'litmus',
+    'Litmus solution',
+    'Indicator',
+    'indicator',
+    'indicator',
+    '#806bb0',
+    0,
+    'solution',
+    [],
+    [
+      'indicator'
+    ],
+    'litmus'
+  ),
+
+
+  C(
+    'universalIndicator',
+    'Universal indicator',
+    'Indicator',
+    'indicator',
+    'indicator',
+    '#4cae70',
+    0,
+    'solution',
+    [],
+    [
+      'indicator',
+      'universal'
+    ],
+    'universal'
+  ),
 
 
   /* =======================================================
      HYDROCARBONS
   ======================================================= */
 
-  hexane: {
-    id: 'hexane',
-    name: 'Hexane',
-    formula: 'C₆H₁₄',
-    category: 'organic',
-    family: 'alkane',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 86.178,
-    hazards: ['flammable'],
-    tags: ['alkane', 'hexane']
-  },
+  C(
+    'methane',
+    'Methane',
+    'CH₄',
+    'organic',
+    'alkane',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkane'
+    ]
+  ),
 
 
-  cyclohexane: {
-    id: 'cyclohexane',
-    name: 'Cyclohexane',
-    formula: 'C₆H₁₂',
-    category: 'organic',
-    family: 'cycloalkane',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 84.162,
-    hazards: ['flammable'],
-    tags: ['cycloalkane']
-  },
+  C(
+    'ethane',
+    'Ethane',
+    'C₂H₆',
+    'organic',
+    'alkane',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkane'
+    ]
+  ),
 
 
-  ethene: {
-    id: 'ethene',
-    name: 'Ethene',
-    formula: 'C₂H₄',
-    category: 'organic',
-    family: 'alkene',
-    state: 'gas',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 28.054,
-    hazards: ['flammable'],
-    tags: ['alkene', 'ethylene']
-  },
+  C(
+    'propane',
+    'Propane',
+    'C₃H₈',
+    'organic',
+    'alkane',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkane'
+    ]
+  ),
 
 
-  ethyne: {
-    id: 'ethyne',
-    name: 'Ethyne',
-    formula: 'C₂H₂',
-    category: 'organic',
-    family: 'alkyne',
-    state: 'gas',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 26.038,
-    hazards: ['flammable'],
-    tags: ['alkyne', 'acetylene']
-  },
+  C(
+    'butane',
+    'Butane',
+    'C₄H₁₀',
+    'organic',
+    'alkane',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkane'
+    ]
+  ),
+
+
+  C(
+    'hexane',
+    'Hexane',
+    'C₆H₁₄',
+    'organic',
+    'alkane',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'alkane'
+    ]
+  ),
+
+
+  C(
+    'cyclohexane',
+    'Cyclohexane',
+    'C₆H₁₂',
+    'organic',
+    'cycloalkane',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'cycloalkane'
+    ]
+  ),
+
+
+  C(
+    'ethene',
+    'Ethene',
+    'C₂H₄',
+    'organic',
+    'alkene',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkene',
+      'ethylene'
+    ]
+  ),
+
+
+  C(
+    'propene',
+    'Propene',
+    'C₃H₆',
+    'organic',
+    'alkene',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkene'
+    ]
+  ),
+
+
+  C(
+    'ethyne',
+    'Ethyne',
+    'C₂H₂',
+    'organic',
+    'alkyne',
+    '#f8fbff',
+    0,
+    'gas',
+    [
+      'flammable'
+    ],
+    [
+      'alkyne',
+      'acetylene'
+    ]
+  ),
+
+
+  C(
+    'benzene',
+    'Benzene',
+    'C₆H₆',
+    'organic',
+    'aromatic',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable',
+      'toxic'
+    ],
+    [
+      'aromatic'
+    ]
+  ),
+
+
+  C(
+    'toluene',
+    'Methylbenzene',
+    'C₆H₅CH₃',
+    'organic',
+    'aromatic',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'aromatic',
+      'toluene'
+    ]
+  ),
 
 
   /* =======================================================
      ALCOHOLS / PHENOL
   ======================================================= */
 
-  methanol: {
-    id: 'methanol',
-    name: 'Methanol',
-    formula: 'CH₃OH',
-    category: 'organic',
-    family: 'alcohol',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 32.042,
-    hazards: ['flammable', 'toxic'],
-    tags: ['alcohol', 'methanol']
-  },
+  C(
+    'methanol',
+    'Methanol',
+    'CH₃OH',
+    'organic',
+    'alcohol',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable',
+      'toxic'
+    ],
+    [
+      'alcohol'
+    ]
+  ),
 
 
-  ethanol: {
-    id: 'ethanol',
-    name: 'Ethanol',
-    formula: 'C₂H₅OH',
-    category: 'organic',
-    family: 'alcohol',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 46.069,
-    hazards: ['flammable'],
-    tags: ['alcohol', 'ethanol']
-  },
-
-
-  propan1ol: {
-    id: 'propan1ol',
-    name: 'Propan-1-ol',
-    formula: 'C₃H₇OH',
-    category: 'organic',
-    family: 'alcohol',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 60.096,
-    hazards: ['flammable'],
-    tags: ['alcohol', 'propanol']
-  },
-
-
-  glycerol: {
-    id: 'glycerol',
-    name: 'Glycerol',
-    formula: 'C₃H₈O₃',
-    category: 'organic',
-    family: 'polyol',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 92.094,
-    hazards: [],
-    tags: ['glycerol', 'polyol']
-  },
-
-
-  phenol: {
-    id: 'phenol',
-    name: 'Phenol',
-    formula: 'C₆H₅OH',
-    category: 'organic',
-    family: 'phenol',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: -0.18,
-    molarMass: 94.113,
-    hazards: ['toxic', 'corrosive'],
-    tags: ['phenol']
-  },
-
-
-  /* =======================================================
-     ALDEHYDE / KETONE
-  ======================================================= */
-
-  ethanal: {
-    id: 'ethanal',
-    name: 'Ethanal',
-    formula: 'CH₃CHO',
-    category: 'organic',
-    family: 'aldehyde',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 44.053,
-    hazards: ['flammable'],
-    tags: ['aldehyde']
-  },
-
-
-  propanal: {
-    id: 'propanal',
-    name: 'Propanal',
-    formula: 'C₂H₅CHO',
-    category: 'organic',
-    family: 'aldehyde',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 58.08,
-    hazards: ['flammable'],
-    tags: ['aldehyde']
-  },
-
-
-  acetone: {
-    id: 'acetone',
-    name: 'Propanone',
-    formula: 'CH₃COCH₃',
-    category: 'organic',
-    family: 'ketone',
-    state: 'liquid',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 58.08,
-    hazards: ['flammable'],
-    tags: ['ketone', 'acetone']
-  },
-
-
-  /* =======================================================
-     ESTER
-  ======================================================= */
-
-  ethylEthanoate: {
-    id: 'ethylEthanoate',
-
-    name: 'Ethyl ethanoate',
-    formula: 'CH₃COOC₂H₅',
-
-    category: 'organic',
-    family: 'ester',
-
-    state: 'liquid',
-
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-
-    acidBase: 0,
-
-    molarMass: 88.106,
-
-    hazards: [
+  C(
+    'ethanol',
+    'Ethanol',
+    'C₂H₅OH',
+    'organic',
+    'alcohol',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
       'flammable'
     ],
+    [
+      'alcohol'
+    ]
+  ),
 
-    tags: [
+
+  C(
+    'propan1ol',
+    'Propan-1-ol',
+    'C₃H₇OH',
+    'organic',
+    'alcohol',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'alcohol'
+    ]
+  ),
+
+
+  C(
+    'propan2ol',
+    'Propan-2-ol',
+    'CH₃CHOHCH₃',
+    'organic',
+    'alcohol',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'alcohol',
+      'isopropanol'
+    ]
+  ),
+
+
+  C(
+    'ethyleneGlycol',
+    'Ethane-1,2-diol',
+    'HOCH₂CH₂OH',
+    'organic',
+    'polyol',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'toxic'
+    ],
+    [
+      'glycol',
+      'polyol'
+    ]
+  ),
+
+
+  C(
+    'glycerol',
+    'Glycerol',
+    'C₃H₈O₃',
+    'organic',
+    'polyol',
+    '#f8fbff',
+    0,
+    'liquid',
+    [],
+    [
+      'glycerol',
+      'polyol'
+    ]
+  ),
+
+
+  C(
+    'phenol',
+    'Phenol',
+    'C₆H₅OH',
+    'organic',
+    'phenol',
+    '#f8fbff',
+    -.18,
+    'solution',
+    [
+      'toxic',
+      'corrosive'
+    ],
+    [
+      'phenol'
+    ]
+  ),
+
+
+  /* =======================================================
+     CARBONYL
+  ======================================================= */
+
+  C(
+    'methanal',
+    'Methanal',
+    'HCHO',
+    'organic',
+    'aldehyde',
+    '#f8fbff',
+    0,
+    'solution',
+    [
+      'toxic'
+    ],
+    [
+      'formaldehyde',
+      'aldehyde'
+    ]
+  ),
+
+
+  C(
+    'ethanal',
+    'Ethanal',
+    'CH₃CHO',
+    'organic',
+    'aldehyde',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'aldehyde'
+    ]
+  ),
+
+
+  C(
+    'propanal',
+    'Propanal',
+    'C₂H₅CHO',
+    'organic',
+    'aldehyde',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'aldehyde'
+    ]
+  ),
+
+
+  C(
+    'acetone',
+    'Propanone',
+    'CH₃COCH₃',
+    'organic',
+    'ketone',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'ketone',
+      'acetone'
+    ]
+  ),
+
+
+  C(
+    'butanone',
+    'Butan-2-one',
+    'CH₃COC₂H₅',
+    'organic',
+    'ketone',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'ketone'
+    ]
+  ),
+
+
+  /* =======================================================
+     ESTERS
+  ======================================================= */
+
+  C(
+    'methylEthanoate',
+    'Methyl ethanoate',
+    'CH₃COOCH₃',
+    'organic',
+    'ester',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
       'ester'
     ]
-  },
+  ),
+
+
+  C(
+    'ethylEthanoate',
+    'Ethyl ethanoate',
+    'CH₃COOC₂H₅',
+    'organic',
+    'ester',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'ester'
+    ]
+  ),
+
+
+  C(
+    'ethylFormate',
+    'Ethyl methanoate',
+    'HCOOC₂H₅',
+    'organic',
+    'ester',
+    '#f8fbff',
+    0,
+    'liquid',
+    [
+      'flammable'
+    ],
+    [
+      'ester'
+    ]
+  ),
 
 
   /* =======================================================
      CARBOHYDRATES
   ======================================================= */
 
-  glucose: {
-    id: 'glucose',
-    name: 'Glucose solution',
-    formula: 'C₆H₁₂O₆',
-    category: 'organic',
-    family: 'carbohydrate',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 180.156,
-    hazards: [],
-    tags: ['glucose', 'carbohydrate']
-  },
+  C(
+    'glucose',
+    'Glucose solution',
+    'C₆H₁₂O₆',
+    'organic',
+    'carbohydrate',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'glucose',
+      'reducing sugar'
+    ]
+  ),
 
 
-  fructose: {
-    id: 'fructose',
-    name: 'Fructose solution',
-    formula: 'C₆H₁₂O₆',
-    category: 'organic',
-    family: 'carbohydrate',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 180.156,
-    hazards: [],
-    tags: ['fructose', 'carbohydrate']
-  },
+  C(
+    'fructose',
+    'Fructose solution',
+    'C₆H₁₂O₆',
+    'organic',
+    'carbohydrate',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'fructose',
+      'reducing sugar'
+    ]
+  ),
 
 
-  sucrose: {
-    id: 'sucrose',
-    name: 'Sucrose solution',
-    formula: 'C₁₂H₂₂O₁₁',
-    category: 'organic',
-    family: 'carbohydrate',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 342.296,
-    hazards: [],
-    tags: ['sucrose', 'sugar']
-  },
+  C(
+    'sucrose',
+    'Sucrose solution',
+    'C₁₂H₂₂O₁₁',
+    'organic',
+    'carbohydrate',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'sucrose',
+      'sugar'
+    ]
+  ),
 
 
-  starch: {
-    id: 'starch',
-    name: 'Starch solution',
-    formula: '(C₆H₁₀O₅)ₙ',
-    category: 'organic',
-    family: 'carbohydrate',
-    state: 'solution',
-    color: '#f2f3f5',
-    solutionColor: '#f2f3f5',
-    acidBase: 0,
-    molarMass: null,
-    hazards: [],
-    tags: ['starch', 'carbohydrate']
-  },
+  C(
+    'maltose',
+    'Maltose solution',
+    'C₁₂H₂₂O₁₁',
+    'organic',
+    'carbohydrate',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'maltose',
+      'reducing sugar'
+    ]
+  ),
+
+
+  C(
+    'lactose',
+    'Lactose solution',
+    'C₁₂H₂₂O₁₁',
+    'organic',
+    'carbohydrate',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'lactose',
+      'reducing sugar'
+    ]
+  ),
+
+
+  C(
+    'starch',
+    'Starch solution',
+    '(C₆H₁₀O₅)ₙ',
+    'organic',
+    'polysaccharide',
+    '#f2f3f5',
+    0,
+    'solution',
+    [],
+    [
+      'starch'
+    ]
+  ),
+
+
+  C(
+    'cellulose',
+    'Cellulose suspension',
+    '(C₆H₁₀O₅)ₙ',
+    'organic',
+    'polysaccharide',
+    '#f2f3f5',
+    0,
+    'suspension',
+    [],
+    [
+      'cellulose'
+    ]
+  ),
 
 
   /* =======================================================
-     AMINO ACID / PROTEIN
+     AMINO ACIDS / PROTEIN
   ======================================================= */
 
-  glycine: {
-    id: 'glycine',
-    name: 'Glycine solution',
-    formula: 'NH₂CH₂COOH',
-    category: 'organic',
-    family: 'amino-acid',
-    state: 'solution',
-    color: '#f8fbff',
-    solutionColor: '#f8fbff',
-    acidBase: 0,
-    molarMass: 75.067,
-    hazards: [],
-    tags: ['glycine', 'amino acid']
-  },
+  C(
+    'glycine',
+    'Glycine solution',
+    'NH₂CH₂COOH',
+    'organic',
+    'amino-acid',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'amino acid'
+    ]
+  ),
 
 
-  albumin: {
-    id: 'albumin',
-    name: 'Protein solution',
-    formula: 'Protein',
-    category: 'organic',
-    family: 'protein',
-    state: 'solution',
-    color: '#f4f0e8',
-    solutionColor: '#f4f0e8',
-    acidBase: 0,
-    molarMass: null,
-    hazards: [],
-    tags: ['protein', 'albumin', 'biuret']
-  }
-
-}
+  C(
+    'alanine',
+    'Alanine solution',
+    'CH₃CH(NH₂)COOH',
+    'organic',
+    'amino-acid',
+    '#f8fbff',
+    0,
+    'solution',
+    [],
+    [
+      'amino acid'
+    ]
+  ),
 
 
-/* =========================================================
-   DISPLAY ORDER
-========================================================= */
-
-export const CHEMICAL_ORDER = [
-
-  'water',
-
-  'hcl',
-  'h2so4',
-  'hno3',
-  'h3po4',
-
-  'naoh',
-  'koh',
-  'caoh2',
-  'nh3',
-
-  'nacl',
-  'kcl',
-  'cuso4',
-  'cucl2',
-  'fecl3',
-  'feso4',
-  'agno3',
-  'bacl2',
-  'bano3',
-  'pbno3',
-
-  'na2co3',
-  'nahco3',
-  'na2so4',
-  'na2s',
-  'nh4cl',
-  'ki',
-  'kbr',
-  'kscn',
-  'mgcl2',
-  'cacl2',
-  'znso4',
-  'alcl3',
-
-  'kmno4',
-  'k2cr2o7',
-  'h2o2',
-
-  'phenolphthalein',
-  'methylOrange',
-  'litmus',
-  'iodine',
-  'bromineWater',
-
-  'hexane',
-  'cyclohexane',
-  'ethene',
-  'ethyne',
-
-  'methanol',
-  'ethanol',
-  'propan1ol',
-  'glycerol',
-  'phenol',
-
-  'ethanal',
-  'propanal',
-  'acetone',
-
-  'ethanoic',
-  'propanoic',
-  'benzoic',
-  'ethylEthanoate',
-
-  'glucose',
-  'fructose',
-  'sucrose',
-  'starch',
-
-  'glycine',
-  'albumin'
+  C(
+    'albumin',
+    'Protein solution',
+    'Protein',
+    'organic',
+    'protein',
+    '#f4f0e8',
+    0,
+    'solution',
+    [],
+    [
+      'protein',
+      'biuret'
+    ]
+  )
 
 ]
 
 
-/* =========================================================
-   HELPERS
-========================================================= */
+export const CHEMICALS =
+  Object.fromEntries(
+
+    LIST.map(
+      item => [
+        item.id,
+        item
+      ]
+    )
+
+  )
+
+
+export const CHEMICAL_ORDER =
+  LIST.map(
+    item =>
+      item.id
+  )
+
 
 export function getChemical(
   id
@@ -1424,53 +1920,69 @@ export function searchChemicals(
       .toLowerCase()
 
 
-  return CHEMICAL_ORDER
+  return LIST.filter(
+    chemical => {
 
-    .map(
-      id =>
-        CHEMICALS[id]
-    )
-
-    .filter(
-      Boolean
-    )
-
-    .filter(
-      chemical => {
-
-        if (!text) {
-          return true
-        }
-
-
-        return [
-
-          chemical.name,
-
-          chemical.formula,
-
-          chemical.category,
-
-          chemical.family,
-
-          ...(
-            chemical.tags ||
-            []
-          )
-
-        ]
-
-          .join(
-            ' '
-          )
-
-          .toLowerCase()
-
-          .includes(
-            text
-          )
-
+      if (!text) {
+        return true
       }
+
+
+      return [
+
+        chemical.name,
+
+        chemical.formula,
+
+        chemical.category,
+
+        chemical.family,
+
+        ...(
+          chemical.tags ||
+          []
+        )
+
+      ]
+
+        .join(
+          ' '
+        )
+
+        .toLowerCase()
+
+        .includes(
+          text
+        )
+
+    }
+  )
+
+}
+
+
+export function getChemicalFamilies() {
+
+  return [
+    ...new Set(
+      LIST
+        .map(
+          item =>
+            item.family
+        )
+        .filter(
+          Boolean
+        )
+    )
+  ]
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.localeCompare(
+          b
+        )
     )
 
 }
