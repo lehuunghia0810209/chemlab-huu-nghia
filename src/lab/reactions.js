@@ -1,6 +1,6 @@
 /* =========================================================
    CHEMLAB VIRTUAL LAB 3.1
-   95-REACTION DATABASE
+   96-REACTION DATABASE
 ========================================================= */
 
 const E = (
@@ -2163,12 +2163,19 @@ export const REACTIONS = [
       'ethylEthanoate',
       'naoh'
     ],
-    'Ester hydrolysis',
+    'Saponification — ethyl ethanoate',
     'CH₃COOC₂H₅ + NaOH → CH₃COONa + C₂H₅OH',
-    'Alkaline hydrolysis is simulated.',
+    'Ethyl ethanoate undergoes alkaline hydrolysis (saponification), forming sodium ethanoate and ethanol.',
     [
       E(
         'flash'
+      ),
+      E(
+        'message',
+        {
+          text:
+            'Xà phòng hóa ester: tạo CH₃COONa và C₂H₅OH.'
+        }
       )
     ],
     'organic',
@@ -2189,12 +2196,19 @@ export const REACTIONS = [
       'methylEthanoate',
       'naoh'
     ],
-    'Ester hydrolysis',
+    'Saponification — methyl ethanoate',
     'CH₃COOCH₃ + NaOH → CH₃COONa + CH₃OH',
-    'Alkaline hydrolysis is simulated.',
+    'Methyl ethanoate undergoes alkaline hydrolysis (saponification), forming sodium ethanoate and methanol.',
     [
       E(
         'flash'
+      ),
+      E(
+        'message',
+        {
+          text:
+            'Xà phòng hóa ester: tạo CH₃COONa và CH₃OH.'
+        }
       )
     ],
     'organic',
@@ -2215,12 +2229,19 @@ export const REACTIONS = [
       'ethylFormate',
       'naoh'
     ],
-    'Ester hydrolysis',
+    'Saponification — ethyl methanoate',
     'HCOOC₂H₅ + NaOH → HCOONa + C₂H₅OH',
-    'Alkaline hydrolysis is simulated.',
+    'Ethyl methanoate undergoes alkaline hydrolysis (saponification), forming sodium methanoate and ethanol.',
     [
       E(
         'flash'
+      ),
+      E(
+        'message',
+        {
+          text:
+            'Xà phòng hóa ester: tạo HCOONa và C₂H₅OH.'
+        }
       )
     ],
     'organic',
@@ -2232,6 +2253,46 @@ export const REACTIONS = [
         55
     },
     75
+  ),
+
+
+  R(
+    'triglycerideOil-naoh',
+    [
+      'triglycerideOil',
+      'naoh'
+    ],
+    'Saponification of fat',
+    '(RCOO)₃C₃H₅ + 3NaOH → C₃H₅(OH)₃ + 3RCOONa',
+    'A triglyceride reacts with sodium hydroxide on heating to form glycerol and sodium salts of fatty acids (soap).',
+    [
+      E(
+        'flash'
+      ),
+      E(
+        'foam',
+        {
+          amount:
+            28
+        }
+      ),
+      E(
+        'message',
+        {
+          text:
+            'Xà phòng hóa chất béo: tạo glycerol và muối sodium của acid béo (xà phòng).'
+        }
+      )
+    ],
+    'organic',
+    {
+      heating:
+        true,
+
+      minTemperature:
+        60
+    },
+    92
   ),
 
 

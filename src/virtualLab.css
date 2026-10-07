@@ -134,3 +134,604 @@
   .vl-dashboard{grid-template-columns:1fr}
   .vl-head{flex-direction:column}
 }
+
+
+/* =========================================================
+   REACTION VISUALS
+========================================================= */
+
+.virtual-lab-v2 {
+  --lab-glass-edge: rgba(216, 233, 255, .88);
+  --lab-glass-markings: rgba(210, 222, 240, .72);
+}
+
+.liquid {
+  transition:
+    height .55s cubic-bezier(.22, .8, .22, 1),
+    background .45s ease;
+}
+
+.beaker-body::before {
+  z-index: 8;
+  border-left-color: var(--lab-glass-edge);
+  border-right-color: var(--lab-glass-edge);
+  border-bottom-color: var(--lab-glass-edge);
+  pointer-events: none;
+}
+
+.beaker-top {
+  z-index: 9;
+  border-color: var(--lab-glass-edge);
+  pointer-events: none;
+}
+
+.beaker-scale {
+  z-index: 10;
+  color: var(--lab-glass-markings);
+}
+
+.beaker-scale span::before {
+  background: var(--lab-glass-markings);
+}
+
+.drop-layer {
+  z-index: 5;
+}
+
+.precipitate-layer {
+  z-index: 3;
+  overflow: hidden;
+}
+
+/* The effect layers span the full mask, not the changing liquid fill. */
+.liquid {
+  z-index: 1;
+}
+
+.precipitate-layer {
+  inset: 0;
+  z-index: 3;
+}
+
+.precipitate-cloud {
+  top: auto;
+  bottom: 2px;
+  height: var(--cloud-height, 50%);
+}
+
+.precipitate-layer .precipitate-particle {
+  bottom: auto;
+  width: 6px;
+  height: 6px;
+  animation: precipitateParticleSettle 3.4s ease-out forwards;
+}
+
+.precipitate-layer.is-light-precipitate .precipitate-particle {
+  background:
+    radial-gradient(
+      circle at 32% 28%,
+      #fffdf8 0%,
+      #f1f0e9 60%,
+      #d8d7d1 100%
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html .virtual-lab-v2 .liquid {
+    transition: none !important;
+  }
+
+  .precipitate-layer .precipitate-particle {
+    animation: none !important;
+    opacity: .72 !important;
+    transform: none !important;
+  }
+
+  .bubble-layer i {
+    animation: none !important;
+    opacity: .72 !important;
+  }
+}
+
+.precipitate-cloud {
+  position: absolute;
+  z-index: 1;
+
+  left: 5%;
+  right: 5%;
+  bottom: 2px;
+  top: auto;
+
+  height: var(--cloud-height, 50%);
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      ellipse at 50% 70%,
+      color-mix(
+        in srgb,
+        var(--precipitate-color, #f4f4f4) 22%,
+        transparent
+      ),
+      transparent 72%
+    );
+
+  opacity: 0;
+
+  animation:
+    precipitateCloudIn .65s .25s ease-out forwards;
+}
+
+.precipitate-sediment {
+  position: absolute;
+  z-index: 2;
+  left: 5%;
+  right: 5%;
+  bottom: 3px;
+  height: var(--sediment-height, 16px);
+  border: 1px solid color-mix(in srgb, var(--precipitate-color, #f4f4f4) 44%, #647184);
+  border-radius: 50% 50% 32% 32% / 30% 30% 55% 55%;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--precipitate-color, #f4f4f4) 82%, #fff),
+      color-mix(in srgb, var(--precipitate-color, #f4f4f4) 82%, #9ba4b0)
+    );
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .72),
+    inset 0 -2px 4px rgba(55, 66, 80, .22),
+    0 -1px 2px rgba(55, 66, 80, .22);
+  opacity: 0;
+  transform: translateY(-24px) scaleX(.72);
+  transform-origin: 50% 100%;
+  animation: precipitateSettle 1.25s 1.6s cubic-bezier(.2, .7, .25, 1) forwards;
+}
+
+.precipitate-particle {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid color-mix(in srgb, var(--precipitate-color, #f4f4f4) 55%, #647184);
+  border-radius: 50%;
+  background: var(--precipitate-color, #f4f4f4);
+  box-shadow: 0 1px 3px rgba(35, 45, 58, .34);
+  animation: precipitateParticleSettle 3.4s ease-out forwards;
+}
+
+.precipitate-layer.is-light-precipitate .precipitate-cloud {
+  background:
+    radial-gradient(
+      ellipse at 50% 70%,
+      rgba(116, 127, 140, .2),
+      rgba(116, 127, 140, .1) 42%,
+      transparent 76%
+    );
+}
+
+.precipitate-layer.is-light-precipitate .precipitate-sediment {
+  border-color: rgba(91, 101, 113, .74);
+  background:
+    linear-gradient(
+      180deg,
+      #f8f7f2 0%,
+      #ebe9e2 68%,
+      #d8d7d1 100%
+    );
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, .92),
+    inset 0 -2px 5px rgba(67, 77, 89, .28),
+    0 -1px 2px rgba(67, 77, 89, .25);
+}
+
+.precipitate-layer.is-light-precipitate .precipitate-particle {
+  border-color: rgba(91, 101, 113, .62);
+  background:
+    radial-gradient(
+      circle at 32% 28%,
+      #fffdf8 0%,
+      #f1f0e9 60%,
+      #d8d7d1 100%
+    );
+  box-shadow: 0 1px 3px rgba(43, 53, 65, .35);
+}
+
+.bubble-layer {
+  top: auto;
+  bottom: 6px;
+  left: 8px;
+  right: 8px;
+  overflow: hidden;
+  z-index: 4;
+}
+
+.bubble-layer i {
+  border: 1px solid rgba(255, 255, 255, .82);
+  background:
+    radial-gradient(
+      circle at 32% 28%,
+      rgba(255, 255, 255, .86),
+      rgba(221, 235, 246, .22) 62%,
+      rgba(134, 157, 180, .12)
+    );
+  box-shadow:
+    0 1px 3px rgba(40, 52, 68, .3),
+    inset 0 0 2px rgba(255, 255, 255, .7);
+}
+
+.liquid-top {
+  z-index: 6;
+}
+
+.reaction-observed {
+  animation: reactionObserved .48s ease-out;
+}
+
+@keyframes precipitateCloudIn {
+  to { opacity: 1; }
+}
+
+@keyframes precipitateSettle {
+  0% { opacity: .1; transform: translateY(-24px) scaleX(.72); }
+  65% { opacity: .82; transform: translateY(3px) scaleX(1.04); }
+  100% { opacity: 1; transform: translateY(0) scaleX(1); }
+}
+
+@keyframes precipitateParticleSettle {
+  0% { transform: translateY(-3px); opacity: 0; }
+  18% { opacity: .82; }
+  100% { transform: translateY(26px); opacity: .78; }
+}
+
+@keyframes reactionObserved {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, .22); }
+  100% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .precipitate-cloud,
+  .precipitate-sediment,
+  .precipitate-particle,
+  .reaction-observed {
+    animation: none;
+  }
+
+  .precipitate-cloud,
+  .precipitate-sediment {
+    opacity: 1;
+  }
+
+  .precipitate-sediment {
+    transform: none;
+  }
+
+  .precipitate-particle {
+    opacity: .72;
+  }
+}
+/* =========================================================
+   SOAP FOAM
+   Hiệu ứng bọt khi phản ứng xà phòng hóa xảy ra
+========================================================= */
+
+.foam-layer {
+  position: absolute;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 4;
+
+  pointer-events: none;
+
+  overflow: visible;
+}
+
+
+.foam-layer i {
+  position: absolute;
+
+  display: block;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      .82
+    );
+
+  border-radius: 50%;
+
+  background:
+    rgba(
+      246,
+      251,
+      255,
+      .62
+    );
+
+  box-shadow:
+    inset
+    0
+    0
+    8px
+    rgba(
+      255,
+      255,
+      255,
+      .75
+    ),
+
+    0
+    0
+    8px
+    rgba(
+      208,
+      232,
+      255,
+      .2
+    );
+
+  opacity: 0;
+
+  animation:
+    soapFoamIn
+    .6s
+    ease-out
+    forwards;
+}
+
+
+.foam-layer.active {
+  filter:
+    drop-shadow(
+      0
+      3px
+      8px
+      rgba(
+        213,
+        235,
+        255,
+        .12
+      )
+    );
+}
+
+
+@keyframes soapFoamIn {
+
+  from {
+
+    transform:
+      translateY(8px)
+      scale(.65);
+
+    opacity: 0;
+
+  }
+
+
+  to {
+
+    transform:
+      translateY(0)
+      scale(1);
+
+    opacity: .95;
+
+  }
+
+}
+
+
+/* =========================================================
+   PURPLE LITMUS PAPER
+========================================================= */
+
+.litmus-paper-result {
+  display: inline-grid;
+
+  grid-template-columns:
+    12px
+    minmax(
+      0,
+      1fr
+    );
+
+  align-items: center;
+
+  gap: 9px;
+
+  max-width: 100%;
+
+  margin-bottom: 10px;
+
+  padding:
+    7px
+    10px;
+
+  border:
+    1px solid
+    rgba(
+      155,
+      166,
+      196,
+      .18
+    );
+
+  border-radius: 10px;
+
+  background:
+    rgba(
+      8,
+      12,
+      22,
+      .78
+    );
+
+  backdrop-filter:
+    blur(10px);
+}
+
+
+.litmus-paper-result[hidden] {
+  display: none;
+}
+
+
+.litmus-paper-strip {
+  display: block;
+
+  width: 9px;
+
+  height: 34px;
+
+  margin: 0;
+
+  border-radius: 3px;
+
+  background:
+    var(
+      --litmus-color,
+      #806bb0
+    );
+
+  box-shadow:
+    0
+    0
+    0
+    1px
+    rgba(
+      255,
+      255,
+      255,
+      .24
+    ),
+
+    0
+    0
+    12px
+    color-mix(
+      in srgb,
+      var(
+        --litmus-color,
+        #806bb0
+      )
+      42%,
+      transparent
+    );
+
+  transform:
+    rotate(4deg);
+
+  transition:
+    background
+    .25s
+    ease,
+
+    box-shadow
+    .25s
+    ease;
+}
+
+
+.stage-note
+.litmus-paper-result
+span {
+  display: block;
+
+  margin: 0;
+
+  color: #d9e2f3;
+
+  font-size: .75rem;
+
+  line-height: 1.35;
+
+  font-weight: 750;
+}
+
+
+/* =========================================================
+   LIGHT MODE
+========================================================= */
+
+html[data-theme="light"]
+.litmus-paper-result {
+  border-color:
+    rgba(
+      58,
+      68,
+      92,
+      .12
+    );
+
+  background:
+    rgba(
+      250,
+      252,
+      255,
+      .9
+    );
+}
+
+
+html[data-theme="light"]
+.stage-note
+.litmus-paper-result
+span {
+  color: #354057;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width: 767px
+) {
+
+  .litmus-paper-result {
+    grid-template-columns:
+      10px
+      minmax(
+        0,
+        1fr
+      );
+
+    gap: 7px;
+
+    padding:
+      6px
+      8px;
+  }
+
+
+  .litmus-paper-strip {
+    width: 8px;
+
+    height: 28px;
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
+  .foam-layer i {
+    animation: none;
+
+    opacity: .95;
+  }
+
+}

@@ -60,6 +60,7 @@ export function getActivityStatus(
 
   const started =
     completed ||
+    saved?.started === true ||
     completedSteps > 0 ||
     Number(
       saved?.currentStep || 0

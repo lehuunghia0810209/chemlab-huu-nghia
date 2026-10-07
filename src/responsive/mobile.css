@@ -27,7 +27,6 @@
     min-height: 100%;
     height: auto !important;
 
-    overflow-x: hidden !important;
     overflow-y: auto !important;
 
     scroll-behavior: smooth;
@@ -45,14 +44,13 @@
 
     margin: 0;
 
-    overflow-x: hidden !important;
     overflow-y: auto !important;
 
     -webkit-overflow-scrolling: touch;
 
     overscroll-behavior-y: auto;
 
-    touch-action: pan-y;
+    touch-action: auto;
   }
 
 
@@ -63,7 +61,8 @@
 
     height: auto !important;
 
-    overflow: visible !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
   }
 
 
@@ -82,6 +81,8 @@
     display: block !important;
 
     overflow: visible !important;
+
+    transform: none !important;
 
     padding:
       0

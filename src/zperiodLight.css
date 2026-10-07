@@ -27,28 +27,28 @@ html[data-theme="light"] {
   /* page */
 
   --zp-page:
-    #edf1f6;
+    #e1e6ed;
 
   --zp-page-deep:
-    #e6ebf2;
+    #d7dfe8;
 
   --zp-page-soft:
-    #f4f6fa;
+    #e8edf3;
 
 
   /* surface */
 
   --zp-surface:
-    rgba(255,255,255,.82);
+    #e8edf3;
 
   --zp-surface-strong:
-    rgba(255,255,255,.94);
+    #edf1f5;
 
   --zp-surface-soft:
-    rgba(248,250,253,.82);
+    #e8edf3;
 
   --zp-surface-muted:
-    rgba(236,240,247,.82);
+    #dfe5ed;
 
 
   /* text */
@@ -57,49 +57,49 @@ html[data-theme="light"] {
     #202635;
 
   --zp-text-2:
-    #4c566d;
+    #3f4c5d;
 
   --zp-text-3:
-    #778198;
+    #526071;
 
   --zp-text-4:
-    #9aa3b4;
+    #657386;
 
 
   /* border */
 
   --zp-border:
-    rgba(76,86,109,.13);
+    rgba(54,68,86,.18);
 
   --zp-border-strong:
-    rgba(76,86,109,.19);
+    rgba(54,68,86,.26);
 
   --zp-border-soft:
-    rgba(76,86,109,.08);
+    rgba(54,68,86,.13);
 
 
   /* purple */
 
   --zp-purple:
-    #8b6be8;
+    #8067c4;
 
   --zp-purple-dark:
-    #7356d6;
+    #5f4b9e;
 
   --zp-purple-soft:
-    rgba(139,107,232,.10);
+    rgba(112,91,176,.09);
 
   --zp-purple-soft-2:
-    rgba(139,107,232,.17);
+    rgba(112,91,176,.15);
 
   --zp-purple-border:
-    rgba(139,107,232,.28);
+    rgba(95,75,158,.30);
 
 
   /* blue */
 
   --zp-blue:
-    #5e8bd8;
+    #557ca7;
 
   --zp-blue-soft:
     rgba(94,139,216,.11);
@@ -221,21 +221,21 @@ html[data-theme="light"] body {
 
     radial-gradient(
       circle at 8% -8%,
-      rgba(139,107,232,.07),
+      rgba(112,91,176,.035),
       transparent 31%
     ),
 
     radial-gradient(
       circle at 95% 18%,
-      rgba(94,139,216,.055),
+      rgba(85,124,167,.03),
       transparent 28%
     ),
 
     linear-gradient(
       180deg,
-      #f2f4f8 0%,
-      #edf1f6 48%,
-      #e9eef4 100%
+      #e9edf2 0%,
+      #e1e6ed 48%,
+      #dce3eb 100%
     )
     !important;
 
@@ -2460,4 +2460,1938 @@ html[data-theme="light"]
 
   }
 
+}
+
+
+/* =========================================================
+   32. GUIDED LEARNING
+========================================================= */
+
+html[data-theme="light"]
+#view-lab .guided-panel,
+html[data-theme="light"]
+#view-lab .guided-modebar {
+  border-color: rgba(76, 86, 109, .14) !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-grade-card,
+html[data-theme="light"]
+#view-lab .guided-experiment-card,
+html[data-theme="light"]
+#view-lab .guided-overview-main,
+html[data-theme="light"]
+#view-lab .guided-resume-card {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: #fff !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-mode-btn {
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-mode-btn:hover:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-lab .guided-mode-btn.active:not(.cc-primary):not(.primary-btn):not(.learning-start-button) {
+  border-color: rgba(115, 86, 214, .24) !important;
+  background: rgba(139, 107, 232, .09) !important;
+  color: #302650 !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-mode-btn small,
+html[data-theme="light"]
+#view-lab .guided-grade-card > p,
+html[data-theme="light"]
+#view-lab .guided-grade-meta,
+html[data-theme="light"]
+#view-lab .guided-hero p {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-grade-card > strong,
+html[data-theme="light"]
+#view-lab .guided-hero h3,
+html[data-theme="light"]
+#view-lab .guided-toolbar h3,
+html[data-theme="light"]
+#view-lab .guided-coach h3 {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-progress-track {
+  background: rgba(76, 86, 109, .12) !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .guided-note {
+  border-color: rgba(115, 86, 214, .18) !important;
+  background: rgba(139, 107, 232, .06) !important;
+  color: #4c566d !important;
+}
+
+
+/* =========================================================
+   33. PERIODIC TABLE
+========================================================= */
+
+html[data-theme="light"]
+.pv5-head {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(241, 245, 250, .94))
+    !important;
+  box-shadow: 0 8px 26px rgba(43, 53, 72, .07) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-eyebrow {
+  color: #7356d6 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-head h1,
+html[data-theme="light"]
+.pv5-head-stats strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-head p,
+html[data-theme="light"]
+.pv5-head-stats span {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.pv5-head-stats > div {
+  border-color: rgba(76, 86, 109, .13) !important;
+  background: rgba(255, 255, 255, .78) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-search,
+html[data-theme="light"]
+.pv5-segmented,
+html[data-theme="light"]
+.pv5-filter-chip,
+html[data-theme="light"]
+.pv5-legend {
+  border-color: rgba(76, 86, 109, .15) !important;
+  background: rgba(255, 255, 255, .82) !important;
+  box-shadow: 0 2px 8px rgba(43, 53, 72, .045) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-search input {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-search input::placeholder,
+html[data-theme="light"]
+.pv5-search kbd,
+html[data-theme="light"]
+.pv5-filter-chip b {
+  color: #667188 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-search kbd,
+html[data-theme="light"]
+.pv5-filter-chip b {
+  border-color: rgba(76, 86, 109, .12) !important;
+  background: rgba(76, 86, 109, .06) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-search svg {
+  color: #667188 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-segmented button,
+html[data-theme="light"]
+.pv5-filter-chip {
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+.pv5-segmented button:hover,
+html[data-theme="light"]
+.pv5-filter-chip:hover {
+  border-color: rgba(115, 86, 214, .24) !important;
+  background: rgba(139, 107, 232, .07) !important;
+  color: #302650 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-segmented button.active,
+html[data-theme="light"]
+.pv5-filter-chip.active {
+  border-color: rgba(115, 86, 214, .28) !important;
+  background: rgba(139, 107, 232, .11) !important;
+  color: #49358b !important;
+  box-shadow: inset 0 0 0 1px rgba(139, 107, 232, .08) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-result-bar,
+html[data-theme="light"]
+.pv5-result-bar strong,
+html[data-theme="light"]
+.pv5-result-bar button,
+html[data-theme="light"]
+.pv5-group-label,
+html[data-theme="light"]
+.pv5-period-label {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.pv5-result-bar button {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: rgba(255, 255, 255, .76) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-table-shell {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: linear-gradient(145deg, #f5f7fa, #e9eef5) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element {
+  border-color:
+    color-mix(in srgb, var(--element-accent) 28%, #d8dfeb)
+    !important;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--element-accent) 5%, #fff),
+      #f7f9fc
+    )
+    !important;
+  color: #202635 !important;
+  box-shadow: 0 2px 7px rgba(43, 53, 72, .07) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element-number {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element-symbol {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element-name {
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element-mass {
+  color: #667188 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-series-card {
+  border-color:
+    color-mix(in srgb, var(--element-accent) 34%, #cbd4e2)
+    !important;
+  background:
+    color-mix(in srgb, var(--element-accent) 8%, #fff)
+    !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-series-card span,
+html[data-theme="light"]
+.pv5-series-card b {
+  color:
+    color-mix(in srgb, var(--element-accent) 72%, #283247)
+    !important;
+}
+
+
+html[data-theme="light"]
+.pv5-series-card strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-series-card small,
+html[data-theme="light"]
+.pv5-f-label span,
+html[data-theme="light"]
+.pv5-f-label strong,
+html[data-theme="light"]
+.pv5-legend > div:first-child > span,
+html[data-theme="light"]
+.pv5-legend > div:first-child strong,
+html[data-theme="light"]
+.pv5-legend-items span {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.pv5-fblock-divider {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.pv5-fblock-divider i {
+  background: rgba(76, 86, 109, .16) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-f-label {
+  border-color: rgba(76, 86, 109, .13) !important;
+  background: rgba(255, 255, 255, .72) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-f-row.pv5-series-focus {
+  background: rgba(139, 107, 232, .07) !important;
+  box-shadow: 0 0 0 1px rgba(139, 107, 232, .19) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element:focus-visible,
+html[data-theme="light"]
+.pv5-series-card:focus-visible {
+  outline: 3px solid rgba(115, 86, 214, .65) !important;
+  outline-offset: 2px !important;
+}
+
+
+/* =========================================================
+   34. EQUATION BALANCER
+========================================================= */
+
+html[data-theme="light"]
+.balance-tool {
+  border-color: rgba(76, 86, 109, .16) !important;
+  background: rgba(255, 255, 255, .92) !important;
+  box-shadow: 0 14px 38px rgba(43, 53, 72, .09) !important;
+}
+
+
+html[data-theme="light"]
+.balance-header {
+  border-color: rgba(76, 86, 109, .14) !important;
+}
+
+
+html[data-theme="light"]
+.balance-status-pill {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: #f4f6fa !important;
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+.balance-stage {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background:
+    radial-gradient(circle at 50% 45%, #f8fafc, #edf1f6 78%)
+    !important;
+}
+
+
+html[data-theme="light"]
+.balance-stage-grid {
+  opacity: .24 !important;
+  background-image:
+    linear-gradient(rgba(76, 86, 109, .22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 86, 109, .22) 1px, transparent 1px)
+    !important;
+}
+
+
+html[data-theme="light"]
+.stage-side-info {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: rgba(255, 255, 255, .88) !important;
+}
+
+
+html[data-theme="light"]
+.stage-side-info strong,
+html[data-theme="light"]
+.balance-stage-message strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.equation-side,
+html[data-theme="light"]
+.equation-side:focus-within {
+  border-color: rgba(76, 86, 109, .17) !important;
+  background: #fff !important;
+}
+
+
+html[data-theme="light"]
+.equation-side-title strong,
+html[data-theme="light"]
+.equation-side input {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.equation-side input::placeholder {
+  color: #788398 !important;
+}
+
+
+html[data-theme="light"]
+.balance-result.empty {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: #f6f8fb !important;
+}
+
+
+html[data-theme="light"]
+.balance-result strong {
+  color: #435067 !important;
+}
+
+
+html[data-theme="light"]
+.balance-result.success strong {
+  color: #17603a !important;
+}
+
+
+/* =========================================================
+   35. LEARNING
+========================================================= */
+
+html[data-theme="light"]
+.chem-learning-v3 {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.cl-learn-profile,
+html[data-theme="light"]
+.cl-learn-stats,
+html[data-theme="light"]
+.cl-mastery,
+html[data-theme="light"]
+.cl-learning-setup,
+html[data-theme="light"]
+.cl-weak-panel,
+html[data-theme="light"]
+.cl-history-panel,
+html[data-theme="light"]
+.cl-session-top,
+html[data-theme="light"]
+.cl-session-footer,
+html[data-theme="light"]
+.cl-question-card,
+html[data-theme="light"]
+.cl-result-hero {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: linear-gradient(145deg, #fff, #f4f6fa) !important;
+  color: #202635 !important;
+  box-shadow: 0 6px 20px rgba(43, 53, 72, .055) !important;
+}
+
+
+html[data-theme="light"]
+.cl-learn-stats,
+html[data-theme="light"]
+.cl-stat-card,
+html[data-theme="light"]
+.cl-mastery-card,
+html[data-theme="light"]
+.cl-mode-card,
+html[data-theme="light"]
+.cl-weak-list > div,
+html[data-theme="light"]
+.cl-history-list > div,
+html[data-theme="light"]
+.cl-answer-option,
+html[data-theme="light"]
+.cl-result-stats > div {
+  border-color: rgba(76, 86, 109, .13) !important;
+  background: #fff !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.cl-section-head h3,
+html[data-theme="light"]
+.cl-learn-level strong,
+html[data-theme="light"]
+.cl-learn-profile-copy h2,
+html[data-theme="light"]
+.cl-stat-card strong,
+html[data-theme="light"]
+.cl-mastery-top > div strong,
+html[data-theme="light"]
+.cl-mode-card > div:nth-child(2) > strong,
+html[data-theme="light"]
+.cl-question-card h2,
+html[data-theme="light"]
+.cl-session-score strong,
+html[data-theme="light"]
+.cl-feedback strong,
+html[data-theme="light"]
+.cl-result-score strong,
+html[data-theme="light"]
+.cl-result-hero h2,
+html[data-theme="light"]
+.cl-result-stats strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.cl-section-head > div > span,
+html[data-theme="light"]
+.cl-setup-title span,
+html[data-theme="light"]
+.cl-learn-profile-copy > span,
+html[data-theme="light"]
+.cl-question-number,
+html[data-theme="light"]
+.cl-result-eyebrow {
+  color: #7356d6 !important;
+}
+
+
+html[data-theme="light"]
+.cl-section-head > small,
+html[data-theme="light"]
+.cl-learn-level span,
+html[data-theme="light"]
+.cl-learn-profile-copy p,
+html[data-theme="light"]
+.cl-level-progress > div:first-child,
+html[data-theme="light"]
+.cl-stat-card small,
+html[data-theme="light"]
+.cl-mastery-top > div small,
+html[data-theme="light"]
+.cl-mastery-card p,
+html[data-theme="light"]
+.cl-mode-card p,
+html[data-theme="light"]
+.cl-mode-card > div:nth-child(2) > span,
+html[data-theme="light"]
+.cl-mode-card > i,
+html[data-theme="light"]
+#cl-start-note,
+html[data-theme="light"]
+.cl-weak-list small,
+html[data-theme="light"]
+.cl-history-list small,
+html[data-theme="light"]
+.cl-empty-insight span,
+html[data-theme="light"]
+.cl-session-progress > div:first-child,
+html[data-theme="light"]
+.cl-session-score span,
+html[data-theme="light"]
+.cl-session-footer > div,
+html[data-theme="light"]
+.cl-question-meta > span:first-child,
+html[data-theme="light"]
+.cl-feedback p,
+html[data-theme="light"]
+.cl-result-hero p,
+html[data-theme="light"]
+.cl-result-stats small {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-track {
+  background: #e3e8f0 !important;
+}
+
+
+html[data-theme="light"]
+.cl-mode-card.active {
+  border-color: rgba(115, 86, 214, .34) !important;
+  background: linear-gradient(145deg, #f1edff, #fff) !important;
+  box-shadow: 0 4px 14px rgba(92, 73, 155, .08) !important;
+}
+
+
+html[data-theme="light"]
+.cl-topic-options button,
+html[data-theme="light"]
+.cl-choice-row button,
+html[data-theme="light"]
+.cl-session-back {
+  border-color: rgba(76, 86, 109, .15) !important;
+  background: #f6f8fb !important;
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+.cl-topic-options button.active,
+html[data-theme="light"]
+.cl-choice-row button.active {
+  border-color: rgba(115, 86, 214, .32) !important;
+  background: #eee9fc !important;
+  color: #49358b !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option:hover:not(:disabled) {
+  border-color: rgba(115, 86, 214, .34) !important;
+  background: #f5f1ff !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option > span {
+  border-color: rgba(76, 86, 109, .12) !important;
+  background: #f2f4f8 !important;
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option.correct,
+html[data-theme="light"]
+.cl-feedback.correct {
+  border-color: rgba(22, 101, 52, .22) !important;
+  background: #edf8f0 !important;
+  color: #205c35 !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option.correct > span,
+html[data-theme="light"]
+.cl-feedback.correct .cl-feedback-icon {
+  border-color: rgba(22, 101, 52, .2) !important;
+  color: #17603a !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option.wrong,
+html[data-theme="light"]
+.cl-feedback.wrong {
+  border-color: rgba(185, 28, 28, .2) !important;
+  background: #fff1f1 !important;
+  color: #842929 !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option.wrong > span,
+html[data-theme="light"]
+.cl-feedback.wrong .cl-feedback-icon {
+  border-color: rgba(185, 28, 28, .2) !important;
+  color: #a12c2c !important;
+}
+
+
+html[data-theme="light"]
+.cl-empty-insight {
+  border-color: rgba(76, 86, 109, .2) !important;
+}
+
+
+html[data-theme="light"]
+.cl-empty-insight strong,
+html[data-theme="light"]
+.cl-result-level strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.cl-result-score {
+  border-color: rgba(115, 86, 214, .3) !important;
+  background: #f0ecfc !important;
+  box-shadow: 0 4px 16px rgba(92, 73, 155, .08) !important;
+}
+
+
+html[data-theme="light"]
+.cl-result-score span,
+html[data-theme="light"]
+.cl-result-review,
+html[data-theme="light"]
+.cl-result-topic-list small {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.cl-perfect-bonus {
+  border-color: rgba(161, 98, 7, .18) !important;
+  background: #fff8e8 !important;
+  color: #8a5400 !important;
+}
+
+
+/* =========================================================
+   36. SOLUBILITY TABLE
+========================================================= */
+
+html[data-theme="light"]
+.sol-tool {
+  border-color: rgba(76, 86, 109, .15) !important;
+  background: linear-gradient(145deg, #fff, #f3f6fa) !important;
+  box-shadow: 0 12px 34px rgba(43, 53, 72, .08) !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.sol-head,
+html[data-theme="light"]
+.sol-query {
+  border-color: rgba(76, 86, 109, .14) !important;
+}
+
+
+html[data-theme="light"]
+.sol-head h2,
+html[data-theme="light"]
+.sol-matrix-head h3,
+html[data-theme="light"]
+.sol-result-card > strong,
+html[data-theme="light"]
+.sol-description strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.sol-head > div:first-child > span,
+html[data-theme="light"]
+.sol-matrix-head > div > span {
+  color: #7356d6 !important;
+}
+
+
+html[data-theme="light"]
+.sol-head p,
+html[data-theme="light"]
+.sol-select-box label,
+html[data-theme="light"]
+.sol-combine,
+html[data-theme="light"]
+.sol-arrow,
+html[data-theme="light"]
+.sol-result-card > span,
+html[data-theme="light"]
+.sol-description p,
+html[data-theme="light"]
+.sol-legend span,
+html[data-theme="light"]
+.sol-note {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.sol-head-badge {
+  border-color: rgba(22, 101, 52, .18) !important;
+  background: #edf8f0 !important;
+  color: #28613c !important;
+}
+
+
+html[data-theme="light"]
+.sol-result-card,
+html[data-theme="light"]
+.sol-description {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: #fff !important;
+}
+
+
+html[data-theme="light"]
+.sol-result-card.soluble > b {
+  background: #e9f7ed !important;
+  color: #17603a !important;
+}
+
+
+html[data-theme="light"]
+.sol-result-card.slight > b {
+  background: #fff5df !important;
+  color: #875000 !important;
+}
+
+
+html[data-theme="light"]
+.sol-result-card.insoluble > b {
+  background: #fff0f0 !important;
+  color: #922f2f !important;
+}
+
+
+html[data-theme="light"]
+.sol-table-scroll {
+  border-color: rgba(76, 86, 109, .14) !important;
+}
+
+
+html[data-theme="light"]
+.sol-table {
+  background: #fff !important;
+}
+
+
+html[data-theme="light"]
+.sol-table th,
+html[data-theme="light"]
+.sol-table td {
+  border-color: rgba(76, 86, 109, .12) !important;
+}
+
+
+html[data-theme="light"]
+.sol-table thead th,
+html[data-theme="light"]
+.sol-table tbody th {
+  background: #f1f4f8 !important;
+  color: #3e4a60 !important;
+}
+
+
+html[data-theme="light"]
+.sol-cell.soluble {
+  background: #edf8f0 !important;
+  color: #17603a !important;
+}
+
+
+html[data-theme="light"]
+.sol-cell.slight {
+  background: #fff6e5 !important;
+  color: #875000 !important;
+}
+
+
+html[data-theme="light"]
+.sol-cell.insoluble {
+  background: #fff0f0 !important;
+  color: #922f2f !important;
+}
+
+
+html[data-theme="light"]
+.sol-cell.selected {
+  border-color: #7356d6 !important;
+  box-shadow: 0 0 0 2px rgba(115, 86, 214, .17) !important;
+}
+
+
+/* =========================================================
+   37. ION ENGINE
+========================================================= */
+
+html[data-theme="light"]
+.ion-engine {
+  border-color: rgba(76, 86, 109, .15) !important;
+  background: linear-gradient(145deg, #fff, #f3f6fa) !important;
+  box-shadow: 0 12px 34px rgba(43, 53, 72, .08) !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.ion-head,
+html[data-theme="light"]
+.ion-library {
+  border-color: rgba(76, 86, 109, .14) !important;
+}
+
+
+html[data-theme="light"]
+.ion-eyebrow,
+html[data-theme="light"]
+.ion-detail-head > div > span,
+html[data-theme="light"]
+.compound-builder-head > span,
+html[data-theme="light"]
+.ion-library-count > span {
+  color: #7356d6 !important;
+}
+
+
+html[data-theme="light"]
+.ion-head h2,
+html[data-theme="light"]
+.ion-detail-head h3,
+html[data-theme="light"]
+.compound-builder-head h3,
+html[data-theme="light"]
+.ion-detail-grid strong,
+html[data-theme="light"]
+.ion-card-formula,
+html[data-theme="light"]
+.ion-card-name,
+html[data-theme="light"]
+.selected-ion > strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.ion-head p,
+html[data-theme="light"]
+.ion-search span,
+html[data-theme="light"]
+.ion-filter button,
+html[data-theme="light"]
+.ion-card-type,
+html[data-theme="light"]
+.ion-card small,
+html[data-theme="light"]
+.ion-detail-grid span,
+html[data-theme="light"]
+.ion-composition > span,
+html[data-theme="light"]
+.ion-detail-note,
+html[data-theme="light"]
+.compound-builder-head p,
+html[data-theme="light"]
+.selected-ion > span,
+html[data-theme="light"]
+.selected-ion > small,
+html[data-theme="light"]
+.ion-plus {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.ion-engine-status {
+  border-color: rgba(22, 101, 52, .18) !important;
+  background: #edf8f0 !important;
+  color: #28613c !important;
+}
+
+
+html[data-theme="light"]
+.ion-search,
+html[data-theme="light"]
+.ion-filter button,
+html[data-theme="light"]
+.ion-library-count strong,
+html[data-theme="light"]
+.ion-card,
+html[data-theme="light"]
+.ion-detail,
+html[data-theme="light"]
+.compound-builder,
+html[data-theme="light"]
+.ion-detail-grid > div,
+html[data-theme="light"]
+.selected-ion {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: #fff !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.ion-workspace {
+  background: rgba(239, 243, 248, .72) !important;
+}
+
+
+html[data-theme="light"]
+.ion-filter button.active,
+html[data-theme="light"]
+.ion-card.selected {
+  border-color: rgba(115, 86, 214, .3) !important;
+  background: #f1edff !important;
+  color: #49358b !important;
+}
+
+
+html[data-theme="light"]
+#view-tools .ion-filter button.active:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-tools .ion-card.selected:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-tools .ion-to-solubility:not(.cc-primary):not(.primary-btn):not(.learning-start-button) {
+  border-color: rgba(115, 86, 214, .32) !important;
+}
+
+
+html[data-theme="light"]
+.ion-card-formula sup,
+html[data-theme="light"]
+.ion-detail-grid strong,
+html[data-theme="light"]
+.ion-detail-symbol.cation,
+html[data-theme="light"]
+.ion-detail-symbol.anion {
+  color: #49358b !important;
+}
+
+
+html[data-theme="light"]
+.ion-composition b,
+html[data-theme="light"]
+.compound-balance > div {
+  border-color: rgba(76, 86, 109, .12) !important;
+  background: #f3f5f9 !important;
+  color: #3e4a60 !important;
+}
+
+
+html[data-theme="light"]
+.compound-result {
+  border-color: rgba(22, 101, 52, .18) !important;
+  background: linear-gradient(145deg, #f2faf4, #fff) !important;
+}
+
+
+html[data-theme="light"]
+.compound-result-label,
+html[data-theme="light"]
+.compound-balance span {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.compound-formula,
+html[data-theme="light"]
+.compound-balance strong {
+  color: #205c35 !important;
+}
+
+
+html[data-theme="light"]
+.compound-equation,
+html[data-theme="light"]
+.ion-to-solubility {
+  border-color: rgba(115, 86, 214, .16) !important;
+  background: #f1edff !important;
+  color: #49358b !important;
+}
+
+
+/* =========================================================
+   38. ORBITAL ATLAS
+========================================================= */
+
+html[data-theme="light"]
+.orbital-atlas {
+  border-color: rgba(76, 86, 109, .15) !important;
+  background: linear-gradient(145deg, #fff, #f3f6fa) !important;
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.oa-head,
+html[data-theme="light"]
+.oa-sidebar,
+html[data-theme="light"]
+.oa-info {
+  border-color: rgba(76, 86, 109, .14) !important;
+}
+
+
+html[data-theme="light"]
+.oa-head > div:first-child > span,
+html[data-theme="light"]
+.oa-label,
+html[data-theme="light"]
+.oa-orbital-head strong {
+  color: #7356d6 !important;
+}
+
+
+html[data-theme="light"]
+.oa-head h2,
+html[data-theme="light"]
+.oa-info h3,
+html[data-theme="light"]
+.oa-family-tabs button strong,
+html[data-theme="light"]
+.oa-orbital-list button strong,
+html[data-theme="light"]
+.oa-quantum-grid strong,
+html[data-theme="light"]
+.oa-family-info strong {
+  color: #202635 !important;
+}
+
+
+html[data-theme="light"]
+.oa-head p,
+html[data-theme="light"]
+.oa-live,
+html[data-theme="light"]
+.oa-orbital-head span,
+html[data-theme="light"]
+.oa-orbital-list button span,
+html[data-theme="light"]
+.oa-info > p,
+html[data-theme="light"]
+.oa-quantum-grid small,
+html[data-theme="light"]
+.oa-family-info > span,
+html[data-theme="light"]
+.oa-family-info p,
+html[data-theme="light"]
+.oa-warning p {
+  color: #59657a !important;
+}
+
+
+html[data-theme="light"]
+.oa-live {
+  border-color: rgba(22, 101, 52, .18) !important;
+  background: #edf8f0 !important;
+}
+
+
+html[data-theme="light"]
+.oa-family-tabs button,
+html[data-theme="light"]
+.oa-orbital-list button,
+html[data-theme="light"]
+.oa-quantum-grid > div,
+html[data-theme="light"]
+.oa-family-info {
+  border-color: rgba(76, 86, 109, .14) !important;
+  background: #fff !important;
+}
+
+
+html[data-theme="light"]
+#view-tools .oa-family-tabs button:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-tools .oa-orbital-list button:not(.cc-primary):not(.primary-btn):not(.learning-start-button) {
+  color: #4c566d !important;
+}
+
+
+html[data-theme="light"]
+.oa-family-tabs button:hover,
+html[data-theme="light"]
+.oa-family-tabs button.active,
+html[data-theme="light"]
+.oa-orbital-list button:hover,
+html[data-theme="light"]
+.oa-orbital-list button.active {
+  border-color: rgba(115, 86, 214, .3) !important;
+  background: #f1edff !important;
+}
+
+
+html[data-theme="light"]
+#view-tools .oa-family-tabs button:hover:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-tools .oa-family-tabs button.active:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-tools .oa-orbital-list button:hover:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
+html[data-theme="light"]
+#view-tools .oa-orbital-list button.active:not(.cc-primary):not(.primary-btn):not(.learning-start-button) {
+  border-color: rgba(115, 86, 214, .32) !important;
+  background: #f1edff !important;
+  color: #49358b !important;
+}
+
+
+html[data-theme="light"]
+.oa-family-tabs button.active strong,
+html[data-theme="light"]
+.oa-orbital-list button.active strong {
+  color: #49358b !important;
+}
+
+
+html[data-theme="light"]
+.oa-warning {
+  border-color: rgba(161, 98, 7, .18) !important;
+  background: #fff8e8 !important;
+}
+
+
+html[data-theme="light"]
+.oa-stage-panel {
+  background:
+    radial-gradient(circle at center, rgba(91, 33, 182, .1), transparent 50%),
+    #10131d !important;
+}
+
+
+html[data-theme="light"]
+.oa-stage-toolbar,
+html[data-theme="light"]
+.oa-stage-footer {
+  border-color: rgba(255, 255, 255, .08) !important;
+}
+
+
+html[data-theme="light"]
+.oa-stage-toolbar > div:first-child strong {
+  color: #f7f7fa !important;
+}
+
+
+html[data-theme="light"]
+.oa-stage-actions button {
+  border-color: rgba(255, 255, 255, .1) !important;
+  background: #1b1e29 !important;
+  color: #c2c8d5 !important;
+}
+
+
+html[data-theme="light"]
+.oa-stage-actions button:hover,
+html[data-theme="light"]
+.oa-stage-actions button.active {
+  border-color: rgba(167, 139, 250, .4) !important;
+  background: rgba(124, 58, 237, .18) !important;
+  color: #fff !important;
+}
+
+
+/* =========================================================
+   39. SOFT LIGHT SURFACES
+========================================================= */
+
+html[data-theme="light"]
+.workspace-topbar,
+html[data-theme="light"]
+.workspace-sidebar {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #e5eaf0 !important;
+  box-shadow: 0 2px 12px rgba(37, 49, 65, .045) !important;
+}
+
+
+html[data-theme="light"]
+.workspace-title-area strong,
+html[data-theme="light"]
+.workspace-sidebar .sidebar-button,
+html[data-theme="light"]
+.workspace-brand {
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .panel,
+  .cc-panel,
+  .cc-input-card,
+  .learning-start,
+  .learning-question-card,
+  .element-drawer,
+  .drawer-card,
+  .v5-command-panel,
+  .tool-hub-header,
+  .tool-selector-card,
+  .balance-tool,
+  .sol-tool,
+  .ion-engine,
+  .orbital-atlas,
+  .cc-workspace
+) {
+  border-color: rgba(54, 68, 86, .2) !important;
+  background: #e9edf2 !important;
+  color: #202b3a !important;
+  box-shadow: 0 5px 18px rgba(37, 49, 65, .055) !important;
+}
+
+
+html[data-theme="light"]
+.virtual-lab-v2 .panel,
+html[data-theme="light"]
+#view-lab .guided-panel,
+html[data-theme="light"]
+#view-lab .guided-modebar {
+  border-color: rgba(54, 68, 86, .2) !important;
+  background: #e9edf2 !important;
+  color: #202b3a !important;
+  box-shadow: 0 5px 18px rgba(37, 49, 65, .055) !important;
+}
+
+
+html[data-theme="light"]
+:is(
+  .cl-learn-profile,
+  .cl-learn-stats,
+  .cl-mastery,
+  .cl-learning-setup,
+  .cl-weak-panel,
+  .cl-history-panel,
+  .cl-session-top,
+  .cl-session-footer,
+  .cl-question-card,
+  .cl-result-hero,
+  .cl-stat-card,
+  .cl-mastery-card,
+  .cl-mode-card,
+  .cl-weak-list > div,
+  .cl-history-list > div,
+  .cl-answer-option,
+  .cl-result-stats > div
+) {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #e9edf2 !important;
+  color: #202b3a !important;
+  box-shadow: none !important;
+}
+
+
+html[data-theme="light"]
+.cl-mode-card.active {
+  border-color: rgba(95, 75, 158, .35) !important;
+  background: #e2e6ef !important;
+  box-shadow: inset 0 0 0 1px rgba(95, 75, 158, .12) !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option {
+  background: #edf1f5 !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option.correct,
+html[data-theme="light"]
+.cl-feedback.correct {
+  background: #e1eee5 !important;
+}
+
+
+html[data-theme="light"]
+.cl-answer-option.wrong,
+html[data-theme="light"]
+.cl-feedback.wrong {
+  background: #f2e3e3 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-head,
+html[data-theme="light"]
+.pv5-head-stats > div,
+html[data-theme="light"]
+.pv5-search,
+html[data-theme="light"]
+.pv5-segmented,
+html[data-theme="light"]
+.pv5-filter-chip,
+html[data-theme="light"]
+.pv5-legend {
+  border-color: rgba(54, 68, 86, .19) !important;
+  background: #e9edf2 !important;
+  box-shadow: none !important;
+}
+
+
+html[data-theme="light"]
+.pv5-table-shell {
+  border-color: rgba(54, 68, 86, .22) !important;
+  background: #d9e0e8 !important;
+  box-shadow: inset 0 1px 2px rgba(37, 49, 65, .045) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element {
+  border-color: color-mix(in srgb, var(--element-accent) 25%, #c3ccd7) !important;
+  background: #edf1f5 !important;
+  color: #202b3a !important;
+  box-shadow: 0 1px 4px rgba(37, 49, 65, .075) !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element-number,
+html[data-theme="light"]
+.pv5-element-name,
+html[data-theme="light"]
+.pv5-element-mass {
+  color: #465568 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-element-symbol {
+  color: #1d2938 !important;
+}
+
+
+html[data-theme="light"]
+.pv5-series-card {
+  border-color: color-mix(in srgb, var(--element-accent) 30%, #c3ccd7) !important;
+  background: #e7ebf1 !important;
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.pv5-series-card small,
+html[data-theme="light"]
+.pv5-f-label span,
+html[data-theme="light"]
+.pv5-f-label strong,
+html[data-theme="light"]
+.pv5-legend-items span {
+  color: #465568 !important;
+}
+
+
+html[data-theme="light"]
+.element-drawer {
+  border-color: rgba(54, 68, 86, .24) !important;
+  background: #e4e9ef !important;
+  color: #202b3a !important;
+  box-shadow: -14px 0 38px rgba(27, 38, 52, .17) !important;
+}
+
+
+html[data-theme="light"]
+.ew5-top {
+  border-color: rgba(54, 68, 86, .17) !important;
+  background: #dce3eb !important;
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-top strong,
+html[data-theme="light"]
+.ew5-hero h2,
+html[data-theme="light"]
+.ew5-section-head h3,
+html[data-theme="light"]
+.ew5-stat-grid strong,
+html[data-theme="light"]
+.ew5-property-list strong {
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.ew5-hero {
+  border-color: rgba(54, 68, 86, .2) !important;
+  background: linear-gradient(145deg, #e6ebf1, #dce3eb) !important;
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.ew5-symbol {
+  background: #d4dde7 !important;
+  color: #253447 !important;
+  box-shadow: inset 0 0 0 1px rgba(54, 68, 86, .16) !important;
+}
+
+
+html[data-theme="light"]
+.ew5-category,
+html[data-theme="light"]
+.ew5-hero-copy > p,
+html[data-theme="light"]
+.ew5-hero-copy > div,
+html[data-theme="light"]
+.ew5-stat-grid span,
+html[data-theme="light"]
+.ew5-property-list span,
+html[data-theme="light"]
+.ew5-bottom {
+  color: #465568 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-quick {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #dfe5ed !important;
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-quick-head strong,
+html[data-theme="light"]
+.ew5-quick-head > span,
+html[data-theme="light"]
+.ew5-quick-head small {
+  color: #3f4c5d !important;
+}
+
+
+html[data-theme="light"]
+.ew5-quick-action {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #e9edf2 !important;
+  color: #334155 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-quick-action strong {
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.ew5-quick-action small,
+html[data-theme="light"]
+.ew5-quick-action > span:last-child {
+  color: #526071 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-tabs {
+  border-color: rgba(54, 68, 86, .15) !important;
+  background: #dfe5ed !important;
+}
+
+
+html[data-theme="light"]
+.ew5-tabs button {
+  color: #465568 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-tabs button.active {
+  border-color: rgba(95, 75, 158, .24) !important;
+  background: #edf1f5 !important;
+  color: #4f3d83 !important;
+}
+
+
+html[data-theme="light"]
+.ew5-content {
+  background: transparent !important;
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.ew5-stat-grid > div,
+html[data-theme="light"]
+.ew5-property-list > div,
+html[data-theme="light"]
+.ew5-property-list > li {
+  border-color: rgba(54, 68, 86, .15) !important;
+  background: #edf1f5 !important;
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.ew5-section-head,
+html[data-theme="light"]
+.ew5-section-head > span {
+  color: #526071 !important;
+}
+
+
+html[data-theme="light"]
+#app .element-drawer.open {
+  border-color: rgba(54, 68, 86, .24) !important;
+  background: #e4e9ef !important;
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+#app .element-drawer.open .ew5-tabs {
+  color: #465568 !important;
+}
+
+
+/* =========================================================
+   40. LAB LIGHT DETAILS
+========================================================= */
+
+html[data-theme="light"]
+.reagent-card,
+html[data-theme="light"]
+.vl-controls button,
+html[data-theme="light"]
+.vl-volume button,
+html[data-theme="light"]
+.log-head button {
+  border-color: rgba(54, 68, 86, .2) !important;
+  background: #dfe5ed !important;
+  color: #263446 !important;
+  box-shadow: none !important;
+}
+
+
+html[data-theme="light"]
+.reagent-card.active {
+  border-color: rgba(95, 75, 158, .38) !important;
+  background: #e2e5ef !important;
+  box-shadow: inset 0 0 0 1px rgba(95, 75, 158, .12) !important;
+}
+
+
+html[data-theme="light"]
+.reagent-card:hover,
+html[data-theme="light"]
+.vl-controls button:hover,
+html[data-theme="light"]
+.vl-volume button:hover {
+  border-color: rgba(95, 75, 158, .34) !important;
+  background: #e7e8f0 !important;
+}
+
+
+html[data-theme="light"]
+.vl-volume button.active,
+html[data-theme="light"]
+.vl-controls button.active,
+html[data-theme="light"]
+.primary-btn {
+  border-color: #6653a7 !important;
+  background: #6653a7 !important;
+  color: #fff !important;
+  box-shadow: 0 3px 10px rgba(60, 49, 99, .16) !important;
+}
+
+
+html[data-theme="light"]
+.vl-live {
+  border-color: rgba(54, 68, 86, .17) !important;
+  background: #e1e8e3 !important;
+  color: #31573f !important;
+}
+
+
+html[data-theme="light"]
+.vl-live b {
+  color: #31573f !important;
+}
+
+
+html[data-theme="light"]
+.stage-badge,
+html[data-theme="light"]
+.info-box,
+html[data-theme="light"]
+.meter,
+html[data-theme="light"]
+.stage-note {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #e1e6ed !important;
+  color: #263446 !important;
+  box-shadow: none !important;
+}
+
+
+html[data-theme="light"]
+.stage-note strong,
+html[data-theme="light"]
+.stage-badge strong,
+html[data-theme="light"]
+.meter strong,
+html[data-theme="light"]
+.info-box strong {
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.stage-note span,
+html[data-theme="light"]
+.meter small,
+html[data-theme="light"]
+.info-box p,
+html[data-theme="light"]
+.composition-list p,
+html[data-theme="light"]
+.log-empty,
+html[data-theme="light"]
+.log-item p,
+html[data-theme="light"]
+.vl-controls span {
+  color: #465568 !important;
+}
+
+
+html[data-theme="light"]
+.composition-list div,
+html[data-theme="light"]
+.log-item {
+  border: 1px solid rgba(54, 68, 86, .14) !important;
+  background: #e6ebf1 !important;
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+.composition-list strong {
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.log-item span {
+  color: #526071 !important;
+}
+
+
+html[data-theme="light"]
+.vl-stage::after {
+  opacity: .35 !important;
+}
+
+
+html[data-theme="light"]
+.stage-grid {
+  background-image:
+    linear-gradient(rgba(69, 85, 104, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(69, 85, 104, .075) 1px, transparent 1px)
+    !important;
+}
+
+
+html[data-theme="light"]
+.beaker-body::before {
+  border-color: rgba(89, 109, 134, .58) !important;
+  background: rgba(184, 199, 217, .16) !important;
+  box-shadow: 0 8px 18px rgba(50, 66, 88, .08) !important;
+}
+
+
+html[data-theme="light"]
+.beaker-top {
+  border-color: rgba(89, 109, 134, .66) !important;
+  background: linear-gradient(180deg, rgba(245, 248, 252, .62), rgba(204, 216, 231, .24)) !important;
+}
+
+
+html[data-theme="light"]
+.beaker-scale {
+  color: #44556b !important;
+}
+
+
+html[data-theme="light"]
+.beaker-scale span::before {
+  background: rgba(68, 85, 107, .5) !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .reagent-card {
+  border-color: rgba(54, 68, 86, .2) !important;
+  background: #dfe5ed !important;
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .reagent-card.active {
+  border-color: rgba(95, 75, 158, .4) !important;
+  background: #d9deea !important;
+  color: #263446 !important;
+  box-shadow: inset 0 0 0 1px rgba(95, 75, 158, .14) !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .info-box {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #e1e6ed !important;
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+#view-lab .vl-volume button.active,
+html[data-theme="light"]
+#view-lab .vl-controls button.active {
+  border-color: #6653a7 !important;
+  background: #6653a7 !important;
+  color: #fff !important;
+}
+
+
+/* =========================================================
+   LEARNING PROGRESS DASHBOARD
+========================================================= */
+
+html[data-theme="light"]
+.cl-progress-overview {
+  border-color: rgba(54, 68, 86, .2) !important;
+  background: #d7dfe8 !important;
+  box-shadow: 0 4px 14px rgba(37, 49, 65, .045) !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-overview h2,
+html[data-theme="light"]
+.cl-progress-grade-head h3,
+html[data-theme="light"]
+.cl-progress-grade-count strong,
+html[data-theme="light"]
+.cl-progress-next-copy strong,
+html[data-theme="light"]
+.cl-progress-stat strong {
+  color: #202b3a !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-overview p,
+html[data-theme="light"]
+.cl-progress-grade-count,
+html[data-theme="light"]
+.cl-progress-grade-state,
+html[data-theme="light"]
+.cl-progress-next-copy small,
+html[data-theme="light"]
+.cl-progress-empty-copy,
+html[data-theme="light"]
+.cl-progress-stat span,
+html[data-theme="light"]
+.cl-progress-recent strong {
+  color: #465568 !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-eyebrow,
+html[data-theme="light"]
+.cl-progress-continue-head > span,
+html[data-theme="light"]
+.cl-progress-recent > span,
+html[data-theme="light"]
+.cl-progress-grade-head > div > span,
+html[data-theme="light"]
+.cl-progress-next-copy > span {
+  color: #5f4b9e !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-total-percent,
+html[data-theme="light"]
+.cl-progress-grade-head > strong {
+  color: #51417e !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-total-track,
+html[data-theme="light"]
+.cl-progress-grade-track {
+  background: #c6cfdb !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-total-track i,
+html[data-theme="light"]
+.cl-progress-grade-track i {
+  background: #6f5d9e !important;
+  box-shadow: none !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-grade-card,
+html[data-theme="light"]
+.cl-progress-continue-section,
+html[data-theme="light"]
+.cl-progress-stat {
+  border-color: rgba(54, 68, 86, .18) !important;
+  background: #e8edf3 !important;
+  box-shadow: none !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-empty,
+html[data-theme="light"]
+.cl-progress-complete {
+  border-color: rgba(95, 75, 158, .2) !important;
+  background: #e2e4ed !important;
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-empty strong,
+html[data-theme="light"]
+.cl-progress-complete strong {
+  color: #263446 !important;
+}
+
+
+html[data-theme="light"]
+.cl-progress-empty span {
+  color: #465568 !important;
 }

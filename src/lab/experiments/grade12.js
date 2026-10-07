@@ -450,6 +450,12 @@ export const GRADE12_EXPERIMENTS = [
         'Gia nhiệt hỗn hợp mô phỏng.'
       ),
 
+      R(
+        'ethylEthanoate-naoh',
+        'Tiếp tục gia nhiệt đến khoảng 55 °C và quan sát phản ứng xà phòng hóa ester.',
+        'Phản ứng xà phòng hóa đã xảy ra: tạo sodium ethanoate và ethanol.'
+      ),
+
       O(
         'Thủy phân ester',
         'Trong môi trường kiềm, ester bị thủy phân tạo muối carboxylate và alcohol.',
@@ -479,7 +485,12 @@ export const GRADE12_EXPERIMENTS = [
       'Hiểu cấu tạo và cơ chế làm sạch của xà phòng và chất giặt rửa.',
 
     duration:
-      7,
+      10,
+
+    chemicals: [
+      'triglycerideOil',
+      'naoh'
+    ],
 
     steps: [
 
@@ -527,9 +538,46 @@ export const GRADE12_EXPERIMENTS = [
         'Đầu ưa nước tiếp xúc với nước.'
       ),
 
+      P(
+        'g12-l2-p1',
+        'Khi chất béo phản ứng với NaOH và được gia nhiệt, sản phẩm đặc trưng là:',
+        [
+          'Glycerol và muối sodium của acid béo',
+          'Ethanol và CO₂',
+          'Glucose và nước',
+          'Amino acid và NH₃'
+        ],
+        0,
+        'Đó là phản ứng xà phòng hóa chất béo.'
+      ),
+
+      A(
+        'triglycerideOil',
+        'Thêm dầu thực vật mô phỏng (triglyceride) vào cốc.'
+      ),
+
+      A(
+        'naoh',
+        'Thêm dung dịch NaOH.'
+      ),
+
+      H(
+        'Bật gia nhiệt để phản ứng xà phòng hóa xảy ra.'
+      ),
+
+      R(
+        'triglycerideOil-naoh',
+        'Tiếp tục gia nhiệt đến khoảng 60 °C và quan sát sự tạo thành xà phòng.',
+        'Phản ứng xà phòng hóa chất béo đã xảy ra: tạo glycerol và muối sodium của acid béo.'
+      ),
+
       O(
-        'Kết luận',
-        'Cơ chế tạo micelle giúp phân tán dầu mỡ vào nước và loại bỏ vết bẩn.'
+        'Xà phòng hóa và cơ chế làm sạch',
+        'Chất béo phản ứng với NaOH tạo glycerol và muối sodium của acid béo. Các muối này là xà phòng và có thể tạo micelle giúp phân tán dầu mỡ trong nước.',
+        [
+          'Phương trình tổng quát: (RCOO)₃C₃H₅ + 3NaOH → C₃H₅(OH)₃ + 3RCOONa.',
+          'Đầu carboxylate ưa nước, còn mạch hydrocarbon kị nước.'
+        ]
       )
 
     ]

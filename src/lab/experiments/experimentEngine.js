@@ -58,6 +58,9 @@ function createEmptyState() {
       null,
 
     labSnapshot:
+      null,
+
+    labConfirmation:
       null
 
   }
@@ -158,7 +161,18 @@ function normalizeSavedState(
 
     labSnapshot:
       saved.labSnapshot ||
-      null
+      null,
+
+    labConfirmation:
+      saved.labConfirmation &&
+      typeof saved.labConfirmation ===
+        'object'
+
+        ? {
+            ...saved.labConfirmation
+          }
+
+        : null
 
   }
 
@@ -285,6 +299,37 @@ function actionMatchesStep(
 
       temperature <=
         max
+
+    )
+
+  }
+
+
+  if (
+    step.type ===
+    'indicator'
+  ) {
+
+    const indicatorMatches =
+      !step.indicator ||
+      action.indicator ===
+        step.indicator
+
+
+    const resultMatches =
+      !step.result ||
+      action.result ===
+        step.result
+
+
+    return (
+
+      action.type ===
+        'indicator' &&
+
+      indicatorMatches &&
+
+      resultMatches
 
     )
 
@@ -432,6 +477,24 @@ export function createExperimentEngine({
         state.labSnapshot,
 
 
+      labConfirmation:
+        state.labConfirmation
+
+          ? {
+              ...state.labConfirmation
+            }
+
+          : null,
+
+
+      awaitingLabConfirmation:
+        Boolean(
+          state.labConfirmation &&
+          state.labConfirmation.stepIndex ===
+            state.currentStep
+        ),
+
+
       totalSteps,
 
 
@@ -499,7 +562,10 @@ export function createExperimentEngine({
             state.completed,
 
           labSnapshot:
-            state.labSnapshot
+            state.labSnapshot,
+
+          labConfirmation:
+            state.labConfirmation
 
         }
 
@@ -570,6 +636,10 @@ export function createExperimentEngine({
           state.labSnapshot,
 
 
+        labConfirmation:
+          null,
+
+
         currentStep:
           experiment
             .steps
@@ -629,6 +699,10 @@ export function createExperimentEngine({
 
     state.lastResult =
       result
+
+
+    state.labConfirmation =
+      null
 
 
     state.currentStep +=
@@ -789,7 +863,7 @@ export function createExperimentEngine({
       )
     ) {
 
-      completeCurrentStep({
+      const result = {
 
         type:
           'success',
@@ -798,9 +872,145 @@ export function createExperimentEngine({
 
           step.success ||
 
-          'Bước đã hoàn thành.'
+          (
+            step.type ===
+              'reaction'
 
-      })
+              ? 'Phản ứng đã xảy ra. Hãy quan sát hiện tượng và phương trình trước khi tiếp tục.'
+
+              : step.type ===
+                  'indicator'
+
+                ? 'Đã có kết quả thử bằng giấy quỳ tím. Hãy quan sát màu giấy trước khi tiếp tục.'
+
+                : 'Bước đã hoàn thành.'
+          )
+
+      }
+
+
+      const requiresConfirmation =
+
+        step.type ===
+          'reaction' ||
+
+        step.type ===
+          'indicator' ||
+
+        step.confirmBeforeContinue ===
+          true
+
+
+      if (
+        requiresConfirmation
+      ) {
+
+        state.started =
+          true
+
+
+        state.lastResult =
+          result
+
+
+        state.labConfirmation = {
+
+          stepIndex:
+            state.currentStep,
+
+          type:
+            step.type,
+
+          reactionId:
+            action.reactionId ||
+            null,
+
+          indicator:
+            action.indicator ||
+            null,
+
+          indicatorResult:
+            action.result ||
+            null
+
+        }
+
+
+        persist()
+
+        notify()
+
+        return
+
+      }
+
+
+      completeCurrentStep(
+        result
+      )
+
+    }
+
+  }
+
+
+  /* =====================================================
+     CONFIRM LAB RESULT
+
+     Reaction/indicator steps are intentionally held here
+     so learners can inspect the result before advancing.
+  ===================================================== */
+
+  function confirmLabStep() {
+
+    const step =
+      getCurrentStep()
+
+
+    const confirmation =
+      state.labConfirmation
+
+
+    if (
+      !step ||
+      !confirmation ||
+      confirmation.stepIndex !==
+        state.currentStep
+    ) {
+
+      return {
+
+        accepted:
+          false,
+
+        message:
+          'Chưa có kết quả thí nghiệm nào cần xác nhận.'
+
+      }
+
+    }
+
+
+    const result =
+      state.lastResult ||
+      {
+        type:
+          'success',
+
+        message:
+          'Đã quan sát kết quả.'
+      }
+
+
+    completeCurrentStep(
+      result
+    )
+
+
+    return {
+
+      accepted:
+        true
 
     }
 
@@ -1068,6 +1278,8 @@ export function createExperimentEngine({
     destroy,
 
     continueStep,
+
+    confirmLabStep,
 
     answerPrediction,
 

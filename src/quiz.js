@@ -1,5 +1,25 @@
 import './quiz.css'
 
+import {
+  getGradeProgress,
+  findCurrentLesson,
+  findNextLesson,
+  getActivityStatus
+} from './lab/experiments/progressSummary.js'
+
+import {
+  getExperimentById
+} from './lab/experiments/experiments.js'
+
+import {
+  getLessonById
+} from './lab/experiments/curriculum.js'
+
+import {
+  getLastActivity,
+  getProgressSummary
+} from './progress/progressStorage.js'
+
 
 /* =========================================================
    CHEMLAB 4.7
@@ -1066,6 +1086,41 @@ export function initQuiz() {
     null
 
 
+  let progressRenderFrame =
+    null
+
+
+  window.addEventListener(
+    'chemlab:progress-changed',
+    () => {
+
+      if (
+        progressRenderFrame !==
+        null
+      ) {
+
+        return
+
+      }
+
+
+      progressRenderFrame =
+        requestAnimationFrame(
+          () => {
+
+            progressRenderFrame =
+              null
+
+
+            renderProgressDashboard()
+
+          }
+        )
+
+    }
+  )
+
+
   renderHome()
 
 
@@ -1118,6 +1173,11 @@ export function initQuiz() {
 
     root.innerHTML = `
       <div class="cl-learn">
+
+
+        <div
+          id="learning-progress-dashboard"
+        ></div>
 
 
         <!-- ===============================================
@@ -1607,9 +1667,616 @@ export function initQuiz() {
     `
 
 
+    renderProgressDashboard()
+
+
     bindHomeEvents()
 
     updateStartButton()
+
+  }
+
+
+  function renderProgressDashboard() {
+
+    const host =
+      root.querySelector(
+        '#learning-progress-dashboard'
+      )
+
+
+    if (!host) {
+      return
+    }
+
+
+    const grades =
+      [10, 11, 12].map(
+        grade => {
+
+          try {
+
+            return {
+              grade,
+              summary:
+                getGradeProgress(
+                  grade
+                ) || {}
+            }
+
+          }
+
+          catch {
+
+            return {
+              grade,
+              summary: {}
+            }
+
+          }
+
+        }
+      )
+
+
+    const totalLessons =
+      grades.reduce(
+        (total, item) =>
+          total +
+          (Number(
+            item.summary.totalLessons
+          ) || 0),
+        0
+      )
+
+
+    const completedLessons =
+      grades.reduce(
+        (total, item) =>
+          total +
+          (Number(
+            item.summary.completedLessons
+          ) || 0),
+        0
+      )
+
+
+    const completedActivities =
+      grades.reduce(
+        (total, item) =>
+          total +
+          (Number(
+            item.summary.completedActivities
+          ) || 0),
+        0
+      )
+
+
+    const startedLessons =
+      grades.reduce(
+        (total, item) =>
+          total +
+          (Number(
+            item.summary.startedLessons
+          ) || 0),
+        0
+      )
+
+
+    const totalProgress =
+      totalLessons
+
+        ? Math.round(
+            completedLessons /
+            totalLessons *
+            100
+          )
+
+        : 0
+
+
+    let target =
+      null
+
+
+    let continuing =
+      false
+
+
+    for (const { grade } of grades) {
+
+      try {
+
+        target =
+          findCurrentLesson(
+            grade
+          )
+
+      }
+
+      catch {
+
+        target =
+          null
+
+      }
+
+
+      if (target) {
+
+        continuing =
+          true
+
+        break
+
+      }
+
+    }
+
+
+    if (!target) {
+
+      for (const { grade } of grades) {
+
+        try {
+
+          target =
+            findNextLesson(
+              grade
+            )
+
+        }
+
+        catch {
+
+          target =
+            null
+
+        }
+
+
+        if (target) {
+          break
+        }
+
+      }
+
+    }
+
+
+    let targetActivity =
+      null
+
+
+    if (
+      target?.progress?.activities
+    ) {
+
+      const statuses =
+        target.progress.activities
+          .map(
+            activity => ({
+              activity,
+              status:
+                getActivityStatus(
+                  activity
+                )
+            })
+          )
+
+
+      targetActivity =
+        (
+          continuing
+
+            ? statuses.find(
+                item =>
+                  item.status.started &&
+                  !item.status.completed
+              )
+
+            : null
+        ) ||
+        statuses.find(
+          item =>
+            !item.status.completed
+        ) ||
+        statuses[0]
+
+
+      targetActivity =
+        targetActivity?.activity ||
+        null
+
+    }
+
+
+    let lastActivity =
+      null
+
+
+    try {
+
+      const savedActivity =
+        getLastActivity()
+
+
+      if (
+        savedActivity?.type ===
+        'experiment'
+      ) {
+
+        const experiment =
+          getExperimentById(
+            savedActivity.experimentId
+          )
+
+
+        if (experiment) {
+
+          const status =
+            getActivityStatus(
+              experiment
+            )
+
+
+          lastActivity = {
+            title: experiment.title,
+            status: status.completed
+              ? 'Hoàn thành'
+              : 'Đang học'
+          }
+
+        }
+
+      }
+
+      else if (
+        savedActivity?.type ===
+        'learning'
+      ) {
+
+        const lesson =
+          getLessonById(
+            savedActivity.grade,
+            savedActivity.lessonId
+          )
+
+
+        if (lesson) {
+
+          lastActivity = {
+            title: lesson.title,
+            status: savedActivity.completed
+              ? 'Hoàn thành'
+              : 'Đang học'
+          }
+
+        }
+
+      }
+
+    }
+
+    catch {
+
+      lastActivity =
+        null
+
+    }
+
+
+    let learningSummary =
+      {}
+
+
+    try {
+
+      learningSummary =
+        getProgressSummary() ||
+        {}
+
+    }
+
+    catch {
+
+      learningSummary =
+        {}
+
+    }
+
+
+    const timeSeconds =
+      Math.max(
+        0,
+        Number(
+          learningSummary.learningTimeSeconds
+        ) || 0
+      )
+
+
+    const timeLabel =
+      timeSeconds >= 3600
+
+        ? `${Math.floor(timeSeconds / 3600)} giờ ${Math.floor(timeSeconds % 3600 / 60)} phút`
+
+        : timeSeconds >= 60
+
+          ? `${Math.floor(timeSeconds / 60)} phút`
+
+          : `${Math.floor(timeSeconds)} giây`
+
+
+    const isComplete =
+      totalLessons > 0 &&
+      completedLessons >= totalLessons
+
+
+    const gradeCards =
+      grades
+        .map(
+          ({ grade, summary }) => {
+
+            const total =
+              Number(
+                summary.totalLessons
+              ) || 0
+
+
+            const completed =
+              Number(
+                summary.completedLessons
+              ) || 0
+
+
+            const percent =
+              total
+
+                ? Math.round(
+                    completed /
+                    total *
+                    100
+                  )
+
+                : 0
+
+
+            const state =
+              completed >= total && total > 0
+
+                ? '✓ Hoàn thành'
+
+                : completed > 0 ||
+                  Number(
+                    summary.startedLessons
+                  ) > 0
+
+                  ? '◐ Đang học'
+
+                  : 'Chưa bắt đầu'
+
+
+            return `
+              <article class="cl-progress-grade-card">
+                <div class="cl-progress-grade-head">
+                  <div>
+                    <span>HÓA HỌC</span>
+                    <h3>Lớp ${grade}</h3>
+                  </div>
+                  <strong>${percent}%</strong>
+                </div>
+                <p class="cl-progress-grade-count">
+                  <strong>${completed} / ${total}</strong>
+                  bài hoàn thành
+                </p>
+                <div
+                  class="cl-progress-grade-track"
+                  role="progressbar"
+                  aria-label="Tiến độ Hóa học lớp ${grade}"
+                  aria-valuemin="0"
+                  aria-valuemax="${total}"
+                  aria-valuenow="${completed}"
+                  aria-valuetext="${completed} trên ${total} bài, ${percent}%"
+                >
+                  <i style="width:${percent}%"></i>
+                </div>
+                <span class="cl-progress-grade-state">${state}</span>
+              </article>
+            `
+
+          }
+        )
+        .join('')
+
+
+    const continueMarkup =
+      isComplete
+
+        ? `
+          <div class="cl-progress-complete" role="status">
+            <strong>✓ Bạn đã hoàn thành tất cả bài học hiện có.</strong>
+          </div>
+        `
+
+        : target
+
+          ? `
+            <div class="cl-progress-next-copy">
+              <span>${continuing ? 'ĐANG HỌC' : 'BẮT ĐẦU TIẾP'}</span>
+              <strong>Bài ${target.lesson.number} · ${target.lesson.title}</strong>
+              <small>${target.grade} · ${target.chapter.title}${continuing ? ` · ${target.progress.progress}%` : ''}</small>
+            </div>
+            <button
+              class="cl-progress-continue"
+              type="button"
+              data-progress-grade="${target.grade}"
+              data-progress-lesson="${target.lesson.id}"
+              data-progress-experiment="${targetActivity?.id || ''}"
+            >
+              ${continuing ? 'Tiếp tục' : completedLessons === 0 ? 'Bắt đầu với Hóa học 10' : 'Bắt đầu'}
+              <span aria-hidden="true">→</span>
+            </button>
+          `
+
+          : `
+            <p class="cl-progress-empty-copy">
+              Chưa có bài học khả dụng để tiếp tục.
+            </p>
+          `
+
+
+    const recentMarkup =
+      lastActivity
+
+        ? `
+          <div class="cl-progress-recent" aria-label="Hoạt động gần đây">
+            <span>HOẠT ĐỘNG GẦN ĐÂY</span>
+            <strong>${lastActivity.status}: ${lastActivity.title}</strong>
+          </div>
+        `
+
+        : ''
+
+
+    const statisticsMarkup =
+      `
+        <div class="cl-progress-stat">
+          <strong>${completedLessons}</strong>
+          <span>Bài học</span>
+        </div>
+        <div class="cl-progress-stat">
+          <strong>${completedActivities}</strong>
+          <span>Hoạt động</span>
+        </div>
+        ${
+          timeSeconds > 0
+            ? `
+              <div class="cl-progress-stat">
+                <strong>${timeLabel}</strong>
+                <span>Thời gian học</span>
+              </div>
+            `
+            : ''
+        }
+      `
+
+
+    host.innerHTML = `
+      <section class="cl-progress-dashboard" aria-labelledby="cl-progress-title">
+        <div class="cl-progress-overview">
+          <div class="cl-progress-overview-copy">
+            <span class="cl-progress-eyebrow">TIẾN ĐỘ HỌC TẬP</span>
+            <h2 id="cl-progress-title">Hành trình Hóa học</h2>
+            <p>${completedLessons} / ${totalLessons} bài hoàn thành</p>
+          </div>
+          <strong class="cl-progress-total-percent">${totalProgress}%</strong>
+          <div
+            class="cl-progress-total-track"
+            role="progressbar"
+            aria-label="Tổng tiến độ học tập"
+            aria-valuemin="0"
+            aria-valuemax="${totalLessons}"
+            aria-valuenow="${completedLessons}"
+            aria-valuetext="${completedLessons} trên ${totalLessons} bài, ${totalProgress}%"
+          >
+            <i style="width:${totalProgress}%"></i>
+          </div>
+        </div>
+
+        ${
+          completedLessons === 0 &&
+          startedLessons === 0
+            ? `
+              <div class="cl-progress-empty" role="status">
+                <strong>Bắt đầu hành trình Hóa học</strong>
+                <span>Bạn chưa hoàn thành bài học nào.</span>
+              </div>
+            `
+            : ''
+        }
+
+        <div class="cl-progress-grade-grid">
+          ${gradeCards}
+        </div>
+
+        <section class="cl-progress-continue-section" aria-label="Tiếp tục học">
+          <div class="cl-progress-continue-head">
+            <span>TIẾP TỤC HỌC</span>
+          </div>
+          <div class="cl-progress-continue-body">
+            ${continueMarkup}
+          </div>
+        </section>
+
+        <div class="cl-progress-footer">
+          <div class="cl-progress-stat-row">
+            ${statisticsMarkup}
+          </div>
+          ${recentMarkup}
+        </div>
+      </section>
+    `
+
+
+    host
+      .querySelector(
+        '[data-progress-grade]'
+      )
+      ?.addEventListener(
+        'click',
+        event => {
+
+          const button =
+            event.currentTarget
+
+
+          const grade =
+            Number(
+              button.dataset
+                .progressGrade
+            )
+
+
+          const lessonId =
+            button.dataset
+              .progressLesson
+
+
+          if (
+            !grade ||
+            !lessonId
+          ) {
+
+            return
+
+          }
+
+
+          document
+            .querySelector(
+              '.sidebar-button[data-view="lab"]'
+            )
+            ?.click()
+
+
+          window.dispatchEvent(
+            new CustomEvent(
+              'chemlab:open-guided-lesson',
+              {
+                detail: {
+                  grade,
+                  lessonId,
+                  experimentId:
+                    button.dataset
+                      .progressExperiment ||
+                    null
+                }
+              }
+            )
+          )
+
+        }
+      )
 
   }
 

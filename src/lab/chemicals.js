@@ -1,6 +1,6 @@
 /* =========================================================
    CHEMLAB VIRTUAL LAB 3.1
-   101-CHEMICAL DATABASE
+   103-CHEMICAL DATABASE
 ========================================================= */
 
 function C(
@@ -1190,6 +1190,27 @@ const LIST = [
 
 
   C(
+    'litmusPaper',
+    'Purple litmus paper',
+    'Indicator paper',
+    'indicator',
+    'indicator',
+    '#806bb0',
+    0,
+    'solid',
+    [],
+    [
+      'indicator',
+      'litmus',
+      'purple litmus paper',
+      'quy tim',
+      'quỳ tím'
+    ],
+    'litmusPaper'
+  ),
+
+
+  C(
     'universalIndicator',
     'Universal indicator',
     'Indicator',
@@ -1696,6 +1717,27 @@ const LIST = [
     ],
     [
       'ester'
+    ]
+  ),
+
+
+  C(
+    'triglycerideOil',
+    'Vegetable oil (triglyceride model)',
+    '(RCOO)₃C₃H₅',
+    'organic',
+    'lipid',
+    '#f2d98d',
+    0,
+    'liquid',
+    [],
+    [
+      'lipid',
+      'fat',
+      'triglyceride',
+      'vegetable oil',
+      'saponification',
+      'soap'
     ]
   ),
 

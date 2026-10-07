@@ -292,7 +292,9 @@ export function initGuidedExperiments() {
 
       'reaction',
 
-      'temperature'
+      'temperature',
+
+      'indicator'
 
     ].includes(
       step?.type
@@ -455,6 +457,79 @@ export function initGuidedExperiments() {
 
         }
       )
+
+    }
+  )
+
+
+
+  window.addEventListener(
+    'chemlab:open-guided-lesson',
+    event => {
+
+      const grade =
+        Number(
+          event.detail?.grade
+        )
+
+
+      const lessonId =
+        event.detail?.lessonId
+
+
+      const lesson =
+        getLessonById(
+          grade,
+          lessonId
+        )
+
+
+      if (!lesson) {
+        return
+      }
+
+
+      setMode('guided')
+
+
+      renderGrade(
+        grade
+      )
+
+
+      renderLesson(
+        grade,
+        lessonId
+      )
+
+
+      const experiment =
+        getExperimentById(
+          event.detail?.experimentId
+        )
+
+
+      if (
+        !experiment ||
+        experiment.lessonId !==
+          lessonId
+      ) {
+
+        return
+
+      }
+
+
+      renderExperimentOverview(
+        experiment
+      )
+
+
+      panel
+        .querySelector(
+          '[data-start-exp]'
+        )
+        ?.click()
 
     }
   )
@@ -2812,6 +2887,45 @@ export function initGuidedExperiments() {
             )
           }
 
+
+          ${
+            state.awaitingLabConfirmation
+
+              ? `
+
+                <div class="guided-lab-confirmation">
+
+                  <div>
+
+                    <span class="guided-step-kicker">
+                      KẾT QUẢ ĐÃ XUẤT HIỆN
+                    </span>
+
+                    <strong>
+                      Quan sát cốc, mục Hiện tượng và Phương trình ở phòng thí nghiệm.
+                    </strong>
+
+                    <p>
+                      ChemLab sẽ không tự chuyển bước nữa. Khi bạn đã xem xong kết quả, hãy nhấn nút bên dưới.
+                    </p>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    class="guided-primary-btn"
+                    data-confirm-lab-result
+                  >
+                    Đã quan sát kết quả → Tiếp tục
+                  </button>
+
+                </div>
+
+              `
+
+              : ''
+          }
+
         </div>
 
 
@@ -2891,6 +3005,21 @@ export function initGuidedExperiments() {
 
           engine
             ?.continueStep()
+
+        }
+      )
+
+
+    panel
+      .querySelector(
+        '[data-confirm-lab-result]'
+      )
+      ?.addEventListener(
+        'click',
+        () => {
+
+          engine
+            ?.confirmLabStep()
 
         }
       )
@@ -3349,6 +3478,67 @@ export function initGuidedExperiments() {
 
 
     /* ===================================================
+       INDICATOR / PURPLE LITMUS PAPER
+    =================================================== */
+
+    if (
+      step.type ===
+      'indicator'
+    ) {
+
+      const expectedLabel =
+
+        step.result ===
+          'acid'
+
+          ? 'đỏ trong môi trường acid'
+
+          : step.result ===
+              'base'
+
+            ? 'xanh trong môi trường base'
+
+            : step.result ===
+                'neutral'
+
+              ? 'tím, gần như không đổi màu trong môi trường trung tính'
+
+              : 'màu phù hợp với môi trường dung dịch'
+
+
+      return `
+
+        <div class="guided-action-step">
+
+          <span class="guided-step-kicker">
+            THỬ BẰNG GIẤY QUỲ TÍM
+          </span>
+
+          <strong>
+            ${escapeHTML(
+              step.text ||
+              'Chọn Purple litmus paper rồi nhấn Thêm vào cốc để thử môi trường dung dịch.'
+            )}
+          </strong>
+
+          <p>
+            Kết quả mong đợi: giấy quỳ tím chuyển ${escapeHTML(
+              expectedLabel
+            )}.
+          </p>
+
+          <span class="guided-target-chip">
+            Giấy quỳ tím
+          </span>
+
+        </div>
+
+      `
+
+    }
+
+
+    /* ===================================================
        REACTION
     =================================================== */
 
@@ -3375,8 +3565,8 @@ export function initGuidedExperiments() {
 
 
           <p>
-            Hệ thống sẽ tự chuyển bước
-            khi phản ứng đúng xảy ra.
+            Khi phản ứng đúng xảy ra, ChemLab sẽ giữ nguyên bước này
+            để bạn quan sát hiện tượng và phương trình.
           </p>
 
         </div>

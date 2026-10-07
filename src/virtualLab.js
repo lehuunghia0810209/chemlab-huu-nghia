@@ -395,19 +395,24 @@ export function initVirtualLab() {
 
                       <div class="liquid-top"></div>
 
-
-                      <div
-                        class="bubble-layer"
-                        id="bubble-layer"
-                      ></div>
-
-
-                      <div
-                        class="precipitate-layer"
-                        id="precipitate-layer"
-                      ></div>
-
                     </div>
+
+                    <div
+                      class="precipitate-layer"
+                      id="precipitate-layer"
+                    ></div>
+
+
+                    <div
+                      class="bubble-layer"
+                      id="bubble-layer"
+                    ></div>
+
+
+                    <div
+                      class="foam-layer"
+                      id="foam-layer"
+                    ></div>
 
                   </div>
 
@@ -444,6 +449,25 @@ export function initVirtualLab() {
 
 
           <div class="stage-note">
+
+            <div
+              class="litmus-paper-result"
+              id="litmus-paper-result"
+              hidden
+            >
+
+              <i
+                class="litmus-paper-strip"
+                id="litmus-paper-strip"
+                aria-hidden="true"
+              ></i>
+
+              <span id="litmus-paper-label">
+                Giấy quỳ tím
+              </span>
+
+            </div>
+
 
             <strong id="lab-message-title">
               Bắt đầu thí nghiệm
@@ -582,7 +606,13 @@ export function initVirtualLab() {
         </h3>
 
 
-        <div class="info-box">
+        <div
+          class="info-box"
+          id="reaction-observation"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
 
           <span>
             HIỆN TƯỢNG
@@ -732,6 +762,10 @@ export function initVirtualLab() {
     $('#bubble-layer')
 
 
+  const foamLayer =
+    $('#foam-layer')
+
+
   const precipitateLayer =
     $('#precipitate-layer')
 
@@ -784,6 +818,10 @@ export function initVirtualLab() {
     $('#observation-title')
 
 
+  const observationPanel =
+    $('#reaction-observation')
+
+
   const observationText =
     $('#observation-text')
 
@@ -802,6 +840,18 @@ export function initVirtualLab() {
 
   const message =
     $('#lab-message')
+
+
+  const litmusPaperResult =
+    $('#litmus-paper-result')
+
+
+  const litmusPaperStrip =
+    $('#litmus-paper-strip')
+
+
+  const litmusPaperLabel =
+    $('#litmus-paper-label')
 
 
   const logList =
@@ -864,11 +914,19 @@ export function initVirtualLab() {
     null
 
 
+  const bubbleTimers =
+    new Set()
+
+
   let currentColor =
     '#7ecbff'
 
 
   let lastIndicator =
+    null
+
+
+  let lastLitmusTest =
     null
 
 
@@ -907,6 +965,15 @@ export function initVirtualLab() {
       currentColor,
 
       lastIndicator,
+
+      lastLitmusTest:
+        lastLitmusTest
+
+          ? {
+              ...lastLitmusTest
+            }
+
+          : null,
 
       precipitate,
 
@@ -1031,6 +1098,18 @@ export function initVirtualLab() {
       null
 
 
+    lastLitmusTest =
+      snapshot.lastLitmusTest &&
+      typeof snapshot.lastLitmusTest ===
+        'object'
+
+        ? {
+            ...snapshot.lastLitmusTest
+          }
+
+        : null
+
+
     precipitate =
       snapshot.precipitate ||
       null
@@ -1056,12 +1135,18 @@ export function initVirtualLab() {
       )
 
 
-    precipitateLayer.innerHTML =
-      ''
+    clearPrecipitate()
 
 
-    bubbleLayer.innerHTML =
-      ''
+    clearBubbles()
+
+
+    clearFoam()
+
+
+    renderLitmusPaperResult(
+      lastLitmusTest
+    )
 
 
     if (
@@ -1071,6 +1156,33 @@ export function initVirtualLab() {
       createPrecipitate(
         precipitate
       )
+
+
+      observationTitle.textContent =
+        `Đang có kết tủa ${
+          precipitateColorLabel(
+            precipitate
+          )
+        }`
+
+
+      observationText.textContent =
+        `Hệ thống đã khôi phục kết tủa ${
+          precipitateColorLabel(
+            precipitate
+          )
+        } trong cốc.`
+
+    }
+
+    else {
+
+      observationTitle.textContent =
+        'Chưa có hiện tượng'
+
+
+      observationText.textContent =
+        'Tiến độ trước đó đã được phục hồi.'
 
     }
 
@@ -1973,6 +2085,18 @@ export function initVirtualLab() {
     }
 
 
+    if (
+      reagent.indicator ===
+      'litmusPaper'
+    ) {
+
+      testWithLitmusPaper()
+
+      return
+
+    }
+
+
     const acceptedAmount =
       Math.min(
 
@@ -2126,6 +2250,260 @@ export function initVirtualLab() {
 
 
   /* =========================================================
+     PURPLE LITMUS PAPER TEST
+  ========================================================= */
+
+  function renderLitmusPaperResult(
+    result
+  ) {
+
+    if (
+      !litmusPaperResult ||
+      !litmusPaperStrip ||
+      !litmusPaperLabel
+    ) {
+
+      return
+
+    }
+
+
+    if (
+      !result
+    ) {
+
+      litmusPaperResult.hidden =
+        true
+
+      litmusPaperStrip.style.removeProperty(
+        '--litmus-color'
+      )
+
+      return
+
+    }
+
+
+    const labels = {
+
+      acid:
+        'Quỳ tím → đỏ · môi trường acid',
+
+      base:
+        'Quỳ tím → xanh · môi trường base',
+
+      neutral:
+        'Quỳ tím giữ màu tím · gần trung tính'
+
+    }
+
+
+    litmusPaperResult.hidden =
+      false
+
+
+    litmusPaperStrip.style.setProperty(
+      '--litmus-color',
+      result.color ||
+      '#806bb0'
+    )
+
+
+    litmusPaperLabel.textContent =
+      labels[
+        result.result
+      ] ||
+      'Kết quả giấy quỳ tím'
+
+  }
+
+
+  function testWithLitmusPaper() {
+
+    if (
+      totalVolume <=
+      0
+    ) {
+
+      messageTitle.textContent =
+        'Chưa có dung dịch để thử'
+
+
+      message.textContent =
+        'Hãy thêm dung dịch vào cốc trước khi dùng giấy quỳ tím.'
+
+
+      observationTitle.textContent =
+        'Không thể thử giấy quỳ'
+
+
+      observationText.textContent =
+        'Cốc đang trống.'
+
+
+      return
+
+    }
+
+
+    const pH =
+      calculatePH()
+
+
+    const result =
+
+      pH <
+        5
+
+        ? 'acid'
+
+        : pH >
+            8
+
+          ? 'base'
+
+          : 'neutral'
+
+
+    const color =
+
+      result ===
+        'acid'
+
+        ? '#d94a58'
+
+        : result ===
+            'base'
+
+          ? '#4567d9'
+
+          : '#806bb0'
+
+
+    const resultText =
+
+      result ===
+        'acid'
+
+        ? 'Giấy quỳ tím chuyển sang màu đỏ, chứng tỏ dung dịch có môi trường acid.'
+
+        : result ===
+            'base'
+
+          ? 'Giấy quỳ tím chuyển sang màu xanh, chứng tỏ dung dịch có môi trường base.'
+
+          : 'Giấy quỳ tím gần như giữ nguyên màu tím, dung dịch đang ở vùng gần trung tính.'
+
+
+    lastLitmusTest = {
+
+      result,
+
+      pH:
+        Number(
+          pH.toFixed(
+            2
+          )
+        ),
+
+      color
+
+    }
+
+
+    renderLitmusPaperResult(
+      lastLitmusTest
+    )
+
+
+    observationPanel
+      ?.classList
+      .remove(
+        'reaction-observed'
+      )
+
+
+    void observationPanel
+      ?.offsetWidth
+
+
+    observationPanel
+      ?.classList
+      .add(
+        'reaction-observed'
+      )
+
+
+    observationTitle.textContent =
+
+      result ===
+        'acid'
+
+        ? 'Giấy quỳ tím chuyển đỏ'
+
+        : result ===
+            'base'
+
+          ? 'Giấy quỳ tím chuyển xanh'
+
+          : 'Giấy quỳ tím không đổi màu rõ rệt'
+
+
+    observationText.textContent =
+      `${resultText} pH mô phỏng ≈ ${pH.toFixed(1)}.`
+
+
+    equationText.textContent =
+
+      result ===
+        'acid'
+
+        ? 'Quỳ tím + môi trường acid → đỏ'
+
+        : result ===
+            'base'
+
+          ? 'Quỳ tím + môi trường base → xanh'
+
+          : 'Quỳ tím + môi trường trung tính → tím'
+
+
+    messageTitle.textContent =
+      'Đã thử bằng giấy quỳ tím'
+
+
+    message.textContent =
+      resultText
+
+
+    addLog(
+      `Giấy quỳ tím: ${result}; pH ≈ ${pH.toFixed(1)}.`
+    )
+
+
+    emitLabAction(
+      'indicator',
+      {
+        indicator:
+          'litmusPaper',
+
+        result,
+
+        pH:
+          Number(
+            pH.toFixed(
+              2
+            )
+          ),
+
+        color
+      }
+    )
+
+  }
+
+
+  /* =========================================================
      DROP ANIMATION
   ========================================================= */
 
@@ -2221,6 +2599,14 @@ export function initVirtualLab() {
 
 
     liquid.style.height =
+      `${height}%`
+
+
+    bubbleLayer.style.height =
+      `${height}%`
+
+
+    foamLayer.style.height =
       `${height}%`
 
 
@@ -2509,6 +2895,11 @@ export function initVirtualLab() {
             )
 
 
+          updateReactionObservation(
+            reaction
+          )
+
+
           emitLabAction(
             'reaction',
             {
@@ -2572,6 +2963,16 @@ export function initVirtualLab() {
         break
 
 
+      case 'foam':
+
+        createFoam(
+          effect.amount ||
+          24
+        )
+
+        break
+
+
       case 'precipitate':
 
         precipitate =
@@ -2592,8 +2993,7 @@ export function initVirtualLab() {
           null
 
 
-        precipitateLayer.innerHTML =
-          ''
+        clearPrecipitate()
 
         break
 
@@ -2651,6 +3051,441 @@ export function initVirtualLab() {
   }
 
 
+  function createFoam(
+    amount = 24
+  ) {
+
+    clearFoam()
+
+
+    const count =
+      Math.max(
+        10,
+        Math.min(
+          Number(
+            amount
+          ) ||
+          24,
+          42
+        )
+      )
+
+
+    for (
+      let i = 0;
+      i < count;
+      i++
+    ) {
+
+      const bubble =
+        document.createElement(
+          'i'
+        )
+
+
+      const size =
+        7 +
+        Math.random() *
+        13
+
+
+      bubble.style.width =
+        `${size}px`
+
+
+      bubble.style.height =
+        `${size}px`
+
+
+      bubble.style.left =
+        `${4 + Math.random() * 92}%`
+
+
+      bubble.style.top =
+        `${-8 + Math.random() * 18}px`
+
+
+      bubble.style.animationDelay =
+        `${Math.random() * .45}s`
+
+
+      foamLayer.appendChild(
+        bubble
+      )
+
+    }
+
+
+    foamLayer.classList.add(
+      'active'
+    )
+
+  }
+
+
+  function clearFoam() {
+
+    foamLayer.replaceChildren()
+
+
+    foamLayer.classList.remove(
+      'active'
+    )
+
+  }
+
+
+  function clearPrecipitate() {
+
+    precipitateLayer.replaceChildren()
+
+
+    precipitateLayer.classList.remove(
+      'has-precipitate',
+      'is-light-precipitate'
+    )
+
+
+    precipitateLayer.style.removeProperty(
+      '--precipitate-color'
+    )
+
+
+    precipitateLayer.style.removeProperty(
+      '--sediment-height'
+    )
+
+
+    precipitateLayer.style.removeProperty(
+      '--cloud-height'
+    )
+
+  }
+
+
+  function precipitateColorLabel(
+    color
+  ) {
+
+    const value =
+      String(
+        color || ''
+      ).replace(
+        '#',
+        ''
+      )
+
+
+    const normalized =
+      value.length === 3
+
+        ? value
+            .split('')
+            .map(
+              channel =>
+                channel + channel
+            )
+            .join('')
+
+        : value
+
+
+    if (
+      !/^[0-9a-f]{6}$/i.test(
+        normalized
+      )
+    ) {
+
+      return 'có màu'
+
+    }
+
+
+    const red =
+      parseInt(
+        normalized.slice(0, 2),
+        16
+      )
+
+
+    const green =
+      parseInt(
+        normalized.slice(2, 4),
+        16
+      )
+
+
+    const blue =
+      parseInt(
+        normalized.slice(4, 6),
+        16
+      )
+
+
+    const brightness =
+      (
+        red * 299 +
+        green * 587 +
+        blue * 114
+      ) / 255000
+
+
+    const spread =
+      Math.max(
+        red,
+        green,
+        blue
+      ) -
+      Math.min(
+        red,
+        green,
+        blue
+      )
+
+
+    if (
+      brightness >= .88 &&
+      spread <= 48
+    ) {
+
+      return 'trắng'
+
+    }
+
+
+    if (
+      red > 180 &&
+      green > 150 &&
+      blue < 150 &&
+      red > blue * 1.4 &&
+      green > blue * 1.4
+    ) {
+
+      return 'vàng'
+
+    }
+
+
+    if (
+      red > green * 1.22 &&
+      green > blue * 1.12
+    ) {
+
+      return brightness < .58
+
+        ? 'nâu'
+
+        : 'vàng'
+
+    }
+
+
+    if (
+      blue > red * 1.18 &&
+      blue > green * 1.08
+    ) {
+
+      return 'xanh lam'
+
+    }
+
+
+    if (
+      green > red * 1.08 &&
+      green > blue * 1.06
+    ) {
+
+      return 'xanh lục'
+
+    }
+
+
+    if (
+      brightness < .2
+    ) {
+
+      return 'sẫm màu'
+
+    }
+
+
+    return 'có màu'
+
+  }
+
+
+  function updateReactionObservation(
+    reaction
+  ) {
+
+    if (observationPanel) {
+
+      observationPanel
+        .classList
+        .remove(
+          'reaction-observed'
+        )
+
+
+      void observationPanel.offsetWidth
+
+
+      observationPanel
+        .classList
+        .add(
+          'reaction-observed'
+        )
+
+    }
+
+    const effects =
+      reaction.effects ||
+      []
+
+
+    const precipitateEffect =
+      effects.find(
+        effect =>
+          effect.type ===
+          'precipitate'
+      )
+
+
+    const hasGas =
+      effects.some(
+        effect =>
+          effect.type ===
+          'gas'
+      )
+
+
+    const hasFoam =
+      effects.some(
+        effect =>
+          effect.type ===
+          'foam'
+      )
+
+
+    const changesColor =
+      effects.some(
+        effect =>
+          effect.type ===
+          'solutionColor'
+      )
+
+
+    const observations = []
+
+
+    if (
+      precipitateEffect
+    ) {
+
+      observations.push(
+        `Xuất hiện kết tủa ${
+          precipitateColorLabel(
+            precipitateEffect.color
+          )
+        }.`
+      )
+
+
+      observations.push(
+        'Dung dịch đục nhẹ, chất rắn đang lắng xuống đáy cốc.'
+      )
+
+    }
+
+
+    if (hasGas) {
+
+      observations.push(
+        'Có khí thoát ra.'
+      )
+
+    }
+
+
+    if (hasFoam) {
+
+      observations.push(
+        'Xuất hiện lớp bọt mô phỏng của xà phòng trên bề mặt hỗn hợp.'
+      )
+
+    }
+
+
+    if (changesColor) {
+
+      observations.push(
+        'Dung dịch đổi màu.'
+      )
+
+    }
+
+
+    if (!observations.length) {
+
+      observationTitle.textContent =
+        reaction.title ||
+        'Phản ứng đã xảy ra'
+
+
+      observationText.textContent =
+        reaction.description ||
+        'Chưa có hiện tượng quan sát rõ.'
+
+
+      return
+
+    }
+
+
+    observationTitle.textContent =
+      precipitateEffect
+
+        ? `Kết tủa ${
+            precipitateColorLabel(
+              precipitateEffect.color
+            )
+          } xuất hiện`
+
+        : hasGas
+
+          ? 'Có khí thoát ra'
+
+          : hasFoam
+
+            ? 'Xuất hiện bọt xà phòng'
+
+            : 'Dung dịch đổi màu'
+
+
+    observationText.textContent =
+      observations.join(' ')
+
+  }
+
+
+  function clearBubbles() {
+
+    bubbleTimers.forEach(
+      timer =>
+        clearTimeout(
+          timer
+        )
+    )
+
+
+    bubbleTimers.clear()
+
+
+    bubbleLayer.replaceChildren()
+
+  }
+
+
   /* =========================================================
      BUBBLES
   ========================================================= */
@@ -2660,70 +3495,111 @@ export function initVirtualLab() {
       12
   ) {
 
+    const maxBubbles =
+      window.matchMedia(
+        '(max-width: 767px)'
+      ).matches
+
+        ? 10
+
+        : 18
+
+
+    const availableSlots =
+      Math.max(
+        0,
+        maxBubbles -
+          bubbleLayer.childElementCount
+      )
+
+
+    const bubbleCount =
+      Math.min(
+        Math.max(
+          Math.round(
+            Number(count) || 0
+          ),
+          0
+        ),
+        availableSlots
+      )
+
+
     for (
       let i = 0;
-      i < count;
+      i < bubbleCount;
       i++
     ) {
 
-      setTimeout(
-        () => {
+      const bubble =
+        document.createElement(
+          'i'
+        )
 
-          const bubble =
-            document.createElement(
-              'i'
+
+      bubble.style.left =
+        `${
+          8 +
+          Math.random() *
+          84
+        }%`
+
+
+      const size =
+        6 +
+        Math.random() *
+        8
+
+
+      bubble.style.width =
+        `${size}px`
+
+
+      bubble.style.height =
+        `${size}px`
+
+
+      const duration =
+        1.7 +
+        Math.random() *
+        1.2
+
+
+      const delay =
+        i * 55
+
+
+      bubble.style.animationDuration =
+        `${duration}s`
+
+
+      bubble.style.animationDelay =
+        `${delay}ms`
+
+
+      bubbleLayer.appendChild(
+        bubble
+      )
+
+
+      const timer =
+        window.setTimeout(
+          () => {
+
+            bubble.remove()
+
+            bubbleTimers.delete(
+              timer
             )
 
+          },
 
-          bubble.style.left =
-            `${
-              8 +
-              Math.random() *
-              84
-            }%`
+          duration * 1000 + delay + 150
+        )
 
 
-          const size =
-            6 +
-            Math.random() *
-            8
-
-
-          bubble.style.width =
-            `${size}px`
-
-
-          bubble.style.height =
-            `${size}px`
-
-
-          bubble.style.animationDuration =
-            `${
-              1.7 +
-              Math.random() *
-              1.2
-            }s`
-
-
-          bubbleLayer.appendChild(
-            bubble
-          )
-
-
-          setTimeout(
-            () => {
-
-              bubble.remove()
-
-            },
-
-            3000
-          )
-
-        },
-
-        i *
-        55
+      bubbleTimers.add(
+        timer
       )
 
     }
@@ -2731,21 +3607,130 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     PRECIPITATE
-  ========================================================= */
-
   function createPrecipitate(
     color
   ) {
 
-    precipitateLayer.innerHTML =
-      ''
+    clearPrecipitate()
+
+
+    const reducedMotion =
+      window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      ).matches
+
+
+    const mobile =
+      window.matchMedia(
+        '(max-width: 767px)'
+      ).matches
+
+
+    const liquidHeightPercent =
+      clamp(
+        totalVolume / 250 * 78,
+        10,
+        78
+      )
+
+
+    const lightColor =
+      precipitateColorLabel(
+        color
+      ) === 'trắng'
+
+
+    precipitateLayer.classList.add(
+      'has-precipitate'
+    )
+
+
+    if (lightColor) {
+
+      precipitateLayer.classList.add(
+        'is-light-precipitate'
+      )
+
+    }
+
+
+    precipitateLayer.style.setProperty(
+      '--precipitate-color',
+      color
+    )
+
+
+    precipitateLayer.style.setProperty(
+      '--cloud-height',
+      `${liquidHeightPercent}%`
+    )
+
+
+    precipitateLayer.style.setProperty(
+      '--sediment-height',
+      `${
+        clamp(
+          14 + totalVolume / 250 * 8,
+          14,
+          22
+        )
+      }px`
+    )
+
+
+    const cloud =
+      document.createElement(
+        'div'
+      )
+
+
+    cloud.className =
+      'precipitate-cloud'
+
+
+    cloud.setAttribute(
+      'aria-hidden',
+      'true'
+    )
+
+
+    const sediment =
+      document.createElement(
+        'div'
+      )
+
+
+    sediment.className =
+      'precipitate-sediment'
+
+
+    sediment.setAttribute(
+      'aria-hidden',
+      'true'
+    )
+
+
+    precipitateLayer.append(
+      cloud,
+      sediment
+    )
+
+
+    const particleCount =
+      reducedMotion
+
+        ? 8
+
+        : mobile
+
+          ? 8
+
+          : 16
 
 
     for (
       let i = 0;
-      i < 40;
+      i < particleCount;
       i++
     ) {
 
@@ -2755,28 +3740,57 @@ export function initVirtualLab() {
         )
 
 
+      particle.className =
+        'precipitate-particle'
+
+
       particle.style.left =
         `${
-          4 +
+          10 +
           Math.random() *
-          92
+          80
         }%`
 
 
-      particle.style.setProperty(
+      particle.style.top =
+        `${
+          100 -
+          liquidHeightPercent *
+            (.2 + Math.random() * .65)
+        }%`
 
-        '--precipitate-color',
 
-        color
+      const size =
+        4 +
+        Math.random() *
+        4
 
-      )
+
+      particle.style.width =
+        `${size}px`
+
+
+      particle.style.height =
+        `${size}px`
+
+
+      particle.style.opacity =
+        `${
+          .45 +
+          Math.random() *
+          .4
+        }`
 
 
       particle.style.animationDelay =
-        `${
-          Math.random() *
-          500
-        }ms`
+        reducedMotion
+
+          ? '0ms'
+
+          : `${
+              Math.random() *
+              850
+            }ms`
 
 
       precipitateLayer.appendChild(
@@ -3293,6 +4307,10 @@ export function initVirtualLab() {
       null
 
 
+    lastLitmusTest =
+      null
+
+
     currentColor =
       '#7ecbff'
 
@@ -3300,16 +4318,29 @@ export function initVirtualLab() {
     triggeredReactions.clear()
 
 
-    precipitateLayer.innerHTML =
-      ''
+    clearPrecipitate()
 
 
-    bubbleLayer.innerHTML =
-      ''
+    clearBubbles()
+
+
+    clearFoam()
+
+
+    renderLitmusPaperResult(
+      null
+    )
 
 
     observationTitle.textContent =
       'Chưa có hiện tượng'
+
+
+    observationPanel
+      ?.classList
+      .remove(
+        'reaction-observed'
+      )
 
 
     observationText.textContent =
@@ -3784,7 +4815,68 @@ export function initVirtualLab() {
      ANIMATION LOOP
   ========================================================= */
 
+  const animationStage =
+    section.querySelector(
+      '.vl-stage'
+    )
+
+
+  const animationView =
+    section.closest(
+      '.workspace-view'
+    )
+
+
+  let animationFrameId =
+    null
+
+
+  let animationStageVisible =
+    false
+
+
+  function scheduleAnimationLoop() {
+
+    if (
+      animationFrameId === null &&
+      animationStageVisible &&
+      !document.hidden &&
+      !animationView?.hidden &&
+      section.isConnected
+    ) {
+
+      animationFrameId =
+        requestAnimationFrame(
+          animationLoop
+        )
+
+    }
+
+  }
+
+
+  function stopAnimationLoop() {
+
+    if (
+      animationFrameId !== null
+    ) {
+
+      cancelAnimationFrame(
+        animationFrameId
+      )
+
+
+      animationFrameId =
+        null
+
+    }
+
+  }
+
   function animationLoop() {
+
+    animationFrameId =
+      null
 
     tiltCurrent +=
       (
@@ -3851,15 +4943,7 @@ export function initVirtualLab() {
     )
 
 
-    if (
-      section.isConnected
-    ) {
-
-      requestAnimationFrame(
-        animationLoop
-      )
-
-    }
+    scheduleAnimationLoop()
 
   }
 
@@ -4176,8 +5260,115 @@ export function initVirtualLab() {
   updateDashboard()
 
 
-  requestAnimationFrame(
-    animationLoop
+  if (
+    animationStage &&
+    'IntersectionObserver' in window
+  ) {
+
+    const animationObserver =
+      new IntersectionObserver(
+        entries => {
+
+          animationStageVisible =
+            entries.some(
+              entry =>
+                entry.isIntersecting
+            )
+
+
+          if (
+            animationStageVisible
+          ) {
+
+            scheduleAnimationLoop()
+
+          }
+
+          else {
+
+            stopAnimationLoop()
+
+          }
+
+        }
+      )
+
+
+    animationObserver.observe(
+      animationStage
+    )
+
+  }
+
+  else {
+
+    animationStageVisible =
+      true
+
+  }
+
+
+  if (
+    animationView
+  ) {
+
+    const animationViewObserver =
+      new MutationObserver(
+        () => {
+
+          if (
+            animationView.hidden
+          ) {
+
+            stopAnimationLoop()
+
+          }
+
+          else {
+
+            scheduleAnimationLoop()
+
+          }
+
+        }
+      )
+
+
+    animationViewObserver.observe(
+      animationView,
+      {
+        attributes: true,
+        attributeFilter: [
+          'hidden'
+        ]
+      }
+    )
+
+  }
+
+
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+
+      if (
+        document.hidden
+      ) {
+
+        stopAnimationLoop()
+
+      }
+
+      else {
+
+        scheduleAnimationLoop()
+
+      }
+
+    }
   )
+
+
+  scheduleAnimationLoop()
 
 }

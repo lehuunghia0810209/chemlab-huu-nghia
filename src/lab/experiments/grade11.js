@@ -122,6 +122,23 @@ function H(
 }
 
 
+function L(
+  result,
+  text,
+  success = ''
+) {
+
+  return {
+    type: 'indicator',
+    indicator: 'litmusPaper',
+    result,
+    text,
+    success
+  }
+
+}
+
+
 function R(
   reaction,
   text,
@@ -353,7 +370,8 @@ export const GRADE11_EXPERIMENTS = [
 
     chemicals: [
       'hcl',
-      'naoh'
+      'naoh',
+      'litmusPaper'
     ],
 
     steps: [
@@ -386,19 +404,47 @@ export const GRADE11_EXPERIMENTS = [
         'Thêm HCl và quan sát giá trị pH trên bảng điều khiển.'
       ),
 
+      L(
+        'acid',
+        'Chọn Purple litmus paper và thử dung dịch HCl.',
+        'Giấy quỳ tím chuyển đỏ: dung dịch đang ở môi trường acid.'
+      ),
+
       O(
         'Dung dịch acid',
-        'Sau khi thêm HCl, giá trị pH giảm xuống vùng acid.'
+        'Sau khi thêm HCl, pH giảm và giấy quỳ tím chuyển đỏ.'
       ),
 
       A(
         'naoh',
-        'Thêm NaOH và quan sát sự thay đổi pH.'
+        'Thêm một phần NaOH có thể tích tương đương HCl và quan sát pH.'
+      ),
+
+      L(
+        'neutral',
+        'Dùng giấy quỳ tím thử lại sau khi trung hòa.',
+        'Giấy quỳ gần như giữ màu tím khi dung dịch ở gần trung tính.'
       ),
 
       O(
         'Trung hòa',
-        'Khi acid và base phản ứng, pH có xu hướng tiến về vùng trung tính nếu lượng phản ứng tương đương.'
+        'Khi lượng HCl và NaOH tương đương trong mô phỏng, pH tiến gần 7 và giấy quỳ tím gần như không đổi màu.'
+      ),
+
+      A(
+        'naoh',
+        'Thêm thêm NaOH để tạo môi trường base.'
+      ),
+
+      L(
+        'base',
+        'Dùng giấy quỳ tím thử dung dịch đang dư NaOH.',
+        'Giấy quỳ tím chuyển xanh: dung dịch đang ở môi trường base.'
+      ),
+
+      O(
+        'Dung dịch base',
+        'Khi NaOH dư, pH lớn hơn 7 và giấy quỳ tím chuyển xanh.'
       ),
 
       Q(

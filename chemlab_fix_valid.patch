@@ -1,0 +1,1631 @@
+diff --git a/src/lab/chemicals.js b/src/lab/chemicals.js
+index 80cb3a9..8935549 100644
+--- a/src/lab/chemicals.js
++++ b/src/lab/chemicals.js
+@@ -1,6 +1,6 @@
+ /* =========================================================
+    CHEMLAB VIRTUAL LAB 3.1
+-   101-CHEMICAL DATABASE
++   103-CHEMICAL DATABASE
+ ========================================================= */
+ 
+ function C(
+@@ -1189,6 +1189,27 @@ const LIST = [
+   ),
+ 
+ 
++  C(
++    'litmusPaper',
++    'Purple litmus paper',
++    'Indicator paper',
++    'indicator',
++    'indicator',
++    '#806bb0',
++    0,
++    'solid',
++    [],
++    [
++      'indicator',
++      'litmus',
++      'purple litmus paper',
++      'quy tim',
++      'quỳ tím'
++    ],
++    'litmusPaper'
++  ),
++
++
+   C(
+     'universalIndicator',
+     'Universal indicator',
+@@ -1700,6 +1721,27 @@ const LIST = [
+   ),
+ 
+ 
++  C(
++    'triglycerideOil',
++    'Vegetable oil (triglyceride model)',
++    '(RCOO)₃C₃H₅',
++    'organic',
++    'lipid',
++    '#f2d98d',
++    0,
++    'liquid',
++    [],
++    [
++      'lipid',
++      'fat',
++      'triglyceride',
++      'vegetable oil',
++      'saponification',
++      'soap'
++    ]
++  ),
++
++
+   /* =======================================================
+      CARBOHYDRATES
+   ======================================================= */
+diff --git a/src/lab/experiments/experimentEngine.js b/src/lab/experiments/experimentEngine.js
+index 3d46b3d..7c51414 100644
+--- a/src/lab/experiments/experimentEngine.js
++++ b/src/lab/experiments/experimentEngine.js
+@@ -58,6 +58,9 @@ function createEmptyState() {
+       null,
+ 
+     labSnapshot:
++      null,
++
++    labConfirmation:
+       null
+ 
+   }
+@@ -158,7 +161,18 @@ function normalizeSavedState(
+ 
+     labSnapshot:
+       saved.labSnapshot ||
+-      null
++      null,
++
++    labConfirmation:
++      saved.labConfirmation &&
++      typeof saved.labConfirmation ===
++        'object'
++
++        ? {
++            ...saved.labConfirmation
++          }
++
++        : null
+ 
+   }
+ 
+@@ -291,6 +305,37 @@ function actionMatchesStep(
+   }
+ 
+ 
++  if (
++    step.type ===
++    'indicator'
++  ) {
++
++    const indicatorMatches =
++      !step.indicator ||
++      action.indicator ===
++        step.indicator
++
++
++    const resultMatches =
++      !step.result ||
++      action.result ===
++        step.result
++
++
++    return (
++
++      action.type ===
++        'indicator' &&
++
++      indicatorMatches &&
++
++      resultMatches
++
++    )
++
++  }
++
++
+   return false
+ 
+ }
+@@ -432,6 +477,24 @@ export function createExperimentEngine({
+         state.labSnapshot,
+ 
+ 
++      labConfirmation:
++        state.labConfirmation
++
++          ? {
++              ...state.labConfirmation
++            }
++
++          : null,
++
++
++      awaitingLabConfirmation:
++        Boolean(
++          state.labConfirmation &&
++          state.labConfirmation.stepIndex ===
++            state.currentStep
++        ),
++
++
+       totalSteps,
+ 
+ 
+@@ -499,7 +562,10 @@ export function createExperimentEngine({
+             state.completed,
+ 
+           labSnapshot:
+-            state.labSnapshot
++            state.labSnapshot,
++
++          labConfirmation:
++            state.labConfirmation
+ 
+         }
+ 
+@@ -570,6 +636,10 @@ export function createExperimentEngine({
+           state.labSnapshot,
+ 
+ 
++        labConfirmation:
++          null,
++
++
+         currentStep:
+           experiment
+             .steps
+@@ -631,6 +701,10 @@ export function createExperimentEngine({
+       result
+ 
+ 
++    state.labConfirmation =
++      null
++
++
+     state.currentStep +=
+       1
+ 
+@@ -789,7 +863,7 @@ export function createExperimentEngine({
+       )
+     ) {
+ 
+-      completeCurrentStep({
++      const result = {
+ 
+         type:
+           'success',
+@@ -798,9 +872,145 @@ export function createExperimentEngine({
+ 
+           step.success ||
+ 
+-          'Bước đã hoàn thành.'
++          (
++            step.type ===
++              'reaction'
++
++              ? 'Phản ứng đã xảy ra. Hãy quan sát hiện tượng và phương trình trước khi tiếp tục.'
++
++              : step.type ===
++                  'indicator'
++
++                ? 'Đã có kết quả thử bằng giấy quỳ tím. Hãy quan sát màu giấy trước khi tiếp tục.'
++
++                : 'Bước đã hoàn thành.'
++          )
++
++      }
++
++
++      const requiresConfirmation =
++
++        step.type ===
++          'reaction' ||
++
++        step.type ===
++          'indicator' ||
++
++        step.confirmBeforeContinue ===
++          true
++
++
++      if (
++        requiresConfirmation
++      ) {
++
++        state.started =
++          true
++
++
++        state.lastResult =
++          result
++
++
++        state.labConfirmation = {
++
++          stepIndex:
++            state.currentStep,
++
++          type:
++            step.type,
++
++          reactionId:
++            action.reactionId ||
++            null,
+ 
+-      })
++          indicator:
++            action.indicator ||
++            null,
++
++          indicatorResult:
++            action.result ||
++            null
++
++        }
++
++
++        persist()
++
++        notify()
++
++        return
++
++      }
++
++
++      completeCurrentStep(
++        result
++      )
++
++    }
++
++  }
++
++
++  /* =====================================================
++     CONFIRM LAB RESULT
++
++     Reaction/indicator steps are intentionally held here
++     so learners can inspect the result before advancing.
++  ===================================================== */
++
++  function confirmLabStep() {
++
++    const step =
++      getCurrentStep()
++
++
++    const confirmation =
++      state.labConfirmation
++
++
++    if (
++      !step ||
++      !confirmation ||
++      confirmation.stepIndex !==
++        state.currentStep
++    ) {
++
++      return {
++
++        accepted:
++          false,
++
++        message:
++          'Chưa có kết quả thí nghiệm nào cần xác nhận.'
++
++      }
++
++    }
++
++
++    const result =
++      state.lastResult ||
++      {
++        type:
++          'success',
++
++        message:
++          'Đã quan sát kết quả.'
++      }
++
++
++    completeCurrentStep(
++      result
++    )
++
++
++    return {
++
++      accepted:
++        true
+ 
+     }
+ 
+@@ -1069,6 +1279,8 @@ export function createExperimentEngine({
+ 
+     continueStep,
+ 
++    confirmLabStep,
++
+     answerPrediction,
+ 
+     getState:
+diff --git a/src/lab/experiments/experiments.css b/src/lab/experiments/experiments.css
+index 78d61fe..1bfeac2 100644
+--- a/src/lab/experiments/experiments.css
++++ b/src/lab/experiments/experiments.css
+@@ -2913,4 +2913,65 @@ html[data-theme="light"]
+     justify-items: start;
+   }
+ 
+-}
+\ No newline at end of file
++}
++/* =========================================================
++   GUIDED LAB RESULT CONFIRMATION
++========================================================= */
++
++.guided-lab-confirmation {
++  display: grid;
++  grid-template-columns: minmax(0,1fr) auto;
++  align-items: center;
++  gap: 16px;
++  margin-top: 16px;
++  padding: 16px;
++  border: 1px solid rgba(96,165,250,.2);
++  border-radius: 16px;
++  background:
++    linear-gradient(135deg,rgba(59,130,246,.09),rgba(124,58,237,.07));
++}
++
++.guided-lab-confirmation strong {
++  display: block;
++  margin-top: 6px;
++  color: #eef4ff;
++  line-height: 1.45;
++}
++
++.guided-lab-confirmation p {
++  margin: 7px 0 0;
++  color: #a8b4ca;
++  line-height: 1.55;
++}
++
++.guided-lab-confirmation .guided-primary-btn {
++  min-width: 210px;
++  white-space: normal;
++}
++
++html[data-theme="light"] .guided-lab-confirmation {
++  border-color: rgba(64,89,145,.14);
++  background:
++    linear-gradient(135deg,rgba(227,237,255,.92),rgba(241,235,255,.88));
++}
++
++html[data-theme="light"] .guided-lab-confirmation strong {
++  color: #27324a;
++}
++
++html[data-theme="light"] .guided-lab-confirmation p {
++  color: #647087;
++}
++
++@media (max-width: 767px) {
++  .guided-lab-confirmation {
++    grid-template-columns: 1fr;
++    gap: 12px;
++    padding: 14px;
++  }
++
++  .guided-lab-confirmation .guided-primary-btn {
++    width: 100%;
++    min-width: 0;
++  }
++}
+diff --git a/src/lab/experiments/grade11.js b/src/lab/experiments/grade11.js
+index 72f2bdd..491ee6b 100644
+--- a/src/lab/experiments/grade11.js
++++ b/src/lab/experiments/grade11.js
+@@ -122,6 +122,23 @@ function H(
+ }
+ 
+ 
++function L(
++  result,
++  text,
++  success = ''
++) {
++
++  return {
++    type: 'indicator',
++    indicator: 'litmusPaper',
++    result,
++    text,
++    success
++  }
++
++}
++
++
+ function R(
+   reaction,
+   text,
+@@ -353,7 +370,8 @@ export const GRADE11_EXPERIMENTS = [
+ 
+     chemicals: [
+       'hcl',
+-      'naoh'
++      'naoh',
++      'litmusPaper'
+     ],
+ 
+     steps: [
+@@ -386,19 +404,47 @@ export const GRADE11_EXPERIMENTS = [
+         'Thêm HCl và quan sát giá trị pH trên bảng điều khiển.'
+       ),
+ 
++      L(
++        'acid',
++        'Chọn Purple litmus paper và thử dung dịch HCl.',
++        'Giấy quỳ tím chuyển đỏ: dung dịch đang ở môi trường acid.'
++      ),
++
+       O(
+         'Dung dịch acid',
+-        'Sau khi thêm HCl, giá trị pH giảm xuống vùng acid.'
++        'Sau khi thêm HCl, pH giảm và giấy quỳ tím chuyển đỏ.'
+       ),
+ 
+       A(
+         'naoh',
+-        'Thêm NaOH và quan sát sự thay đổi pH.'
++        'Thêm một phần NaOH có thể tích tương đương HCl và quan sát pH.'
++      ),
++
++      L(
++        'neutral',
++        'Dùng giấy quỳ tím thử lại sau khi trung hòa.',
++        'Giấy quỳ gần như giữ màu tím khi dung dịch ở gần trung tính.'
+       ),
+ 
+       O(
+         'Trung hòa',
+-        'Khi acid và base phản ứng, pH có xu hướng tiến về vùng trung tính nếu lượng phản ứng tương đương.'
++        'Khi lượng HCl và NaOH tương đương trong mô phỏng, pH tiến gần 7 và giấy quỳ tím gần như không đổi màu.'
++      ),
++
++      A(
++        'naoh',
++        'Thêm thêm NaOH để tạo môi trường base.'
++      ),
++
++      L(
++        'base',
++        'Dùng giấy quỳ tím thử dung dịch đang dư NaOH.',
++        'Giấy quỳ tím chuyển xanh: dung dịch đang ở môi trường base.'
++      ),
++
++      O(
++        'Dung dịch base',
++        'Khi NaOH dư, pH lớn hơn 7 và giấy quỳ tím chuyển xanh.'
+       ),
+ 
+       Q(
+diff --git a/src/lab/experiments/grade12.js b/src/lab/experiments/grade12.js
+index eeb3f7c..a4dbfd9 100644
+--- a/src/lab/experiments/grade12.js
++++ b/src/lab/experiments/grade12.js
+@@ -450,6 +450,12 @@ export const GRADE12_EXPERIMENTS = [
+         'Gia nhiệt hỗn hợp mô phỏng.'
+       ),
+ 
++      R(
++        'ethylEthanoate-naoh',
++        'Tiếp tục gia nhiệt đến khoảng 55 °C và quan sát phản ứng xà phòng hóa ester.',
++        'Phản ứng xà phòng hóa đã xảy ra: tạo sodium ethanoate và ethanol.'
++      ),
++
+       O(
+         'Thủy phân ester',
+         'Trong môi trường kiềm, ester bị thủy phân tạo muối carboxylate và alcohol.',
+@@ -479,7 +485,12 @@ export const GRADE12_EXPERIMENTS = [
+       'Hiểu cấu tạo và cơ chế làm sạch của xà phòng và chất giặt rửa.',
+ 
+     duration:
+-      7,
++      10,
++
++    chemicals: [
++      'triglycerideOil',
++      'naoh'
++    ],
+ 
+     steps: [
+ 
+@@ -527,9 +538,46 @@ export const GRADE12_EXPERIMENTS = [
+         'Đầu ưa nước tiếp xúc với nước.'
+       ),
+ 
++      P(
++        'g12-l2-p1',
++        'Khi chất béo phản ứng với NaOH và được gia nhiệt, sản phẩm đặc trưng là:',
++        [
++          'Glycerol và muối sodium của acid béo',
++          'Ethanol và CO₂',
++          'Glucose và nước',
++          'Amino acid và NH₃'
++        ],
++        0,
++        'Đó là phản ứng xà phòng hóa chất béo.'
++      ),
++
++      A(
++        'triglycerideOil',
++        'Thêm dầu thực vật mô phỏng (triglyceride) vào cốc.'
++      ),
++
++      A(
++        'naoh',
++        'Thêm dung dịch NaOH.'
++      ),
++
++      H(
++        'Bật gia nhiệt để phản ứng xà phòng hóa xảy ra.'
++      ),
++
++      R(
++        'triglycerideOil-naoh',
++        'Tiếp tục gia nhiệt đến khoảng 60 °C và quan sát sự tạo thành xà phòng.',
++        'Phản ứng xà phòng hóa chất béo đã xảy ra: tạo glycerol và muối sodium của acid béo.'
++      ),
++
+       O(
+-        'Kết luận',
+-        'Cơ chế tạo micelle giúp phân tán dầu mỡ vào nước và loại bỏ vết bẩn.'
++        'Xà phòng hóa và cơ chế làm sạch',
++        'Chất béo phản ứng với NaOH tạo glycerol và muối sodium của acid béo. Các muối này là xà phòng và có thể tạo micelle giúp phân tán dầu mỡ trong nước.',
++        [
++          'Phương trình tổng quát: (RCOO)₃C₃H₅ + 3NaOH → C₃H₅(OH)₃ + 3RCOONa.',
++          'Đầu carboxylate ưa nước, còn mạch hydrocarbon kị nước.'
++        ]
+       )
+ 
+     ]
+diff --git a/src/lab/experiments/guidedExperiments.js b/src/lab/experiments/guidedExperiments.js
+index 19b632a..dbda489 100644
+--- a/src/lab/experiments/guidedExperiments.js
++++ b/src/lab/experiments/guidedExperiments.js
+@@ -292,7 +292,9 @@ export function initGuidedExperiments() {
+ 
+       'reaction',
+ 
+-      'temperature'
++      'temperature',
++
++      'indicator'
+ 
+     ].includes(
+       step?.type
+@@ -2885,6 +2887,45 @@ export function initGuidedExperiments() {
+             )
+           }
+ 
++
++          ${
++            state.awaitingLabConfirmation
++
++              ? `
++
++                <div class="guided-lab-confirmation">
++
++                  <div>
++
++                    <span class="guided-step-kicker">
++                      KẾT QUẢ ĐÃ XUẤT HIỆN
++                    </span>
++
++                    <strong>
++                      Quan sát cốc, mục Hiện tượng và Phương trình ở phòng thí nghiệm.
++                    </strong>
++
++                    <p>
++                      ChemLab sẽ không tự chuyển bước nữa. Khi bạn đã xem xong kết quả, hãy nhấn nút bên dưới.
++                    </p>
++
++                  </div>
++
++                  <button
++                    type="button"
++                    class="guided-primary-btn"
++                    data-confirm-lab-result
++                  >
++                    Đã quan sát kết quả → Tiếp tục
++                  </button>
++
++                </div>
++
++              `
++
++              : ''
++          }
++
+         </div>
+ 
+ 
+@@ -2969,6 +3010,21 @@ export function initGuidedExperiments() {
+       )
+ 
+ 
++    panel
++      .querySelector(
++        '[data-confirm-lab-result]'
++      )
++      ?.addEventListener(
++        'click',
++        () => {
++
++          engine
++            ?.confirmLabStep()
++
++        }
++      )
++
++
+     panel
+       .querySelectorAll(
+         '[data-prediction-option]'
+@@ -3421,6 +3477,67 @@ export function initGuidedExperiments() {
+     }
+ 
+ 
++    /* ===================================================
++       INDICATOR / PURPLE LITMUS PAPER
++    =================================================== */
++
++    if (
++      step.type ===
++      'indicator'
++    ) {
++
++      const expectedLabel =
++
++        step.result ===
++          'acid'
++
++          ? 'đỏ trong môi trường acid'
++
++          : step.result ===
++              'base'
++
++            ? 'xanh trong môi trường base'
++
++            : step.result ===
++                'neutral'
++
++              ? 'tím, gần như không đổi màu trong môi trường trung tính'
++
++              : 'màu phù hợp với môi trường dung dịch'
++
++
++      return `
++
++        <div class="guided-action-step">
++
++          <span class="guided-step-kicker">
++            THỬ BẰNG GIẤY QUỲ TÍM
++          </span>
++
++          <strong>
++            ${escapeHTML(
++              step.text ||
++              'Chọn Purple litmus paper rồi nhấn Thêm vào cốc để thử môi trường dung dịch.'
++            )}
++          </strong>
++
++          <p>
++            Kết quả mong đợi: giấy quỳ tím chuyển ${escapeHTML(
++              expectedLabel
++            )}.
++          </p>
++
++          <span class="guided-target-chip">
++            Giấy quỳ tím
++          </span>
++
++        </div>
++
++      `
++
++    }
++
++
+     /* ===================================================
+        REACTION
+     =================================================== */
+@@ -3448,8 +3565,8 @@ export function initGuidedExperiments() {
+ 
+ 
+           <p>
+-            Hệ thống sẽ tự chuyển bước
+-            khi phản ứng đúng xảy ra.
++            Khi phản ứng đúng xảy ra, ChemLab sẽ giữ nguyên bước này
++            để bạn quan sát hiện tượng và phương trình.
+           </p>
+ 
+         </div>
+diff --git a/src/lab/experiments/progressSummary.js b/src/lab/experiments/progressSummary.js
+index 4ec66c3..f6c9346 100644
+--- a/src/lab/experiments/progressSummary.js
++++ b/src/lab/experiments/progressSummary.js
+@@ -60,6 +60,7 @@ export function getActivityStatus(
+ 
+   const started =
+     completed ||
++    saved?.started === true ||
+     completedSteps > 0 ||
+     Number(
+       saved?.currentStep || 0
+diff --git a/src/lab/reactions.js b/src/lab/reactions.js
+index 0750d1f..1b9b11e 100644
+--- a/src/lab/reactions.js
++++ b/src/lab/reactions.js
+@@ -1,6 +1,6 @@
+ /* =========================================================
+    CHEMLAB VIRTUAL LAB 3.1
+-   95-REACTION DATABASE
++   96-REACTION DATABASE
+ ========================================================= */
+ 
+ const E = (
+@@ -2163,12 +2163,19 @@ export const REACTIONS = [
+       'ethylEthanoate',
+       'naoh'
+     ],
+-    'Ester hydrolysis',
++    'Saponification — ethyl ethanoate',
+     'CH₃COOC₂H₅ + NaOH → CH₃COONa + C₂H₅OH',
+-    'Alkaline hydrolysis is simulated.',
++    'Ethyl ethanoate undergoes alkaline hydrolysis (saponification), forming sodium ethanoate and ethanol.',
+     [
+       E(
+         'flash'
++      ),
++      E(
++        'message',
++        {
++          text:
++            'Xà phòng hóa ester: tạo CH₃COONa và C₂H₅OH.'
++        }
+       )
+     ],
+     'organic',
+@@ -2189,12 +2196,19 @@ export const REACTIONS = [
+       'methylEthanoate',
+       'naoh'
+     ],
+-    'Ester hydrolysis',
++    'Saponification — methyl ethanoate',
+     'CH₃COOCH₃ + NaOH → CH₃COONa + CH₃OH',
+-    'Alkaline hydrolysis is simulated.',
++    'Methyl ethanoate undergoes alkaline hydrolysis (saponification), forming sodium ethanoate and methanol.',
+     [
+       E(
+         'flash'
++      ),
++      E(
++        'message',
++        {
++          text:
++            'Xà phòng hóa ester: tạo CH₃COONa và CH₃OH.'
++        }
+       )
+     ],
+     'organic',
+@@ -2215,12 +2229,19 @@ export const REACTIONS = [
+       'ethylFormate',
+       'naoh'
+     ],
+-    'Ester hydrolysis',
++    'Saponification — ethyl methanoate',
+     'HCOOC₂H₅ + NaOH → HCOONa + C₂H₅OH',
+-    'Alkaline hydrolysis is simulated.',
++    'Ethyl methanoate undergoes alkaline hydrolysis (saponification), forming sodium methanoate and ethanol.',
+     [
+       E(
+         'flash'
++      ),
++      E(
++        'message',
++        {
++          text:
++            'Xà phòng hóa ester: tạo HCOONa và C₂H₅OH.'
++        }
+       )
+     ],
+     'organic',
+@@ -2235,6 +2256,46 @@ export const REACTIONS = [
+   ),
+ 
+ 
++  R(
++    'triglycerideOil-naoh',
++    [
++      'triglycerideOil',
++      'naoh'
++    ],
++    'Saponification of fat',
++    '(RCOO)₃C₃H₅ + 3NaOH → C₃H₅(OH)₃ + 3RCOONa',
++    'A triglyceride reacts with sodium hydroxide on heating to form glycerol and sodium salts of fatty acids (soap).',
++    [
++      E(
++        'flash'
++      ),
++      E(
++        'foam',
++        {
++          amount:
++            28
++        }
++      ),
++      E(
++        'message',
++        {
++          text:
++            'Xà phòng hóa chất béo: tạo glycerol và muối sodium của acid béo (xà phòng).'
++        }
++      )
++    ],
++    'organic',
++    {
++      heating:
++        true,
++
++      minTemperature:
++        60
++    },
++    92
++  ),
++
++
+   R(
+     'sucrose-hcl-heat',
+     [
+diff --git a/src/virtualLab.css b/src/virtualLab.css
+index 494abc0..0249b6c 100644
+--- a/src/virtualLab.css
++++ b/src/virtualLab.css
+@@ -392,4 +392,116 @@
+   .precipitate-particle {
+     opacity: .72;
+   }
+-}
+\ No newline at end of file
++}
++/* =========================================================
++   SOAP FOAM + PURPLE LITMUS PAPER
++========================================================= */
++
++.foam-layer {
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  z-index: 4;
++  pointer-events: none;
++  overflow: visible;
++}
++
++.foam-layer i {
++  position: absolute;
++  display: block;
++  border: 1px solid rgba(255,255,255,.82);
++  border-radius: 50%;
++  background: rgba(246,251,255,.62);
++  box-shadow:
++    inset 0 0 8px rgba(255,255,255,.75),
++    0 0 8px rgba(208,232,255,.2);
++  opacity: 0;
++  animation: soapFoamIn .6s ease-out forwards;
++}
++
++.foam-layer.active {
++  filter: drop-shadow(0 3px 8px rgba(213,235,255,.12));
++}
++
++@keyframes soapFoamIn {
++  from {
++    transform: translateY(8px) scale(.65);
++    opacity: 0;
++  }
++
++  to {
++    transform: translateY(0) scale(1);
++    opacity: .95;
++  }
++}
++
++.litmus-paper-result {
++  display: inline-grid;
++  grid-template-columns: 12px minmax(0,1fr);
++  align-items: center;
++  gap: 9px;
++  max-width: 100%;
++  margin-bottom: 10px;
++  padding: 7px 10px;
++  border: 1px solid rgba(155,166,196,.18);
++  border-radius: 10px;
++  background: rgba(8,12,22,.78);
++  backdrop-filter: blur(10px);
++}
++
++.litmus-paper-result[hidden] {
++  display: none;
++}
++
++.litmus-paper-strip {
++  display: block;
++  width: 9px;
++  height: 34px;
++  margin: 0;
++  border-radius: 3px;
++  background: var(--litmus-color,#806bb0);
++  box-shadow:
++    0 0 0 1px rgba(255,255,255,.24),
++    0 0 12px color-mix(in srgb, var(--litmus-color,#806bb0) 42%, transparent);
++  transform: rotate(4deg);
++  transition: background .25s ease, box-shadow .25s ease;
++}
++
++.stage-note .litmus-paper-result span {
++  display: block;
++  margin: 0;
++  color: #d9e2f3;
++  font-size: .75rem;
++  line-height: 1.35;
++  font-weight: 750;
++}
++
++html[data-theme="light"] .litmus-paper-result {
++  border-color: rgba(58,68,92,.12);
++  background: rgba(250,252,255,.9);
++}
++
++html[data-theme="light"] .stage-note .litmus-paper-result span {
++  color: #354057;
++}
++
++@media (max-width: 767px) {
++  .litmus-paper-result {
++    grid-template-columns: 10px minmax(0,1fr);
++    gap: 7px;
++    padding: 6px 8px;
++  }
++
++  .litmus-paper-strip {
++    width: 8px;
++    height: 28px;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .foam-layer i {
++    animation: none;
++    opacity: .95;
++  }
++}
+diff --git a/src/virtualLab.js b/src/virtualLab.js
+index a870eb1..2877c6c 100644
+--- a/src/virtualLab.js
++++ b/src/virtualLab.js
+@@ -408,6 +408,12 @@ export function initVirtualLab() {
+                       id="bubble-layer"
+                     ></div>
+ 
++
++                    <div
++                      class="foam-layer"
++                      id="foam-layer"
++                    ></div>
++
+                   </div>
+ 
+ 
+@@ -444,6 +450,25 @@ export function initVirtualLab() {
+ 
+           <div class="stage-note">
+ 
++            <div
++              class="litmus-paper-result"
++              id="litmus-paper-result"
++              hidden
++            >
++
++              <i
++                class="litmus-paper-strip"
++                id="litmus-paper-strip"
++                aria-hidden="true"
++              ></i>
++
++              <span id="litmus-paper-label">
++                Giấy quỳ tím
++              </span>
++
++            </div>
++
++
+             <strong id="lab-message-title">
+               Bắt đầu thí nghiệm
+             </strong>
+@@ -737,6 +762,10 @@ export function initVirtualLab() {
+     $('#bubble-layer')
+ 
+ 
++  const foamLayer =
++    $('#foam-layer')
++
++
+   const precipitateLayer =
+     $('#precipitate-layer')
+ 
+@@ -813,6 +842,18 @@ export function initVirtualLab() {
+     $('#lab-message')
+ 
+ 
++  const litmusPaperResult =
++    $('#litmus-paper-result')
++
++
++  const litmusPaperStrip =
++    $('#litmus-paper-strip')
++
++
++  const litmusPaperLabel =
++    $('#litmus-paper-label')
++
++
+   const logList =
+     $('#lab-log-list')
+ 
+@@ -885,6 +926,10 @@ export function initVirtualLab() {
+     null
+ 
+ 
++  let lastLitmusTest =
++    null
++
++
+   let lastEmittedTemperature =
+     Math.floor(
+       temperature
+@@ -921,6 +966,15 @@ export function initVirtualLab() {
+ 
+       lastIndicator,
+ 
++      lastLitmusTest:
++        lastLitmusTest
++
++          ? {
++              ...lastLitmusTest
++            }
++
++          : null,
++
+       precipitate,
+ 
+ 
+@@ -1044,6 +1098,18 @@ export function initVirtualLab() {
+       null
+ 
+ 
++    lastLitmusTest =
++      snapshot.lastLitmusTest &&
++      typeof snapshot.lastLitmusTest ===
++        'object'
++
++        ? {
++            ...snapshot.lastLitmusTest
++          }
++
++        : null
++
++
+     precipitate =
+       snapshot.precipitate ||
+       null
+@@ -1075,6 +1141,14 @@ export function initVirtualLab() {
+     clearBubbles()
+ 
+ 
++    clearFoam()
++
++
++    renderLitmusPaperResult(
++      lastLitmusTest
++    )
++
++
+     if (
+       precipitate
+     ) {
+@@ -2011,6 +2085,18 @@ export function initVirtualLab() {
+     }
+ 
+ 
++    if (
++      reagent.indicator ===
++      'litmusPaper'
++    ) {
++
++      testWithLitmusPaper()
++
++      return
++
++    }
++
++
+     const acceptedAmount =
+       Math.min(
+ 
+@@ -2163,6 +2249,260 @@ export function initVirtualLab() {
+   }
+ 
+ 
++  /* =========================================================
++     PURPLE LITMUS PAPER TEST
++  ========================================================= */
++
++  function renderLitmusPaperResult(
++    result
++  ) {
++
++    if (
++      !litmusPaperResult ||
++      !litmusPaperStrip ||
++      !litmusPaperLabel
++    ) {
++
++      return
++
++    }
++
++
++    if (
++      !result
++    ) {
++
++      litmusPaperResult.hidden =
++        true
++
++      litmusPaperStrip.style.removeProperty(
++        '--litmus-color'
++      )
++
++      return
++
++    }
++
++
++    const labels = {
++
++      acid:
++        'Quỳ tím → đỏ · môi trường acid',
++
++      base:
++        'Quỳ tím → xanh · môi trường base',
++
++      neutral:
++        'Quỳ tím giữ màu tím · gần trung tính'
++
++    }
++
++
++    litmusPaperResult.hidden =
++      false
++
++
++    litmusPaperStrip.style.setProperty(
++      '--litmus-color',
++      result.color ||
++      '#806bb0'
++    )
++
++
++    litmusPaperLabel.textContent =
++      labels[
++        result.result
++      ] ||
++      'Kết quả giấy quỳ tím'
++
++  }
++
++
++  function testWithLitmusPaper() {
++
++    if (
++      totalVolume <=
++      0
++    ) {
++
++      messageTitle.textContent =
++        'Chưa có dung dịch để thử'
++
++
++      message.textContent =
++        'Hãy thêm dung dịch vào cốc trước khi dùng giấy quỳ tím.'
++
++
++      observationTitle.textContent =
++        'Không thể thử giấy quỳ'
++
++
++      observationText.textContent =
++        'Cốc đang trống.'
++
++
++      return
++
++    }
++
++
++    const pH =
++      calculatePH()
++
++
++    const result =
++
++      pH <
++        5
++
++        ? 'acid'
++
++        : pH >
++            8
++
++          ? 'base'
++
++          : 'neutral'
++
++
++    const color =
++
++      result ===
++        'acid'
++
++        ? '#d94a58'
++
++        : result ===
++            'base'
++
++          ? '#4567d9'
++
++          : '#806bb0'
++
++
++    const resultText =
++
++      result ===
++        'acid'
++
++        ? 'Giấy quỳ tím chuyển sang màu đỏ, chứng tỏ dung dịch có môi trường acid.'
++
++        : result ===
++            'base'
++
++          ? 'Giấy quỳ tím chuyển sang màu xanh, chứng tỏ dung dịch có môi trường base.'
++
++          : 'Giấy quỳ tím gần như giữ nguyên màu tím, dung dịch đang ở vùng gần trung tính.'
++
++
++    lastLitmusTest = {
++
++      result,
++
++      pH:
++        Number(
++          pH.toFixed(
++            2
++          )
++        ),
++
++      color
++
++    }
++
++
++    renderLitmusPaperResult(
++      lastLitmusTest
++    )
++
++
++    observationPanel
++      ?.classList
++      .remove(
++        'reaction-observed'
++      )
++
++
++    void observationPanel
++      ?.offsetWidth
++
++
++    observationPanel
++      ?.classList
++      .add(
++        'reaction-observed'
++      )
++
++
++    observationTitle.textContent =
++
++      result ===
++        'acid'
++
++        ? 'Giấy quỳ tím chuyển đỏ'
++
++        : result ===
++            'base'
++
++          ? 'Giấy quỳ tím chuyển xanh'
++
++          : 'Giấy quỳ tím không đổi màu rõ rệt'
++
++
++    observationText.textContent =
++      `${resultText} pH mô phỏng ≈ ${pH.toFixed(1)}.`
++
++
++    equationText.textContent =
++
++      result ===
++        'acid'
++
++        ? 'Quỳ tím + môi trường acid → đỏ'
++
++        : result ===
++            'base'
++
++          ? 'Quỳ tím + môi trường base → xanh'
++
++          : 'Quỳ tím + môi trường trung tính → tím'
++
++
++    messageTitle.textContent =
++      'Đã thử bằng giấy quỳ tím'
++
++
++    message.textContent =
++      resultText
++
++
++    addLog(
++      `Giấy quỳ tím: ${result}; pH ≈ ${pH.toFixed(1)}.`
++    )
++
++
++    emitLabAction(
++      'indicator',
++      {
++        indicator:
++          'litmusPaper',
++
++        result,
++
++        pH:
++          Number(
++            pH.toFixed(
++              2
++            )
++          ),
++
++        color
++      }
++    )
++
++  }
++
++
+   /* =========================================================
+      DROP ANIMATION
+   ========================================================= */
+@@ -2266,6 +2606,10 @@ export function initVirtualLab() {
+       `${height}%`
+ 
+ 
++    foamLayer.style.height =
++      `${height}%`
++
++
+     liquid.style.setProperty(
+ 
+       '--liquid-color',
+@@ -2619,6 +2963,16 @@ export function initVirtualLab() {
+         break
+ 
+ 
++      case 'foam':
++
++        createFoam(
++          effect.amount ||
++          24
++        )
++
++        break
++
++
+       case 'precipitate':
+ 
+         precipitate =
+@@ -2697,6 +3051,90 @@ export function initVirtualLab() {
+   }
+ 
+ 
++  function createFoam(
++    amount = 24
++  ) {
++
++    clearFoam()
++
++
++    const count =
++      Math.max(
++        10,
++        Math.min(
++          Number(
++            amount
++          ) ||
++          24,
++          42
++        )
++      )
++
++
++    for (
++      let i = 0;
++      i < count;
++      i++
++    ) {
++
++      const bubble =
++        document.createElement(
++          'i'
++        )
++
++
++      const size =
++        7 +
++        Math.random() *
++        13
++
++
++      bubble.style.width =
++        `${size}px`
++
++
++      bubble.style.height =
++        `${size}px`
++
++
++      bubble.style.left =
++        `${4 + Math.random() * 92}%`
++
++
++      bubble.style.top =
++        `${-8 + Math.random() * 18}px`
++
++
++      bubble.style.animationDelay =
++        `${Math.random() * .45}s`
++
++
++      foamLayer.appendChild(
++        bubble
++      )
++
++    }
++
++
++    foamLayer.classList.add(
++      'active'
++    )
++
++  }
++
++
++  function clearFoam() {
++
++    foamLayer.replaceChildren()
++
++
++    foamLayer.classList.remove(
++      'active'
++    )
++
++  }
++
++
+   function clearPrecipitate() {
+ 
+     precipitateLayer.replaceChildren()
+@@ -2921,6 +3359,14 @@ export function initVirtualLab() {
+       )
+ 
+ 
++    const hasFoam =
++      effects.some(
++        effect =>
++          effect.type ===
++          'foam'
++      )
++
++
+     const changesColor =
+       effects.some(
+         effect =>
+@@ -2961,6 +3407,15 @@ export function initVirtualLab() {
+     }
+ 
+ 
++    if (hasFoam) {
++
++      observations.push(
++        'Xuất hiện lớp bọt mô phỏng của xà phòng trên bề mặt hỗn hợp.'
++      )
++
++    }
++
++
+     if (changesColor) {
+ 
+       observations.push(
+@@ -3000,7 +3455,11 @@ export function initVirtualLab() {
+ 
+           ? 'Có khí thoát ra'
+ 
+-          : 'Dung dịch đổi màu'
++          : hasFoam
++
++            ? 'Xuất hiện bọt xà phòng'
++
++            : 'Dung dịch đổi màu'
+ 
+ 
+     observationText.textContent =
+@@ -3848,6 +4307,10 @@ export function initVirtualLab() {
+       null
+ 
+ 
++    lastLitmusTest =
++      null
++
++
+     currentColor =
+       '#7ecbff'
+ 
+@@ -3861,6 +4324,14 @@ export function initVirtualLab() {
+     clearBubbles()
+ 
+ 
++    clearFoam()
++
++
++    renderLitmusPaperResult(
++      null
++    )
++
++
+     observationTitle.textContent =
+       'Chưa có hiện tượng'
+ 
