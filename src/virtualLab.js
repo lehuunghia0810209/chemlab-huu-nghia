@@ -1,3 +1,5 @@
+import { APP_VERSION } from './appMeta.js'
+
 import './virtualLab.css'
 import './lab/labFilters.css'
 
@@ -73,7 +75,7 @@ export function initVirtualLab() {
       <div>
 
         <span>
-          CHEMLAB V3.1
+          CHEMLAB ${APP_VERSION}
         </span>
 
 

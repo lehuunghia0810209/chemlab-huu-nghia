@@ -1,32 +1,16 @@
 import './production.css'
 
+import {
+  APP_META
+} from './appMeta.js'
+
 
 /* =========================================================
    CHEMLAB
    PRODUCTION RELEASE
 ========================================================= */
 
-const PRODUCT = Object.freeze({
-
-  name:
-    'ChemLab',
-
-  edition:
-    'Huu Nghia Edition',
-
-  version:
-    '5.2.0',
-
-  author:
-    'Huu Nghia',
-
-  release:
-    'Production',
-
-  description:
-    'Interactive Chemistry Workspace'
-
-})
+const PRODUCT = APP_META
 
 
 let installPrompt =
@@ -55,7 +39,7 @@ function initProduction() {
   ----------------------------------------------- */
 
   document.title =
-    `${PRODUCT.name} 5.2 | ${PRODUCT.author}`
+    `${PRODUCT.name} ${PRODUCT.version} | ${PRODUCT.author}`
 
 
   document.documentElement

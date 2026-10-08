@@ -1,4 +1,5 @@
 import './chemCalculator.css'
+import { APP_VERSION } from './appMeta.js'
 import { elements } from './data/elements.js'
 
 export function initChemCalculator() {
@@ -36,7 +37,7 @@ export function initChemCalculator() {
 
         <div class="cc-badge">
           <i></i>
-          <span>ChemLab 4.1</span>
+          <span>ChemLab ${APP_VERSION}</span>
         </div>
       </div>
 

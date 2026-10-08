@@ -1,3 +1,5 @@
+import { APP_VERSION } from './appMeta.js'
+
 import {
   elements
 } from './data/elements.js'
@@ -6,7 +8,7 @@ import './compoundStudio.css'
 
 
 /* =========================================================
-   CHEMLAB 5.1
+   CHEMLAB
    COMPOUND STUDIO
 ========================================================= */
 
@@ -191,7 +193,7 @@ export function openCompoundStudio({
           <div>
 
             <span>
-              CHEMLAB 5.1
+              CHEMLAB ${APP_VERSION}
             </span>
 
             <h2>

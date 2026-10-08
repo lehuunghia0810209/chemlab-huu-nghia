@@ -1,6 +1,5 @@
 /* =========================================================
-   CHEMLAB 5.0
-   CORE APPLICATION
+   CHEMLAB CORE APPLICATION
 ========================================================= */
 
 
@@ -10,6 +9,10 @@
 
 import './style.css'
 import './workspace.css'
+
+import {
+  APP_VERSION
+} from './appMeta.js'
 
 
 
@@ -118,14 +121,6 @@ import {
   applySavedPreferences,
   initUserPreferences
 } from './userPreferences.js'
-
-
-/* =========================================================
-   VERSION
-========================================================= */
-
-const APP_VERSION =
-  '5.0'
 
 
 /* =========================================================
@@ -651,7 +646,7 @@ const app =
 if (!app) {
 
   throw new Error(
-    'ChemLab 5.0: không tìm thấy #app.'
+    `ChemLab ${APP_VERSION}: không tìm thấy #app.`
   )
 
 }
@@ -711,7 +706,7 @@ app.innerHTML = `
           </strong>
 
           <span class="v5-version">
-            5.0
+            ${APP_VERSION}
           </span>
 
         </span>
@@ -1177,7 +1172,7 @@ function safeInit(
   catch (error) {
 
     console.error(
-      `[ChemLab 5] ${name}:`,
+      `[ChemLab ${APP_VERSION}] ${name}:`,
       error
     )
 

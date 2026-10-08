@@ -1,6 +1,6 @@
 {
   "id": "/",
-  "name": "ChemLab 5.2 — Hữu Nghĩa Edition",
+  "name": "ChemLab 5.2.1 — Hữu Nghĩa Edition",
   "short_name": "ChemLab",
   "description": "Interactive Chemistry Workspace — Bảng tuần hoàn, Ion Engine, Compound Studio, Reaction Studio và Virtual Lab.",
   "lang": "vi",
@@ -10,12 +10,10 @@
   "background_color": "#07090f",
   "theme_color": "#090c13",
   "orientation": "any",
-
   "categories": [
     "education",
     "productivity"
   ],
-
   "icons": [
     {
       "src": "/icon-192.png",
@@ -36,7 +34,6 @@
       "purpose": "maskable"
     }
   ],
-
   "screenshots": [
     {
       "src": "/screenshots/desktop.png",
@@ -53,7 +50,6 @@
       "label": "ChemLab trên thiết bị di động"
     }
   ],
-
   "shortcuts": [
     {
       "name": "Bảng tuần hoàn",

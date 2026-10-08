@@ -1,3 +1,5 @@
+import { APP_VERSION } from './appMeta.js'
+
 import {
   elements
 } from './data/elements.js'
@@ -6,7 +8,7 @@ import './reactionStudio.css'
 
 
 /* =========================================================
-   CHEMLAB 5.2
+   CHEMLAB
    REACTION STUDIO
 ========================================================= */
 
@@ -463,7 +465,7 @@ export function openReactionStudio({
           <div>
 
             <span>
-              CHEMLAB 5.2
+              CHEMLAB ${APP_VERSION}
             </span>
 
             <h2>

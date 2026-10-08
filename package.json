@@ -1,10 +1,13 @@
 {
   "name": "khtkchemlab",
-  "version": "0.0.0",
+  "version": "5.2.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "release:sync": "node scripts/sync-release.mjs",
+    "check": "node scripts/validate-project.mjs",
+    "prebuild": "npm run release:sync && npm run check",
     "build": "vite build",
     "preview": "vite preview"
   },

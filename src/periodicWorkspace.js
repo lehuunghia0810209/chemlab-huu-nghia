@@ -1,3 +1,5 @@
+import { APP_VERSION } from './appMeta.js'
+
 import {
   elements
 } from './data/elements.js'
@@ -2842,7 +2844,7 @@ export function initPeriodicWorkspace({
           </div>
 
           <span>
-            ATOM 3D 5.0
+            ATOM 3D ${APP_VERSION}
           </span>
 
           <strong>
