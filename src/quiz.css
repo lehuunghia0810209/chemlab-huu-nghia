@@ -2258,3 +2258,93 @@
   }
 
 }
+/* =========================================================
+   CHEMLAB 5.2.2 — LEARNING READABILITY PASS
+========================================================= */
+
+.cl-learn-profile-copy p,
+.cl-progress-overview p,
+.cl-result-hero p {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.cl-learn-profile-copy > span,
+.cl-level-progress > div:first-child,
+.cl-stat-card small,
+.cl-session-progress > div:first-child,
+.cl-question-number,
+.cl-session-footer > div,
+.cl-progress-eyebrow,
+.cl-progress-continue-head > span,
+.cl-progress-recent > span,
+.cl-result-level {
+  font-size: 12px;
+}
+
+.cl-mastery-top > div small,
+.cl-mastery-card p,
+.cl-weak-list small,
+.cl-history-list small,
+.cl-history-list em,
+.cl-session-score span,
+.cl-difficulty,
+.cl-result-score span,
+.cl-result-eyebrow,
+.cl-result-stats small,
+.cl-progress-grade-head > div > span,
+.cl-progress-next-copy > span,
+.cl-progress-stat span,
+.cl-result-topic-list small {
+  font-size: 11px;
+}
+
+.cl-mode-card > div:nth-child(2) > span {
+  font-size: 11px;
+}
+
+.cl-mode-card > div:nth-child(2) > strong {
+  font-size: 15px;
+}
+
+.cl-mode-card p,
+.cl-answer-option strong,
+.cl-feedback p,
+.cl-progress-next-copy small,
+.cl-progress-empty-copy,
+.cl-progress-recent strong,
+.cl-result-topic-list strong {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cl-topic-options button,
+.cl-choice-row button,
+.cl-start-button,
+.cl-next-button,
+.cl-result-actions button,
+.cl-progress-continue {
+  min-height: 44px;
+  font-size: 13px;
+}
+
+.cl-answer-option {
+  min-height: 52px;
+}
+
+@media (max-width: 720px) {
+  .cl-learn-profile-copy p,
+  .cl-progress-overview p,
+  .cl-result-hero p {
+    font-size: 14px;
+  }
+
+  .cl-topic-options button,
+  .cl-choice-row button,
+  .cl-start-button,
+  .cl-next-button,
+  .cl-result-actions button,
+  .cl-progress-continue {
+    min-height: 46px;
+  }
+}

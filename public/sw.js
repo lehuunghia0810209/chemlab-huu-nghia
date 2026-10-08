@@ -1,10 +1,10 @@
 /* =========================================================
-   CHEMLAB 5.2.1
+   CHEMLAB 5.2.2
    PRODUCTION SERVICE WORKER
 ========================================================= */
 
 const VERSION =
-  'chemlab-5.2.1'
+  'chemlab-5.2.2'
 
 
 const STATIC_CACHE =

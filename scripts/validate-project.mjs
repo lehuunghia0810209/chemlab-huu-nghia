@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 
 import {
   CHEMICALS,
@@ -99,6 +100,155 @@ if (!manifest.name.includes(version)) {
 
 if (!indexHtml.includes(`ChemLab ${version}`)) {
   fail(`index.html chưa chứa version ${version}.`)
+}
+
+/* =========================================================
+   SOURCE INTEGRITY
+========================================================= */
+
+const srcDir = path.join(rootDir, 'src')
+
+async function walkFiles(directory) {
+  const entries = await fs.readdir(
+    directory,
+    { withFileTypes: true }
+  )
+
+  const files = []
+
+  for (const entry of entries) {
+    const fullPath = path.join(
+      directory,
+      entry.name
+    )
+
+    if (entry.isDirectory()) {
+      files.push(
+        ...await walkFiles(fullPath)
+      )
+      continue
+    }
+
+    files.push(fullPath)
+  }
+
+  return files
+}
+
+const sourceFiles = await walkFiles(srcDir)
+const jsFiles = sourceFiles.filter(filePath => filePath.endsWith('.js'))
+const cssFiles = sourceFiles.filter(filePath => filePath.endsWith('.css'))
+
+const importPatterns = [
+  /\bimport\s*['"](\.[^'"]+)['"]/g,
+  /\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g,
+  /\b(?:import|export)\s+[\s\S]*?\sfrom\s*['"](\.[^'"]+)['"]/g
+]
+
+let checkedRelativeImports = 0
+
+for (const jsFile of jsFiles) {
+  const source = await fs.readFile(
+    jsFile,
+    'utf8'
+  )
+
+  const syntaxCheck = spawnSync(
+    process.execPath,
+    ['--check', jsFile],
+    {
+      encoding: 'utf8'
+    }
+  )
+
+  if (syntaxCheck.status !== 0) {
+    fail(
+      `JavaScript syntax lỗi ở ${path.relative(rootDir, jsFile)}: ${syntaxCheck.stderr.trim()}`
+    )
+  }
+
+  const specifiers = new Set()
+
+  for (const pattern of importPatterns) {
+    pattern.lastIndex = 0
+
+    let match
+
+    while ((match = pattern.exec(source))) {
+      specifiers.add(match[1])
+    }
+  }
+
+  for (const specifier of specifiers) {
+    checkedRelativeImports += 1
+
+    const resolved = path.resolve(
+      path.dirname(jsFile),
+      specifier
+    )
+
+    try {
+      await fs.access(resolved)
+    } catch {
+      fail(
+        `${path.relative(rootDir, jsFile)} import file không tồn tại: ${specifier}`
+      )
+    }
+  }
+}
+
+const routeModuleExports = {
+  'balancer.js': ['initEquationBalancer'],
+  'chemCalculator.js': ['initChemCalculator'],
+  'solubilityTable.js': ['initSolubilityTable'],
+  'ionEngine.js': ['initIonEngine'],
+  'ionEngineReset.js': ['initIonEngineReset'],
+  'orbitalAtlas.js': ['initOrbitalAtlas'],
+  'toolHub.js': ['initToolHub'],
+  'quiz.js': ['initQuiz'],
+  'virtualLab.js': ['initVirtualLab'],
+  'lab/experiments/guidedExperiments.js': ['initGuidedExperiments']
+}
+
+for (const [relativePath, exports] of Object.entries(routeModuleExports)) {
+  const modulePath = path.join(srcDir, relativePath)
+  const source = await fs.readFile(modulePath, 'utf8')
+
+  for (const exportName of exports) {
+    const directExport = new RegExp(
+      `export\\s+(?:async\\s+)?function\\s+${exportName}\\b`
+    )
+
+    const namedExport = new RegExp(
+      `export\\s*\\{[^}]*\\b${exportName}\\b[^}]*\\}`,
+      's'
+    )
+
+    if (
+      !directExport.test(source) &&
+      !namedExport.test(source)
+    ) {
+      fail(
+        `Lazy route module ${relativePath} thiếu export ${exportName}.`
+      )
+    }
+  }
+}
+
+for (const cssFile of cssFiles) {
+  const css = await fs.readFile(
+    cssFile,
+    'utf8'
+  )
+
+  const openBraces = (css.match(/\\{/g) || []).length
+  const closeBraces = (css.match(/\\}/g) || []).length
+
+  if (openBraces !== closeBraces) {
+    fail(
+      `CSS block không cân bằng ở ${path.relative(rootDir, cssFile)}: ${openBraces} "{" / ${closeBraces} "}".`
+    )
+  }
 }
 
 const chemicalIds = Object.keys(CHEMICALS)
@@ -271,7 +421,11 @@ const stats = {
     (total, experiment) => total + (experiment.steps?.length || 0),
     0
   ),
-  guidedQuestions: guidedQuestionIds.length
+  guidedQuestions: guidedQuestionIds.length,
+  jsFilesChecked: jsFiles.length,
+  cssFilesChecked: cssFiles.length,
+  relativeImports: checkedRelativeImports,
+  lazyRouteModules: Object.keys(routeModuleExports).length
 }
 
 console.log('\nChemLab project validation')

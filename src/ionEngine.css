@@ -1579,3 +1579,45 @@
   }
 
 }
+/* =========================================================
+   CHEMLAB 5.2.2 — ION ENGINE READABILITY PASS
+========================================================= */
+
+.ion-eyebrow,
+.ion-library-count span,
+.ion-card-type,
+.ion-detail-head > div > span,
+.ion-detail-grid span,
+.ion-composition > span,
+.selected-ion > span,
+.selected-ion > small,
+.compound-result-label,
+.compound-balance span,
+.ion-solubility-note {
+  font-size: .75rem;
+}
+
+.ion-engine-status,
+.ion-filter button,
+.ion-card-name,
+.ion-card small,
+.ion-detail-note,
+.compound-builder-head p,
+.compound-equation {
+  font-size: .84rem;
+  line-height: 1.55;
+}
+
+.ion-filter button {
+  min-height: 42px;
+}
+
+.ion-card {
+  min-height: 112px;
+}
+
+@media (max-width: 760px) {
+  .ion-filter button {
+    min-height: 44px;
+  }
+}

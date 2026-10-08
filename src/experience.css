@@ -1,0 +1,652 @@
+/* =========================================================
+   CHEMLAB 5.2.2 — EXPERIENCE LAYER
+
+   Inspired by open-source UI patterns commonly seen on
+   Uiverse: glass surfaces, soft glow feedback, skeleton
+   loading and compact motion. Adapted to ChemLab's own
+   design system rather than copied as a standalone theme.
+========================================================= */
+
+:root {
+  --cl-ux-violet: #8b5cf6;
+  --cl-ux-cyan: #22d3ee;
+  --cl-ux-blue: #60a5fa;
+  --cl-ux-glow: rgba(139, 92, 246, .22);
+  --cl-ux-glow-cyan: rgba(34, 211, 238, .14);
+  --cl-ux-panel: rgba(14, 18, 29, .78);
+  --cl-ux-panel-strong: rgba(11, 14, 23, .94);
+  --cl-ux-line: rgba(255, 255, 255, .085);
+  --cl-ux-line-strong: rgba(167, 139, 250, .24);
+  --cl-ux-ease: cubic-bezier(.2, .78, .25, 1);
+}
+
+
+/* =========================================================
+   ROUTE LOAD PROGRESS
+========================================================= */
+
+.v5-route-progress {
+  position: fixed;
+  z-index: 10050;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.v5-route-progress::before,
+.v5-route-progress > span {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.v5-route-progress::before {
+  background: rgba(139, 92, 246, .12);
+}
+
+.v5-route-progress > span {
+  width: 38%;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--cl-ux-violet) 28%,
+      var(--cl-ux-cyan) 72%,
+      transparent
+    );
+  box-shadow:
+    0 0 18px rgba(139, 92, 246, .55),
+    0 0 26px rgba(34, 211, 238, .25);
+  transform: translateX(-120%);
+}
+
+.v5-route-progress.is-active {
+  opacity: 1;
+}
+
+.v5-route-progress.is-active > span {
+  animation: clRouteProgress 1.15s var(--cl-ux-ease) infinite;
+}
+
+@keyframes clRouteProgress {
+  0% {
+    transform: translateX(-125%);
+  }
+
+  100% {
+    transform: translateX(365%);
+  }
+}
+
+
+/* =========================================================
+   VIEW LOADING SKELETON
+========================================================= */
+
+.v5-view-loader {
+  width: min(100%, 1680px);
+  margin: 0 auto 18px;
+  padding: clamp(18px, 2.4vw, 28px);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--cl-ux-line);
+  border-radius: 22px;
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      rgba(34, 211, 238, .08),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 6% 0%,
+      rgba(139, 92, 246, .12),
+      transparent 32%
+    ),
+    var(--cl-ux-panel);
+  box-shadow:
+    0 20px 70px rgba(0, 0, 0, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .035);
+  backdrop-filter: blur(18px);
+}
+
+.v5-loader-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.v5-loader-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.v5-loader-head strong {
+  color: #f8f7ff;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.25;
+}
+
+.v5-loader-head div > span {
+  color: #8d97ad;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.v5-loader-orbit {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  position: relative;
+  border: 1px solid rgba(167, 139, 250, .26);
+  border-radius: 50%;
+  background: rgba(139, 92, 246, .075);
+  box-shadow: inset 0 0 22px rgba(139, 92, 246, .08);
+}
+
+.v5-loader-orbit::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(34, 211, 238, .3);
+  border-radius: 50%;
+}
+
+.v5-loader-orbit i {
+  position: absolute;
+  inset: 5px;
+  animation: clOrbit 1.05s linear infinite;
+}
+
+.v5-loader-orbit i::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c4b5fd;
+  box-shadow:
+    0 0 10px rgba(196, 181, 253, .8),
+    0 0 18px rgba(34, 211, 238, .35);
+  transform: translate(-50%, -2px);
+}
+
+@keyframes clOrbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.v5-loader-grid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.v5-loader-grid > span {
+  min-height: 126px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .055);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.v5-loader-grid > span::before,
+.v5-loader-grid > span::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+}
+
+.v5-loader-grid > span::before {
+  top: 20px;
+  width: 42%;
+  height: 11px;
+}
+
+.v5-loader-grid > span::after {
+  top: 44px;
+  width: 68%;
+  height: 8px;
+}
+
+.v5-loader-grid > span {
+  background-image:
+    linear-gradient(
+      105deg,
+      transparent 34%,
+      rgba(255, 255, 255, .055) 48%,
+      transparent 62%
+    );
+  background-size: 220% 100%;
+  background-position: 140% 0;
+  animation: clSkeleton 1.35s ease-in-out infinite;
+}
+
+@keyframes clSkeleton {
+  to {
+    background-position: -120% 0;
+  }
+}
+
+
+/* =========================================================
+   ROUTE ERROR / RECOVERY
+========================================================= */
+
+.v5-route-error {
+  width: min(100%, 1680px);
+  margin: 0 auto 18px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid rgba(248, 113, 113, .22);
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(127, 29, 29, .12),
+      rgba(24, 12, 18, .38)
+    );
+}
+
+.v5-route-error-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(248, 113, 113, .1);
+  color: #fca5a5;
+  font-weight: 900;
+}
+
+.v5-route-error strong {
+  color: #fff;
+  font-size: 15px;
+}
+
+.v5-route-error p {
+  margin: 4px 0 0;
+  color: #9ba3b7;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.v5-route-error button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(248, 113, 113, .3);
+  border-radius: 12px;
+  background: rgba(248, 113, 113, .08);
+  color: #fee2e2;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform .18s var(--cl-ux-ease),
+    background .18s ease,
+    border-color .18s ease;
+}
+
+.v5-route-error button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(248, 113, 113, .5);
+  background: rgba(248, 113, 113, .13);
+}
+
+
+/* =========================================================
+   PRODUCT CHROME — SUBTLE UI POLISH
+========================================================= */
+
+.workspace-topbar {
+  isolation: isolate;
+}
+
+.workspace-topbar::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(139, 92, 246, .28) 32%,
+      rgba(34, 211, 238, .16) 68%,
+      transparent
+    );
+}
+
+.workspace-brand,
+.v5-command-button,
+.v5-top-button,
+.sidebar-button {
+  transition:
+    transform .18s var(--cl-ux-ease),
+    border-color .18s ease,
+    background .18s ease,
+    box-shadow .18s ease,
+    color .18s ease;
+}
+
+.workspace-brand:hover,
+.v5-command-button:hover,
+.v5-top-button:hover {
+  transform: translateY(-1px);
+}
+
+.v5-command-button:hover {
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, .16),
+    0 0 0 1px rgba(139, 92, 246, .08),
+    0 0 28px rgba(139, 92, 246, .06);
+}
+
+.sidebar-button:hover .sidebar-icon {
+  transform: translateY(-1px) scale(1.025);
+}
+
+.sidebar-icon {
+  transition:
+    transform .18s var(--cl-ux-ease),
+    filter .18s ease;
+}
+
+.sidebar-button.active .sidebar-icon {
+  filter: drop-shadow(0 0 10px rgba(167, 139, 250, .24));
+}
+
+.sidebar-bottom-status i {
+  transition:
+    background .2s ease,
+    box-shadow .2s ease,
+    transform .2s var(--cl-ux-ease);
+}
+
+.sidebar-bottom-status.is-ready i {
+  background: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, .4);
+}
+
+.sidebar-bottom-status.is-loading i {
+  background: #a78bfa;
+  box-shadow: 0 0 12px rgba(167, 139, 250, .55);
+  animation: clStatusPulse .9s ease-in-out infinite alternate;
+}
+
+.sidebar-bottom-status.is-error i {
+  background: #fb7185;
+  box-shadow: 0 0 10px rgba(251, 113, 133, .45);
+}
+
+@keyframes clStatusPulse {
+  to {
+    transform: scale(1.32);
+    opacity: .68;
+  }
+}
+
+
+/* =========================================================
+   PAGE HIERARCHY
+========================================================= */
+
+.workspace-main .v4-page-head > div > span {
+  font-size: 12px !important;
+  letter-spacing: .13em;
+}
+
+.workspace-main .v4-page-head p {
+  max-width: 780px;
+  font-size: 15px !important;
+  line-height: 1.65;
+}
+
+.workspace-main .v4-page-head h1 {
+  text-wrap: balance;
+}
+
+
+/* =========================================================
+   TOOL HUB — UIVERSE-STYLE CARD FEEDBACK, CHEMLAB LANGUAGE
+========================================================= */
+
+.tool-selector-card {
+  isolation: isolate;
+}
+
+.tool-selector-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: auto -20% -55% 18%;
+  height: 90%;
+  border-radius: 50%;
+  background: var(--tool-color, var(--cl-ux-violet));
+  opacity: 0;
+  filter: blur(46px);
+  transition: opacity .24s ease;
+  pointer-events: none;
+}
+
+.tool-selector-card:hover::after,
+.tool-selector-card.active::after {
+  opacity: .095;
+}
+
+.tool-selector-card:hover {
+  transform: translateY(-2px);
+}
+
+.tool-selector-card:active {
+  transform: translateY(0) scale(.992);
+}
+
+
+/* =========================================================
+   LIGHT THEME FOR NEW EXPERIENCE COMPONENTS
+========================================================= */
+
+html[data-theme="light"] {
+  --cl-ux-panel: rgba(248, 250, 252, .9);
+  --cl-ux-panel-strong: rgba(255, 255, 255, .96);
+  --cl-ux-line: rgba(15, 23, 42, .09);
+  --cl-ux-line-strong: rgba(109, 40, 217, .2);
+}
+
+html[data-theme="light"] .v5-view-loader {
+  background:
+    radial-gradient(
+      circle at 92% 0%,
+      rgba(8, 145, 178, .07),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 6% 0%,
+      rgba(124, 58, 237, .08),
+      transparent 32%
+    ),
+    rgba(248, 250, 252, .94);
+  box-shadow:
+    0 16px 44px rgba(15, 23, 42, .07),
+    inset 0 1px 0 rgba(255, 255, 255, .88);
+}
+
+html[data-theme="light"] .v5-loader-head strong {
+  color: #111827;
+}
+
+html[data-theme="light"] .v5-loader-head div > span {
+  color: #64748b;
+}
+
+html[data-theme="light"] .v5-loader-grid > span {
+  border-color: rgba(15, 23, 42, .065);
+  background-color: rgba(15, 23, 42, .025);
+  background-image:
+    linear-gradient(
+      105deg,
+      transparent 34%,
+      rgba(255, 255, 255, .72) 48%,
+      transparent 62%
+    );
+}
+
+html[data-theme="light"] .v5-loader-grid > span::before,
+html[data-theme="light"] .v5-loader-grid > span::after {
+  background: rgba(51, 65, 85, .09);
+}
+
+html[data-theme="light"] .v5-route-error {
+  border-color: rgba(220, 38, 38, .16);
+  background: rgba(254, 242, 242, .92);
+}
+
+html[data-theme="light"] .v5-route-error strong {
+  color: #7f1d1d;
+}
+
+html[data-theme="light"] .v5-route-error p {
+  color: #7c6670;
+}
+
+html[data-theme="light"] .v5-route-error button {
+  color: #991b1b;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 760px) {
+  .v5-view-loader {
+    margin-bottom: 12px;
+    padding: 16px;
+    border-radius: 17px;
+  }
+
+  .v5-loader-head {
+    align-items: flex-start;
+  }
+
+  .v5-loader-head div > span {
+    font-size: 13px;
+  }
+
+  .v5-loader-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .v5-loader-grid > span {
+    min-height: 76px;
+  }
+
+  .v5-route-error {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .v5-route-error button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .workspace-main .v4-page-head > div > span {
+    font-size: 11px !important;
+  }
+
+  .workspace-main .v4-page-head p {
+    font-size: 14px !important;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .v5-route-progress > span,
+  .v5-loader-orbit i,
+  .v5-loader-grid > span,
+  .sidebar-bottom-status.is-loading i {
+    animation: none;
+  }
+
+  .workspace-brand,
+  .v5-command-button,
+  .v5-top-button,
+  .sidebar-button,
+  .tool-selector-card {
+    transition-duration: .01ms;
+  }
+
+  .workspace-brand:hover,
+  .v5-command-button:hover,
+  .v5-top-button:hover,
+  .tool-selector-card:hover,
+  .tool-selector-card:active {
+    transform: none;
+  }
+}
+
+/* =========================================================
+   MODULE-LEVEL ERROR
+========================================================= */
+
+.v5-module-error {
+  margin: 16px 0;
+  padding: 16px 18px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(248, 113, 113, .2);
+  border-radius: 14px;
+  background: rgba(127, 29, 29, .075);
+  color: #c8ceda;
+}
+
+.v5-module-error strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.v5-module-error span {
+  color: #8f98ab;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+html[data-theme="light"] .v5-module-error {
+  border-color: rgba(220, 38, 38, .15);
+  background: rgba(254, 242, 242, .8);
+}
+
+html[data-theme="light"] .v5-module-error strong {
+  color: #7f1d1d;
+}
+
+html[data-theme="light"] .v5-module-error span {
+  color: #785e69;
+}

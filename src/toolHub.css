@@ -814,3 +814,37 @@
 .tool-selector-card.pink {
   --tool-color: #ec4899;
 }
+/* =========================================================
+   CHEMLAB 5.2.2 — TOOL HUB READABILITY PASS
+========================================================= */
+
+.tool-hub-eyebrow {
+  font-size: .78rem;
+}
+
+.tool-hub-header p {
+  font-size: .96rem;
+  line-height: 1.65;
+}
+
+.tool-hub-status {
+  min-height: 44px;
+  font-size: .82rem;
+}
+
+.tool-selector-copy strong {
+  font-size: 1rem;
+}
+
+.tool-selector-copy small {
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+.tool-active-bar span {
+  font-size: .74rem;
+}
+
+.tool-selector-card {
+  min-height: 142px;
+}

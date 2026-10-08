@@ -3267,3 +3267,93 @@ button:hover {
   }
 
 }
+/* =========================================================
+   CHEMLAB 5.2.2 — GUIDED LAB READABILITY PASS
+========================================================= */
+
+.guided-mode-btn small,
+.guided-eyebrow,
+.guided-overview-label,
+.guided-step-kicker,
+.guided-save-badge,
+.guided-save-mini,
+.guided-score-pill,
+.guided-grade-meta,
+.guided-chapter summary small,
+.guided-chapter-summary-progress b,
+.guided-lesson-number,
+.guided-lesson-copy small,
+.guided-lesson-status,
+.guided-exp-objective span,
+.guided-activity-info,
+.guided-chemical-chips span,
+.guided-target-chip,
+.guided-grade-progress-ring span,
+.guided-lesson-head-progress span,
+.guided-continue-copy > span,
+.guided-continue-copy small,
+.guided-result-count {
+  font-size: .78rem;
+}
+
+.guided-grade-card > p,
+.guided-note,
+.guided-grade-title p,
+.guided-search input,
+.guided-filter-tabs button,
+.guided-experiment-card > p,
+.guided-exp-objective p,
+.guided-overview-main > p,
+.guided-resume-card p,
+.guided-action-step p,
+.guided-learning-step > p,
+.guided-learning-points,
+.guided-prediction-options button {
+  font-size: .9rem;
+  line-height: 1.6;
+}
+
+.guided-mode-btn strong,
+.guided-grade-resume,
+.guided-back-btn,
+.guided-secondary-btn,
+.guided-primary-btn,
+.guided-lesson-copy strong {
+  font-size: .9rem;
+}
+
+.guided-mode-btn,
+.guided-filter-tabs button,
+.guided-back-btn,
+.guided-secondary-btn,
+.guided-primary-btn,
+.guided-grade-resume,
+.guided-prediction-options button {
+  min-height: 44px;
+}
+
+.virtual-lab-v2 .reagent-text span,
+.virtual-lab-v2 .stage-note span,
+.virtual-lab-v2 .meter > span,
+.virtual-lab-v2 .info-box > span,
+.virtual-lab-v2 .info-box p {
+  font-size: .82rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 767px) {
+  .guided-mode-btn,
+  .guided-filter-tabs button,
+  .guided-back-btn,
+  .guided-secondary-btn,
+  .guided-primary-btn,
+  .guided-grade-resume,
+  .guided-prediction-options button {
+    min-height: 46px;
+  }
+
+  .guided-search input {
+    min-height: 46px;
+    font-size: 1rem;
+  }
+}

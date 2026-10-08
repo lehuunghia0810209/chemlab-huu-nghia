@@ -14,6 +14,9 @@ import {
   APP_VERSION
 } from './appMeta.js'
 
+import {
+  createRouteModuleLoader
+} from './routeModuleLoader.js'
 
 
 /* =========================================================
@@ -26,59 +29,12 @@ import {
 
 
 /* =========================================================
-   TOOLS
+   ROUTE MODULES
+
+   Tools / Learning / Lab are loaded on demand.
+   This keeps the Periodic landing route fast and prevents
+   Three.js + Lab/Learning data from blocking the first view.
 ========================================================= */
-
-import {
-  initEquationBalancer
-} from './balancer.js'
-
-import {
-  initChemCalculator
-} from './chemCalculator.js'
-
-import {
-  initSolubilityTable
-} from './solubilityTable.js'
-
-import {
-  initIonEngine
-} from './ionEngine.js'
-
-import {
-  initIonEngineReset
-} from './ionEngineReset.js'
-
-import {
-  initOrbitalAtlas
-} from './orbitalAtlas.js'
-
-import {
-  initToolHub
-} from './toolHub.js'
-
-
-/* =========================================================
-   LEARNING
-========================================================= */
-
-import {
-  initQuiz
-} from './quiz.js'
-
-
-/* =========================================================
-   LAB
-========================================================= */
-
-import {
-  initVirtualLab
-} from './virtualLab.js'
-
-
-import {
-  initGuidedExperiments
-} from './lab/experiments/guidedExperiments.js'
 
 
 /* =========================================================
@@ -107,6 +63,7 @@ import './responsive/tablet.css'
 import './responsive/mobile.css'
 import './userPreferences.css'
 import './zperiodLight.css'
+import './experience.css'
 
 
 /* =========================================================
@@ -679,6 +636,14 @@ app.innerHTML = `
     aria-busy="true"
   >
 
+    <div
+      id="v5-route-progress"
+      class="v5-route-progress"
+      aria-hidden="true"
+    >
+      <span></span>
+    </div>
+
 
     <!-- ==================================================
          TOP BAR
@@ -819,12 +784,17 @@ app.innerHTML = `
       )}
 
 
-      <div class="sidebar-bottom-status">
+      <div
+        id="v5-app-status"
+        class="sidebar-bottom-status is-ready"
+        role="status"
+        aria-live="polite"
+      >
 
         <i aria-hidden="true"></i>
 
         <span>
-          Ready
+          Sẵn sàng
         </span>
 
       </div>
@@ -1139,6 +1109,18 @@ const commandResults =
   )
 
 
+const routeProgress =
+  document.querySelector(
+    '#v5-route-progress'
+  )
+
+
+const appStatus =
+  document.querySelector(
+    '#v5-app-status'
+  )
+
+
 let currentView =
   null
 
@@ -1214,33 +1196,16 @@ function renderModuleError(
     )
 
 
-  node.style.cssText = `
-    margin:16px 0;
-    padding:18px;
-    border:1px solid rgba(248,113,113,.22);
-    border-radius:14px;
-    background:rgba(127,29,29,.07);
-    color:#c8ceda;
-  `
+  node.className =
+    'v5-module-error'
 
 
   node.innerHTML = `
-    <strong
-      style="
-        display:block;
-        color:#fff;
-        margin-bottom:5px;
-      "
-    >
+    <strong>
       Không thể tải ${name}
     </strong>
 
-    <span
-      style="
-        font-size:13px;
-        color:#818a9e;
-      "
-    >
+    <span>
       Các phần còn lại của ChemLab vẫn hoạt động.
       Kiểm tra Console để xem lỗi.
     </span>
@@ -1277,58 +1242,6 @@ safeInit(
 
 
 /* =========================================================
-   TOOLS
-========================================================= */
-
-safeInit(
-  'Cân bằng phương trình',
-  initEquationBalancer,
-  toolsRoot
-)
-
-
-safeInit(
-  'Máy tính hóa học',
-  initChemCalculator,
-  toolsRoot
-)
-
-
-safeInit(
-  'Bảng tính tan',
-  initSolubilityTable,
-  toolsRoot
-)
-
-
-safeInit(
-  'Ion Engine',
-  initIonEngine,
-  toolsRoot
-)
-
-
-safeInit(
-  'Ion Reset',
-  initIonEngineReset
-)
-
-
-safeInit(
-  'Orbital Atlas',
-  initOrbitalAtlas,
-  toolsRoot
-)
-
-
-safeInit(
-  'Tool Center',
-  initToolHub,
-  toolsRoot
-)
-
-
-/* =========================================================
    PROGRESS
 ========================================================= */
 
@@ -1339,102 +1252,36 @@ safeInit(
 
 
 /* =========================================================
-   LEARNING
+   ROUTE MODULE LOADER
 ========================================================= */
 
-const learningReady =
-  safeInit(
-    'Learning',
-    initQuiz,
-    learningHost
-  )
+const routeModules =
+  createRouteModuleLoader({
+    version:
+      APP_VERSION,
 
+    routeProgress,
 
-if (learningReady) {
+    appStatus,
 
-  const quiz =
-    document.querySelector(
-      '#quiz'
-    )
+    hosts: {
+      periodic:
+        periodicRoot,
+      tools:
+        toolsRoot,
+      learning:
+        learningHost,
+      lab:
+        labHost
+    },
 
+    safeInit,
 
-  if (
-    quiz &&
-    learningHost &&
-    quiz.parentElement !==
-      learningHost
-  ) {
+    renderModuleError,
 
-    learningHost.appendChild(
-      quiz
-    )
-
-  }
-
-}
-
-
-/* =========================================================
-   LAB
-========================================================= */
-
-const labReady =
-  safeInit(
-    'Phòng thí nghiệm',
-    initVirtualLab,
-    labHost
-  )
-
-
-if (labReady) {
-
-  const lab =
-    document.querySelector(
-      '#lab'
-    )
-
-
-  if (
-    lab &&
-    labHost &&
-    lab.parentElement !==
-      labHost
-  ) {
-
-    labHost.appendChild(
-      lab
-    )
-
-  }
-
-
-  const labLabel =
-    labHost
-      ?.querySelector(
-        '.vl-head > div:first-child > span'
-      )
-
-
-  if (labLabel) {
-
-    labLabel.textContent =
-      'PHÒNG THÍ NGHIỆM ẢO'
-
-  }
-
-
-  /*
-    Guided Experiments phải chạy sau Virtual Lab
-    vì module này cần #lab tồn tại.
-  */
-
-  safeInit(
-    'Guided Experiments',
-    initGuidedExperiments,
-    labHost
-  )
-
-}
+    getCurrentView:
+      () => currentView
+  })
 
 
 /* =========================================================
@@ -1636,6 +1483,42 @@ function switchView(
 
   }
 
+
+  const routeStatus =
+    routeModules.getStatus(
+      viewName
+    )
+
+
+  if (
+    routeStatus ===
+      'ready'
+  ) {
+
+    routeModules.setAppStatus(
+      'Sẵn sàng',
+      'ready'
+    )
+
+  }
+
+  else if (
+    routeStatus ===
+      'error'
+  ) {
+
+    routeModules.setAppStatus(
+      'Có lỗi khi tải',
+      'error'
+    )
+
+  }
+
+
+  void routeModules.ensureViewReady(
+    viewName
+  )
+
 }
 
 
@@ -1679,6 +1562,28 @@ function closeDrawer() {
 document.addEventListener(
   'click',
   event => {
+
+    const retryButton =
+      event.target.closest(
+        '[data-retry-view]'
+      )
+
+
+    if (retryButton) {
+
+      const viewName =
+        retryButton.dataset.retryView
+
+
+      void routeModules.retryView(
+        viewName
+      )
+
+
+      return
+
+    }
+
 
     const sidebar =
       event.target.closest(
@@ -1994,24 +1899,25 @@ function runCommand(
     item.tool
   ) {
 
-    requestAnimationFrame(
-      () => {
+    void routeModules.openToolWhenReady(
+      item.tool
+    )
+      .then(
+        opened => {
 
-        window
-          .ChemLabTools
-          ?.open(
-            item.tool
+          if (!opened) {
+            return
+          }
+
+
+          history.replaceState(
+            null,
+            '',
+            `#tools/${item.tool}`
           )
 
-
-        history.replaceState(
-          null,
-          '',
-          `#tools/${item.tool}`
-        )
-
-      }
-    )
+        }
+      )
 
   }
 
@@ -2399,16 +2305,8 @@ window.addEventListener(
       route.tool
     ) {
 
-      requestAnimationFrame(
-        () => {
-
-          window
-            .ChemLabTools
-            ?.open(
-              route.tool
-            )
-
-        }
+      void routeModules.openToolWhenReady(
+        route.tool
       )
 
     }
@@ -2748,16 +2646,8 @@ if (
   initialRoute.tool
 ) {
 
-  requestAnimationFrame(
-    () => {
-
-      window
-        .ChemLabTools
-        ?.open(
-          initialRoute.tool
-        )
-
-    }
+  void routeModules.openToolWhenReady(
+    initialRoute.tool
   )
 
 }
