@@ -2,6 +2,12 @@ import { retrieveChemKnowledge } from './_knowledge.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
+const DEFAULT_FALLBACK_MODELS = Object.freeze([
+  'gemini-3.7-flash',
+  'gemini-3.6-flash'
+])
+const TRANSIENT_UPSTREAM_STATUS = new Set([408, 429, 500, 502, 503, 504])
+const MAX_UPSTREAM_ATTEMPTS = 4
 const GEMINI_API_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models'
 const MAX_MESSAGE_LENGTH = 4000
 const MAX_HISTORY_ITEMS = 10
@@ -325,10 +331,156 @@ function normalizeThinkingLevel(value) {
   return allowed.has(requested) ? requested : 'low'
 }
 
-function metaFor(knowledge, payload, model) {
+function fallbackModels(value, primaryModel) {
+  const requested = String(value || '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+
+  const candidates = requested.length ? requested : DEFAULT_FALLBACK_MODELS
+  return [...new Set(candidates)]
+    .filter(model => model && model !== primaryModel)
+    .slice(0, 2)
+}
+
+function retryDelay(attemptIndex) {
+  const base = Math.min(3200, 700 * (2 ** Math.max(0, attemptIndex)))
+  const jitter = Math.floor(Math.random() * 280)
+  return base + jitter
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function generateContentBody({ message, history, appContext, knowledge, thinkingLevel }) {
+  return {
+    system_instruction: {
+      parts: [{ text: systemInstructions() }]
+    },
+    contents: [
+      {
+        role: 'user',
+        parts: [{
+          text: buildInteractionInput({
+            message,
+            history,
+            appContext,
+            knowledge
+          })
+        }]
+      }
+    ],
+    generationConfig: {
+      maxOutputTokens: 1800,
+      responseMimeType: 'application/json',
+      thinkingConfig: {
+        thinkingLevel
+      }
+    }
+  }
+}
+
+async function requestGemini({ model, apiKey, body, signal }) {
+  const upstreamUrl = `${GEMINI_API_ROOT}/${encodeURIComponent(model)}:generateContent`
+  const upstream = await fetch(
+    upstreamUrl,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+        'x-goog-api-client': `chemlab/${APP_VERSION}`
+      },
+      body: JSON.stringify(body),
+      signal
+    }
+  )
+
+  const rawText = await upstream.text()
+  let payload = null
+
+  try {
+    payload = rawText ? JSON.parse(rawText) : null
+  }
+  catch {
+    payload = null
+  }
+
+  return {
+    upstream,
+    rawText,
+    payload,
+    model
+  }
+}
+
+async function requestGeminiResilient({
+  primaryModel,
+  fallbackModelList,
+  apiKey,
+  body,
+  signal
+}) {
+  const attemptPlan = [
+    primaryModel,
+    primaryModel,
+    ...fallbackModelList
+  ].slice(0, MAX_UPSTREAM_ATTEMPTS)
+
+  let lastResult = null
+
+  for (let index = 0; index < attemptPlan.length; index += 1) {
+    const model = attemptPlan[index]
+    const result = await requestGemini({
+      model,
+      apiKey,
+      body,
+      signal
+    })
+
+    lastResult = {
+      ...result,
+      attemptCount: index + 1,
+      fallbackUsed: model !== primaryModel
+    }
+
+    if (result.upstream.ok) return lastResult
+
+    if (!TRANSIENT_UPSTREAM_STATUS.has(result.upstream.status)) {
+      return lastResult
+    }
+
+    // 429 thường là quota/rate limit theo project; chỉ retry một lần trên model chính
+    // để tránh tự đốt thêm quota bằng chuỗi fallback không cần thiết.
+    if (result.upstream.status === 429 && index >= 1) {
+      return lastResult
+    }
+
+    const hasNextAttempt = index < attemptPlan.length - 1
+    if (!hasNextAttempt) break
+
+    const provider = providerError(result.payload, result.rawText)
+    console.warn(
+      '[ChemAI] Gemini transient error, retrying',
+      result.upstream.status,
+      provider.code,
+      `attempt=${index + 1}/${attemptPlan.length}`,
+      `model=${model}`
+    )
+
+    await sleep(retryDelay(index))
+  }
+
+  return lastResult
+}
+
+function metaFor(knowledge, payload, model, reliability = {}) {
   return {
     provider: 'Gemini',
     model: text(payload?.modelVersion || model, 120),
+    fallbackUsed: Boolean(reliability.fallbackUsed),
+    attempts: Number(reliability.attemptCount || 1),
     groundedElements: knowledge.elements.length,
     groundedChemicals: knowledge.chemicals.length,
     groundedReactions: knowledge.reactions.length,
@@ -462,57 +614,32 @@ export async function onRequestPost(context) {
   const model = String(env.GEMINI_MODEL || DEFAULT_MODEL)
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort('timeout'), 45000)
+  const timeout = setTimeout(() => controller.abort('timeout'), 52000)
 
   try {
-    const upstreamUrl = `${GEMINI_API_ROOT}/${encodeURIComponent(model)}:generateContent`
-    const upstream = await fetch(
-      upstreamUrl,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': env.GEMINI_API_KEY,
-          'x-goog-api-client': `chemlab/${APP_VERSION}`
-        },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemInstructions() }]
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{
-                text: buildInteractionInput({
-                  message,
-                  history,
-                  appContext,
-                  knowledge
-                })
-              }]
-            }
-          ],
-          generationConfig: {
-            maxOutputTokens: 1800,
-            responseMimeType: 'application/json',
-            thinkingConfig: {
-              thinkingLevel: normalizeThinkingLevel(env.GEMINI_THINKING_LEVEL)
-            }
-          }
-        }),
-        signal: controller.signal
-      }
-    )
+    const fallbackModelList = fallbackModels(env.GEMINI_FALLBACK_MODELS, model)
+    const requestBody = generateContentBody({
+      message,
+      history,
+      appContext,
+      knowledge,
+      thinkingLevel: normalizeThinkingLevel(env.GEMINI_THINKING_LEVEL)
+    })
 
-    const rawUpstream = await upstream.text()
-    let payload = null
+    const result = await requestGeminiResilient({
+      primaryModel: model,
+      fallbackModelList,
+      apiKey: env.GEMINI_API_KEY,
+      body: requestBody,
+      signal: controller.signal
+    })
 
-    try {
-      payload = rawUpstream ? JSON.parse(rawUpstream) : null
+    if (!result) {
+      throw new Error('Gemini request không tạo được kết quả upstream.')
     }
-    catch {
-      payload = null
-    }
+
+    const { upstream, payload, rawText: rawUpstream } = result
+    const activeModel = result.model
 
     if (!upstream.ok) {
       const provider = providerError(payload, rawUpstream)
@@ -539,8 +666,13 @@ export async function onRequestPost(context) {
       }
       else if (isRateLimited) {
         code = 'RATE_LIMITED'
-        message = 'Gemini đang nhận quá nhiều yêu cầu. Hãy thử lại sau một lúc.'
+        message = 'Gemini đang nhận quá nhiều yêu cầu. ChemAI đã tự thử lại; hãy chờ một lúc rồi thử tiếp.'
         status = 429
+      }
+      else if (upstream.status === 503) {
+        code = 'GEMINI_OVERLOADED'
+        message = 'Gemini đang quá tải. ChemAI đã tự thử lại và chuyển model dự phòng nhưng chưa thành công. Hãy thử lại sau ít phút.'
+        status = 503
       }
 
       console.error(
@@ -556,6 +688,8 @@ export async function onRequestPost(context) {
           code,
           providerHttpStatus: upstream.status,
           upstreamCode: provider.code,
+          attempts: result.attemptCount,
+          fallbackUsed: result.fallbackUsed,
           message
         },
         status
@@ -599,7 +733,7 @@ export async function onRequestPost(context) {
       answer,
       actions: normalizeActions(structured.actions),
       suggestions: normalizeSuggestions(structured.suggestions),
-      meta: metaFor(knowledge, payload, model)
+      meta: metaFor(knowledge, payload, activeModel, result)
     })
   }
   catch (error) {

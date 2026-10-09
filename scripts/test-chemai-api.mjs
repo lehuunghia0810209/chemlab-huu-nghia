@@ -182,4 +182,79 @@ finally {
   globalThis.fetch = originalFetch
 }
 
+let resilienceCallCount = 0
+const resilienceUrls = []
+
+globalThis.fetch = async (url) => {
+  resilienceCallCount += 1
+  resilienceUrls.push(String(url))
+
+  if (resilienceCallCount <= 2) {
+    return new Response(
+      JSON.stringify({
+        error: {
+          code: 503,
+          status: 'UNAVAILABLE',
+          message: 'This model is currently experiencing high demand.'
+        }
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+
+  return new Response(
+    JSON.stringify({
+      candidates: [{
+        content: {
+          role: 'model',
+          parts: [{
+            text: JSON.stringify({
+              answer: 'H₂O là nước, gồm hai nguyên tử H và một nguyên tử O.',
+              actions: [],
+              suggestions: ['Vì sao H₂O phân cực?']
+            })
+          }]
+        },
+        finishReason: 'STOP'
+      }],
+      modelVersion: 'gemini-3.7-flash'
+    }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  )
+}
+
+try {
+  const fallbackResponse = await onRequestPost({
+    request: makeRequest(
+      { message: 'H2O là gì?' },
+      { 'CF-Connecting-IP': '203.0.113.20' }
+    ),
+    env: {
+      GEMINI_API_KEY: 'test-only-key',
+      GEMINI_MODEL: 'gemini-3.8-flash',
+      GEMINI_THINKING_LEVEL: 'low'
+    }
+  })
+
+  const fallbackPayload = await fallbackResponse.json()
+  assert.equal(fallbackResponse.status, 200)
+  assert.equal(fallbackPayload.ok, true)
+  assert.equal(fallbackPayload.meta.fallbackUsed, true)
+  assert.equal(fallbackPayload.meta.attempts, 3)
+  assert.equal(fallbackPayload.meta.model, 'gemini-3.7-flash')
+  assert.equal(resilienceCallCount, 3)
+  assert.match(resilienceUrls[0], /gemini-3\.8-flash:generateContent/)
+  assert.match(resilienceUrls[1], /gemini-3\.8-flash:generateContent/)
+  assert.match(resilienceUrls[2], /gemini-3\.7-flash:generateContent/)
+}
+finally {
+  globalThis.fetch = originalFetch
+}
+
 console.log('\nPASS — ChemAI Gemini API mock tests passed.\n')
