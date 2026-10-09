@@ -117,12 +117,12 @@ expect('desktop backdrop remains subtle', aiCss.includes('background: rgba(2,4,1
 
 /* Gemini backend / security */
 expect('Cloudflare Function uses server-side Gemini secret', api.includes('env.GEMINI_API_KEY'))
-expect('Gemini Interactions API is used', /https:\/\/generativelanguage\.googleapis\.com\/v1(?:beta)?\/interactions/.test(api))
+expect('Gemini generateContent API is used', api.includes('generativelanguage.googleapis.com/v1beta/models') && api.includes(':generateContent'))
 expect('Gemini current Flash model is default', api.includes("DEFAULT_MODEL = 'gemini-3.8-flash'"))
 expect('Gemini auth uses x-goog-api-key header', api.includes("'x-goog-api-key': env.GEMINI_API_KEY"))
-expect('Gemini structured output schema is enabled', api.includes('response_format') && api.includes("mime_type: 'application/json'") && api.includes('schema: RESPONSE_SCHEMA'))
+expect('Gemini JSON response mode is enabled', api.includes("responseMimeType: 'application/json'") && api.includes('BẮT BUỘC chỉ trả về một JSON object hợp lệ'))
 expect('Gemini reasoning level is configurable', api.includes('GEMINI_THINKING_LEVEL') && api.includes("new Set(['low', 'medium', 'high'])"))
-expect('Gemini requests are not stored', api.includes('store: false'))
+expect('Gemini request is stateless', api.includes('contents: [') && !api.includes('previous_interaction_id'))
 expect('OpenAI backend references are gone from active AI code', !/OPENAI_|api\.openai\.com|gpt-/.test(activeAIText))
 expect('example secrets contain placeholders only', devVars.includes('GEMINI_API_KEY=your_gemini_api_key_here'))
 expect('ChemAI system language is Vietnamese', api.includes('Luôn trò chuyện, giải thích và hướng dẫn bằng tiếng Việt'))

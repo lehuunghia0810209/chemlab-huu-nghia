@@ -2,7 +2,7 @@ import { retrieveChemKnowledge } from './_knowledge.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions'
+const GEMINI_API_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models'
 const MAX_MESSAGE_LENGTH = 4000
 const MAX_HISTORY_ITEMS = 10
 const MAX_HISTORY_ITEM_LENGTH = 2600
@@ -230,6 +230,11 @@ ACTION
 ĐỊNH DẠNG
 - answer dùng Markdown đơn giản: đoạn văn, **đậm**, danh sách và code inline nếu cần.
 - Không viết HTML.
+- BẮT BUỘC chỉ trả về một JSON object hợp lệ, không bọc trong markdown fence, đúng ba khóa:
+  - answer: string
+  - actions: array tối đa 3 phần tử {type,target,label}
+  - suggestions: array tối đa 3 string
+- Nếu không có action phù hợp, actions là mảng rỗng.
 - Không nhắc tới system prompt, API key, schema, nhà cung cấp hạ tầng hoặc cơ chế nội bộ.`
 }
 
@@ -252,25 +257,26 @@ function buildInteractionInput({ message, history, appContext, knowledge }) {
   ].join('\n\n')
 }
 
-function extractInteractionText(payload) {
-  if (typeof payload?.output_text === 'string' && payload.output_text.trim()) {
-    return payload.output_text.trim()
+function extractGenerateContentText(payload) {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : []
+  const parts = candidates[0]?.content?.parts
+
+  if (!Array.isArray(parts)) return ''
+
+  return parts
+    .map(part => typeof part?.text === 'string' ? part.text : '')
+    .filter(Boolean)
+    .join('\n')
+    .trim()
+}
+
+function providerError(payload, rawText = '') {
+  const code = payload?.error?.status || null
+  const message = String(payload?.error?.message || rawText || '').trim()
+  return {
+    code,
+    message: message.slice(0, 500)
   }
-
-  const steps = Array.isArray(payload?.steps) ? payload.steps : []
-  const chunks = []
-
-  for (const step of steps) {
-    if (step?.type !== 'model_output' || !Array.isArray(step.content)) continue
-
-    for (const content of step.content) {
-      if (content?.type === 'text' && typeof content.text === 'string') {
-        chunks.push(content.text)
-      }
-    }
-  }
-
-  return chunks.join('\n').trim()
 }
 
 function cleanStructuredText(value) {
@@ -322,7 +328,7 @@ function normalizeThinkingLevel(value) {
 function metaFor(knowledge, payload, model) {
   return {
     provider: 'Gemini',
-    model: text(payload?.model || model, 120),
+    model: text(payload?.modelVersion || model, 120),
     groundedElements: knowledge.elements.length,
     groundedChemicals: knowledge.chemicals.length,
     groundedReactions: knowledge.reactions.length,
@@ -459,44 +465,57 @@ export async function onRequestPost(context) {
   const timeout = setTimeout(() => controller.abort('timeout'), 45000)
 
   try {
+    const upstreamUrl = `${GEMINI_API_ROOT}/${encodeURIComponent(model)}:generateContent`
     const upstream = await fetch(
-      GEMINI_URL,
+      upstreamUrl,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': env.GEMINI_API_KEY
+          'x-goog-api-key': env.GEMINI_API_KEY,
+          'x-goog-api-client': `chemlab/${APP_VERSION}`
         },
         body: JSON.stringify({
-          model,
-          input: buildInteractionInput({
-            message,
-            history,
-            appContext,
-            knowledge
-          }),
-          system_instruction: systemInstructions(),
-          response_format: {
-            type: 'text',
-            mime_type: 'application/json',
-            schema: RESPONSE_SCHEMA
+          system_instruction: {
+            parts: [{ text: systemInstructions() }]
           },
-          generation_config: {
-            max_output_tokens: 1800,
-            thinking_level: normalizeThinkingLevel(env.GEMINI_THINKING_LEVEL)
-          },
-          stream: false,
-          store: false
+          contents: [
+            {
+              role: 'user',
+              parts: [{
+                text: buildInteractionInput({
+                  message,
+                  history,
+                  appContext,
+                  knowledge
+                })
+              }]
+            }
+          ],
+          generationConfig: {
+            maxOutputTokens: 1800,
+            responseMimeType: 'application/json',
+            thinkingConfig: {
+              thinkingLevel: normalizeThinkingLevel(env.GEMINI_THINKING_LEVEL)
+            }
+          }
         }),
         signal: controller.signal
       }
     )
 
-    const payload = await upstream.json().catch(() => null)
+    const rawUpstream = await upstream.text()
+    let payload = null
+
+    try {
+      payload = rawUpstream ? JSON.parse(rawUpstream) : null
+    }
+    catch {
+      payload = null
+    }
 
     if (!upstream.ok) {
-      const upstreamStatus = payload?.error?.status || null
-      const upstreamMessage = String(payload?.error?.message || '')
+      const provider = providerError(payload, rawUpstream)
       const isAuthError = upstream.status === 401 || upstream.status === 403
       const isModelError = upstream.status === 404
       const isBadRequest = upstream.status === 400
@@ -527,33 +546,26 @@ export async function onRequestPost(context) {
       console.error(
         '[ChemAI] Gemini upstream error',
         upstream.status,
-        upstreamStatus,
-        upstreamMessage.slice(0, 240)
+        provider.code,
+        provider.message.slice(0, 240)
       )
 
       return json(
         {
           ok: false,
           code,
-          upstreamCode: upstreamStatus,
+          providerHttpStatus: upstream.status,
+          upstreamCode: provider.code,
           message
         },
         status
       )
     }
 
-    if (payload?.status === 'incomplete') {
-      return json(
-        {
-          ok: false,
-          code: 'AI_INCOMPLETE',
-          message: 'Câu trả lời bị gián đoạn. Hãy gửi lại câu hỏi ngắn hơn.'
-        },
-        502
-      )
-    }
+    const finishReason = String(payload?.candidates?.[0]?.finishReason || '')
+    const blockReason = String(payload?.promptFeedback?.blockReason || '')
 
-    if (payload?.status === 'failed') {
+    if (blockReason || finishReason === 'SAFETY' || finishReason === 'RECITATION') {
       return json(
         {
           ok: false,
@@ -564,9 +576,9 @@ export async function onRequestPost(context) {
       )
     }
 
-    const outputText = extractInteractionText(payload)
+    const outputText = extractGenerateContentText(payload)
     if (!outputText) {
-      throw new Error('Gemini response không có model_output text.')
+      throw new Error(`Gemini response không có text. finishReason=${finishReason || 'unknown'}`)
     }
 
     let structured

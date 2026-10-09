@@ -89,38 +89,38 @@ globalThis.fetch = async (url, options) => {
 
   return new Response(
     JSON.stringify({
-      id: 'interaction_test_62',
-      model: 'gemini-3.8-flash',
-      status: 'completed',
-      steps: [
+      candidates: [
         {
-          type: 'model_output',
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                answer: 'HCl + NaOH → NaCl + H₂O. Đây là phản ứng trung hòa.',
-                actions: [
-                  { type: 'open_tool', target: 'reaction', label: 'Mở Reaction Studio' },
-                  { type: 'navigate', target: 'lab', label: 'Mở phòng thí nghiệm' },
-                  { type: 'open_tool', target: 'not-allowed', label: 'Không hợp lệ' }
-                ],
-                suggestions: [
-                  'Vì sao đây là phản ứng trung hòa?',
-                  'Viết phương trình ion rút gọn',
-                  'Thử trong Virtual Lab',
-                  'Gợi ý thừa phải bị cắt'
-                ]
-              })
-            }
-          ]
+          content: {
+            role: 'model',
+            parts: [
+              {
+                text: JSON.stringify({
+                  answer: 'HCl + NaOH → NaCl + H₂O. Đây là phản ứng trung hòa.',
+                  actions: [
+                    { type: 'open_tool', target: 'reaction', label: 'Mở Reaction Studio' },
+                    { type: 'navigate', target: 'lab', label: 'Mở phòng thí nghiệm' },
+                    { type: 'open_tool', target: 'not-allowed', label: 'Không hợp lệ' }
+                  ],
+                  suggestions: [
+                    'Vì sao đây là phản ứng trung hòa?',
+                    'Viết phương trình ion rút gọn',
+                    'Thử trong Virtual Lab',
+                    'Gợi ý thừa phải bị cắt'
+                  ]
+                })
+              }
+            ]
+          },
+          finishReason: 'STOP'
         }
       ],
-      usage: {
-        total_input_tokens: 200,
-        total_output_tokens: 80,
-        total_tokens: 280
-      }
+      usageMetadata: {
+        promptTokenCount: 200,
+        candidatesTokenCount: 80,
+        totalTokenCount: 280
+      },
+      modelVersion: 'gemini-3.8-flash'
     }),
     {
       status: 200,
@@ -166,20 +166,17 @@ try {
   assert.equal(successPayload.meta.model, 'gemini-3.8-flash')
   assert.ok('groundedElements' in successPayload.meta)
 
-  assert.match(upstreamUrl, /generativelanguage\.googleapis\.com\/v1beta\/interactions/)
+  assert.match(upstreamUrl, /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-3\.8-flash:generateContent/)
   assert.equal(upstreamHeaders['x-goog-api-key'], 'test-only-key')
-  assert.equal(upstreamBody.model, 'gemini-3.8-flash')
-  assert.equal(upstreamBody.store, false)
-  assert.equal(upstreamBody.stream, false)
-  assert.equal(upstreamBody.response_format.type, 'text')
-  assert.equal(upstreamBody.response_format.mime_type, 'application/json')
-  assert.equal(upstreamBody.response_format.schema.type, 'object')
-  assert.equal(upstreamBody.generation_config.thinking_level, 'low')
-  assert.match(upstreamBody.system_instruction, /tiếng Việt/)
-  assert.match(upstreamBody.system_instruction, /công thức hóa học/)
-  assert.match(upstreamBody.input, /CHEMLAB CONTEXT/)
-  assert.match(upstreamBody.input, /CHEMLAB KNOWLEDGE/)
-  assert.match(upstreamBody.input, /LỊCH SỬ GẦN NHẤT/)
+  assert.match(upstreamHeaders['x-goog-api-client'], /chemlab\/6\.2\.0/)
+  assert.equal(upstreamBody.generationConfig.responseMimeType, 'application/json')
+  assert.equal(upstreamBody.generationConfig.thinkingConfig.thinkingLevel, 'low')
+  assert.equal(upstreamBody.generationConfig.maxOutputTokens, 1800)
+  assert.match(upstreamBody.system_instruction.parts[0].text, /tiếng Việt/)
+  assert.match(upstreamBody.system_instruction.parts[0].text, /công thức hóa học/)
+  assert.match(upstreamBody.contents[0].parts[0].text, /CHEMLAB CONTEXT/)
+  assert.match(upstreamBody.contents[0].parts[0].text, /CHEMLAB KNOWLEDGE/)
+  assert.match(upstreamBody.contents[0].parts[0].text, /LỊCH SỬ GẦN NHẤT/)
 }
 finally {
   globalThis.fetch = originalFetch
