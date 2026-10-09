@@ -166,7 +166,7 @@ try {
   assert.equal(successPayload.meta.model, 'gemini-3.8-flash')
   assert.ok('groundedElements' in successPayload.meta)
 
-  assert.match(upstreamUrl, /generativelanguage\.googleapis\.com\/v1\/interactions/)
+  assert.match(upstreamUrl, /generativelanguage\.googleapis\.com\/v1beta\/interactions/)
   assert.equal(upstreamHeaders['x-goog-api-key'], 'test-only-key')
   assert.equal(upstreamBody.model, 'gemini-3.8-flash')
   assert.equal(upstreamBody.store, false)

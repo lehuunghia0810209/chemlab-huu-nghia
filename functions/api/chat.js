@@ -2,7 +2,7 @@ import { retrieveChemKnowledge } from './_knowledge.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1/interactions'
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions'
 const MAX_MESSAGE_LENGTH = 4000
 const MAX_HISTORY_ITEMS = 10
 const MAX_HISTORY_ITEM_LENGTH = 2600
@@ -456,7 +456,7 @@ export async function onRequestPost(context) {
   const model = String(env.GEMINI_MODEL || DEFAULT_MODEL)
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort('timeout'), 30000)
+  const timeout = setTimeout(() => controller.abort('timeout'), 45000)
 
   try {
     const upstream = await fetch(
@@ -496,18 +496,47 @@ export async function onRequestPost(context) {
 
     if (!upstream.ok) {
       const upstreamStatus = payload?.error?.status || null
-      const status = upstream.status === 429 ? 429 : 502
+      const upstreamMessage = String(payload?.error?.message || '')
+      const isAuthError = upstream.status === 401 || upstream.status === 403
+      const isModelError = upstream.status === 404
+      const isBadRequest = upstream.status === 400
+      const isRateLimited = upstream.status === 429
 
-      console.error('[ChemAI] Gemini upstream error', upstream.status, upstreamStatus)
+      let code = 'AI_UPSTREAM_ERROR'
+      let message = 'Gemini đang tạm thời không phản hồi. Hãy thử lại.'
+      let status = 502
+
+      if (isAuthError) {
+        code = 'GEMINI_AUTH_FAILED'
+        message = 'Gemini từ chối API key. Hãy kiểm tra lại Secret GEMINI_API_KEY trên Cloudflare.'
+      }
+      else if (isModelError) {
+        code = 'GEMINI_MODEL_UNAVAILABLE'
+        message = 'Model Gemini hiện tại chưa khả dụng cho project này. Hãy thử lại sau hoặc đổi GEMINI_MODEL.'
+      }
+      else if (isBadRequest) {
+        code = 'GEMINI_BAD_REQUEST'
+        message = 'Gemini không chấp nhận cấu hình yêu cầu hiện tại. Hãy kiểm tra cấu hình model/API.'
+      }
+      else if (isRateLimited) {
+        code = 'RATE_LIMITED'
+        message = 'Gemini đang nhận quá nhiều yêu cầu. Hãy thử lại sau một lúc.'
+        status = 429
+      }
+
+      console.error(
+        '[ChemAI] Gemini upstream error',
+        upstream.status,
+        upstreamStatus,
+        upstreamMessage.slice(0, 240)
+      )
 
       return json(
         {
           ok: false,
-          code: upstream.status === 429 ? 'RATE_LIMITED' : 'AI_UPSTREAM_ERROR',
+          code,
           upstreamCode: upstreamStatus,
-          message: upstream.status === 429
-            ? 'Gemini đang nhận quá nhiều yêu cầu. Hãy thử lại sau một lúc.'
-            : 'ChemAI chưa thể kết nối Gemini lúc này. Hãy thử lại.'
+          message
         },
         status
       )

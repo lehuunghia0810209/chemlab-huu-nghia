@@ -191,6 +191,7 @@ export function initChemAI({ version = '6.2.0' } = {}) {
   let serverSuggestions = []
   let lastFocused = null
   let statusChecked = false
+  let lastFailedQuestion = ''
   const displayVersion = String(version).replace(/\.0$/, '')
 
   const root = document.createElement('div')
@@ -313,8 +314,8 @@ export function initChemAI({ version = '6.2.0' } = {}) {
     serviceBadge.querySelector('span').textContent = label
   }
 
-  async function checkService() {
-    if (statusChecked) return serviceState
+  async function checkService({ force = false } = {}) {
+    if (statusChecked && !force) return serviceState
     statusChecked = true
 
     try {
@@ -506,12 +507,16 @@ export function initChemAI({ version = '6.2.0' } = {}) {
     `).join('')
   }
 
-  function renderSystemNotice(type, title, copy) {
+  function renderSystemNotice(type, title, copy, { retry = false } = {}) {
     const notice = document.createElement('section')
     notice.className = `chemai-system-notice ${type}`
     notice.innerHTML = `
       <span>${type === 'warning' ? icon('warning') : icon('context')}</span>
-      <div><strong>${escapeHTML(title)}</strong><p>${escapeHTML(copy)}</p></div>
+      <div>
+        <strong>${escapeHTML(title)}</strong>
+        <p>${escapeHTML(copy)}</p>
+        ${retry ? '<button type="button" class="chemai-retry" data-ai-retry>Thử lại</button>' : ''}
+      </div>
     `
     messagesEl.appendChild(notice)
     scrollToBottom()
@@ -580,11 +585,14 @@ export function initChemAI({ version = '6.2.0' } = {}) {
     input.value = ''
     autoResize()
     setPending(true)
+    if (mobileMedia.matches) input.blur()
 
     controller = new AbortController()
 
     try {
-      if (!statusChecked) await checkService()
+      if (!statusChecked || serviceState !== 'online') {
+        await checkService({ force: true })
+      }
 
       if (serviceState === 'local') {
         throw Object.assign(new Error('local-ui'), { code: 'LOCAL_UI_ONLY' })
@@ -658,11 +666,35 @@ export function initChemAI({ version = '6.2.0' } = {}) {
         )
       }
       else {
-        if (!isLocalHost()) setServiceState('offline', 'Có lỗi')
+        lastFailedQuestion = question
+
+        const reachableServerCodes = new Set([
+          'RATE_LIMITED',
+          'AI_TIMEOUT',
+          'AI_INCOMPLETE',
+          'AI_BLOCKED',
+          'AI_UPSTREAM_ERROR',
+          'GEMINI_AUTH_FAILED',
+          'GEMINI_MODEL_UNAVAILABLE',
+          'GEMINI_BAD_REQUEST',
+          'AI_REQUEST_FAILED'
+        ])
+
+        if (error?.code === 'GEMINI_AUTH_FAILED') {
+          setServiceState('setup', 'Kiểm tra API')
+        }
+        else if (reachableServerCodes.has(error?.code)) {
+          setServiceState('online', 'Gemini')
+        }
+        else if (!isLocalHost()) {
+          setServiceState('offline', 'Mất kết nối')
+        }
+
         renderSystemNotice(
           'warning',
           'ChemAI chưa thể trả lời',
-          error?.message || 'Kiểm tra kết nối rồi thử lại.'
+          error?.message || 'Kết nối tạm thời có vấn đề. Hãy thử lại.',
+          { retry: true }
         )
       }
     }
@@ -670,7 +702,7 @@ export function initChemAI({ version = '6.2.0' } = {}) {
       controller = null
       setPending(false)
       input.disabled = false
-      input.focus()
+      if (!mobileMedia.matches) input.focus()
     }
   }
 
@@ -753,6 +785,14 @@ export function initChemAI({ version = '6.2.0' } = {}) {
       input.value = suggestion.dataset.aiSuggestion || ''
       autoResize()
       input.focus()
+      return
+    }
+
+    const retry = event.target.closest('[data-ai-retry]')
+    if (retry) {
+      const retryQuestion = lastFailedQuestion
+      retry.closest('.chemai-system-notice')?.remove()
+      if (retryQuestion) void ask(retryQuestion)
       return
     }
 

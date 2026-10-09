@@ -108,11 +108,16 @@ expect('ChemAI mobile dialog traps keyboard focus', aiJs.includes("event.key ===
 expect('ChemAI supports reduced motion', aiCss.includes('@media (prefers-reduced-motion: reduce)'))
 expect('ChemAI avoids new !important debt', !aiCss.includes('!important'))
 expect('ChemAI input prevents mobile auto zoom', aiCss.includes('font-size:16px'))
+
+expect('ChemAI hides product launcher while open', aiCss.includes('html.chemai-open .clprod-launcher'))
+expect('ChemAI mobile send target is at least 52px', aiCss.includes('width: 52px') && aiCss.includes('height: 52px'))
+expect('ChemAI exposes retry after request failure', aiJs.includes('data-ai-retry') && aiJs.includes('lastFailedQuestion'))
+expect('ChemAI distinguishes Gemini auth errors', aiJs.includes('GEMINI_AUTH_FAILED') && api.includes('GEMINI_AUTH_FAILED'))
 expect('desktop backdrop remains subtle', aiCss.includes('background: rgba(2,4,10,.19)'))
 
 /* Gemini backend / security */
 expect('Cloudflare Function uses server-side Gemini secret', api.includes('env.GEMINI_API_KEY'))
-expect('Gemini stable Interactions API is used', api.includes('https://generativelanguage.googleapis.com/v1/interactions'))
+expect('Gemini Interactions API is used', /https:\/\/generativelanguage\.googleapis\.com\/v1(?:beta)?\/interactions/.test(api))
 expect('Gemini current Flash model is default', api.includes("DEFAULT_MODEL = 'gemini-3.8-flash'"))
 expect('Gemini auth uses x-goog-api-key header', api.includes("'x-goog-api-key': env.GEMINI_API_KEY"))
 expect('Gemini structured output schema is enabled', api.includes('response_format') && api.includes("mime_type: 'application/json'") && api.includes('schema: RESPONSE_SCHEMA'))
