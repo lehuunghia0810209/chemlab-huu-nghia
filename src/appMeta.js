@@ -9,7 +9,7 @@
 export const APP_META = Object.freeze({
   name: 'ChemLab',
   edition: 'Huu Nghia Edition',
-  version: '5.2.2',
+  version: '6.0.0',
   author: 'Huu Nghia',
   release: 'Production',
   description: 'Interactive Chemistry Workspace'

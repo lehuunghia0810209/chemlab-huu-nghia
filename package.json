@@ -1,15 +1,17 @@
 {
   "name": "khtkchemlab",
-  "version": "5.2.2",
+  "version": "6.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "release:sync": "node scripts/sync-release.mjs",
-    "check": "node scripts/validate-project.mjs",
+    "check": "npm run check:project && npm run check:ui",
     "prebuild": "npm run release:sync && npm run check",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:project": "node scripts/validate-project.mjs",
+    "check:ui": "node scripts/validate-final-ui.mjs"
   },
   "devDependencies": {
     "sharp": "^0.35.5",

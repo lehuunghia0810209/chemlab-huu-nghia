@@ -67,6 +67,26 @@ const TOOLS = [
     selectors: [
       '#orbital-atlas'
     ]
+  },
+
+  {
+    id: 'compound',
+    title: 'Compound Studio',
+    description:
+      'Phân tích công thức, thành phần và khối lượng mol.',
+    icon: '◇',
+    accent: 'violet',
+    launcher: 'compound'
+  },
+
+  {
+    id: 'reaction',
+    title: 'Reaction Studio',
+    description:
+      'Dự đoán, cân bằng và phân tích phản ứng.',
+    icon: '⇌',
+    accent: 'blue',
+    launcher: 'reaction'
   }
 ]
 
@@ -148,10 +168,25 @@ export function initToolHub() {
         <i></i>
 
         <span>
-          ${moduleMap.size} công cụ
+          ${TOOLS.filter(tool => moduleMap.has(tool.id) || tool.launcher).length} công cụ
         </span>
       </div>
     </section>
+
+
+    <label class="tool-hub-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m20 20-3.4-3.4"></path>
+      </svg>
+      <input
+        id="tool-hub-search-input"
+        type="search"
+        autocomplete="off"
+        placeholder="Tìm công cụ: ion, mol, orbital..."
+        aria-label="Tìm công cụ hóa học"
+      >
+    </label>
 
 
     <nav
@@ -162,7 +197,8 @@ export function initToolHub() {
       ${
         TOOLS
           .filter(tool =>
-            moduleMap.has(tool.id)
+            moduleMap.has(tool.id) ||
+            tool.launcher
           )
           .map(tool => `
             <button
@@ -254,6 +290,50 @@ export function initToolHub() {
       '.tool-selector'
     )
 
+  const searchInput =
+    hub.querySelector(
+      '#tool-hub-search-input'
+    )
+
+  const emptyState =
+    document.createElement('div')
+
+  emptyState.className =
+    'tool-hub-empty'
+
+  emptyState.hidden = true
+  emptyState.textContent =
+    'Không tìm thấy công cụ phù hợp.'
+
+  selector.appendChild(emptyState)
+
+  searchInput?.addEventListener(
+    'input',
+    () => {
+      const keyword = String(searchInput.value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+
+      let visible = 0
+
+      selector.querySelectorAll('[data-tool]').forEach(button => {
+        const tool = TOOLS.find(item => item.id === button.dataset.tool)
+        const haystack = `${tool?.title || ''} ${tool?.description || ''} ${tool?.id || ''}`
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+
+        const match = !keyword || haystack.includes(keyword)
+        button.hidden = !match
+        if (match) visible += 1
+      })
+
+      emptyState.hidden = visible > 0
+    }
+  )
+
   selector.addEventListener(
     'click',
     event => {
@@ -288,7 +368,7 @@ export function initToolHub() {
       const buttons =
         [
           ...selector.querySelectorAll(
-            '[data-tool]'
+            '[data-tool]:not([hidden])'
           )
         ]
 
@@ -366,6 +446,20 @@ export function initToolHub() {
     toolId,
     userAction = false
   ) {
+    const selectedTool =
+      TOOLS.find(
+        item =>
+          item.id === toolId
+      )
+
+    if (selectedTool?.launcher) {
+      void launchStudio(
+        selectedTool.launcher
+      )
+
+      return
+    }
+
     if (
       !moduleMap.has(toolId)
     ) {
@@ -462,6 +556,36 @@ export function initToolHub() {
     activeTool,
     false
   )
+}
+
+
+async function launchStudio(
+  launcher
+) {
+  try {
+    if (launcher === 'compound') {
+      const {
+        openCompoundStudio
+      } = await import('./compoundStudio.js')
+
+      openCompoundStudio()
+      return
+    }
+
+    if (launcher === 'reaction') {
+      const {
+        openReactionStudio
+      } = await import('./reactionStudio.js')
+
+      openReactionStudio()
+    }
+  }
+  catch (error) {
+    console.error(
+      `[ChemLab] Không thể mở ${launcher} studio:`,
+      error
+    )
+  }
 }
 
 

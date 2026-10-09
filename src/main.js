@@ -42,8 +42,14 @@ import {
 ========================================================= */
 
 import {
-  initProgressStorage
+  initProgressStorage,
+  getProgressSummary,
+  getGradeSummary
 } from './progress/progressStorage.js'
+
+import {
+  createHomeDashboard
+} from './final/homeDashboard.js'
 
 
 /* =========================================================
@@ -64,6 +70,7 @@ import './responsive/mobile.css'
 import './userPreferences.css'
 import './zperiodLight.css'
 import './experience.css'
+import './final/final-6.css'
 
 
 /* =========================================================
@@ -87,7 +94,7 @@ import {
 const STORAGE_KEYS = {
 
   view:
-    'chemlab-v5-last-view'
+    'chemlab-v6-last-view'
 
 }
 
@@ -105,6 +112,7 @@ applySavedPreferences()
 
 const VALID_VIEWS =
   new Set([
+    'home',
     'periodic',
     'tools',
     'learning',
@@ -113,6 +121,11 @@ const VALID_VIEWS =
 
 
 const VIEW_INFO = {
+
+  home: {
+    title: 'Tổng quan',
+    subtitle: 'Học · khám phá · thí nghiệm · kết nối'
+  },
 
   periodic: {
 
@@ -169,6 +182,14 @@ function icon(
 ) {
 
   const icons = {
+
+    home: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5"/>
+        <path d="M5 9.5V21h14V9.5"/>
+        <path d="M9 21v-6h6v6"/>
+      </svg>
+    `,
 
     flask: `
       <svg
@@ -385,6 +406,15 @@ function icon(
 const COMMANDS = [
 
   {
+    group: 'Điều hướng',
+    name: 'Tổng quan',
+    description: 'Trang chủ ChemLab 6',
+    icon: 'home',
+    view: 'home',
+    keywords: 'trang chu home dashboard tong quan'
+  },
+
+  {
     group:
       'Điều hướng',
 
@@ -585,6 +615,28 @@ const COMMANDS = [
 
     keywords:
       'orbital spdf 3d'
+  },
+
+
+  {
+    group: 'Công cụ',
+    name: 'Compound Studio',
+    description: 'Phân tích công thức và hợp chất',
+    icon: 'flask',
+    view: 'tools',
+    tool: 'compound',
+    keywords: 'compound studio cong thuc hop chat molar mass'
+  },
+
+
+  {
+    group: 'Công cụ',
+    name: 'Reaction Studio',
+    description: 'Phân tích và dự đoán phản ứng',
+    icon: 'lab',
+    view: 'tools',
+    tool: 'reaction',
+    keywords: 'reaction studio phan ung du doan can bang'
   }
 
 ]
@@ -655,8 +707,8 @@ app.innerHTML = `
       <button
         class="workspace-brand v5-brand"
         type="button"
-        data-app-view="periodic"
-        aria-label="Mở Bảng tuần hoàn"
+        data-app-view="home"
+        aria-label="Mở Tổng quan ChemLab"
       >
 
         <span class="v5-brand-mark">
@@ -682,11 +734,11 @@ app.innerHTML = `
       <div class="workspace-title-area">
 
         <strong id="workspace-view-title">
-          Bảng tuần hoàn
+          Tổng quan
         </strong>
 
         <span id="workspace-view-subtitle">
-          118 nguyên tố · dữ liệu · mô hình · so sánh
+          Học · khám phá · thí nghiệm · kết nối
         </span>
 
       </div>
@@ -756,10 +808,17 @@ app.innerHTML = `
 
 
       ${navButton(
+        'home',
+        'home',
+        'Tổng quan',
+        true
+      )}
+
+
+      ${navButton(
         'periodic',
         'table',
-        'Bảng',
-        true
+        'Bảng'
       )}
 
 
@@ -813,11 +872,22 @@ app.innerHTML = `
     >
 
 
+      <!-- HOME -->
+
+      <section
+        id="view-home"
+        class="workspace-view active"
+      >
+        <div id="home-dashboard-root"></div>
+      </section>
+
+
       <!-- PERIODIC -->
 
       <section
         id="view-periodic"
-        class="workspace-view active"
+        class="workspace-view"
+        hidden
       >
 
         <div
@@ -1067,6 +1137,12 @@ const announcer =
   )
 
 
+const homeRoot =
+  document.querySelector(
+    '#home-dashboard-root'
+  )
+
+
 const periodicRoot =
   document.querySelector(
     '#periodic-workspace-root'
@@ -1252,6 +1328,18 @@ safeInit(
 
 
 /* =========================================================
+   HOME DASHBOARD
+========================================================= */
+
+const homeDashboard =
+  createHomeDashboard({
+    root: homeRoot,
+    getProgressSummary,
+    getGradeSummary
+  })
+
+
+/* =========================================================
    ROUTE MODULE LOADER
 ========================================================= */
 
@@ -1265,6 +1353,8 @@ const routeModules =
     appStatus,
 
     hosts: {
+      home:
+        homeRoot,
       periodic:
         periodicRoot,
       tools:
@@ -1328,7 +1418,7 @@ function switchView(
   ) {
 
     viewName =
-      'periodic'
+      'home'
 
   }
 
@@ -1340,6 +1430,21 @@ function switchView(
 
   currentView =
     viewName
+
+
+  workspaceApp?.setAttribute(
+    'data-current-view',
+    viewName
+  )
+
+
+  document.documentElement.dataset.chemlabView =
+    viewName
+
+
+  if (viewName === 'home') {
+    homeDashboard.refresh()
+  }
 
 
   document
@@ -1519,6 +1624,22 @@ function switchView(
     viewName
   )
 
+
+  if (changed) {
+    window.dispatchEvent(
+      new CustomEvent(
+        'chemlab:view-change',
+        {
+          detail: {
+            view: viewName,
+            title: info.title,
+            version: APP_VERSION
+          }
+        }
+      )
+    )
+  }
+
 }
 
 
@@ -1600,6 +1721,25 @@ document.addEventListener(
 
       return
 
+    }
+
+
+    const toolTarget =
+      event.target.closest(
+        '[data-app-tool]'
+      )
+
+
+    if (toolTarget) {
+      switchView(
+        'tools'
+      )
+
+      void routeModules.openToolWhenReady(
+        toolTarget.dataset.appTool
+      )
+
+      return
     }
 
 
@@ -2468,6 +2608,65 @@ function loadLastView() {
 
 
 /* =========================================================
+   PUBLIC APP CONTEXT API
+
+   Stable bridge for future integrations (ChemAI 6.1 included).
+========================================================= */
+
+function getAppContext() {
+
+  return {
+    version: APP_VERSION,
+    view: currentView || 'home',
+    tool:
+      window.ChemLabTools?.current?.() ||
+      null,
+    progress:
+      getProgressSummary(),
+    hash:
+      window.location.hash || '#home'
+  }
+
+}
+
+
+window.ChemLabApp = Object.freeze({
+
+  version:
+    APP_VERSION,
+
+  navigate(
+    viewName
+  ) {
+
+    switchView(
+      viewName
+    )
+
+  },
+
+  openTool(
+    toolId
+  ) {
+
+    switchView(
+      'tools'
+    )
+
+    return routeModules
+      .openToolWhenReady(
+        toolId
+      )
+
+  },
+
+  context:
+    getAppContext
+
+})
+
+
+/* =========================================================
    INITIAL ROUTE
 ========================================================= */
 
@@ -2490,7 +2689,7 @@ function resolveInitialRoute() {
 
     view:
       loadLastView() ||
-      'periodic',
+      'home',
 
     tool:
       null

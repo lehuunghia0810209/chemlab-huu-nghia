@@ -15,6 +15,12 @@ export function createRouteModuleLoader({
   getCurrentView
 }) {
   const state = {
+    home: {
+      status: 'ready',
+      promise: Promise.resolve(true),
+      host: hosts.home,
+      label: 'Tổng quan'
+    },
     periodic: {
       status: 'ready',
       promise: Promise.resolve(true),

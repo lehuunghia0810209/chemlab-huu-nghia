@@ -297,22 +297,22 @@
       fixed !important;
 
     left:
-      0 !important;
+      8px !important;
 
     right:
-      0 !important;
+      8px !important;
 
     top:
       auto !important;
 
     bottom:
-      0 !important;
+      8px !important;
 
     z-index:
       1300 !important;
 
     width:
-      100% !important;
+      auto !important;
 
     height:
       auto !important;
@@ -325,7 +325,7 @@
 
     grid-template-columns:
       repeat(
-        4,
+        5,
         minmax(0,1fr)
       ) !important;
 
@@ -348,11 +348,11 @@
       !important;
 
     border:
-      0 !important;
-
-    border-top:
       1px solid
-      rgba(255,255,255,.09) !important;
+      rgba(255,255,255,.10) !important;
+
+    border-radius:
+      20px !important;
 
     background:
       rgba(8,9,16,.95) !important;
@@ -366,8 +366,8 @@
       saturate(140%);
 
     box-shadow:
-      0 -8px 28px
-      rgba(0,0,0,.24) !important;
+      0 16px 42px
+      rgba(0,0,0,.30) !important;
   }
 
 
