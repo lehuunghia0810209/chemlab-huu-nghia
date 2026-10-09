@@ -107,6 +107,7 @@ if (!indexHtml.includes(`ChemLab ${version}`)) {
 ========================================================= */
 
 const srcDir = path.join(rootDir, 'src')
+const functionsDir = path.join(rootDir, 'functions')
 
 async function walkFiles(directory) {
   const entries = await fs.readdir(
@@ -136,7 +137,19 @@ async function walkFiles(directory) {
 }
 
 const sourceFiles = await walkFiles(srcDir)
-const jsFiles = sourceFiles.filter(filePath => filePath.endsWith('.js'))
+
+let functionFiles = []
+try {
+  functionFiles = await walkFiles(functionsDir)
+} catch {
+  functionFiles = []
+}
+
+const jsFiles = [
+  ...sourceFiles.filter(filePath => filePath.endsWith('.js')),
+  ...functionFiles.filter(filePath => filePath.endsWith('.js'))
+]
+
 const cssFiles = sourceFiles.filter(filePath => filePath.endsWith('.css'))
 
 const importPatterns = [
@@ -423,6 +436,7 @@ const stats = {
   ),
   guidedQuestions: guidedQuestionIds.length,
   jsFilesChecked: jsFiles.length,
+  functionFilesChecked: functionFiles.filter(filePath => filePath.endsWith('.js')).length,
   cssFilesChecked: cssFiles.length,
   relativeImports: checkedRelativeImports,
   lazyRouteModules: Object.keys(routeModuleExports).length

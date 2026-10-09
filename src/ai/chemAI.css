@@ -1,0 +1,638 @@
+/* =========================================================
+   CHEMLAB 6.2 — CHEMAI FINAL INTERFACE
+   Context-aware AI assistant
+   Visual language inspired by modern open UI patterns:
+   glass surfaces, soft gradient borders, motion feedback.
+========================================================= */
+
+:root {
+  --chemai-width: 430px;
+  --chemai-panel-bg: color-mix(in srgb, var(--cl6-bg-elevated) 94%, transparent);
+  --chemai-border: color-mix(in srgb, var(--cl6-border-strong) 82%, transparent);
+  --chemai-accent: #9b7cff;
+  --chemai-accent-2: #55b7ff;
+  --chemai-accent-3: #42dfcf;
+}
+
+.chemai-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2050;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 6px 16px 6px 7px;
+  border: 1px solid rgba(155,124,255,.42);
+  border-radius: 999px;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(155,124,255,.22), rgba(85,183,255,.12)),
+    color-mix(in srgb, var(--cl6-bg-elevated) 94%, transparent);
+  box-shadow:
+    0 16px 44px rgba(0,0,0,.28),
+    0 0 0 1px rgba(255,255,255,.03) inset,
+    0 0 28px rgba(139,92,246,.18);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.chemai-launcher:hover {
+  transform: translateY(-3px);
+  border-color: rgba(155,124,255,.72);
+  box-shadow: 0 20px 50px rgba(0,0,0,.32), 0 0 34px rgba(139,92,246,.22);
+}
+
+.chemai-launcher:active { transform: translateY(-1px) scale(.985); }
+
+.chemai-launcher-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #9b7cff, #6278ff 54%, #35cfd2);
+  box-shadow: 0 7px 20px rgba(109,93,252,.34);
+}
+
+.chemai-launcher-orb::before {
+  content: '';
+  position: absolute;
+  inset: -35%;
+  background: conic-gradient(from 90deg, transparent, rgba(255,255,255,.62), transparent 32%);
+  animation: chemaiSpin 4.2s linear infinite;
+}
+
+.chemai-launcher-orb svg {
+  position: relative;
+  z-index: 1;
+  width: 21px;
+  height: 21px;
+}
+
+.chemai-launcher-copy { display: grid; text-align: left; line-height: 1.08; }
+.chemai-launcher-copy strong { font-size: 13px; font-weight: 850; letter-spacing: -.01em; }
+.chemai-launcher-copy small { margin-top: 3px; color: rgba(255,255,255,.62); font-size: 9px; font-weight: 700; letter-spacing: .04em; }
+
+.chemai-top-button {
+  position: relative;
+  color: #cbbfff;
+}
+
+.chemai-top-button::after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--chemai-accent-3);
+  box-shadow: 0 0 10px rgba(66,223,207,.72);
+}
+
+.chemai-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2600;
+  pointer-events: none;
+}
+
+.chemai-root[hidden] { display: none; }
+
+.chemai-backdrop {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: rgba(2,4,10,.26);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition: opacity .22s ease;
+}
+
+.chemai-panel {
+  position: absolute;
+  top: max(88px, env(safe-area-inset-top));
+  right: 22px;
+  bottom: 22px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0,1fr) auto auto auto;
+  width: min(var(--chemai-width), calc(100vw - 44px));
+  overflow: hidden;
+  border: 1px solid var(--chemai-border);
+  border-radius: 28px;
+  color: var(--cl6-text);
+  background:
+    radial-gradient(circle at 84% -8%, rgba(85,183,255,.14), transparent 19rem),
+    radial-gradient(circle at 5% 0%, rgba(155,124,255,.18), transparent 22rem),
+    var(--chemai-panel-bg);
+  box-shadow:
+    0 28px 90px rgba(0,0,0,.42),
+    0 0 0 1px rgba(255,255,255,.025) inset;
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+  transform: translateX(calc(100% + 44px)) scale(.985);
+  opacity: 0;
+  pointer-events: auto;
+  transition: transform .24s cubic-bezier(.2,.75,.2,1), opacity .2s ease;
+}
+
+.chemai-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.06), transparent 32%),
+    linear-gradient(315deg, rgba(66,223,207,.04), transparent 28%);
+}
+
+.chemai-root.is-open .chemai-panel { transform: none; opacity: 1; }
+.chemai-root.is-open .chemai-backdrop { opacity: 1; }
+
+.chemai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 78px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--cl6-border);
+}
+
+.chemai-brand { display: flex; align-items: center; min-width: 0; gap: 11px; }
+.chemai-brand > div { min-width: 0; }
+.chemai-title-row { display: flex; align-items: center; gap: 8px; }
+.chemai-title-row h2 { margin: 0; color: var(--cl6-text); font-size: 19px; letter-spacing: -.025em; }
+.chemai-version { padding: 3px 6px; border: 1px solid rgba(155,124,255,.22); border-radius: 7px; color: #bcaeff; background: rgba(155,124,255,.08); font-size: 9px; font-weight: 850; }
+.chemai-brand p { margin: 3px 0 0; overflow: hidden; color: var(--cl6-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+.chemai-orb,
+.chemai-mini-orb {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #9b7cff, #6278ff 52%, #35cfd2);
+  box-shadow: 0 9px 25px rgba(109,93,252,.28);
+}
+
+.chemai-orb { width: 42px; height: 42px; }
+.chemai-orb svg { position: relative; z-index: 4; width: 20px; height: 20px; }
+.chemai-orb i,
+.chemai-orb b,
+.chemai-orb em {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 50%;
+  transform: rotate(25deg) scaleY(.42);
+}
+.chemai-orb b { transform: rotate(-35deg) scaleY(.46); }
+.chemai-orb em { transform: rotate(88deg) scaleY(.44); }
+
+.chemai-mini-orb { width: 22px; height: 22px; }
+.chemai-mini-orb svg { width: 12px; height: 12px; }
+
+.chemai-header-actions { display: flex; align-items: center; gap: 7px; }
+.chemai-icon-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--cl6-border);
+  border-radius: 12px;
+  color: var(--cl6-muted);
+  background: var(--cl6-surface-soft);
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease, transform .18s ease, border-color .18s ease;
+}
+.chemai-icon-button:hover { color: var(--cl6-text); border-color: var(--cl6-border-strong); background: color-mix(in srgb,var(--cl6-surface-soft) 75%,var(--cl6-violet) 25%); transform: translateY(-1px); }
+.chemai-icon-button svg { width: 18px; height: 18px; }
+
+.chemai-contextbar {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 9px 15px;
+  border-bottom: 1px solid var(--cl6-border);
+  background: color-mix(in srgb, var(--cl6-surface-soft) 68%, transparent);
+}
+.chemai-context-icon { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 10px; color: #bbaeff; background: rgba(155,124,255,.09); }
+.chemai-context-icon svg { width: 16px; height: 16px; }
+.chemai-context-copy { min-width: 0; }
+.chemai-context-copy small { display: block; color: var(--cl6-subtle); font-size: 8px; font-weight: 850; letter-spacing: .1em; }
+.chemai-context-copy strong { display: block; margin-top: 2px; overflow: hidden; color: var(--cl6-text); font-size: 11px; font-weight: 760; text-overflow: ellipsis; white-space: nowrap; }
+
+.chemai-service-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 25px;
+  padding: 0 8px;
+  border: 1px solid var(--cl6-border);
+  border-radius: 999px;
+  color: var(--cl6-muted);
+  background: var(--cl6-surface-soft);
+  font-size: 9px;
+  font-weight: 760;
+}
+.chemai-service-badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--cl6-subtle); }
+.chemai-service-badge.online { color: #71e8ba; border-color: rgba(57,217,138,.22); background: rgba(57,217,138,.07); }
+.chemai-service-badge.online i { background: var(--cl6-green); box-shadow: 0 0 8px rgba(57,217,138,.55); }
+.chemai-service-badge.setup,
+.chemai-service-badge.offline { color: #ffc87f; border-color: rgba(244,180,84,.24); background: rgba(244,180,84,.07); }
+.chemai-service-badge.setup i,
+.chemai-service-badge.offline i { background: var(--cl6-amber); }
+.chemai-service-badge.local { color: #8edfff; border-color: rgba(79,140,255,.24); background: rgba(79,140,255,.07); }
+.chemai-service-badge.local i { background: var(--cl6-blue); }
+
+.chemai-messages {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 16px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139,92,246,.32) transparent;
+}
+.chemai-messages::-webkit-scrollbar { width: 7px; }
+.chemai-messages::-webkit-scrollbar-thumb { border-radius: 99px; background: rgba(139,92,246,.28); }
+
+.chemai-welcome {
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  border: 1px solid var(--cl6-border);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(66,223,207,.09), transparent 16rem),
+    linear-gradient(145deg, rgba(155,124,255,.10), transparent 58%),
+    var(--cl6-surface-soft);
+}
+.chemai-welcome::after { content:''; position:absolute; right:-34px; top:-40px; width:130px; height:130px; border:1px solid rgba(155,124,255,.16); border-radius:50%; box-shadow:0 0 0 22px rgba(155,124,255,.025),0 0 0 44px rgba(85,183,255,.015); }
+.chemai-welcome-mark { display:grid; place-items:center; width:44px; height:44px; border-radius:15px; color:#fff; background:linear-gradient(145deg,#9b7cff,#6278ff); box-shadow:0 10px 24px rgba(109,93,252,.24); }
+.chemai-welcome-mark svg { width:22px; height:22px; }
+.chemai-eyebrow { display:block; margin-top:18px; color:#bcaeff; font-size:9px; font-weight:900; letter-spacing:.13em; }
+.chemai-welcome h3 { max-width:290px; margin:7px 0 8px; color:var(--cl6-text); font-size:23px; line-height:1.08; letter-spacing:-.035em; }
+.chemai-welcome p { position:relative; z-index:1; margin:0; color:var(--cl6-muted); font-size:12.5px; line-height:1.65; }
+.chemai-capabilities { position:relative; z-index:1; display:flex; flex-wrap:wrap; gap:6px; margin-top:16px; }
+.chemai-capabilities span { padding:6px 9px; border:1px solid var(--cl6-border); border-radius:999px; color:var(--cl6-muted); background:color-mix(in srgb,var(--cl6-surface-soft) 75%,transparent); font-size:9.5px; font-weight:700; }
+
+.chemai-message { margin: 0 0 17px; }
+.chemai-message.user { display: grid; justify-items: end; }
+.chemai-message-meta { display: flex; align-items: center; gap: 7px; margin: 0 3px 6px; color: var(--cl6-subtle); font-size: 11px; font-weight: 760; }
+.chemai-message.user .chemai-message-meta { justify-content: flex-end; }
+.chemai-bubble { max-width: 92%; border:1px solid var(--cl6-border); border-radius:18px; color:var(--cl6-text); background:var(--cl6-surface-soft); }
+.chemai-message.user .chemai-bubble { max-width:86%; padding:11px 14px; border-color:rgba(155,124,255,.20); border-bottom-right-radius:6px; background:linear-gradient(135deg,rgba(139,92,246,.19),rgba(79,140,255,.10)); }
+.chemai-message.assistant .chemai-bubble { padding:14px 15px; border-bottom-left-radius:6px; background:color-mix(in srgb,var(--cl6-surface-strong) 72%,transparent); }
+.chemai-bubble p { margin:0; font-size:14px; line-height:1.7; }
+.chemai-answer > * + * { margin-top:10px; }
+.chemai-answer p { color:var(--cl6-text); }
+.chemai-answer ul,
+.chemai-answer ol { margin:8px 0 0; padding-left:20px; color:var(--cl6-text); }
+.chemai-answer li { margin:5px 0; font-size:14px; line-height:1.66; }
+.chemai-answer h3,
+.chemai-answer h4 { margin:12px 0 5px; color:var(--cl6-text); letter-spacing:-.02em; }
+.chemai-answer h3 { font-size:17px; }
+.chemai-answer h4 { font-size:15px; }
+.chemai-answer strong { color:#ddd7ff; }
+.chemai-answer code { padding:2px 5px; border:1px solid var(--cl6-border); border-radius:6px; color:#99e5ff; background:rgba(79,140,255,.08); font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace; font-size:.92em; }
+.chemai-answer pre { overflow:auto; margin:10px 0 0; padding:12px; border:1px solid var(--cl6-border); border-radius:12px; background:rgba(2,5,12,.36); }
+.chemai-answer pre code { padding:0; border:0; background:transparent; }
+.chemai-answer blockquote { margin:10px 0 0; padding:8px 11px; border-left:3px solid var(--chemai-accent); color:var(--cl6-muted); background:rgba(155,124,255,.05); }
+.chemai-equation { overflow-x:auto; margin:10px 0 0; padding:10px 12px; border:1px solid rgba(85,183,255,.18); border-radius:12px; color:#bfe9ff; background:linear-gradient(135deg,rgba(79,140,255,.08),rgba(66,223,207,.045)); font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace; font-size:13.5px; line-height:1.6; white-space:nowrap; }
+
+.chemai-message-tools { display:flex; margin-top:5px; }
+.chemai-message-tools button { display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border:0; border-radius:8px; color:var(--cl6-subtle); background:transparent; font-size:9.5px; cursor:pointer; }
+.chemai-message-tools button:hover { color:var(--cl6-text); background:var(--cl6-surface-soft); }
+.chemai-message-tools svg { width:13px; height:13px; }
+
+.chemai-thinking-dots { display:flex; align-items:center; gap:5px; min-height:18px; }
+.chemai-thinking-dots i { width:6px; height:6px; border-radius:50%; background:#aa9aff; animation:chemaiBounce 1s ease-in-out infinite; }
+.chemai-thinking-dots i:nth-child(2) { animation-delay:.12s; }
+.chemai-thinking-dots i:nth-child(3) { animation-delay:.24s; }
+
+.chemai-response-actions { display:grid; gap:7px; margin:4px 0 18px 29px; }
+.chemai-response-actions button { display:grid; grid-template-columns:1fr auto; align-items:center; min-height:44px; gap:10px; padding:0 12px; border:1px solid rgba(155,124,255,.20); border-radius:12px; color:#c8bcff; background:rgba(155,124,255,.06); text-align:left; font-size:12px; font-weight:780; cursor:pointer; transition:transform .16s ease,border-color .16s ease,background .16s ease; }
+.chemai-response-actions button:hover { transform:translateX(2px); border-color:rgba(155,124,255,.38); background:rgba(155,124,255,.10); }
+.chemai-response-actions svg { width:15px; height:15px; }
+
+.chemai-system-notice { display:grid; grid-template-columns:auto 1fr; gap:10px; margin:0 0 16px; padding:11px 12px; border:1px solid var(--cl6-border); border-radius:14px; color:var(--cl6-muted); background:var(--cl6-surface-soft); }
+.chemai-system-notice > span { display:grid; place-items:center; width:29px; height:29px; border-radius:9px; color:#a99cff; background:rgba(155,124,255,.08); }
+.chemai-system-notice.warning > span { color:#ffc67c; background:rgba(244,180,84,.08); }
+.chemai-system-notice svg { width:15px; height:15px; }
+.chemai-system-notice strong { display:block; color:var(--cl6-text); font-size:11px; }
+.chemai-system-notice p { margin:3px 0 0; font-size:10.5px; line-height:1.5; }
+
+.chemai-suggestions {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  min-height: 0;
+  padding: 6px 15px 10px;
+  scrollbar-width: none;
+}
+.chemai-suggestions::-webkit-scrollbar { display:none; }
+.chemai-suggestions:empty { display:none; }
+.chemai-suggestions button { flex:0 0 auto; max-width:260px; min-height:38px; padding:8px 11px; border:1px solid var(--cl6-border); border-radius:999px; color:var(--cl6-muted); background:var(--cl6-surface-soft); font-size:11px; white-space:nowrap; cursor:pointer; transition:color .16s ease,border-color .16s ease,background .16s ease; }
+.chemai-suggestions button:hover { color:var(--cl6-text); border-color:rgba(155,124,255,.30); background:rgba(155,124,255,.07); }
+
+.chemai-composer { padding: 0 14px 10px; }
+.chemai-input-shell { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:8px; padding:7px 7px 7px 13px; border:1px solid var(--cl6-border-strong); border-radius:18px; background:color-mix(in srgb,var(--cl6-bg-elevated) 76%,transparent); box-shadow:0 9px 28px rgba(0,0,0,.12); transition:border-color .18s ease,box-shadow .18s ease; }
+.chemai-input-shell:focus-within { border-color:rgba(155,124,255,.48); box-shadow:0 0 0 3px rgba(155,124,255,.09),0 12px 30px rgba(0,0,0,.15); }
+.chemai-input-shell textarea { width:100%; max-height:132px; min-height:38px; resize:none; overflow-y:auto; padding:9px 0 6px; border:0; outline:0; color:var(--cl6-text); background:transparent; font-size:14px; line-height:1.55; }
+.chemai-input-shell textarea::placeholder { color:var(--cl6-subtle); }
+.chemai-input-shell textarea:disabled { opacity:.72; }
+.chemai-send { display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; border-radius:13px; color:#fff; background:linear-gradient(145deg,#9b7cff,#6278ff); box-shadow:0 8px 20px rgba(109,93,252,.25); cursor:pointer; transition:transform .16s ease,box-shadow .16s ease,filter .16s ease; }
+.chemai-send:hover { transform:translateY(-1px); box-shadow:0 11px 24px rgba(109,93,252,.31); }
+.chemai-send:active { transform:scale(.97); }
+.chemai-send svg { width:18px; height:18px; }
+.chemai-send-icon.stop { display:none; }
+.chemai-root.is-pending .chemai-send { background:linear-gradient(145deg,#ef6a80,#d55673); }
+.chemai-root.is-pending .chemai-send-icon.send { display:none; }
+.chemai-root.is-pending .chemai-send-icon.stop { display:grid; }
+.chemai-composer-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 4px 0; color:var(--cl6-subtle); font-size:8.5px; }
+
+.chemai-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 15px 11px; border-top:1px solid var(--cl6-border); color:var(--cl6-subtle); background:rgba(0,0,0,.035); font-size:8.5px; }
+.chemai-footer > span { display:inline-flex; align-items:center; gap:5px; }
+.chemai-footer svg { width:12px; height:12px; }
+.chemai-footer small { color:inherit; font-size:inherit; }
+
+:root[data-theme="light"] .chemai-panel,
+html.light .chemai-panel,
+body.light-theme .chemai-panel {
+  --chemai-panel-bg: rgba(255,255,255,.95);
+  box-shadow: 0 28px 74px rgba(44,55,89,.19), 0 0 0 1px rgba(255,255,255,.75) inset;
+}
+:root[data-theme="light"] .chemai-launcher,
+html.light .chemai-launcher,
+body.light-theme .chemai-launcher {
+  color:#29334b;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 14px 36px rgba(55,67,102,.16),0 0 22px rgba(109,93,252,.08);
+}
+:root[data-theme="light"] .chemai-launcher-copy small,
+html.light .chemai-launcher-copy small,
+body.light-theme .chemai-launcher-copy small { color:#6d7890; }
+:root[data-theme="light"] .chemai-answer strong,
+html.light .chemai-answer strong,
+body.light-theme .chemai-answer strong { color:#5642b8; }
+:root[data-theme="light"] .chemai-answer pre,
+html.light .chemai-answer pre,
+body.light-theme .chemai-answer pre { background:#f4f6fb; }
+
+html[data-contrast="high"] .chemai-panel,
+html[data-contrast="high"] .chemai-input-shell,
+html[data-contrast="high"] .chemai-bubble,
+html[data-contrast="high"] .chemai-welcome { border-width:2px; }
+
+@keyframes chemaiSpin { to { transform:rotate(360deg); } }
+@keyframes chemaiBounce { 0%,60%,100% { transform:translateY(0); opacity:.45; } 30% { transform:translateY(-4px); opacity:1; } }
+
+@media (max-width: 1024px) {
+  .chemai-panel { top:78px; right:14px; bottom:14px; width:min(420px,calc(100vw - 28px)); }
+  .chemai-launcher { right:16px; bottom:16px; }
+}
+
+@media (max-width: 767px) {
+  .chemai-launcher {
+    right:14px;
+    bottom:calc(var(--mobile-nav-h,72px) + env(safe-area-inset-bottom) + 18px);
+    width:54px;
+    min-width:54px;
+    height:54px;
+    min-height:54px;
+    padding:6px;
+    justify-content:center;
+  }
+  .chemai-launcher-orb { width:41px; height:41px; }
+  .chemai-launcher-copy { display:none; }
+
+  .chemai-root { z-index:3100; }
+  .chemai-backdrop { pointer-events:auto; background:rgba(2,4,10,.58); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .chemai-panel {
+    top:auto;
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    height:min(88dvh,780px);
+    max-height:calc(100dvh - env(safe-area-inset-top) - 18px);
+    border-right:0;
+    border-bottom:0;
+    border-left:0;
+    border-radius:26px 26px 0 0;
+    transform:translateY(105%);
+    box-shadow:0 -24px 70px rgba(0,0,0,.42);
+  }
+  .chemai-root.is-open .chemai-panel { transform:translateY(0); }
+  .chemai-panel::after { content:''; position:absolute; top:7px; left:50%; width:42px; height:4px; transform:translateX(-50%); border-radius:99px; background:rgba(127,139,166,.28); }
+  .chemai-header { min-height:70px; padding:15px 12px 9px; }
+  .chemai-brand p { font-size:11px; }
+  .chemai-orb { width:40px; height:40px; }
+  .chemai-icon-button { width:44px; height:44px; border-radius:14px; }
+  .chemai-message-tools button { min-height:44px; padding:8px 9px; }
+  .chemai-suggestions button { min-height:44px; padding:9px 12px; font-size:11.5px; }
+  .chemai-response-actions button { min-height:46px; font-size:12.5px; }
+  .chemai-contextbar { min-height:52px; padding:7px 12px; }
+  .chemai-service-badge span { display:none; }
+  .chemai-service-badge { width:24px; min-width:24px; padding:0; justify-content:center; }
+  .chemai-messages { padding:15px 12px 12px; }
+  .chemai-welcome { padding:18px; }
+  .chemai-welcome h3 { font-size:21px; }
+  .chemai-message.user .chemai-bubble { max-width:90%; }
+  .chemai-bubble { max-width:96%; }
+  .chemai-response-actions { margin-left:25px; }
+  .chemai-suggestions { padding-inline:12px; }
+  .chemai-composer { padding:0 10px calc(8px + env(safe-area-inset-bottom)); }
+  .chemai-input-shell textarea { font-size:16px; }
+  .chemai-composer-meta { display:none; }
+  .chemai-footer { display:none; }
+}
+
+@media (max-width: 420px) {
+  .chemai-title-row h2 { font-size:17px; }
+  .chemai-welcome p { font-size:12px; }
+  .chemai-suggestions button { max-width:235px; }
+  .chemai-message.assistant .chemai-bubble { padding:12px 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chemai-launcher,
+  .chemai-panel,
+  .chemai-backdrop,
+  .chemai-icon-button,
+  .chemai-send,
+  .chemai-response-actions button { transition:none; }
+  .chemai-launcher-orb::before,
+  .chemai-thinking-dots i { animation:none; }
+}
+
+/* Keyboard clarity */
+.chemai-launcher:focus-visible,
+.chemai-icon-button:focus-visible,
+.chemai-message-tools button:focus-visible,
+.chemai-response-actions button:focus-visible,
+.chemai-suggestions button:focus-visible,
+.chemai-send:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--chemai-accent) 70%, white 30%);
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  html.chemai-open,
+  html.chemai-open body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
+
+/* =========================================================
+   CHEMLAB 6.2 — FINAL AI POLISH
+========================================================= */
+
+.chemai-backdrop {
+  background: rgba(2,4,10,.19);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+}
+
+.chemai-messages.is-empty {
+  display: flex;
+  align-items: center;
+}
+
+.chemai-messages.is-empty .chemai-welcome {
+  width: 100%;
+}
+
+.chemai-welcome {
+  padding: 24px;
+}
+
+.chemai-welcome-context {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 11px 12px;
+  border: 1px solid rgba(155,124,255,.16);
+  border-radius: 14px;
+  background: linear-gradient(135deg,rgba(155,124,255,.07),rgba(85,183,255,.035));
+}
+
+.chemai-welcome-context > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: #c3b7ff;
+  background: rgba(155,124,255,.10);
+}
+
+.chemai-welcome-context svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chemai-welcome-context small {
+  display: block;
+  color: var(--cl6-subtle);
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: .09em;
+}
+
+.chemai-welcome-context strong {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--cl6-text);
+  font-size: 11.5px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chemai-grounding-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 94%;
+  margin: 6px 0 0 29px;
+  color: var(--cl6-subtle);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.chemai-grounding-note svg {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  color: #8edfff;
+}
+
+.chemai-context-copy strong {
+  font-size: 11.5px;
+}
+
+.chemai-suggestions button {
+  font-size: 11.5px;
+}
+
+.chemai-composer-meta,
+.chemai-footer {
+  font-size: 9.5px;
+}
+
+.chemai-footer {
+  line-height: 1.35;
+}
+
+.chemai-service-badge.online {
+  color: #8ee8d0;
+  border-color: rgba(66,223,207,.24);
+  background: linear-gradient(135deg,rgba(57,217,138,.07),rgba(85,183,255,.05));
+}
+
+@media (max-width: 767px) {
+  .chemai-backdrop {
+    background: rgba(2,4,10,.48);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  .chemai-panel {
+    height: min(88dvh, calc(var(--chemai-viewport-h, 100dvh) - 10px), 780px);
+    max-height: calc(var(--chemai-viewport-h, 100dvh) - 10px);
+  }
+
+  .chemai-messages.is-empty {
+    align-items: flex-start;
+  }
+
+  .chemai-welcome {
+    padding: 19px;
+  }
+
+  .chemai-grounding-note {
+    margin-left: 25px;
+    font-size: 10.5px;
+  }
+}

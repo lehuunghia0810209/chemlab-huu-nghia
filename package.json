@@ -1,17 +1,18 @@
 {
   "name": "khtkchemlab",
-  "version": "6.0.0",
+  "version": "6.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "release:sync": "node scripts/sync-release.mjs",
-    "check": "npm run check:project && npm run check:ui",
+    "check": "npm run check:project && npm run check:ui && npm run check:ai",
     "prebuild": "npm run release:sync && npm run check",
     "build": "vite build",
     "preview": "vite preview",
     "check:project": "node scripts/validate-project.mjs",
-    "check:ui": "node scripts/validate-final-ui.mjs"
+    "check:ui": "node scripts/validate-final-ui.mjs",
+    "check:ai": "node scripts/test-chemai-api.mjs"
   },
   "devDependencies": {
     "sharp": "^0.35.5",

@@ -1,10 +1,10 @@
 /* =========================================================
-   CHEMLAB 6.0.0
+   CHEMLAB 6.2.0
    PRODUCTION SERVICE WORKER
 ========================================================= */
 
 const VERSION =
-  'chemlab-6.0.0'
+  'chemlab-6.2.0'
 
 
 const STATIC_CACHE =
@@ -143,6 +143,22 @@ self.addEventListener(
     if (
       url.origin !==
       self.location.origin
+    ) {
+
+      return
+
+    }
+
+
+    /*
+      API luôn đi thẳng tới network.
+      Không cache trạng thái hoặc câu trả lời ChemAI.
+    */
+
+    if (
+      url.pathname.startsWith(
+        '/api/'
+      )
     ) {
 
       return

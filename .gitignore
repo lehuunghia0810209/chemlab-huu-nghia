@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Local / Cloudflare secrets
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+!.dev.vars.example

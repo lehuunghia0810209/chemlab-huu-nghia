@@ -5371,6 +5371,63 @@ export function initVirtualLab() {
   )
 
 
+  /* =========================================================
+     CHEMAI LAB CONTEXT
+  ========================================================= */
+
+  window.ChemLabLab = Object.freeze({
+
+    context() {
+
+      const snapshot =
+        createLabSnapshot()
+
+
+      return {
+
+        mixture:
+          snapshot.mixture,
+
+        additionHistory:
+          snapshot.additionHistory,
+
+        totalVolume:
+          snapshot.totalVolume,
+
+        temperature:
+          Math.round(
+            Number(snapshot.temperature) * 10
+          ) / 10,
+
+        heating:
+          snapshot.heating,
+
+        currentColor:
+          snapshot.currentColor,
+
+        lastIndicator:
+          snapshot.lastIndicator,
+
+        lastLitmusTest:
+          snapshot.lastLitmusTest,
+
+        precipitate:
+          snapshot.precipitate,
+
+        triggeredReactionIds:
+          snapshot.triggeredReactionIds,
+
+        guided:
+          window.ChemLabGuidedLab?.context?.() ||
+          null
+
+      }
+
+    }
+
+  })
+
+
   scheduleAnimationLoop()
 
 }

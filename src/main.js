@@ -71,6 +71,7 @@ import './userPreferences.css'
 import './zperiodLight.css'
 import './experience.css'
 import './final/final-6.css'
+import './ai/chemAI.css'
 
 
 /* =========================================================
@@ -188,6 +189,13 @@ function icon(
         <path d="M3 10.5 12 3l9 7.5"/>
         <path d="M5 9.5V21h14V9.5"/>
         <path d="M9 21v-6h6v6"/>
+      </svg>
+    `,
+
+    ai: `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z"/>
+        <path d="m18.5 14 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/>
       </svg>
     `,
 
@@ -412,6 +420,15 @@ const COMMANDS = [
     icon: 'home',
     view: 'home',
     keywords: 'trang chu home dashboard tong quan'
+  },
+
+  {
+    group: 'Trợ lý',
+    name: 'ChemAI',
+    description: 'Hỏi trợ lý Hóa học theo ngữ cảnh',
+    icon: 'ai',
+    ai: true,
+    keywords: 'ai chemai tro ly hoa hoc hoi dap tutor'
   },
 
   {
@@ -768,6 +785,17 @@ app.innerHTML = `
 
 
         <button
+          class="v5-top-button chemai-top-button"
+          type="button"
+          data-chemai-open
+          aria-label="Mở ChemAI"
+          title="ChemAI"
+        >
+          ${icon('ai')}
+        </button>
+
+
+        <button
           class="v5-top-button"
           type="button"
           data-app-view="learning"
@@ -996,6 +1024,21 @@ app.innerHTML = `
       class="element-drawer"
       aria-hidden="true"
     ></aside>
+
+
+    <button
+      class="chemai-launcher"
+      type="button"
+      data-chemai-open
+      aria-label="Mở ChemAI — trợ lý Hóa học"
+      title="Mở ChemAI"
+    >
+      <span class="chemai-launcher-orb">${icon('ai')}</span>
+      <span class="chemai-launcher-copy">
+        <strong>ChemAI</strong>
+        <small>HỎI TRỢ LÝ</small>
+      </span>
+    </button>
 
   </div>
 
@@ -1387,6 +1430,53 @@ safeInit(
 safeInit(
   'User Preferences',
   initUserPreferences
+)
+
+
+/* =========================================================
+   CHEMAI — LAZY INTEGRATION
+========================================================= */
+
+let chemAIPromise = null
+
+async function ensureChemAI(
+  initialPrompt = ''
+) {
+
+  if (!chemAIPromise) {
+    chemAIPromise = import('./ai/chemAI.js')
+      .then(module =>
+        module.initChemAI({
+          version: APP_VERSION
+        })
+      )
+      .catch(error => {
+        chemAIPromise = null
+        console.error(
+          `[ChemLab ${APP_VERSION}] Không thể tải ChemAI:`,
+          error
+        )
+        announceMessage(
+          'Không thể tải ChemAI. Hãy thử lại.'
+        )
+        throw error
+      })
+  }
+
+  const api = await chemAIPromise
+  api.open(initialPrompt)
+  return api
+}
+
+
+document.addEventListener(
+  'click',
+  event => {
+    const trigger = event.target.closest('[data-chemai-open]')
+    if (!trigger) return
+
+    void ensureChemAI()
+  }
 )
 
 
@@ -2026,6 +2116,12 @@ function runCommand(
   closeCommandPalette()
 
 
+  if (item.ai) {
+    void ensureChemAI()
+    return
+  }
+
+
   switchView(
     item.view,
     {
@@ -2142,6 +2238,25 @@ document.addEventListener(
       isTyping(
         event.target
       )
+
+
+    /* CTRL / CMD + SHIFT + A — CHEMAI */
+
+    if (
+      (
+        event.ctrlKey ||
+        event.metaKey
+      ) &&
+      event.shiftKey &&
+      event.key.toLowerCase() ===
+        'a'
+    ) {
+
+      event.preventDefault()
+      void ensureChemAI()
+      return
+
+    }
 
 
     /* CTRL / CMD + K */
@@ -2610,7 +2725,7 @@ function loadLastView() {
 /* =========================================================
    PUBLIC APP CONTEXT API
 
-   Stable bridge for future integrations (ChemAI 6.1 included).
+   Stable bridge for the final ChemAI integration in ChemLab 6.2.
 ========================================================= */
 
 function getAppContext() {
@@ -2620,6 +2735,15 @@ function getAppContext() {
     view: currentView || 'home',
     tool:
       window.ChemLabTools?.current?.() ||
+      null,
+    chemFlow:
+      window.ChemLabContext?.current ||
+      null,
+    learning:
+      window.ChemLabLearning?.context?.() ||
+      null,
+    lab:
+      window.ChemLabLab?.context?.() ||
       null,
     progress:
       getProgressSummary(),
@@ -2657,6 +2781,16 @@ window.ChemLabApp = Object.freeze({
       .openToolWhenReady(
         toolId
       )
+
+  },
+
+  openChemAI(
+    prompt = ''
+  ) {
+
+    return ensureChemAI(
+      prompt
+    )
 
   },
 

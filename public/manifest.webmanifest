@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "ChemLab 6.0.0 — Hữu Nghĩa Edition",
+  "name": "ChemLab 6.2.0 — Hữu Nghĩa Edition",
   "short_name": "ChemLab",
-  "description": "ChemLab 6 — nền tảng Hóa học tích hợp: Bảng tuần hoàn, Công cụ, Learning, Chem Flow và Virtual Lab.",
+  "description": "ChemLab 6.2 Final — nền tảng Hóa học tích hợp ChemAI Gemini: Bảng tuần hoàn, Công cụ, Learning, Chem Flow và Virtual Lab.",
   "lang": "vi",
   "start_url": "/#home",
   "scope": "/",

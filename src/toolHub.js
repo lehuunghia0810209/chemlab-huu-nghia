@@ -453,6 +453,22 @@ export function initToolHub() {
       )
 
     if (selectedTool?.launcher) {
+      activeTool = toolId
+      saveActiveTool(toolId)
+
+      window.dispatchEvent(
+        new CustomEvent(
+          'chemlab:tool-change',
+          {
+            detail: {
+              tool: toolId,
+              title: selectedTool.title,
+              launcher: true
+            }
+          }
+        )
+      )
+
       void launchStudio(
         selectedTool.launcher
       )
@@ -529,6 +545,19 @@ export function initToolHub() {
       .textContent =
       tool?.title ||
       'Công cụ'
+
+    window.dispatchEvent(
+      new CustomEvent(
+        'chemlab:tool-change',
+        {
+          detail: {
+            tool: toolId,
+            title: tool?.title || 'Công cụ',
+            launcher: false
+          }
+        }
+      )
+    )
 
     if (userAction) {
       const reduceMotion =

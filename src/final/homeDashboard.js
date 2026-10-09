@@ -115,7 +115,7 @@ export function createHomeDashboard({
           </div>
 
           <div class="cl6-hero-copy">
-            <span class="cl6-kicker">CHEMLAB 6 · FINAL EVOLUTION</span>
+            <span class="cl6-kicker">CHEMLAB 6.2 · FINAL</span>
             <h1 id="cl6-home-title">Một không gian Hóa học. Mọi thứ kết nối.</h1>
             <p>
               Khám phá nguyên tố, giải bài, học theo lộ trình và kiểm chứng kiến thức
@@ -129,6 +129,10 @@ export function createHomeDashboard({
               <button class="cl6-button ghost" type="button" data-app-view="periodic">
                 ${icon('table')}
                 <span>Khám phá bảng tuần hoàn</span>
+              </button>
+              <button class="cl6-button ghost cl6-ai-cta" type="button" data-chemai-open>
+                ${icon('spark')}
+                <span>Hỏi ChemAI</span>
               </button>
             </div>
           </div>
@@ -240,11 +244,11 @@ export function createHomeDashboard({
 
         <section class="cl6-section cl6-final-banner">
           <div>
-            <span class="cl6-kicker">FINAL CORE RELEASE</span>
-            <h2>ChemLab 6.0 được xây để học, thử và hiểu — không chỉ để tra cứu.</h2>
-            <p>Periodic → Ion → Compound → Reaction → Lab → Learning. Một luồng Hóa học thống nhất.</p>
+            <span class="cl6-kicker">CHEMAI RELEASE</span>
+            <h2>ChemLab 6.2 hoàn thiện toàn bộ trải nghiệm học, khám phá và thực hành Hóa học với ChemAI.</h2>
+            <p>Periodic → Tools → Learning → Lab → ChemAI. Trợ lý hiểu ngữ cảnh của toàn bộ workspace.</p>
           </div>
-          <span class="cl6-final-mark">6.0</span>
+          <span class="cl6-final-mark">6.2</span>
         </section>
       </div>
     `

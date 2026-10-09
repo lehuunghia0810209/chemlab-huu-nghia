@@ -3748,6 +3748,79 @@ export function initQuiz() {
 
 
   /* =====================================================
+     CHEMAI LEARNING CONTEXT
+  ===================================================== */
+
+  window.ChemLabLearning = Object.freeze({
+
+    context() {
+
+      const activeQuestion =
+        session?.questions?.[session.index] ||
+        null
+
+
+      return {
+
+        mode:
+          selectedMode,
+
+        topic:
+          selectedTopic,
+
+        topicName:
+          selectedTopic === 'all'
+            ? 'Tất cả chủ đề'
+            : TOPICS[selectedTopic]?.name || selectedTopic,
+
+        difficulty:
+          selectedDifficulty,
+
+        selectedCount,
+
+        session:
+          session
+            ? {
+                index:
+                  session.index,
+
+                total:
+                  session.questions.length,
+
+                correct:
+                  session.correct,
+
+                wrong:
+                  session.wrong,
+
+                xp:
+                  session.xp,
+
+                answered:
+                  session.answered,
+
+                questionId:
+                  activeQuestion?.id || null,
+
+                questionTopic:
+                  activeQuestion?.topic || null,
+
+                question:
+                  activeQuestion?.question || null
+              }
+            : null,
+
+        summary:
+          getProgressSummary()
+
+      }
+
+    }
+
+  })
+
+
+  /* =====================================================
      SINGLE ACTIVE
   ===================================================== */
 

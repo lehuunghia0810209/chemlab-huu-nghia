@@ -239,6 +239,44 @@ export function initGuidedExperiments() {
     null
 
 
+  window.ChemLabGuidedLab = Object.freeze({
+
+    context() {
+
+      return {
+
+        mode,
+
+        grade:
+          currentGrade,
+
+        lessonId:
+          currentLessonId,
+
+        experiment:
+          currentExperiment
+            ? {
+                id:
+                  currentExperiment.id,
+
+                title:
+                  currentExperiment.title,
+
+                lessonId:
+                  currentExperiment.lessonId,
+
+                grade:
+                  currentExperiment.grade
+              }
+            : null
+
+      }
+
+    }
+
+  })
+
+
   let startingExperiment =
     false
 
