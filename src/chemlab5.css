@@ -1808,21 +1808,6 @@ button {
    FOCUS
 ========================================================= */
 
-:is(
-  button,
-  input:not(.ui-switch):not(.ui-input):not(.ui-select),
-  select:not(.ui-switch):not(.ui-input):not(.ui-select),
-  textarea,
-  a
-):focus-visible {
-  outline:
-    2px solid
-    rgba(167,139,250,.72);
-
-  outline-offset:
-    2px;
-}
-
 
 /* =========================================================
    BOOT

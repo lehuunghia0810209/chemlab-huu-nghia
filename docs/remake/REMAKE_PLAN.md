@@ -49,6 +49,8 @@ Mỗi milestone: `npm run check`, `npm run build`, Playwright ở 360/390/768/10
 
 - **M5** — Học tập: `quiz.css` chuyển token, nhãn Việt hóa, gỡ 92 rule legacy. **Sửa lỗi tích hợp:** câu trả lời luyện tập trước đây chỉ lưu ở `chemlab-learning-4.7`, không bao giờ gọi `recordLearningAnswer` → độ chính xác/XP trên Tổng quan luôn bằng 0; nay được ghi vào `chemlab-v1-progress` (có kiểm thử trình duyệt: trả lời → tải lại → còn nguyên).
 
+- **M6** — ChemAI: CSS chuyển token (giữ các ràng buộc mobile đã được kiểm định: 52px, 88dvh, safe-area, visualViewport), nhãn Việt hóa, biến `--cl6-*` thay bằng token. **Sửa lỗi có từ trước:** cột lưới của panel co theo hàng gợi ý (752px) làm bottom sheet rộng 420px trên điện thoại 390px, nút đóng bị cắt. Gỡ 13 rule focus legacy toàn cục (viền tím đè vòng focus thống nhất). Kiểm thử mới: mọi nút ChemAI trong viewport 390px, nút gửi bấm được và ≥ 44px.
+
 ## Ranh giới
 
 Không đổi: dữ liệu hóa học, curriculum, điều kiện hoàn thành guided experiment, storage keys/format, `/api/chat`, phiên bản `6.2.0`.

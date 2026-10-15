@@ -260,6 +260,28 @@ async function interactionChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- ChemAI on a phone ---------- */
+async function chemAIPhoneCheck(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
+  await openView(page, baseURL, 'home')
+  await page.click('.app-topbar__ai')
+  await page.waitForSelector('.chemai-root.is-open .chemai-panel', { timeout: 10000 })
+  await page.waitForTimeout(500)
+  const state = await page.evaluate(() => {
+    const buttons = [...document.querySelectorAll('.chemai-panel button')].filter(b => b.offsetParent && !b.closest('.chemai-suggestions'))
+    const offscreen = buttons.filter(b => b.getBoundingClientRect().right > innerWidth + 1).map(b => b.getAttribute('aria-label') || b.textContent.trim())
+    const send = document.querySelector('.chemai-panel button[type="submit"], .chemai-send')
+    const r = send?.getBoundingClientRect()
+    const hit = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+    return { offscreen, sendReachable: Boolean(send && send.contains(hit)), sendSize: r ? [Math.round(r.width), Math.round(r.height)] : null }
+  })
+  record('ChemAI phone sheet: controls on screen, send button reachable and ≥ 44px',
+    !state.offscreen.length && state.sendReachable && state.sendSize[0] >= 44 && state.sendSize[1] >= 44, JSON.stringify(state))
+  await page.keyboard.press('Escape')
+  record('console clean in ChemAI phone flow', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- PWA ---------- */
 async function pwaCheck(browser, baseURL) {
   const { context, page } = await newPage(browser, { width: 1280, height: 800, theme: 'dark', serviceWorkers: 'allow' })
@@ -286,7 +308,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

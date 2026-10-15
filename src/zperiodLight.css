@@ -672,32 +672,6 @@ html[data-theme="light"]
 
 
 html[data-theme="light"]
-:is(
-  input:not(.ui-switch):not(.ui-input):not(.ui-select),
-  select:not(.ui-switch):not(.ui-input):not(.ui-select),
-  textarea
-):focus {
-
-  border-color:
-    var(--zp-purple-border)
-    !important;
-
-  background:
-    #ffffff
-    !important;
-
-  outline:
-    none
-    !important;
-
-  box-shadow:
-    0 0 0 4px
-    rgba(139,107,232,.075)
-    !important;
-}
-
-
-html[data-theme="light"]
 input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder,
 
 html[data-theme="light"]

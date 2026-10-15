@@ -235,7 +235,7 @@ export function initChemAI({ version = '6.2.0' } = {}) {
       <div class="chemai-contextbar">
         <span class="chemai-context-icon">${icon('context')}</span>
         <div class="chemai-context-copy">
-          <small>NGỮ CẢNH HIỆN TẠI</small>
+          <small>Ngữ cảnh hiện tại</small>
           <strong id="chemai-context-label">ChemLab</strong>
         </div>
         <span id="chemai-service-badge" class="chemai-service-badge checking">
@@ -375,7 +375,7 @@ export function initChemAI({ version = '6.2.0' } = {}) {
     messagesEl.innerHTML = `
       <section class="chemai-welcome">
         <span class="chemai-welcome-mark">${icon('spark')}</span>
-        <span class="chemai-eyebrow">CHEMAI FINAL · HIỂU NGỮ CẢNH</span>
+        <span class="chemai-eyebrow">Trợ lý hiểu ngữ cảnh</span>
         <h3>Hỏi ngay trong lúc bạn đang học.</h3>
         <p>
           ChemAI dùng Gemini cùng dữ liệu của ChemLab để giải thích bằng tiếng Việt,
@@ -384,7 +384,7 @@ export function initChemAI({ version = '6.2.0' } = {}) {
         <div class="chemai-welcome-context">
           <span>${icon('context')}</span>
           <div>
-            <small>ĐANG HỖ TRỢ</small>
+            <small>Đang hỗ trợ</small>
             <strong>${escapeHTML(getContextLabel(lastContext))}</strong>
           </div>
         </div>

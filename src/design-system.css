@@ -184,23 +184,6 @@ textarea::placeholder {
 }
 
 
-:is(
-  button,
-  input:not(.ui-switch):not(.ui-input):not(.ui-select),
-  select:not(.ui-switch):not(.ui-input):not(.ui-select),
-  textarea,
-  a,
-  [tabindex]
-):focus-visible {
-  outline:
-    3px solid
-    var(--cl-focus);
-
-  outline-offset:
-    3px;
-}
-
-
 .sr-only {
   position:
     absolute;

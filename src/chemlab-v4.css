@@ -222,19 +222,6 @@ button:not(:disabled):active {
 }
 
 
-button:focus-visible,
-input:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
-select:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
-textarea:focus-visible {
-  outline:
-    2px solid
-    rgba(155,92,255,.95);
-
-  outline-offset:
-    3px;
-}
-
-
 /* =========================================================
    WORKSPACE
 ========================================================= */

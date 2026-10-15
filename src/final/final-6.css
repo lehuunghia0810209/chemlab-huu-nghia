@@ -69,16 +69,6 @@ textarea {
   font: inherit;
 }
 
-button:focus-visible,
-a:focus-visible,
-input:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
-select:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible {
-  outline: none;
-  box-shadow: var(--cl6-focus);
-}
-
 .workspace-app {
   min-height: 100dvh;
   background: transparent;
