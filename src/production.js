@@ -77,7 +77,10 @@ function initProduction() {
     closeMenu,
 
     install:
-      installApplication
+      installApplication,
+
+    canInstall: () =>
+      Boolean(installPrompt)
 
   }
 
@@ -143,11 +146,11 @@ function finishBoot() {
               setTimeout(
                 () =>
                   boot.remove(),
-                450
+                260
               )
 
             },
-            350
+            0
           )
 
         }
@@ -371,7 +374,19 @@ function createProductLauncher() {
   `
 
 
-  document.body
+  // The app shell provides a slot in the sidebar; fall back to body when absent.
+  const slot =
+    document.querySelector(
+      '#app-product-slot'
+    )
+
+  if (slot) {
+    launcher.classList.add(
+      'is-docked'
+    )
+  }
+
+  ;(slot || document.body)
     .appendChild(
       launcher
     )

@@ -399,6 +399,14 @@ export function initPeriodicWorkspace({
   )
 
 
+  window.ChemLabPeriodic = Object.freeze({
+    openElement: number =>
+      openElement(
+        Number(number)
+      )
+  })
+
+
   /* =====================================================
      STATE
   ===================================================== */

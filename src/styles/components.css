@@ -1,0 +1,633 @@
+/* =========================================================
+   CHEMLAB UI COMPONENTS
+   Prefix ui-*. Built only on semantic tokens.
+========================================================= */
+
+/* ---------- icon ---------- */
+.ui-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  stroke-width: 1.75;
+}
+
+.ui-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: inherit;
+}
+
+/* ---------- button ---------- */
+.ui-btn {
+  --btn-bg: var(--surface-2);
+  --btn-fg: var(--text-primary);
+  --btn-border: var(--border-default);
+  --btn-bg-hover: var(--surface-3);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-md);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  user-select: none;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.ui-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+.ui-btn:active {
+  transform: translateY(1px) scale(.985);
+}
+
+.ui-btn:disabled {
+  opacity: .5;
+  transform: none;
+}
+
+.ui-btn .ui-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.ui-btn--primary {
+  --btn-bg: var(--accent);
+  --btn-bg-hover: var(--accent-strong);
+  --btn-fg: var(--text-on-accent);
+  --btn-border: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-btn--primary:hover {
+  box-shadow: var(--glow-accent);
+}
+
+.ui-btn--ghost {
+  --btn-bg: transparent;
+  --btn-border: transparent;
+  --btn-bg-hover: var(--surface-hover);
+  --btn-fg: var(--text-secondary);
+}
+
+.ui-btn--ghost:hover {
+  color: var(--text-primary);
+}
+
+.ui-btn--danger {
+  --btn-bg: var(--status-danger-soft);
+  --btn-fg: var(--status-danger);
+  --btn-border: transparent;
+}
+
+.ui-btn--sm {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
+}
+
+.ui-btn--lg {
+  min-height: 52px;
+  padding: 0 var(--space-6);
+  font-size: var(--text-md);
+  border-radius: var(--radius-lg);
+}
+
+.ui-btn--block {
+  width: 100%;
+}
+
+/* ---------- icon button ---------- */
+.ui-icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  flex: none;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.ui-icon-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.ui-icon-btn:active {
+  transform: scale(.94);
+}
+
+.ui-icon-btn[aria-pressed='true'],
+.ui-icon-btn.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.ui-icon-btn--outlined {
+  border-color: var(--border-default);
+  background: var(--surface-1);
+}
+
+.ui-icon-btn .ui-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+}
+
+/* ---------- card ---------- */
+.ui-card {
+  position: relative;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-card--interactive {
+  cursor: pointer;
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.ui-card--interactive:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.ui-card--interactive:active {
+  transform: translateY(0);
+}
+
+/* ---------- eyebrow / section head ---------- */
+.ui-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--accent-text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: .02em;
+}
+
+.ui-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.ui-section-head h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: -.01em;
+}
+
+.ui-section-head p {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------- chip / badge / kbd / dot ---------- */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.ui-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.ui-chip[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.ui-badge--accent { background: var(--accent-soft); color: var(--accent-text); }
+.ui-badge--success { background: var(--status-success-soft); color: var(--status-success); }
+.ui-badge--warning { background: var(--status-warning-soft); color: var(--status-warning); }
+.ui-badge--danger { background: var(--status-danger-soft); color: var(--status-danger); }
+
+.ui-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 .375rem;
+  border: 1px solid var(--border-default);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: .75rem;
+  font-weight: var(--weight-medium);
+  line-height: 1;
+}
+
+.ui-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--status-success);
+}
+
+/* ---------- segmented control ---------- */
+.ui-segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-sunken);
+}
+
+.ui-segmented button {
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: calc(var(--radius-md) - 3px);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.ui-segmented button:hover {
+  color: var(--text-primary);
+}
+
+.ui-segmented button[aria-pressed='true'],
+.ui-segmented button.active {
+  background: var(--surface-2);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--border-subtle);
+}
+
+/* ---------- input ---------- */
+.ui-input {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.ui-input::placeholder {
+  color: var(--text-muted);
+}
+
+.ui-input:hover {
+  border-color: var(--border-strong);
+}
+
+.ui-input:focus-visible {
+  border-color: var(--accent);
+}
+
+/* ---------- progress ---------- */
+.ui-progress {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+}
+
+.ui-progress > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--value, 0%);
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+/* ---------- skeleton ---------- */
+.ui-skeleton {
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(90deg, transparent, var(--surface-hover), transparent) 0 0 / 200% 100%,
+    var(--surface-2);
+  animation: ui-shimmer 1.4s linear infinite;
+}
+
+@keyframes ui-shimmer {
+  to { background-position: -200% 0, 0 0; }
+}
+
+/* ---------- empty / error state ---------- */
+.ui-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.ui-state strong {
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.ui-state--error strong {
+  color: var(--status-danger);
+}
+
+/* ---------- overlay surfaces: dialog & sheet ---------- */
+.ui-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: rgba(3, 7, 15, .55);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.ui-scrim.is-open {
+  opacity: 1;
+}
+
+.ui-dialog {
+  position: fixed;
+  z-index: var(--z-dialog);
+  top: 50%;
+  left: 50%;
+  width: min(520px, calc(100vw - 2 * var(--space-4)));
+  max-height: min(84dvh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translate(-50%, -48%) scale(.98);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.ui-dialog.is-open {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.ui-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-3);
+}
+
+.ui-dialog__head h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+.ui-dialog__head p {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.ui-dialog__body {
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-5) var(--space-5);
+  overscroll-behavior: contain;
+}
+
+.ui-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 767px) {
+  /* Dialogs become bottom sheets on phones */
+  .ui-dialog {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding-bottom: var(--safe-bottom);
+    transform: translateY(100%);
+  }
+
+  .ui-dialog.is-open {
+    transform: none;
+  }
+
+  .ui-dialog::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: var(--space-2) auto 0;
+    border-radius: var(--radius-full);
+    background: var(--border-strong);
+  }
+}
+
+/* ---------- setting row ---------- */
+.ui-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ui-setting:last-child {
+  border-bottom: 0;
+}
+
+.ui-setting__copy strong {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+.ui-setting__copy span {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 479px) {
+  .ui-setting {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ---------- switch ---------- */
+.ui-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  flex: none;
+  margin: 0;
+  appearance: none;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.ui-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.ui-switch:checked {
+  background: var(--accent);
+}
+
+.ui-switch:checked::after {
+  transform: translateX(18px);
+}
+
+/* ---------- toast ---------- */
+.ui-toast-region {
+  position: fixed;
+  z-index: var(--z-toast);
+  left: 50%;
+  bottom: calc(var(--space-6) + var(--safe-bottom));
+  display: grid;
+  gap: var(--space-2);
+  width: min(420px, calc(100vw - 2 * var(--space-4)));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ui-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  pointer-events: auto;
+  animation: ui-toast-in var(--dur-slow) var(--ease-out);
+}
+
+@keyframes ui-toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+}
+
+/* ---------- page head (used by workspaces) ---------- */
+.ui-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.ui-page-head h1 {
+  margin: var(--space-1) 0 0;
+  font-size: clamp(var(--text-2xl), 2.4vw + .5rem, var(--text-4xl));
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -.025em;
+}
+
+.ui-page-head p {
+  max-width: 60ch;
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+}

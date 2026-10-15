@@ -25,7 +25,10 @@ const [
   headers,
   gitignore,
   manifest,
-  devVars
+  devVars,
+  tokensCss,
+  shellCss,
+  production
 ] = await Promise.all([
   read('package.json'),
   read('src/main.js'),
@@ -45,7 +48,10 @@ const [
   read('public/_headers'),
   read('.gitignore'),
   read('public/manifest.webmanifest'),
-  read('.dev.vars.example')
+  read('.dev.vars.example'),
+  read('src/styles/tokens.css'),
+  read('src/styles/shell.css'),
+  read('src/production.js')
 ])
 
 const pkg = JSON.parse(packageText)
@@ -70,17 +76,20 @@ expect('home view exists in app shell', main.includes('id="view-home"'))
 expect('home nav entry exists', /navButton\(\s*['"]home['"]\s*,\s*['"]home['"]\s*,\s*['"]Tổng quan['"]/.test(main))
 expect('v6 storage key is used', main.includes("'chemlab-v6-last-view'"))
 expect('route loader marks home ready', /home:\s*\{\s*status:\s*'ready'/.test(loader))
-expect('dashboard still has Chem Flow', home.includes('CHEM FLOW'))
-expect('dashboard identifies final 6.2', home.includes('CHEMLAB 6.2 · FINAL'))
+expect('dashboard still has Chem Flow', home.includes('Chem Flow') && home.includes('data-app-tool="reaction"'))
+expect('dashboard renders real progress data', home.includes('getProgressSummary') && home.includes('getGradeSummary'))
 expect('Tool Center exposes Compound Studio', toolHub.includes("id: 'compound'"))
 expect('Tool Center exposes Reaction Studio', toolHub.includes("id: 'reaction'"))
 expect('core final tokens exist', finalCss.includes('--cl6-violet:'))
-expect('mobile core nav supports 5 routes', finalCss.includes('grid-template-columns:repeat(5,1fr)'))
+expect('mobile core nav supports 5 routes', shellCss.includes('.app-bottom-nav') && shellCss.includes('grid-template-columns: repeat(5, 1fr)'))
+expect('design tokens define dark and light themes', tokensCss.includes('--bg-app:') && tokensCss.includes("html[data-theme='light']"))
+expect('design tokens honour reduced motion', tokensCss.includes('prefers-reduced-motion'))
+expect('product launcher docks into the shell instead of floating', production.includes('#app-product-slot') && main.includes('id="app-product-slot"'))
 
 /* ChemAI integration */
 expect('ChemAI is lazy-loaded', main.includes("import('./ai/chemAI.js')"))
 expect('ChemAI topbar trigger exists', main.includes('data-chemai-open'))
-expect('ChemAI floating launcher exists', main.includes('chemai-launcher'))
+expect('ChemAI entry exists in sidebar and mobile top bar', main.includes('app-ai-entry') && main.includes('app-topbar__ai'))
 expect('ChemLabApp exposes final openChemAI API', /openChemAI\(\s*prompt/.test(main))
 expect('command palette exposes ChemAI', main.includes("name: 'ChemAI'"))
 expect('dashboard exposes ChemAI CTA', home.includes('Hỏi ChemAI') && home.includes('data-chemai-open'))

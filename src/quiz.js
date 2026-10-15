@@ -2252,11 +2252,8 @@ export function initQuiz() {
           }
 
 
-          document
-            .querySelector(
-              '.sidebar-button[data-view="lab"]'
-            )
-            ?.click()
+          window.ChemLabApp
+            ?.navigate('lab')
 
 
           window.dispatchEvent(

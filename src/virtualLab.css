@@ -11,7 +11,7 @@
 .vl-live i{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 14px #22c55e}
 .vl-live b{font-size: var(--cl-text-body);color:#fff}
 
-.vl-layout{display:grid;grid-template-columns:320px minmax(780px,1fr) 300px;gap:18px}
+.vl-layout{display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr) minmax(260px,300px);gap:18px}
 .vl-shelf,.vl-side{padding:18px}
 .vl-shelf h3,.vl-side h3{margin:10px 0 0;font-size:28px;font-weight:900;color:#fff}
 
@@ -125,8 +125,10 @@
 @keyframes flickerA{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(.93,1.07)}}
 @keyframes flickerB{from{transform:translateX(-50%) scale(1);opacity:.86}to{transform:translateX(-50%) scale(1.08,.95);opacity:1}}
 
-@media (max-width:1450px){
-  .vl-layout{grid-template-columns:300px minmax(680px,1fr) 280px}
+/* The app sidebar can take up to 248px, so three columns only fit on wide screens. */
+@media (max-width:1599px){
+  .vl-layout{grid-template-columns:minmax(260px,300px) minmax(0,1fr)}
+  .vl-side{grid-column:1/-1}
   .vl-head h2{font-size:46px}
 }
 @media (max-width:1200px){

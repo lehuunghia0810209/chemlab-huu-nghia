@@ -100,44 +100,20 @@ export function createRouteModuleLoader({
   ) {
     if (!host) return
 
-    host
-      .querySelector('.v5-view-loader')
-      ?.remove()
+    host.querySelector('.app-view-loader')?.remove()
 
-    const loader =
-      document.createElement('section')
-
-    loader.className =
-      'v5-view-loader'
-
-    loader.setAttribute(
-      'role',
-      'status'
-    )
-
-    loader.setAttribute(
-      'aria-live',
-      'polite'
-    )
-
+    const loader = document.createElement('section')
+    loader.className = 'app-view-loader'
+    loader.setAttribute('role', 'status')
+    loader.setAttribute('aria-live', 'polite')
     loader.innerHTML = `
-      <div class="v5-loader-head">
-        <span class="v5-loader-orbit" aria-hidden="true">
-          <i></i>
-        </span>
-
-        <div>
-          <strong>Đang chuẩn bị ${label}</strong>
-          <span>
-            ChemLab chỉ tải module khi bạn cần để mở trang nhanh hơn.
-          </span>
-        </div>
-      </div>
-
-      <div class="v5-loader-grid" aria-hidden="true">
-        <span></span>
-        <span></span>
-        <span></span>
+      <span class="sr-only">Đang tải ${label}…</span>
+      <div class="ui-skeleton app-view-loader__title" aria-hidden="true"></div>
+      <div class="ui-skeleton app-view-loader__line" aria-hidden="true"></div>
+      <div class="app-view-loader__grid" aria-hidden="true">
+        <div class="ui-skeleton"></div>
+        <div class="ui-skeleton"></div>
+        <div class="ui-skeleton"></div>
       </div>
     `
 
@@ -146,7 +122,7 @@ export function createRouteModuleLoader({
 
   function clearViewLoading(host) {
     host
-      ?.querySelector('.v5-view-loader')
+      ?.querySelector('.app-view-loader')
       ?.remove()
   }
 
@@ -159,33 +135,15 @@ export function createRouteModuleLoader({
 
     clearViewLoading(host)
 
-    host
-      .querySelector('.v5-route-error')
-      ?.remove()
+    host.querySelector('.app-route-error')?.remove()
 
-    const node =
-      document.createElement('section')
-
-    node.className =
-      'v5-route-error'
-
+    const node = document.createElement('section')
+    node.className = 'ui-state ui-state--error app-route-error'
+    node.setAttribute('role', 'alert')
     node.innerHTML = `
-      <div class="v5-route-error-icon" aria-hidden="true">!</div>
-
-      <div>
-        <strong>Chưa tải được ${label}</strong>
-        <p>
-          Kết nối hoặc một file module có thể đang gặp lỗi.
-          Các khu vực khác của ChemLab vẫn hoạt động bình thường.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        data-retry-view="${viewName}"
-      >
-        Thử lại
-      </button>
+      <strong>Chưa tải được ${label}</strong>
+      <span>Kết nối hoặc một tệp của mô-đun đang gặp lỗi. Các khu vực khác của ChemLab vẫn hoạt động.</span>
+      <button class="ui-btn ui-btn--primary" type="button" data-retry-view="${viewName}">Thử lại</button>
     `
 
     host.prepend(node)
@@ -453,7 +411,7 @@ export function createRouteModuleLoader({
     )
 
     route.host
-      ?.querySelector('.v5-route-error')
+      ?.querySelector('.app-route-error')
       ?.remove()
 
     renderViewLoading(

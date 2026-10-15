@@ -12,7 +12,7 @@ export function initAccessibility() {
 
   const app =
     document.querySelector(
-      '.workspace-app'
+      '#app-shell'
     )
 
 

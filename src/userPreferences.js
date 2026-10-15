@@ -1,757 +1,328 @@
-const STORAGE_KEY =
-  'chemlab-v5-user-preferences'
+/* =========================================================
+   USER PREFERENCES
+   Storage key and value format are unchanged from ChemLab 5
+   so existing users keep their settings.
+========================================================= */
 
+import { icon } from './shell/icons.js'
 
-const DEFAULTS = {
+const STORAGE_KEY = 'chemlab-v5-user-preferences'
 
-  theme:
-    'system',
+const DEFAULTS = Object.freeze({
+  theme: 'system',
+  fontSize: 'normal',
+  density: 'comfortable',
+  reduceMotion: false,
+  highContrast: false
+})
 
-  fontSize:
-    'normal',
+const ALLOWED = Object.freeze({
+  theme: ['system', 'dark', 'light'],
+  fontSize: ['small', 'normal', 'large'],
+  density: ['comfortable', 'compact']
+})
 
-  density:
-    'comfortable',
+const systemLight = window.matchMedia('(prefers-color-scheme: light)')
 
-  reduceMotion:
-    false,
-
-  highContrast:
-    false
-
-}
-
+let prefs = loadPreferences()
 
 function loadPreferences() {
-
   try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    const merged = { ...DEFAULTS, ...parsed }
 
-    const raw =
-      localStorage.getItem(
-        STORAGE_KEY
-      )
-
-
-    if (!raw) {
-
-      return {
-        ...DEFAULTS
-      }
-
+    for (const [key, values] of Object.entries(ALLOWED)) {
+      if (!values.includes(merged[key])) merged[key] = DEFAULTS[key]
     }
-
-
-    return {
-
-      ...DEFAULTS,
-
-      ...JSON.parse(raw)
-
-    }
-
+    merged.reduceMotion = Boolean(merged.reduceMotion)
+    merged.highContrast = Boolean(merged.highContrast)
+    return merged
   }
-
   catch {
-
-    return {
-      ...DEFAULTS
-    }
-
+    return { ...DEFAULTS }
   }
-
 }
 
-
-function savePreferences(
-  prefs
-) {
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(
-      prefs
-    )
-  )
-
-}
-
-
-function resolveTheme(
-  theme
-) {
-
-  if (
-    theme !==
-    'system'
-  ) {
-
-    return theme
-
+function savePreferences() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
   }
-
-
-  return window
-    .matchMedia(
-      '(prefers-color-scheme: light)'
-    )
-    .matches
-
-    ? 'light'
-
-    : 'dark'
-
+  catch {
+    /* private mode / quota — preferences still apply for this session */
+  }
 }
 
-
-function applyPreferences(
-  prefs
-) {
-
-  const root =
-    document.documentElement
-
-
-  const theme =
-    resolveTheme(
-      prefs.theme
-    )
-
-
-  root.dataset.theme =
-    theme
-
-
-  root.dataset.themeMode =
-    prefs.theme
-
-
-  root.dataset.fontSize =
-    prefs.fontSize
-
-
-  root.dataset.density =
-    prefs.density
-
-
-  root.dataset.reduceMotion =
-    prefs.reduceMotion
-
-      ? 'true'
-
-      : 'false'
-
-
-  root.dataset.contrast =
-    prefs.highContrast
-
-      ? 'high'
-
-      : 'normal'
-
-
-  document
-    .querySelector(
-      'meta[name="theme-color"]'
-    )
-    ?.setAttribute(
-
-      'content',
-
-      theme === 'light'
-
-        ? '#f6f7fb'
-
-        : '#080910'
-
-    )
-
+function resolveTheme(theme) {
+  if (theme !== 'system') return theme
+  return systemLight.matches ? 'light' : 'dark'
 }
 
+function applyPreferences() {
+  const root = document.documentElement
+  const theme = resolveTheme(prefs.theme)
+
+  root.dataset.theme = theme
+  root.dataset.themeMode = prefs.theme
+  root.dataset.fontSize = prefs.fontSize
+  root.dataset.density = prefs.density
+  root.dataset.reduceMotion = prefs.reduceMotion ? 'true' : 'false'
+  root.dataset.contrast = prefs.highContrast ? 'high' : 'normal'
+
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', theme === 'light' ? '#f4f6fa' : '#0b1220')
+  document.querySelector('meta[name="color-scheme"]')
+    ?.setAttribute('content', theme)
+
+  window.dispatchEvent(new CustomEvent('chemlab:preferences-change', {
+    detail: { ...prefs, resolvedTheme: theme }
+  }))
+}
 
 export function applySavedPreferences() {
-
-  applyPreferences(
-    loadPreferences()
-  )
-
+  prefs = loadPreferences()
+  applyPreferences()
 }
 
+export function getPreferences() {
+  return { ...prefs }
+}
+
+export function getResolvedTheme() {
+  return resolveTheme(prefs.theme)
+}
+
+export function setPreference(key, value) {
+  if (!(key in DEFAULTS)) return
+  if (ALLOWED[key] && !ALLOWED[key].includes(value)) return
+  prefs[key] = typeof DEFAULTS[key] === 'boolean' ? Boolean(value) : value
+  savePreferences()
+  applyPreferences()
+  syncDialog()
+}
+
+systemLight.addEventListener('change', () => {
+  if (prefs.theme === 'system') applyPreferences()
+})
+
+/* =========================================================
+   SETTINGS DIALOG
+========================================================= */
+
+let dialog = null
+let scrim = null
+let returnFocus = null
+
+function segmented(key, options) {
+  return `
+    <div class="ui-segmented" role="group" data-setting="${key}">
+      ${options.map(([value, label]) => `
+        <button type="button" data-value="${value}" aria-pressed="false">${label}</button>
+      `).join('')}
+    </div>
+  `
+}
+
+function toggle(key, label, description) {
+  const id = `pref-${key}`
+  return `
+    <div class="ui-setting">
+      <label class="ui-setting__copy" for="${id}">
+        <strong>${label}</strong>
+        <span>${description}</span>
+      </label>
+      <input id="${id}" class="ui-switch" type="checkbox" role="switch" data-check="${key}">
+    </div>
+  `
+}
+
+function syncDialog() {
+  if (!dialog) return
+
+  dialog.querySelectorAll('[data-setting]').forEach(group => {
+    group.querySelectorAll('button').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.value === prefs[group.dataset.setting]))
+    })
+  })
+
+  dialog.querySelectorAll('[data-check]').forEach(input => {
+    input.checked = Boolean(prefs[input.dataset.check])
+  })
+
+  const install = dialog.querySelector('[data-pref-install]')
+  if (install) install.hidden = !window.ChemLabProduct?.canInstall?.()
+}
+
+function focusables() {
+  return [...dialog.querySelectorAll('button:not([hidden]), input, [tabindex="0"]')]
+    .filter(node => !node.closest('[hidden]'))
+}
+
+function openDialog() {
+  if (!dialog) return
+  returnFocus = document.activeElement
+  syncDialog()
+  scrim.hidden = false
+  dialog.hidden = false
+  requestAnimationFrame(() => {
+    scrim.classList.add('is-open')
+    dialog.classList.add('is-open')
+    dialog.querySelector('[data-setting="theme"] [aria-pressed="true"]')?.focus()
+  })
+}
+
+function closeDialog() {
+  if (!dialog || dialog.hidden) return
+  scrim.classList.remove('is-open')
+  dialog.classList.remove('is-open')
+  const finish = () => {
+    scrim.hidden = true
+    dialog.hidden = true
+  }
+  if (getComputedStyle(dialog).transitionDuration === '0s') finish()
+  else setTimeout(finish, 220)
+  if (returnFocus?.isConnected) returnFocus.focus()
+}
 
 export function initUserPreferences() {
-
-  const topActions =
-    document.querySelector(
-      '.workspace-top-actions'
-    )
-
-
-  if (
-    !topActions
-  ) {
-
-    return
-
-  }
-
-
-  document
-    .querySelector(
-      '#open-user-settings'
-    )
-    ?.remove()
-
-
-  document
-    .querySelector(
-      '#user-settings-layer'
-    )
-    ?.remove()
-
-
-  const trigger =
-    document.createElement(
-      'button'
-    )
-
-
-  trigger.id =
-    'open-user-settings'
-
-
-  trigger.className =
-    'v5-top-button user-settings-trigger'
-
-
-  trigger.type =
-    'button'
-
-
-  trigger.title =
-    'Cài đặt'
-
-
-  trigger.innerHTML = `
-    <span>⚙</span>
-  `
-
-
-  topActions.appendChild(
-    trigger
-  )
-
-
-  document.body.insertAdjacentHTML(
-
-    'beforeend',
-
-    `
-
-    <div
-      id="user-settings-layer"
-      class="user-settings-layer"
-      hidden
-    >
-
-      <section class="user-settings-panel">
-
-        <header class="user-settings-head">
-
-          <div>
-
-            <span>
-              CHEMLAB SETTINGS
-            </span>
-
-            <h2>
-              Cài đặt
-            </h2>
-
-            <p>
-              Tùy chỉnh trải nghiệm sử dụng ChemLab.
-            </p>
-
-          </div>
-
-
-          <button
-            id="close-user-settings"
-            class="user-settings-close"
-          >
-            ×
-          </button>
-
-        </header>
-
-
-        <div class="user-settings-body">
-
-          <section class="setting-group">
-
-            <div class="setting-copy">
-
-              <strong>
-                Giao diện
-              </strong>
-
-              <span>
-                Chọn chế độ sáng, tối hoặc theo thiết bị.
-              </span>
-
-            </div>
-
-
-            <div
-              class="setting-segmented"
-              data-setting="theme"
-            >
-
-              <button
-                data-value="system"
-              >
-                System
-              </button>
-
-              <button
-                data-value="dark"
-              >
-                Dark
-              </button>
-
-              <button
-                data-value="light"
-              >
-                Light
-              </button>
-
-            </div>
-
-          </section>
-
-
-          <section class="setting-group">
-
-            <div class="setting-copy">
-
-              <strong>
-                Cỡ chữ
-              </strong>
-
-              <span>
-                Thay đổi kích thước chữ toàn ứng dụng.
-              </span>
-
-            </div>
-
-
-            <div
-              class="setting-segmented"
-              data-setting="fontSize"
-            >
-
-              <button
-                data-value="small"
-              >
-                90%
-              </button>
-
-              <button
-                data-value="normal"
-              >
-                100%
-              </button>
-
-              <button
-                data-value="large"
-              >
-                112%
-              </button>
-
-            </div>
-
-          </section>
-
-
-          <section class="setting-group">
-
-            <div class="setting-copy">
-
-              <strong>
-                Mật độ giao diện
-              </strong>
-
-              <span>
-                Chọn giao diện rộng hoặc gọn.
-              </span>
-
-            </div>
-
-
-            <div
-              class="setting-segmented"
-              data-setting="density"
-            >
-
-              <button
-                data-value="comfortable"
-              >
-                Comfortable
-              </button>
-
-              <button
-                data-value="compact"
-              >
-                Compact
-              </button>
-
-            </div>
-
-          </section>
-
-
-          <label class="setting-toggle">
-
-            <div class="setting-copy">
-
-              <strong>
-                Reduce motion
-              </strong>
-
-              <span>
-                Giảm animation và chuyển động.
-              </span>
-
-            </div>
-
-
-            <input
-              type="checkbox"
-              data-check="reduceMotion"
-            >
-
-            <i></i>
-
-          </label>
-
-
-          <label class="setting-toggle">
-
-            <div class="setting-copy">
-
-              <strong>
-                High contrast
-              </strong>
-
-              <span>
-                Tăng độ tương phản giao diện.
-              </span>
-
-            </div>
-
-
-            <input
-              type="checkbox"
-              data-check="highContrast"
-            >
-
-            <i></i>
-
-          </label>
-
+  document.querySelector('#user-settings')?.remove()
+  document.querySelector('#user-settings-scrim')?.remove()
+
+  scrim = document.createElement('div')
+  scrim.id = 'user-settings-scrim'
+  scrim.className = 'ui-scrim'
+  scrim.hidden = true
+
+  dialog = document.createElement('section')
+  dialog.id = 'user-settings'
+  dialog.className = 'ui-dialog'
+  dialog.hidden = true
+  dialog.setAttribute('role', 'dialog')
+  dialog.setAttribute('aria-modal', 'true')
+  dialog.setAttribute('aria-labelledby', 'user-settings-title')
+  dialog.innerHTML = `
+    <header class="ui-dialog__head">
+      <div>
+        <h2 id="user-settings-title">Cài đặt</h2>
+        <p>Tùy chỉnh cách ChemLab hiển thị trên thiết bị này.</p>
+      </div>
+      <button class="ui-icon-btn" type="button" data-pref-close aria-label="Đóng cài đặt">${icon('close')}</button>
+    </header>
+
+    <div class="ui-dialog__body">
+      <div class="ui-setting">
+        <div class="ui-setting__copy">
+          <strong>Giao diện</strong>
+          <span>Sáng, tối hoặc theo thiết bị.</span>
         </div>
+        ${segmented('theme', [['system', 'Thiết bị'], ['light', 'Sáng'], ['dark', 'Tối']])}
+      </div>
 
+      <div class="ui-setting">
+        <div class="ui-setting__copy">
+          <strong>Cỡ chữ</strong>
+          <span>Áp dụng cho toàn bộ ứng dụng.</span>
+        </div>
+        ${segmented('fontSize', [['small', 'Nhỏ'], ['normal', 'Vừa'], ['large', 'Lớn']])}
+      </div>
 
-        <footer class="user-settings-footer">
+      <div class="ui-setting">
+        <div class="ui-setting__copy">
+          <strong>Mật độ</strong>
+          <span>Thoáng hoặc gọn hơn.</span>
+        </div>
+        ${segmented('density', [['comfortable', 'Thoáng'], ['compact', 'Gọn']])}
+      </div>
 
-          <button
-            id="reset-user-settings"
-            class="settings-reset"
-          >
-            Đặt lại
-          </button>
+      ${toggle('reduceMotion', 'Giảm chuyển động', 'Tắt hiệu ứng chuyển cảnh và animation không cần thiết.')}
+      ${toggle('highContrast', 'Tương phản cao', 'Chữ và đường viền rõ hơn.')}
 
-
-          <button
-            id="done-user-settings"
-            class="settings-done"
-          >
-            Xong
-          </button>
-
-        </footer>
-
-      </section>
-
+      <div class="ui-setting ui-setting--app">
+        <div class="ui-setting__copy">
+          <strong>Ứng dụng</strong>
+          <span>ChemLab <span data-pref-version></span> · Hữu Nghĩa Edition</span>
+        </div>
+        <div class="ui-setting__actions">
+          <button class="ui-btn ui-btn--sm" type="button" data-pref-about>${icon('info')}Giới thiệu</button>
+          <button class="ui-btn ui-btn--sm" type="button" data-pref-install hidden>Cài ứng dụng</button>
+        </div>
+      </div>
     </div>
 
-    `
+    <footer class="ui-dialog__foot">
+      <button class="ui-btn ui-btn--ghost" type="button" data-pref-reset>Khôi phục mặc định</button>
+      <button class="ui-btn ui-btn--primary" type="button" data-pref-close>Xong</button>
+    </footer>
+  `
 
-  )
+  document.body.append(scrim, dialog)
 
+  dialog.querySelector('[data-pref-version]').textContent =
+    document.documentElement.dataset.chemlabVersion || ''
 
-  const layer =
-    document.querySelector(
-      '#user-settings-layer'
-    )
-
-
-  const prefs =
-    loadPreferences()
-
-
-  function syncUI() {
-
-    layer
-      .querySelectorAll(
-        '[data-setting]'
-      )
-      .forEach(
-        group => {
-
-          const key =
-            group.dataset.setting
-
-
-          group
-            .querySelectorAll(
-              'button'
-            )
-            .forEach(
-              button => {
-
-                button.classList.toggle(
-
-                  'active',
-
-                  button.dataset.value ===
-                    prefs[key]
-
-                )
-
-              }
-            )
-
-        }
-      )
-
-
-    layer
-      .querySelectorAll(
-        '[data-check]'
-      )
-      .forEach(
-        input => {
-
-          input.checked =
-            Boolean(
-              prefs[
-                input.dataset.check
-              ]
-            )
-
-        }
-      )
-
-  }
-
-
-  function update() {
-
-    savePreferences(
-      prefs
-    )
-
-
-    applyPreferences(
-      prefs
-    )
-
-
-    syncUI()
-
-  }
-
-
-  trigger.addEventListener(
-    'click',
-
-    () => {
-
-      layer.hidden =
-        false
-
-
-      requestAnimationFrame(
-        () => {
-
-          layer.classList.add(
-            'open'
-          )
-
-        }
-      )
-
+  dialog.addEventListener('click', event => {
+    const option = event.target.closest('[data-setting] button')
+    if (option) {
+      setPreference(option.closest('[data-setting]').dataset.setting, option.dataset.value)
+      return
     }
-  )
 
-
-  function close() {
-
-    layer.classList.remove(
-      'open'
-    )
-
-
-    setTimeout(
-      () => {
-
-        layer.hidden =
-          true
-
-      },
-
-      160
-    )
-
-  }
-
-
-  layer
-    .querySelector(
-      '#close-user-settings'
-    )
-    .addEventListener(
-      'click',
-      close
-    )
-
-
-  layer
-    .querySelector(
-      '#done-user-settings'
-    )
-    .addEventListener(
-      'click',
-      close
-    )
-
-
-  layer
-    .querySelectorAll(
-      '[data-setting] button'
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          'click',
-
-          () => {
-
-            const group =
-              button.closest(
-                '[data-setting]'
-              )
-
-
-            prefs[
-              group.dataset.setting
-            ] =
-              button.dataset.value
-
-
-            update()
-
-          }
-        )
-
-      }
-    )
-
-
-  layer
-    .querySelectorAll(
-      '[data-check]'
-    )
-    .forEach(
-      input => {
-
-        input.addEventListener(
-          'change',
-
-          () => {
-
-            prefs[
-              input.dataset.check
-            ] =
-              input.checked
-
-
-            update()
-
-          }
-        )
-
-      }
-    )
-
-
-  layer
-    .querySelector(
-      '#reset-user-settings'
-    )
-    .addEventListener(
-      'click',
-
-      () => {
-
-        Object.assign(
-          prefs,
-          DEFAULTS
-        )
-
-
-        update()
-
-      }
-    )
-
-
-  layer.addEventListener(
-    'click',
-
-    event => {
-
-      if (
-        event.target ===
-        layer
-      ) {
-
-        close()
-
-      }
-
+    if (event.target.closest('[data-pref-close]')) {
+      closeDialog()
+      return
     }
-  )
 
-
-  document.addEventListener(
-    'keydown',
-
-    event => {
-
-      if (
-        event.key ===
-        'Escape'
-      ) {
-
-        close()
-
-      }
-
+    if (event.target.closest('[data-pref-reset]')) {
+      prefs = { ...DEFAULTS }
+      savePreferences()
+      applyPreferences()
+      syncDialog()
+      return
     }
-  )
 
+    if (event.target.closest('[data-pref-about]')) {
+      closeDialog()
+      window.ChemLabProduct?.openAbout?.()
+      return
+    }
 
-  syncUI()
+    if (event.target.closest('[data-pref-install]')) {
+      window.ChemLabProduct?.install?.()
+    }
+  })
 
+  dialog.addEventListener('change', event => {
+    const input = event.target.closest('[data-check]')
+    if (input) setPreference(input.dataset.check, input.checked)
+  })
+
+  dialog.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeDialog()
+      return
+    }
+
+    if (event.key !== 'Tab') return
+    const nodes = focusables()
+    const first = nodes[0]
+    const last = nodes[nodes.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    }
+    else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  })
+
+  scrim.addEventListener('click', closeDialog)
+
+  window.ChemLabPreferences = Object.freeze({
+    open: openDialog,
+    close: closeDialog,
+    get: getPreferences,
+    set: setPreference
+  })
 }

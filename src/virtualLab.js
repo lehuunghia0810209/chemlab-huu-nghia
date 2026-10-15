@@ -4825,7 +4825,7 @@ export function initVirtualLab() {
 
   const animationView =
     section.closest(
-      '.workspace-view'
+      '.app-view'
     )
 
 

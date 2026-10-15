@@ -36,6 +36,11 @@ Theme dùng chung `html[data-theme="light|dark"]` (đã có trong `userPreferenc
 
 Mỗi milestone: `npm run check`, `npm run build`, Playwright ở 360/390/768/1024/1440, cả dark/light, kiểm tra console. Local commit theo milestone; **không push/deploy**.
 
+## Nhật ký
+
+- **M0** — audit + sửa crash Tool Hub (B1).
+- **M1** — `src/styles/{tokens,base,components,shell,dashboard}.css`, `src/shell/{icons,commandPalette}.js`; `main.js` viết lại (3.016 → ~560 dòng, giữ mọi route/hash/API); dashboard mới (nguyên tố hôm nay, tiếp tục học với tên bài thật, tiến độ, workspace, Chem Flow, lộ trình khối); dialog Cài đặt mới (focus trap, theo dõi theme hệ thống, giữ key `chemlab-v5-user-preferences`); menu sản phẩm "HN" gắn vào sidebar (hết che nút); boot screen bỏ độ trễ nhân tạo 350 ms; font Be Vietnam Pro tự host; `npm run check:browser` (Playwright + Chrome hệ thống, 103 kiểm tra). Lưới Lab cho phép cột giữa co lại (tránh tràn ngang khi sidebar rộng).
+
 ## Ranh giới
 
 Không đổi: dữ liệu hóa học, curriculum, điều kiện hoàn thành guided experiment, storage keys/format, `/api/chat`, phiên bản `6.2.0`.
