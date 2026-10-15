@@ -19,8 +19,17 @@
 }
 
 /* ---------- head ---------- */
+/* Fixed columns: a web-font swap must not re-wrap the safety note (layout shift). */
 .vl-head {
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .vl-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .vl-safety {
