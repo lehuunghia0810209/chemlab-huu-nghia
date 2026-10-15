@@ -47,6 +47,8 @@ Mỗi milestone: `npm run check`, `npm run build`, Playwright ở 360/390/768/10
 
 - **M4** — Tool Center và 7 công cụ chuyển sang token (chuyển đổi màu theo ngữ nghĩa, rà soát trực quan cả hai theme); nhãn tiếng Anh/chữ hoa trong Balancer, Calculator, Ion Engine, Solubility, Compound/Reaction Studio Việt hóa (công thức hóa học giữ nguyên); ô nhập chuẩn hóa; gỡ thêm 241 rule CSS legacy của Tool Center.
 
+- **M5** — Học tập: `quiz.css` chuyển token, nhãn Việt hóa, gỡ 92 rule legacy. **Sửa lỗi tích hợp:** câu trả lời luyện tập trước đây chỉ lưu ở `chemlab-learning-4.7`, không bao giờ gọi `recordLearningAnswer` → độ chính xác/XP trên Tổng quan luôn bằng 0; nay được ghi vào `chemlab-v1-progress` (có kiểm thử trình duyệt: trả lời → tải lại → còn nguyên).
+
 ## Ranh giới
 
 Không đổi: dữ liệu hóa học, curriculum, điều kiện hoàn thành guided experiment, storage keys/format, `/api/chat`, phiên bản `6.2.0`.

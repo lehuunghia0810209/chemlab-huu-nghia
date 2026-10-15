@@ -1340,17 +1340,6 @@ button {
    CONTENT WIDTH
 ========================================================= */
 
-#learning-host {
-  width:
-    100%;
-
-  max-width:
-    1680px;
-
-  margin:
-    0 auto;
-}
-
 
 /* =========================================================
    TOOL HUB 5 OVERRIDES
@@ -1360,18 +1349,6 @@ button {
 /* =========================================================
    LARGE CONTROL STANDARD
 ========================================================= */
-
-#view-learning button {
-  touch-action:
-    manipulation;
-}
-
-
-#view-learning input:not(.ui-switch):not(.ui-input):not(.ui-select),
-#view-learning select:not(.ui-switch):not(.ui-input):not(.ui-select) {
-  min-height:
-    44px;
-}
 
 
 /* =========================================================

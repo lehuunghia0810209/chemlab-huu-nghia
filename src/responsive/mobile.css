@@ -546,8 +546,7 @@
   }
 
 
-  .v4-page-head,
-  #view-learning {
+  .v4-page-head {
     width:
       100% !important;
 
@@ -653,10 +652,7 @@
      GRID COMPONENTS
   ========================================================= */
 
-  .learning-dashboard,
-  .learning-mode-grid,
-  .difficulty-grid,
-  .learning-options {
+  .difficulty-grid {
     grid-template-columns:
       minmax(0,1fr) !important;
   }

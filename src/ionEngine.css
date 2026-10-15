@@ -537,7 +537,7 @@
     linear-gradient(
       145deg,
       color-mix(in oklab, var(--accent) 14%, transparent),
-      #10131c
+      var(--surface-1)
     );
 
   box-shadow:

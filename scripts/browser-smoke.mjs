@@ -242,6 +242,20 @@ async function interactionChecks(browser, baseURL) {
   record('guided experiment opens and returns to free mode',
     await page.evaluate(() => !document.querySelector('.vl-layout').hidden))
 
+  /* learning: answer one question, reload, progress must persist */
+  await openView(page, baseURL, 'learning')
+  const answersBefore = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').statistics?.totalAnswers || 0)
+  await page.click('#cl-start')
+  await page.waitForSelector('[data-answer]', { timeout: 10000 })
+  await page.click('[data-answer]')
+  await page.waitForTimeout(400)
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForFunction(() => document.querySelector('#app-shell')?.dataset.currentView === 'learning')
+  const answersAfter = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').statistics?.totalAnswers || 0)
+  record('learning: an answer is saved and survives reload', answersAfter === answersBefore + 1, `${answersBefore} → ${answersAfter}`)
+
   record('console clean during interactions', errors.length === 0, errors.join(' | '))
   await context.close()
 }

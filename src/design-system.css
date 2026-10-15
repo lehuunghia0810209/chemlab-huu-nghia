@@ -956,13 +956,7 @@ textarea::placeholder {
 
 .workspace-eyebrow,
 
-.panel-label,
-
-.learning-start-title
-> span,
-
-.learning-heading
-> span {
+.panel-label {
   color:
     var(--cl-accent);
 
@@ -1163,21 +1157,6 @@ textarea::placeholder {
    LEARNING
 ========================================================= */
 
-#learning-host {
-  width:
-    min(1440px,100%);
-
-  max-width:
-    1440px;
-
-  margin:
-    0 auto;
-
-  padding:
-    0 var(--cl-page-pad)
-    2.5rem;
-}
-
 
 .workspace-view
 #quiz.chem-learning-v2 {
@@ -1189,157 +1168,18 @@ textarea::placeholder {
 }
 
 
-.learning-heading {
-  max-width:
-    none;
-
-  margin:
-    0 0 1rem;
-
-  text-align:
-    left;
-}
-
-
-.learning-heading h2,
-.learning-version {
-  display:
-    none;
-}
-
-
-.learning-heading p {
-  font-size:
-    var(--cl-text-body);
-
-  color:
-    var(--cl-text-secondary);
-}
-
-
-.learning-dashboard,
-.learning-start,
-.learning-play,
-.learning-result {
-  width:
-    100%;
-}
-
-
-.learning-dashboard {
-  gap:
-    .8rem;
-}
-
-
-.learning-stat {
-  min-height:
-    104px;
-
-  padding:
-    1.15rem;
-}
-
-
-.learning-stat span {
-  font-size:
-    var(--cl-text-caption);
-
-  letter-spacing:
-    .04em;
-}
-
-
-.learning-stat strong {
-  margin-top:
-    .45rem;
-
-  font-size:
-    1.55rem;
-}
-
-
-.learning-stat
-.learning-weak {
-  font-size:
-    var(--cl-text-small);
-}
-
-
-.learning-start {
-  padding:
-    1.75rem;
-}
-
-
-.learning-start-title span {
-  font-size:
-    var(--cl-text-caption);
-
-  color:
-    var(--cl-accent);
-}
-
-
-.learning-start-title h3 {
-  margin-top:
-    .35rem;
-
-  margin-bottom:
-    1.15rem;
-
-  font-size:
-    1.45rem;
-}
-
-
-.learning-mode-grid {
-  gap:
-    .85rem;
-}
-
-
-.learning-mode {
-  min-height:
-    178px;
-
-  padding:
-    1.15rem;
-}
-
-
-.learning-mode strong,
 .difficulty-button strong {
   font-size:
     var(--cl-text-body);
 }
 
 
-.learning-mode p,
 .difficulty-button span {
   font-size:
     var(--cl-text-small);
 
   line-height:
     1.5;
-}
-
-
-.learning-mode-icon {
-  width:
-    48px;
-
-  height:
-    48px;
-
-  font-size:
-    1.25rem;
-}
-
-
-.learning-divider {
-  margin:
-    1.65rem 0;
 }
 
 
@@ -1355,56 +1195,6 @@ textarea::placeholder {
 
   padding:
     1rem;
-}
-
-
-.learning-start-button {
-  min-height:
-    54px;
-}
-
-
-.learning-question-card {
-  padding:
-    1.5rem;
-}
-
-
-.learning-question-card h3 {
-  min-height:
-    0;
-
-  font-size:
-    1.55rem;
-
-  line-height:
-    1.4;
-}
-
-
-.learning-option {
-  min-height:
-    70px;
-
-  padding:
-    1rem;
-
-  font-size:
-    var(--cl-text-body);
-}
-
-
-.learning-feedback strong,
-.learning-feedback p,
-.learning-result-message {
-  font-size:
-    var(--cl-text-body);
-}
-
-
-.learning-auto-note {
-  font-size:
-    var(--cl-text-caption);
 }
 
 
@@ -1488,15 +1278,6 @@ textarea::placeholder {
   .workspace-title-area span {
     display:
       none;
-  }
-
-
-  .learning-mode-grid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0,1fr)
-      );
   }
 
 }
@@ -1735,43 +1516,7 @@ textarea::placeholder {
   }
 
 
-  .learning-dashboard {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0,1fr)
-      );
-  }
-
-
-  .learning-start {
-    padding:
-      1rem;
-  }
-
-
-  .learning-mode {
-    min-height:
-      156px;
-
-    padding:
-      .85rem;
-  }
-
-
   .difficulty-grid {
-    grid-template-columns:
-      1fr;
-  }
-
-
-  .learning-question-card {
-    padding:
-      1rem;
-  }
-
-
-  .learning-options {
     grid-template-columns:
       1fr;
   }
@@ -1798,12 +1543,6 @@ textarea::placeholder {
   .v4-brand-name {
     font-size:
       1rem;
-  }
-
-
-  .learning-dashboard {
-    grid-template-columns:
-      1fr;
   }
 
 }

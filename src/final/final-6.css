@@ -607,57 +607,20 @@ textarea:focus-visible,
 .cl6-final-mark { color:rgba(169,156,255,.18); font-size:90px; font-weight:950; line-height:.8; letter-spacing:-.08em; }
 
 /* ---------- Shared module skin ---------- */
-.cl-learn,
 .compound-studio,
 .reaction-studio {
   color: var(--cl6-text);
 }
 
-.cl-learn {
-  max-width: 1480px;
-  margin-inline: auto;
-}
-
-.cl-learn-dashboard,
-.cl-mastery,
-.cl-learning-setup,
-.cl-insights > *,
 .panel {
   border-color: var(--cl6-border);
 }
 
-.cl-learn-dashboard,
-.cl-mastery,
-.cl-learning-setup,
-.cl-weak-panel,
-.cl-history-panel,
 .panel {
   background-color: var(--cl6-surface);
   box-shadow: var(--cl6-shadow-soft);
   backdrop-filter: blur(18px);
 }
-
-.cl-learn-dashboard {
-  border-radius: 24px;
-}
-
-.cl-mastery,
-.cl-learning-setup,
-.cl-weak-panel,
-.cl-history-panel {
-  border-radius: 20px;
-}
-
-.cl-start-button,
-.cl-next-button,
-.cl-progress-continue {
-  min-height: 46px;
-  border-radius: 14px;
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-.cl-start-button:hover,
-.cl-next-button:hover,
-.cl-progress-continue:hover { transform: translateY(-1px); }
 
 .v5-command-panel {
   border:1px solid var(--cl6-border-strong);
@@ -813,64 +776,6 @@ textarea:focus-visible,
 /* Periodic */
 
 /* Learning */
-.cl-learn {
-  padding-inline: clamp(14px, 2.4vw, 32px);
-  padding-bottom: 46px;
-}
-
-.cl-learn-dashboard {
-  padding: clamp(20px, 2.5vw, 30px);
-  background:
-    radial-gradient(circle at 88% 10%, rgba(238,106,167,.10), transparent 20rem),
-    linear-gradient(135deg, rgba(139,92,246,.09), transparent 55%),
-    var(--cl6-surface);
-}
-
-.cl-learn-profile-copy h2,
-.cl-section-head h2,
-.cl-section-head strong,
-.cl-question-card h2,
-.cl-result h2 {
-  color: var(--cl6-text);
-  letter-spacing: -.025em;
-}
-
-.cl-learn-profile-copy p,
-.cl-section-head p,
-.cl-question-card p,
-.cl-result p,
-.cl-history-panel,
-.cl-weak-panel {
-  color: var(--cl6-muted);
-}
-
-.cl-mode-card,
-.cl-topic-option,
-.cl-choice-button,
-.cl-mastery-card,
-.cl-progress-grade-card,
-.cl-answer-option {
-  border-radius: 16px;
-  transition:
-    transform .16s ease,
-    border-color .16s ease,
-    background .16s ease;
-}
-
-.cl-mode-card:hover,
-.cl-topic-option:hover,
-.cl-choice-button:hover,
-.cl-answer-option:not(:disabled):hover {
-  transform: translateY(-2px);
-}
-
-.cl-question-card,
-.cl-result {
-  border-radius: 26px;
-  border-color: var(--cl6-border);
-  background: var(--cl6-surface);
-  box-shadow: var(--cl6-shadow);
-}
 
 /* Virtual Lab */
 
@@ -956,9 +861,6 @@ html[data-theme="light"] .cl6-final-banner {
 }
 
 @media (max-width: 767px) {
-  .cl-learn {
-    padding-inline: 0;
-  }
 
   .cs5-window,
   .rs52-window {

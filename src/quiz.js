@@ -17,7 +17,8 @@ import {
 
 import {
   getLastActivity,
-  getProgressSummary
+  getProgressSummary,
+  recordLearningAnswer
 } from './progress/progressStorage.js'
 
 
@@ -1192,7 +1193,7 @@ export function initQuiz() {
             <div class="cl-learn-level">
 
               <span>
-                CẤP
+                Cấp
               </span>
 
               <strong>
@@ -1205,11 +1206,11 @@ export function initQuiz() {
             <div class="cl-learn-profile-copy">
 
               <span>
-                TIẾN ĐỘ HỌC TẬP
+                Tiến độ học tập
               </span>
 
               <h2>
-                Learning Mode
+                Chế độ luyện tập
               </h2>
 
               <p>
@@ -1300,7 +1301,7 @@ export function initQuiz() {
             <div>
 
               <span>
-                MASTERY
+                Mức thành thạo
               </span>
 
               <h3>
@@ -1351,7 +1352,7 @@ export function initQuiz() {
             <div>
 
               <span>
-                PHIÊN HỌC
+                Phiên học
               </span>
 
               <h3>
@@ -1433,7 +1434,7 @@ export function initQuiz() {
             <div class="cl-setup-title">
 
               <span>
-                CHỦ ĐỀ
+                Chủ đề
               </span>
 
             </div>
@@ -1495,7 +1496,7 @@ export function initQuiz() {
             <div class="cl-setup-title">
 
               <span>
-                ĐỘ KHÓ
+                Độ khó
               </span>
 
             </div>
@@ -1542,7 +1543,7 @@ export function initQuiz() {
             <div class="cl-setup-title">
 
               <span>
-                SỐ CÂU
+                Số câu
               </span>
 
             </div>
@@ -1621,7 +1622,7 @@ export function initQuiz() {
               <div>
 
                 <span>
-                  CẦN ÔN THÊM
+                  Cần ôn thêm
                 </span>
 
                 <h3>
@@ -1645,7 +1646,7 @@ export function initQuiz() {
               <div>
 
                 <span>
-                  LỊCH SỬ
+                  Lịch sử
                 </span>
 
                 <h3>
@@ -2060,7 +2061,7 @@ export function initQuiz() {
               <article class="cl-progress-grade-card">
                 <div class="cl-progress-grade-head">
                   <div>
-                    <span>HÓA HỌC</span>
+                    <span>Hóa học</span>
                     <h3>Lớp ${grade}</h3>
                   </div>
                   <strong>${percent}%</strong>
@@ -2130,7 +2131,7 @@ export function initQuiz() {
 
         ? `
           <div class="cl-progress-recent" aria-label="Hoạt động gần đây">
-            <span>HOẠT ĐỘNG GẦN ĐÂY</span>
+            <span>Hoạt động gần đây</span>
             <strong>${lastActivity.status}: ${lastActivity.title}</strong>
           </div>
         `
@@ -2165,7 +2166,7 @@ export function initQuiz() {
       <section class="cl-progress-dashboard" aria-labelledby="cl-progress-title">
         <div class="cl-progress-overview">
           <div class="cl-progress-overview-copy">
-            <span class="cl-progress-eyebrow">TIẾN ĐỘ HỌC TẬP</span>
+            <span class="cl-progress-eyebrow">Tiến độ học tập</span>
             <h2 id="cl-progress-title">Hành trình Hóa học</h2>
             <p>${completedLessons} / ${totalLessons} bài hoàn thành</p>
           </div>
@@ -2201,7 +2202,7 @@ export function initQuiz() {
 
         <section class="cl-progress-continue-section" aria-label="Tiếp tục học">
           <div class="cl-progress-continue-head">
-            <span>TIẾP TỤC HỌC</span>
+            <span>Tiếp tục học</span>
           </div>
           <div class="cl-progress-continue-body">
             ${continueMarkup}
@@ -3095,6 +3096,14 @@ export function initQuiz() {
       gainedXP
 
 
+    // Shared progress feeds the dashboard's accuracy and XP figures.
+    recordLearningAnswer({
+      quizId: question.id,
+      correct,
+      xp: gainedXP
+    })
+
+
     if (correct) {
 
       session.correct++
@@ -3471,7 +3480,7 @@ export function initQuiz() {
 
 
           <span class="cl-result-eyebrow">
-            HOÀN THÀNH PHIÊN HỌC
+            Hoàn thành phiên học
           </span>
 
 
@@ -3550,7 +3559,7 @@ export function initQuiz() {
             <div>
 
               <span>
-                GỢI Ý TIẾP THEO
+                Gợi ý tiếp theo
               </span>
 
               <h3>
@@ -3591,7 +3600,7 @@ export function initQuiz() {
                             </strong>
 
                             <small>
-                              Mastery
+                              Mức thành thạo
                               ${item.score}%
                             </small>
 

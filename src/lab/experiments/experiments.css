@@ -396,7 +396,7 @@
     linear-gradient(
       145deg,
       var(--guided-surface),
-      rgba(11, 13, 21, .72)
+      var(--surface-1)
     );
 }
 
@@ -442,7 +442,7 @@
     linear-gradient(
       145deg,
       var(--guided-surface-strong),
-      rgba(13, 15, 24, .82)
+      var(--surface-1)
     );
 
   box-shadow:
@@ -944,8 +944,8 @@
     ),
     linear-gradient(
       135deg,
-      rgba(22, 20, 37, .88),
-      rgba(12, 14, 22, .78)
+      var(--surface-1),
+      var(--surface-1)
     );
 }
 
