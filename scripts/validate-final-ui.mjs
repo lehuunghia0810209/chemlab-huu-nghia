@@ -11,7 +11,6 @@ const [
   main,
   loader,
   home,
-  finalCss,
   aiJs,
   aiCss,
   aiContext,
@@ -34,7 +33,6 @@ const [
   read('src/main.js'),
   read('src/routeModuleLoader.js'),
   read('src/final/homeDashboard.js'),
-  read('src/final/final-6.css'),
   read('src/ai/chemAI.js'),
   read('src/ai/chemAI.css'),
   read('src/ai/contextBuilder.js'),
@@ -63,13 +61,14 @@ function expect(name, condition) {
   if (!condition) failures.push(name)
 }
 
-const finalCssIndex = main.indexOf("import './final/final-6.css'")
+const tokensCssIndex = main.indexOf("import './styles/tokens.css'")
 const aiCssIndex = main.indexOf("import './ai/chemAI.css'")
 const activeAIText = [aiJs, aiContext, api, knowledge, devVars].join('\n')
 
 /* Core regression */
 expect('release is ChemLab 6.2 Final', pkg.version === '6.2.0')
-expect('final core CSS loads before ChemAI CSS', finalCssIndex >= 0 && aiCssIndex > finalCssIndex)
+expect('design tokens load before ChemAI CSS', tokensCssIndex >= 0 && aiCssIndex > tokensCssIndex)
+expect('no legacy global stylesheet is imported', !/import '\.\/(style|workspace|chemlab-v4|design-system|chemlab5|zperiodLight|experience|userPreferences)\.css'|final-6\.css|responsive\//.test(main))
 expect('home dashboard module is imported', main.includes("from './final/homeDashboard.js'"))
 expect('home is a valid route', /new Set\(\[\s*'home'/.test(main))
 expect('home view exists in app shell', main.includes('id="view-home"'))
@@ -80,7 +79,6 @@ expect('dashboard still has Chem Flow', home.includes('Chem Flow') && home.inclu
 expect('dashboard renders real progress data', home.includes('getProgressSummary') && home.includes('getGradeSummary'))
 expect('Tool Center exposes Compound Studio', toolHub.includes("id: 'compound'"))
 expect('Tool Center exposes Reaction Studio', toolHub.includes("id: 'reaction'"))
-expect('core final tokens exist', finalCss.includes('--cl6-violet:'))
 expect('mobile core nav supports 5 routes', shellCss.includes('.app-bottom-nav') && shellCss.includes('grid-template-columns: repeat(5, 1fr)'))
 expect('design tokens define dark and light themes', tokensCss.includes('--bg-app:') && tokensCss.includes("html[data-theme='light']"))
 expect('design tokens honour reduced motion', tokensCss.includes('prefers-reduced-motion'))

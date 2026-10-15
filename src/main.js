@@ -6,26 +6,13 @@
    routeModuleLoader.js.
 ========================================================= */
 
-/* ---------- legacy stylesheet stack (removed workspace by workspace, see docs/remake) ---------- */
-import './style.css'
-import './workspace.css'
-import './chemlab-v4.css'
-import './design-system.css'
-import './chemlab5.css'
-import './responsive/tablet.css'
-import './responsive/mobile.css'
-import './userPreferences.css'
-import './zperiodLight.css'
-import './experience.css'
-import './final/final-6.css'
-import './ai/chemAI.css'
-
-/* ---------- design system (loads last) ---------- */
+/* ---------- design system ---------- */
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
 import './styles/shell.css'
 import './styles/dashboard.css'
+import './ai/chemAI.css'
 
 import { APP_VERSION } from './appMeta.js'
 import { createRouteModuleLoader } from './routeModuleLoader.js'

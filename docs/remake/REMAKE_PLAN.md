@@ -51,6 +51,8 @@ Mỗi milestone: `npm run check`, `npm run build`, Playwright ở 360/390/768/10
 
 - **M6** — ChemAI: CSS chuyển token (giữ các ràng buộc mobile đã được kiểm định: 52px, 88dvh, safe-area, visualViewport), nhãn Việt hóa, biến `--cl6-*` thay bằng token. **Sửa lỗi có từ trước:** cột lưới của panel co theo hàng gợi ý (752px) làm bottom sheet rộng 420px trên điện thoại 390px, nút đóng bị cắt. Gỡ 13 rule focus legacy toàn cục (viền tím đè vòng focus thống nhất). Kiểm thử mới: mọi nút ChemAI trong viewport 390px, nút gửi bấm được và ≥ 44px.
 
+- **M7** — Xóa toàn bộ 11 file CSS global legacy (≈ 12,6k dòng còn lại sau các đợt gỡ). `box-sizing: border-box` đưa vào `base.css`; Tool Hub search và menu sản phẩm/“Giới thiệu” chuyển token. CSS chính 297 kB → 100 kB (gzip 53 → 18 kB). Validator chặn việc nhập lại CSS legacy. Xóa ảnh template Vite không dùng.
+
 ## Ranh giới
 
 Không đổi: dữ liệu hóa học, curriculum, điều kiện hoàn thành guided experiment, storage keys/format, `/api/chat`, phiên bản `6.2.0`.

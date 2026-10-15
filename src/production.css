@@ -21,15 +21,6 @@
 
   z-index:
     39000;
-
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
 }
 
 
@@ -55,7 +46,7 @@
 
   border:
     1px solid
-    rgba(167,139,250,.26);
+    color-mix(in oklab, var(--accent) 41%, transparent);
 
   border-radius:
     15px;
@@ -63,16 +54,15 @@
   background:
     linear-gradient(
       145deg,
-      rgba(124,58,237,.16),
-      rgba(13,16,24,.96)
+      color-mix(in oklab, var(--accent) 16%, transparent),
+      var(--surface-1)
     );
 
   box-shadow:
-    0 14px 45px
-    rgba(0,0,0,.42);
+    var(--shadow-md);
 
   color:
-    #e9ddff;
+    var(--text-primary);
 
   cursor:
     pointer;
@@ -92,13 +82,13 @@
     translateY(-2px);
 
   border-color:
-    rgba(192,132,252,.44);
+    color-mix(in oklab, var(--accent) 59%, transparent);
 
   background:
     linear-gradient(
       145deg,
-      rgba(124,58,237,.24),
-      rgba(13,16,24,.98)
+      color-mix(in oklab, var(--accent) 24%, transparent),
+      var(--surface-1)
     );
 }
 
@@ -137,20 +127,20 @@
 
   border:
     2px solid
-    #0b0e15;
+    var(--border-strong);
 
   border-radius:
     50%;
 
   background:
-    #22c55e;
+    var(--status-success);
 }
 
 
 .clprod-launch-button
 > i.offline {
   background:
-    #f59e0b;
+    var(--status-warning);
 }
 
 
@@ -183,17 +173,16 @@
 
   border:
     1px solid
-    rgba(167,139,250,.16);
+    color-mix(in oklab, var(--accent) 31%, transparent);
 
   border-radius:
     16px;
 
   background:
-    rgba(11,14,22,.97);
+    var(--surface-1);
 
   box-shadow:
-    0 25px 80px
-    rgba(0,0,0,.58);
+    var(--shadow-md);
 
   backdrop-filter:
     blur(22px);
@@ -233,7 +222,7 @@
 
   border-bottom:
     1px solid
-    rgba(255,255,255,.055);
+    var(--border-subtle);
 }
 
 
@@ -255,16 +244,16 @@
 
   border:
     1px solid
-    rgba(167,139,250,.22);
+    color-mix(in oklab, var(--accent) 37%, transparent);
 
   border-radius:
     11px;
 
   background:
-    rgba(124,58,237,.07);
+    color-mix(in oklab, var(--accent) 11%, transparent);
 
   color:
-    #c4b5fd;
+    var(--accent-text);
 
   font-size:
     21px;
@@ -279,16 +268,16 @@
     block;
 
   color:
-    #806d9d;
+    var(--text-muted);
 
   font-size:
-    10px;
+    var(--text-xs);
 
   font-weight:
     850;
 
   letter-spacing:
-    .09em;
+    .01em;
 }
 
 
@@ -301,7 +290,7 @@
     2px;
 
   color:
-    #f0eff5;
+    var(--text-primary);
 
   font-size:
     17px;
@@ -317,10 +306,10 @@
     2px;
 
   color:
-    #858da0;
+    var(--text-muted);
 
   font-size:
-    12px;
+    var(--text-xs);
 }
 
 
@@ -343,7 +332,7 @@
 
   border-bottom:
     1px solid
-    rgba(255,255,255,.05);
+    var(--border-subtle);
 }
 
 
@@ -365,22 +354,22 @@
 
   border:
     1px solid
-    rgba(255,255,255,.045);
+    var(--border-subtle);
 
   border-radius:
     9px;
 
   background:
-    rgba(255,255,255,.01);
+    var(--surface-hover);
 }
 
 
 .clprod-version span {
   color:
-    #717a8d;
+    var(--text-muted);
 
   font-size:
-    10px;
+    var(--text-xs);
 
   font-weight:
     750;
@@ -392,7 +381,7 @@
     5px;
 
   color:
-    #d9dce4;
+    var(--text-primary);
 
   font-size:
     13px;
@@ -445,7 +434,7 @@
     transparent;
 
   color:
-    #9da5b5;
+    var(--text-secondary);
 
   text-align:
     left;
@@ -458,10 +447,10 @@
 .clprod-menu-actions
 > button:hover {
   border-color:
-    rgba(139,92,246,.15);
+    color-mix(in oklab, var(--accent) 30%, transparent);
 
   background:
-    rgba(124,58,237,.035);
+    color-mix(in oklab, var(--accent) 7.5%, transparent);
 }
 
 
@@ -482,16 +471,16 @@
 
   border:
     1px solid
-    rgba(167,139,250,.12);
+    color-mix(in oklab, var(--accent) 27%, transparent);
 
   border-radius:
     9px;
 
   background:
-    rgba(124,58,237,.035);
+    color-mix(in oklab, var(--accent) 7.5%, transparent);
 
   color:
-    #bca7f7;
+    var(--accent-text);
 
   font-size:
     18px;
@@ -513,7 +502,7 @@ strong {
     block;
 
   color:
-    #d8dbe3;
+    var(--text-primary);
 
   font-size:
     13px;
@@ -530,10 +519,10 @@ small {
     3px;
 
   color:
-    #757f91;
+    var(--text-muted);
 
   font-size:
-    11px;
+    var(--text-xs);
 }
 
 
@@ -541,7 +530,7 @@ small {
 > button
 b {
   color:
-    #606a7c;
+    var(--text-muted);
 
   font-size:
     15px;
@@ -570,7 +559,7 @@ b {
 
   border-top:
     1px solid
-    rgba(255,255,255,.05);
+    var(--border-subtle);
 }
 
 
@@ -579,10 +568,10 @@ b {
     0;
 
   color:
-    #777f91;
+    var(--text-muted);
 
   font-size:
-    11px;
+    var(--text-xs);
 }
 
 
@@ -600,13 +589,13 @@ b {
     50%;
 
   background:
-    #22c55e;
+    var(--status-success);
 }
 
 
 .clprod-status-dot.offline {
   background:
-    #f59e0b;
+    var(--status-warning);
 }
 
 
@@ -637,7 +626,7 @@ b {
     0;
 
   background:
-    rgba(2,4,9,.86);
+    var(--surface-1);
 
   backdrop-filter:
     blur(14px);
@@ -682,22 +671,16 @@ b {
 
   border:
     1px solid
-    rgba(167,139,250,.19);
+    color-mix(in oklab, var(--accent) 34%, transparent);
 
   border-radius:
     20px;
 
   background:
-    radial-gradient(
-      circle at 50% 0%,
-      rgba(124,58,237,.10),
-      transparent 34%
-    ),
-    #090c13;
+    var(--surface-1);
 
   box-shadow:
-    0 40px 130px
-    rgba(0,0,0,.68);
+    var(--shadow-md);
 
   transition:
     transform .20s ease;
@@ -737,16 +720,16 @@ b {
 
   border:
     1px solid
-    rgba(255,255,255,.075);
+    var(--border-subtle);
 
   border-radius:
     11px;
 
   background:
-    rgba(255,255,255,.018);
+    var(--surface-hover);
 
   color:
-    #929aaa;
+    var(--text-secondary);
 
   font-size:
     21px;
@@ -769,7 +752,7 @@ b {
 
   border-bottom:
     1px solid
-    rgba(255,255,255,.055);
+    var(--border-subtle);
 }
 
 
@@ -791,38 +774,37 @@ b {
 
   border:
     1px solid
-    rgba(167,139,250,.24);
+    color-mix(in oklab, var(--accent) 39%, transparent);
 
   border-radius:
     20px;
 
   background:
-    rgba(124,58,237,.07);
+    color-mix(in oklab, var(--accent) 11%, transparent);
 
   color:
-    #c4b5fd;
+    var(--accent-text);
 
   font-size:
     32px;
 
   box-shadow:
-    0 0 60px
-    rgba(124,58,237,.08);
+    var(--glow-accent);
 }
 
 
 .clprod-about-hero > span {
   color:
-    #81709c;
+    var(--text-muted);
 
   font-size:
-    11px;
+    var(--text-xs);
 
   font-weight:
     850;
 
   letter-spacing:
-    .11em;
+    .01em;
 }
 
 
@@ -831,7 +813,7 @@ b {
     9px 0 0;
 
   color:
-    #f5f3ff;
+    var(--text-primary);
 
   font-size:
     38px;
@@ -849,7 +831,7 @@ b {
     8px;
 
   color:
-    #c4b5fd;
+    var(--accent-text);
 
   font-size:
     16px;
@@ -864,7 +846,7 @@ b {
     17px auto 0;
 
   color:
-    #8891a3;
+    var(--text-muted);
 
   font-size:
     14px;
@@ -894,10 +876,10 @@ b {
 
 .clprod-about-version span {
   color:
-    #747d90;
+    var(--text-muted);
 
   font-size:
-    11px;
+    var(--text-xs);
 
   font-weight:
     700;
@@ -915,7 +897,7 @@ b {
     50%;
 
   background:
-    #7c3aed;
+    var(--accent);
 }
 
 
@@ -963,13 +945,13 @@ b {
 
   border:
     1px solid
-    rgba(255,255,255,.05);
+    var(--border-subtle);
 
   border-radius:
     10px;
 
   background:
-    rgba(255,255,255,.008);
+    var(--surface-hover);
 }
 
 
@@ -992,10 +974,10 @@ article
     9px;
 
   background:
-    rgba(124,58,237,.055);
+    color-mix(in oklab, var(--accent) 9.5%, transparent);
 
   color:
-    #bda5f7;
+    var(--accent-text);
 
   font-size:
     17px;
@@ -1008,10 +990,10 @@ article span {
     block;
 
   color:
-    #d2d5dd;
+    var(--text-primary);
 
   font-size:
-    12px;
+    var(--text-xs);
 
   font-weight:
     700;
@@ -1027,10 +1009,10 @@ article small {
     3px;
 
   color:
-    #747e91;
+    var(--text-muted);
 
   font-size:
-    10px;
+    var(--text-xs);
 }
 
 
@@ -1047,28 +1029,28 @@ article small {
 
   border:
     1px solid
-    rgba(139,92,246,.11);
+    color-mix(in oklab, var(--accent) 26%, transparent);
 
   border-radius:
     12px;
 
   background:
-    rgba(124,58,237,.025);
+    color-mix(in oklab, var(--accent) 6.5%, transparent);
 }
 
 
 .clprod-about-author > span {
   color:
-    #796a92;
+    var(--text-muted);
 
   font-size:
-    10px;
+    var(--text-xs);
 
   font-weight:
     850;
 
   letter-spacing:
-    .10em;
+    .01em;
 }
 
 
@@ -1080,7 +1062,7 @@ article small {
     5px;
 
   color:
-    #e7e3f5;
+    var(--text-primary);
 
   font-size:
     20px;
@@ -1092,10 +1074,10 @@ article small {
     10px 0 0;
 
   color:
-    #858ea0;
+    var(--text-muted);
 
   font-size:
-    12px;
+    var(--text-xs);
 
   line-height:
     1.65;
@@ -1124,13 +1106,13 @@ article small {
 
   border-top:
     1px solid
-    rgba(255,255,255,.05);
+    var(--border-subtle);
 
   color:
-    #687285;
+    var(--text-muted);
 
   font-size:
-    11px;
+    var(--text-xs);
 }
 
 
@@ -1184,17 +1166,16 @@ article small {
 
   border:
     1px solid
-    rgba(139,92,246,.17);
+    color-mix(in oklab, var(--accent) 32%, transparent);
 
   border-radius:
     11px;
 
   background:
-    rgba(11,14,22,.98);
+    var(--surface-1);
 
   box-shadow:
-    0 18px 60px
-    rgba(0,0,0,.45);
+    var(--shadow-md);
 
   pointer-events:
     none;
@@ -1231,34 +1212,34 @@ article small {
     9px;
 
   background:
-    rgba(124,58,237,.06);
+    color-mix(in oklab, var(--accent) 10%, transparent);
 
   color:
-    #c4b5fd;
+    var(--accent-text);
 
   font-size:
     14px;
 
   font-weight:
-    800;
+    var(--weight-bold);
 }
 
 
 .clprod-toast.success > span {
   background:
-    rgba(34,197,94,.07);
+    color-mix(in oklab, var(--status-success) 11%, transparent);
 
   color:
-    #86efac;
+    var(--status-success);
 }
 
 
 .clprod-toast.warning > span {
   background:
-    rgba(245,158,11,.07);
+    color-mix(in oklab, var(--status-warning) 11%, transparent);
 
   color:
-    #fcd34d;
+    var(--status-warning);
 }
 
 
@@ -1267,10 +1248,10 @@ article small {
     0;
 
   color:
-    #aeb5c2;
+    var(--text-secondary);
 
   font-size:
-    12px;
+    var(--text-xs);
 
   line-height:
     1.5;

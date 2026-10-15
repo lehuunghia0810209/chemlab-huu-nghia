@@ -2,6 +2,12 @@
    CHEMLAB BASE — document defaults on top of tokens.css
 ========================================================= */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

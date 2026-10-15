@@ -21,7 +21,7 @@
 .sol-head>div:first-child>span,
 .sol-matrix-head>div>span{
   color:var(--accent-text);
-  font-size: var(--cl-text-caption);
+  font-size: var(--text-xs);
   font-weight:850;
   letter-spacing:.01em;
 }
@@ -34,8 +34,8 @@
 
 .sol-head p{
   margin:0;
-  color: var(--cl-text-secondary);
-  font-size: var(--cl-text-small);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
   line-height:1.6;
 }
 
@@ -49,7 +49,7 @@
   border-radius:999px;
   background:color-mix(in oklab, var(--status-success) 8.5%, transparent);
   color:var(--text-secondary);
-  font-size: var(--cl-text-small);
+  font-size: var(--text-sm);
 }
 
 .sol-head-badge i{
@@ -72,8 +72,8 @@
 .sol-select-box label{
   display:block;
   margin-bottom:8px;
-  color: var(--cl-text-secondary);
-  font-size: var(--cl-text-small);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
   font-weight:700;
 }
 
@@ -86,7 +86,7 @@
   outline:none;
   background:var(--surface-1);
   color:var(--text-primary);
-  font-size: var(--cl-text-small);
+  font-size: var(--text-sm);
   cursor:pointer;
 }
 
@@ -101,7 +101,7 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  color: var(--cl-text-secondary);
+  color: var(--text-secondary);
   font-size:21px;
 }
 
@@ -118,8 +118,8 @@
 
 .sol-result-card>span{
   grid-column:1/-1;
-  color: var(--cl-text-secondary);
-  font-size: var(--cl-text-caption);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
   font-weight:var(--weight-bold);
   letter-spacing:.01em;
 }
@@ -139,7 +139,7 @@
   margin-top:6px;
   padding:6px 9px;
   border-radius:8px;
-  font-size: var(--cl-text-caption);
+  font-size: var(--text-xs);
 }
 
 .sol-result-card.soluble{
@@ -205,13 +205,13 @@
 
 .sol-description strong{
   color:var(--text-primary);
-  font-size: var(--cl-text-small);
+  font-size: var(--text-sm);
 }
 
 .sol-description p{
   margin:5px 0 0;
-  color: var(--cl-text-secondary);
-  font-size: var(--cl-text-small);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
   line-height:1.6;
 }
 
@@ -240,8 +240,8 @@
   display:flex;
   align-items:center;
   gap:6px;
-  color: var(--cl-text-secondary);
-  font-size: var(--cl-text-caption);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
 }
 
 .sol-legend i{
@@ -285,7 +285,7 @@
   z-index:2;
   background:var(--surface-1);
   color:var(--text-secondary);
-  font-size: var(--cl-text-small);
+  font-size: var(--text-sm);
 }
 
 .sol-table tbody th{
@@ -294,7 +294,7 @@
   z-index:1;
   background:var(--surface-1);
   color:var(--text-secondary);
-  font-size: var(--cl-text-small);
+  font-size: var(--text-sm);
 }
 
 .sol-cell{
@@ -304,7 +304,7 @@
   border-radius:9px;
   background:transparent;
   font-family:Consolas,monospace;
-  font-size: var(--cl-text-small);
+  font-size: var(--text-sm);
   cursor:pointer;
 }
 
@@ -341,8 +341,8 @@
 
 .sol-note{
   margin:14px 28px 25px;
-  color: var(--cl-text-secondary);
-  font-size: var(--cl-text-caption);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
   line-height:1.6;
 }
 
