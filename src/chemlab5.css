@@ -154,8 +154,8 @@ body {
 
 
 button,
-input,
-select,
+input:not(.ui-switch):not(.ui-input):not(.ui-select),
+select:not(.ui-switch):not(.ui-input):not(.ui-select),
 textarea {
   font: inherit;
 }
@@ -1336,18 +1336,6 @@ button {
 }
 
 
-#periodic-workspace-root {
-  width:
-    100%;
-
-  max-width:
-    1780px;
-
-  margin:
-    0 auto;
-}
-
-
 /* =========================================================
    CONTENT WIDTH
 ========================================================= */
@@ -1545,12 +1533,12 @@ button {
 }
 
 
-#view-tools input,
-#view-tools select,
-#view-learning input,
-#view-learning select,
-#view-lab input,
-#view-lab select {
+#view-tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
+#view-tools select:not(.ui-switch):not(.ui-input):not(.ui-select),
+#view-learning input:not(.ui-switch):not(.ui-input):not(.ui-select),
+#view-learning select:not(.ui-switch):not(.ui-input):not(.ui-select),
+#view-lab input:not(.ui-switch):not(.ui-input):not(.ui-select),
+#view-lab select:not(.ui-switch):not(.ui-input):not(.ui-select) {
   min-height:
     44px;
 }
@@ -1559,15 +1547,6 @@ button {
 /* =========================================================
    ELEMENT DRAWER
 ========================================================= */
-
-.element-drawer {
-  z-index:
-    3000 !important;
-
-  box-shadow:
-    -30px 0 80px
-    rgba(0,0,0,.46) !important;
-}
 
 
 /* =========================================================
@@ -1718,7 +1697,7 @@ button {
 }
 
 
-.v5-command-search input {
+.v5-command-search input:not(.ui-switch):not(.ui-input):not(.ui-select) {
   width:
     100%;
 
@@ -1745,7 +1724,7 @@ button {
 }
 
 
-.v5-command-search input::placeholder {
+.v5-command-search input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder {
   color:
     #606b80;
 }
@@ -2024,8 +2003,8 @@ button {
 
 :is(
   button,
-  input,
-  select,
+  input:not(.ui-switch):not(.ui-input):not(.ui-select),
+  select:not(.ui-switch):not(.ui-input):not(.ui-select),
   textarea,
   a
 ):focus-visible {
@@ -2459,8 +2438,8 @@ button {
 }
 
 
-.lab-reagent-tools input,
-.lab-reagent-tools select {
+.lab-reagent-tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
+.lab-reagent-tools select:not(.ui-switch):not(.ui-input):not(.ui-select) {
   width: 100%;
 
   min-width: 0;
@@ -2488,14 +2467,14 @@ button {
 }
 
 
-.lab-reagent-tools input::placeholder {
+.lab-reagent-tools input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder {
   color:
     var(--cl-text-muted);
 }
 
 
-.lab-reagent-tools input:focus,
-.lab-reagent-tools select:focus {
+.lab-reagent-tools input:not(.ui-switch):not(.ui-input):not(.ui-select):focus,
+.lab-reagent-tools select:not(.ui-switch):not(.ui-input):not(.ui-select):focus {
   border-color:
     rgba(168,85,247,.7);
 

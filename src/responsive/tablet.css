@@ -322,7 +322,6 @@
      PAGE
   ========================================================= */
 
-  .periodic-workspace,
   .v4-page-head {
     width:
       100% !important;
@@ -332,95 +331,19 @@
   }
 
 
-  .periodic-top {
-    align-items:
-      flex-start !important;
-  }
-
-
   /* =========================================================
      CONTROLS
   ========================================================= */
-
-  .periodic-controls {
-    display:
-      grid !important;
-
-    grid-template-columns:
-      minmax(0,1fr) !important;
-
-    gap:
-      10px !important;
-  }
-
-
-  .periodic-search {
-    width:
-      100% !important;
-  }
 
 
   /* =========================================================
      CATEGORY FILTERS
   ========================================================= */
 
-  .periodic-category-filters {
-    display:
-      flex !important;
-
-    flex-wrap:
-      nowrap !important;
-
-    overflow-x:
-      auto !important;
-
-    overflow-y:
-      hidden !important;
-
-    padding-bottom:
-      6px !important;
-
-    -webkit-overflow-scrolling:
-      touch;
-
-    scrollbar-width:
-      none;
-  }
-
-
-  .periodic-category-filters::-webkit-scrollbar {
-    display:
-      none;
-  }
-
-
-  .periodic-category-filters
-  .category-filter {
-    flex:
-      0 0 auto !important;
-  }
-
 
   /* =========================================================
      PERIODIC TABLE
   ========================================================= */
-
-  .periodic-scroll {
-    width:
-      100% !important;
-
-    overflow-x:
-      auto !important;
-
-    overflow-y:
-      visible !important;
-
-    -webkit-overflow-scrolling:
-      touch;
-
-    touch-action:
-      pan-x pan-y;
-  }
 
 
   .workspace-periodic-table {
@@ -441,12 +364,6 @@
 
     gap:
       6px !important;
-  }
-
-
-  .workspace-element-symbol {
-    font-size:
-      1.5rem !important;
   }
 
 
@@ -486,13 +403,5 @@
   /* =========================================================
      DRAWER
   ========================================================= */
-
-  .element-drawer {
-    width:
-      min(
-        520px,
-        72vw
-      ) !important;
-  }
 
 }

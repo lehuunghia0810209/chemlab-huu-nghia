@@ -112,36 +112,8 @@ html[data-theme="light"]
 
 html[data-theme="light"]
 :is(
-  .panel,
-  .cc-panel,
-  .cc-input-card,
-  .learning-start,
-  .learning-question-card,
-  .virtual-lab-v2 .panel,
-  .element-drawer,
-  .drawer-card,
-  .v5-command-panel
-) {
-
-  background:
-    #ffffff
-    !important;
-
-  color:
-    #111827
-    !important;
-
-  border-color:
-    rgba(15,23,42,.1)
-    !important;
-
-}
-
-
-html[data-theme="light"]
-:is(
-  input,
-  select,
+  input:not(.ui-switch):not(.ui-input):not(.ui-select),
+  select:not(.ui-switch):not(.ui-input):not(.ui-select),
   textarea,
   .reagent-card,
   .info-box,
@@ -223,22 +195,6 @@ html[data-density="compact"]
 /* =========================================================
    HIGH CONTRAST
 ========================================================= */
-
-html[data-contrast="high"]
-:is(
-  button,
-  input,
-  select,
-  textarea,
-  .panel,
-  .workspace-element-card
-) {
-
-  border-width:
-    2px
-    !important;
-
-}
 
 
 /* =========================================================
@@ -627,7 +583,7 @@ html[data-reduce-motion="true"] *::after {
 }
 
 
-.setting-toggle input {
+.setting-toggle input:not(.ui-switch):not(.ui-input):not(.ui-select) {
 
   position:
     absolute;
@@ -696,7 +652,7 @@ html[data-reduce-motion="true"] *::after {
 
 
 .setting-toggle
-input:checked
+input:not(.ui-switch):not(.ui-input):not(.ui-select):checked
 + i {
 
   background:
@@ -706,7 +662,7 @@ input:checked
 
 
 .setting-toggle
-input:checked
+input:not(.ui-switch):not(.ui-input):not(.ui-select):checked
 + i::after {
 
   transform:

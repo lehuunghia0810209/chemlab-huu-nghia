@@ -41,6 +41,8 @@ Mỗi milestone: `npm run check`, `npm run build`, Playwright ở 360/390/768/10
 - **M0** — audit + sửa crash Tool Hub (B1).
 - **M1** — `src/styles/{tokens,base,components,shell,dashboard}.css`, `src/shell/{icons,commandPalette}.js`; `main.js` viết lại (3.016 → ~560 dòng, giữ mọi route/hash/API); dashboard mới (nguyên tố hôm nay, tiếp tục học với tên bài thật, tiến độ, workspace, Chem Flow, lộ trình khối); dialog Cài đặt mới (focus trap, theo dõi theme hệ thống, giữ key `chemlab-v5-user-preferences`); menu sản phẩm "HN" gắn vào sidebar (hết che nút); boot screen bỏ độ trễ nhân tạo 350 ms; font Be Vietnam Pro tự host; `npm run check:browser` (Playwright + Chrome hệ thống, 103 kiểm tra). Lưới Lab cho phép cột giữa co lại (tránh tràn ngang khi sidebar rộng).
 
+- **M2** — Lõi hóa học có kiểm thử: `src/chem/electronConfiguration.js` (Aufbau + 20 ngoại lệ NIST, cấu hình Z ≥ 104 gắn nhãn dự đoán), `src/chem/orbitalMath.js` (R_nl, hàm cầu thực l ≤ 3, lấy mẫu |ψ|², lưới bề mặt biên 90%), `src/chem/oxidationStates.js`; `npm run check:chem` (15 kiểm tra). **Sửa lỗi khoa học trên production:** cấu hình Cr, Cu, Nb, Mo, Ru, Rh, Pd, Ag, La, Ce, Gd, Pt, Au, Ac, Th, Pa, U, Np, Cm, Lr và số electron theo lớp; pha orbital f; số oxi hóa (vd. S chỉ có −2). `src/three/sceneHost.js` (vòng đời WebGL dùng chung). Atomic Explorer (vỏ electron + orbital, hạt nhân theo đồng vị phổ biến nhất). Bảng tuần hoàn viết lại (`src/periodic/`): nhóm IUPAC + A/B, xem trước, điều hướng phím mũi tên, chế độ danh sách, sheet chi tiết có focus trap. Orbital Atlas viết lại trên cùng lõi. Xóa 15 file cũ (≈ 13k dòng) và gỡ 547 rule CSS legacy.
+
 ## Ranh giới
 
 Không đổi: dữ liệu hóa học, curriculum, điều kiện hoàn thành guided experiment, storage keys/format, `/api/chat`, phiên bản `6.2.0`.

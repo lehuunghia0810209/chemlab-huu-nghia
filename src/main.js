@@ -29,7 +29,7 @@ import './styles/dashboard.css'
 
 import { APP_VERSION } from './appMeta.js'
 import { createRouteModuleLoader } from './routeModuleLoader.js'
-import { initPeriodicWorkspace } from './periodicWorkspace.js'
+import { initPeriodicWorkspace } from './periodic/periodicWorkspace.js'
 import {
   initProgressStorage,
   getProgressSummary,
@@ -301,7 +301,7 @@ app.innerHTML = `
       ${[...VALID_VIEWS].map(bottomNavButton).join('')}
     </nav>
 
-    <aside id="element-drawer" class="element-drawer" aria-hidden="true"></aside>
+    <aside id="element-drawer" aria-hidden="true"></aside>
   </div>
 `
 

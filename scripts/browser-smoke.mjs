@@ -173,6 +173,51 @@ async function interactionChecks(browser, baseURL) {
   }))
   record('dashboard element card opens the element drawer', drawer.view === 'periodic' && drawer.open, JSON.stringify(drawer))
 
+  /* periodic: detail sheet, keyboard navigation, correct exception data */
+  await openView(page, baseURL, 'periodic')
+  await page.focus('.pt-cell[data-number="24"]')
+  await page.keyboard.press('ArrowRight')
+  const arrowed = await page.evaluate(() => document.activeElement?.dataset.number)
+  record('periodic arrow keys move between cells (Cr → Mn)', arrowed === '25', arrowed)
+
+  await page.keyboard.press('Enter')
+  await page.waitForSelector('#element-drawer.open')
+  await page.click('[data-ptd-tab="electron"]')
+  const config = await page.textContent('.ptd-config')
+  record('drawer shows the Mn ground state [Ar] 3d⁵ 4s²', config.includes('[Ar] 3d⁵ 4s²'), config)
+
+  await page.click('[data-ptd-next]')
+  await page.click('[data-ptd-prev]')
+  await page.evaluate(() => window.ChemLabPeriodic.openElement(29))
+  await page.click('[data-ptd-tab="electron"]')
+  const copper = await page.textContent('.ptd-config')
+  record('copper exception 3d¹⁰ 4s¹ is shown', copper.includes('[Ar] 3d¹⁰ 4s¹'), copper)
+
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+  record('Esc closes the sheet', !(await page.evaluate(() => document.querySelector('#element-drawer').classList.contains('open'))))
+
+  /* atomic explorer: renders, switches mode, disposes its WebGL canvas */
+  await page.evaluate(() => window.ChemLabPeriodic.openElement(26))
+  await page.click('[data-ptd-atom]')
+  await page.waitForSelector('.ax.is-open canvas', { timeout: 10000 })
+  await page.click('.ax-modes [data-mode="orbital"]')
+  await page.waitForFunction(() => document.querySelector('[data-ax-busy]')?.hidden === true, null, { timeout: 15000 })
+  const subshell = await page.getAttribute('.ax-sub.is-selected', 'data-subshell')
+  record('atomic explorer opens and picks the 3d subshell for Fe', subshell === '3d', subshell)
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  record('atomic explorer closes and removes its canvas', await page.evaluate(() => !document.querySelector('.ax canvas')))
+
+  /* orbital atlas */
+  await page.goto(`${baseURL}/#tools/orbital`, { waitUntil: 'load' })
+  await page.waitForSelector('#orbital-atlas')
+  await page.evaluate(() => document.querySelector('#orbital-atlas').scrollIntoView())
+  await page.waitForSelector('#orbital-atlas canvas', { timeout: 10000 })
+  await page.click('#orbital-atlas [data-family="d"]')
+  await page.waitForFunction(() => document.querySelector('[data-oa-busy]')?.hidden === true, null, { timeout: 15000 })
+  record('orbital atlas renders and switches family', Boolean(await page.$('#orbital-atlas [data-variant="dz2"][aria-pressed="true"]')))
+
   record('console clean during interactions', errors.length === 0, errors.join(' | '))
   await context.close()
 }

@@ -145,8 +145,8 @@ body {
 
 
 button,
-input,
-select,
+input:not(.ui-switch):not(.ui-input):not(.ui-select),
+select:not(.ui-switch):not(.ui-input):not(.ui-select),
 textarea {
   font:
     inherit;
@@ -165,7 +165,7 @@ button:disabled {
 }
 
 
-input::placeholder,
+input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder,
 textarea::placeholder {
   color:
     var(--cl-text-muted);
@@ -186,8 +186,8 @@ textarea::placeholder {
 
 :is(
   button,
-  input,
-  select,
+  input:not(.ui-switch):not(.ui-input):not(.ui-select),
+  select:not(.ui-switch):not(.ui-input):not(.ui-select),
   textarea,
   a,
   [tabindex]
@@ -900,8 +900,7 @@ textarea::placeholder {
    PAGE HEADINGS
 ========================================================= */
 
-.v4-page-head,
-.periodic-workspace {
+.v4-page-head {
   width:
     min(1800px,100%);
 
@@ -919,7 +918,6 @@ textarea::placeholder {
 
 
 .v4-page-head h1,
-.periodic-top h1,
 .vl-head h2 {
   margin:
     .45rem 0 .4rem;
@@ -939,7 +937,6 @@ textarea::placeholder {
 
 
 .v4-page-head p,
-.periodic-top p,
 .vl-head p {
   margin:
     0;
@@ -960,7 +957,9 @@ textarea::placeholder {
 > span,
 
 .workspace-eyebrow,
+
 .cc-eyebrow,
+
 .balance-eyebrow,
 
 .sol-head
@@ -995,8 +994,8 @@ textarea::placeholder {
 .workspace-app
 :is(
   button,
-  input,
-  select,
+  input:not(.ui-switch):not(.ui-input):not(.ui-select),
+  select:not(.ui-switch):not(.ui-input):not(.ui-select),
   textarea
 ) {
   min-height:
@@ -1006,8 +1005,8 @@ textarea::placeholder {
 
 .workspace-app
 :is(
-  input,
-  select,
+  input:not(.ui-switch):not(.ui-input):not(.ui-select),
+  select:not(.ui-switch):not(.ui-input):not(.ui-select),
   textarea
 ) {
   font-size:
@@ -1018,36 +1017,11 @@ textarea::placeholder {
 .workspace-app
 :is(
   button,
-  input,
-  select
+  input:not(.ui-switch):not(.ui-input):not(.ui-select),
+  select:not(.ui-switch):not(.ui-input):not(.ui-select)
 ) {
   line-height:
     1.4;
-}
-
-
-.workspace-app
-:is(
-  .category-filter,
-  .periodic-segmented button,
-  .periodic-reset-view,
-  .drawer-tabs button,
-  .drawer-action,
-  .cc-primary,
-  .cc-examples button,
-  .balance-main-button,
-  .balance-clear-button,
-  .balance-examples button,
-  .learning-start-button,
-  .learning-next,
-  .learning-retry,
-  .learning-home,
-  .vl-controls button,
-  .vl-volume button,
-  .sol-cell
-) {
-  font-size:
-    var(--cl-text-small);
 }
 
 
@@ -1073,209 +1047,6 @@ textarea::placeholder {
    PERIODIC TABLE
 ========================================================= */
 
-.periodic-top {
-  gap:
-    1.25rem;
-
-  margin-bottom:
-    1.35rem;
-}
-
-
-.periodic-result-count {
-  min-width:
-    112px;
-
-  padding:
-    .65rem 1rem;
-
-  text-align:
-    center;
-}
-
-
-.periodic-result-count strong {
-  font-size:
-    1.5rem;
-}
-
-
-.periodic-result-count span {
-  font-size:
-    var(--cl-text-caption);
-
-  letter-spacing:
-    .04em;
-}
-
-
-.periodic-controls {
-  flex-wrap:
-    wrap;
-
-  align-items:
-    stretch;
-
-  gap:
-    .8rem;
-}
-
-
-.periodic-search {
-  width:
-    min(100%,29rem);
-
-  height:
-    52px;
-
-  border-color:
-    var(--cl-border);
-}
-
-
-.periodic-workspace
-.periodic-search input {
-  min-height:
-    48px;
-
-  border:
-    0;
-
-  border-radius:
-    0;
-
-  background:
-    transparent;
-
-  box-shadow:
-    none;
-
-  padding:
-    .5rem 0;
-}
-
-
-.periodic-search:focus-within {
-  outline:
-    2px solid
-    var(--cl-focus);
-
-  outline-offset:
-    2px;
-}
-
-
-.periodic-category-filters {
-  flex:
-    1 1 40rem;
-
-  flex-wrap:
-    wrap;
-
-  overflow:
-    visible;
-
-  gap:
-    .55rem;
-}
-
-
-.category-filter {
-  height:
-    auto;
-
-  padding:
-    .6rem .85rem;
-
-  border-color:
-    var(--cl-border);
-}
-
-
-.periodic-filter-toggle {
-  font-size:
-    var(--cl-text-small);
-}
-
-
-.periodic-display-toolbar {
-  flex-wrap:
-    wrap;
-
-  gap:
-    .8rem 1.6rem;
-
-  padding:
-    .8rem .95rem;
-}
-
-
-.periodic-display-group {
-  gap:
-    .7rem;
-}
-
-
-.periodic-display-group
-> span {
-  font-size:
-    var(--cl-text-caption);
-
-  letter-spacing:
-    .03em;
-}
-
-
-.periodic-segmented {
-  flex-wrap:
-    wrap;
-}
-
-
-.periodic-segmented button {
-  height:
-    auto;
-
-  padding:
-    .55rem .8rem;
-}
-
-
-.periodic-dynamic-legend {
-  flex-wrap:
-    wrap;
-
-  gap:
-    .6rem 1rem;
-
-  margin:
-    .85rem 0;
-
-  font-size:
-    var(--cl-text-caption);
-}
-
-
-.periodic-scroll-hint {
-  margin:
-    .55rem 0;
-
-  font-size:
-    var(--cl-text-small);
-
-  color:
-    var(--cl-text-secondary);
-}
-
-
-.periodic-scroll {
-  padding:
-    .45rem .3rem 1.15rem;
-
-  overscroll-behavior-x:
-    contain;
-}
-
 
 .workspace-periodic-table {
   min-width:
@@ -1295,155 +1066,6 @@ textarea::placeholder {
 }
 
 
-.workspace-element-card {
-  padding:
-    28px 6px 9px;
-
-  justify-content:
-    center;
-
-  border-radius:
-    .72rem;
-
-  transition:
-    transform .18s var(--cl-ease),
-    border-color .18s ease,
-    box-shadow .22s ease,
-    opacity .22s ease,
-    filter .22s ease;
-}
-
-
-.workspace-element-card:not(
-  .element-dimmed
-):hover {
-  z-index:
-    4;
-
-  transform:
-    translateY(-3px)
-    scale(1.025);
-
-  box-shadow:
-    0 14px 30px
-    rgba(0,0,0,.30),
-    0 0 25px
-    rgba(124,58,237,.08);
-}
-
-
-.workspace-element-number {
-  top:
-    6px;
-
-  left:
-    8px;
-
-  font-size:
-    var(--cl-text-caption);
-}
-
-
-.workspace-element-symbol {
-  font-size:
-    1.8rem;
-
-  line-height:
-    1.02;
-
-  letter-spacing:
-    -.035em;
-}
-
-
-.workspace-element-name {
-  margin-top:
-    .45rem;
-
-  font-size:
-    var(--cl-text-caption);
-
-  line-height:
-    1.25;
-}
-
-
-.workspace-element-mass {
-  margin-top:
-    .2rem;
-
-  font-size:
-    .78rem;
-
-  line-height:
-    1.2;
-}
-
-
-.workspace-element-extra,
-.workspace-element-phase {
-  font-size:
-    .75rem;
-}
-
-
-.series-symbol {
-  font-size:
-    var(--cl-text-lead);
-}
-
-
-.periodic-workspace[
-  data-card-preset="minimal"
-]
-.workspace-periodic-table {
-  grid-template-rows:
-    repeat(7,84px);
-}
-
-
-.periodic-workspace[
-  data-card-preset="minimal"
-]
-.workspace-element-symbol {
-  font-size:
-    1.7rem;
-}
-
-
-.periodic-workspace[
-  data-card-preset="detailed"
-]
-.workspace-periodic-table {
-  grid-template-rows:
-    repeat(7,156px);
-}
-
-
-.periodic-workspace[
-  data-card-preset="detailed"
-]
-.workspace-element-card {
-  padding-top:
-    28px;
-}
-
-
-.periodic-workspace[
-  data-card-preset="detailed"
-]
-:is(
-  .workspace-element-extra,
-  .workspace-element-phase
-) {
-  font-size:
-    var(--cl-text-caption);
-
-  line-height:
-    1.35;
-}
-
-
 .workspace-fblock {
   width:
     max(1140px,83.333%);
@@ -1460,33 +1082,6 @@ textarea::placeholder {
 }
 
 
-.workspace-frow
-.workspace-element-card {
-  height:
-    118px;
-}
-
-
-.periodic-workspace[
-  data-card-preset="detailed"
-]
-.workspace-frow
-.workspace-element-card {
-  height:
-    156px;
-}
-
-
-.periodic-workspace[
-  data-card-preset="minimal"
-]
-.workspace-frow
-.workspace-element-card {
-  height:
-    84px;
-}
-
-
 .fblock-title {
   font-size:
     var(--cl-text-small);
@@ -1499,250 +1094,6 @@ textarea::placeholder {
 /* =========================================================
    ELEMENT DRAWER
 ========================================================= */
-
-.element-drawer {
-  width:
-    min(610px,100%);
-
-  top:
-    0;
-
-  height:
-    100dvh;
-
-  z-index:
-    800;
-
-  visibility:
-    hidden;
-
-  background:
-    #0f121c;
-
-  border-left:
-    1px solid
-    var(--cl-border);
-
-  box-shadow:
-    -24px 0 60px
-    rgba(0,0,0,.36);
-}
-
-
-.element-drawer.open {
-  visibility:
-    visible;
-}
-
-
-.element-drawer-inner {
-  padding:
-    1.5rem;
-
-  min-height:
-    100%;
-
-  gap:
-    0;
-}
-
-
-.drawer-topbar {
-  position:
-    sticky;
-
-  top:
-    -1.5rem;
-
-  z-index:
-    2;
-
-  margin:
-    -1.5rem -1.5rem 0;
-
-  padding:
-    .9rem 1.5rem;
-
-  background:
-    rgba(15,18,28,.96);
-
-  backdrop-filter:
-    blur(18px);
-
-  border-bottom:
-    1px solid
-    var(--cl-border);
-}
-
-
-.drawer-element-nav button,
-.drawer-close {
-  width:
-    48px;
-
-  height:
-    48px;
-
-  flex-shrink:
-    0;
-}
-
-
-.drawer-element-nav span {
-  font-size:
-    var(--cl-text-caption);
-
-  letter-spacing:
-    .04em;
-}
-
-
-.drawer-hero {
-  margin-top:
-    1.25rem;
-
-  gap:
-    1.25rem;
-}
-
-
-.drawer-symbol-card {
-  width:
-    132px;
-
-  height:
-    144px;
-
-  flex-basis:
-    132px;
-}
-
-
-.drawer-symbol-card
-.drawer-symbol {
-  font-size:
-    3.1rem;
-}
-
-
-.drawer-hero-content h2 {
-  font-size:
-    clamp(
-      1.8rem,
-      4vw,
-      2.35rem
-    );
-
-  overflow-wrap:
-    anywhere;
-}
-
-
-.drawer-hero-content
-> p {
-  color:
-    var(--cl-accent);
-
-  font-size:
-    var(--cl-text-small);
-}
-
-
-.drawer-mini-tags {
-  gap:
-    .45rem;
-}
-
-
-.drawer-mini-tags span {
-  font-size:
-    var(--cl-text-caption);
-
-  padding:
-    .35rem .55rem;
-}
-
-
-.drawer-tabs {
-  margin-top:
-    1.35rem;
-
-  min-height:
-    52px;
-}
-
-
-.drawer-tabs button {
-  min-height:
-    48px;
-
-  padding:
-    .7rem 1rem;
-}
-
-
-.drawer-properties {
-  margin-top:
-    1rem;
-
-  gap:
-    .65rem;
-}
-
-
-.drawer-properties
-> div {
-  padding:
-    .9rem;
-
-  min-height:
-    84px;
-}
-
-
-.drawer-properties span,
-.drawer-electron-summary span,
-.drawer-section-label {
-  font-size:
-    var(--cl-text-caption);
-
-  letter-spacing:
-    .03em;
-}
-
-
-.drawer-properties strong {
-  white-space:
-    normal;
-
-  overflow-wrap:
-    anywhere;
-
-  font-size:
-    var(--cl-text-lead);
-}
-
-
-.drawer-section {
-  margin-top:
-    1.35rem;
-}
-
-
-.drawer-electron-config,
-.drawer-electron-config.large {
-  font-size:
-    var(--cl-text-body);
-
-  line-height:
-    1.75;
-
-  overflow-wrap:
-    anywhere;
-
-  padding:
-    1rem;
-}
 
 
 .particle-card span,
@@ -1767,58 +1118,6 @@ textarea::placeholder {
 
   padding:
     .9rem;
-}
-
-
-.drawer-actions {
-  margin-top:
-    1.35rem;
-
-  padding-top:
-    1.1rem;
-
-  border-top:
-    1px solid
-    var(--cl-border);
-
-  gap:
-    .65rem;
-}
-
-
-.drawer-action {
-  height:
-    auto;
-
-  min-height:
-    50px;
-
-  padding:
-    .8rem 1rem;
-}
-
-
-.drawer-backdrop {
-  position:
-    fixed;
-
-  inset:
-    0;
-
-  z-index:
-    750;
-
-  background:
-    rgba(3,4,10,.66);
-
-  backdrop-filter:
-    blur(3px);
-}
-
-
-.drawer-backdrop[hidden] {
-  display:
-    none;
 }
 
 
@@ -2063,8 +1362,8 @@ textarea::placeholder {
 }
 
 
-.cc-formula-row input,
-.cc-input-card input {
+.cc-formula-row input:not(.ui-switch):not(.ui-input):not(.ui-select),
+.cc-input-card input:not(.ui-switch):not(.ui-input):not(.ui-select) {
   min-height:
     54px;
 
@@ -2131,7 +1430,6 @@ textarea::placeholder {
 .cc-result-summary span,
 .cc-breakdown-head
 > span,
-
 .cc-breakdown-head
 > div
 > span {
@@ -2293,7 +1591,7 @@ textarea::placeholder {
 }
 
 
-.equation-side input {
+.equation-side input:not(.ui-switch):not(.ui-input):not(.ui-select) {
   min-height:
     52px;
 
@@ -2481,7 +1779,7 @@ textarea::placeholder {
 }
 
 
-.sol-select-box select {
+.sol-select-box select:not(.ui-switch):not(.ui-input):not(.ui-select) {
   height:
     54px;
 
@@ -2593,8 +1891,7 @@ th:first-child {
   thead th,
   tbody th
 ),
-
-.sol-cell {
+  .sol-cell {
   font-size:
     var(--cl-text-small);
 }
@@ -3376,13 +2673,6 @@ th:first-child {
   }
 
 
-  .workspace-frow
-  .workspace-element-card {
-    height:
-      110px;
-  }
-
-
   .vl-layout {
     grid-template-columns:
       260px
@@ -3447,24 +2737,6 @@ th:first-child {
   .workspace-title-area span {
     display:
       none;
-  }
-
-
-  .periodic-controls {
-    flex-direction:
-      column;
-  }
-
-
-  .periodic-category-filters {
-    flex-basis:
-      auto;
-  }
-
-
-  .periodic-search {
-    width:
-      100%;
   }
 
 
@@ -3753,140 +3025,9 @@ th:first-child {
   }
 
 
-  .v4-page-head,
-  .periodic-workspace {
+  .v4-page-head {
     padding-top:
       1.25rem;
-  }
-
-
-  .periodic-top {
-    align-items:
-      center;
-
-    flex-direction:
-      row;
-
-    gap:
-      .6rem;
-  }
-
-
-  .periodic-top h1 {
-    font-size:
-      1.8rem;
-  }
-
-
-  .periodic-result-count {
-    min-width:
-      82px;
-
-    padding:
-      .5rem;
-  }
-
-
-  .periodic-filter-toggle {
-    display:
-      block;
-
-    border:
-      1px solid
-      var(--cl-border);
-
-    border-radius:
-      .7rem;
-
-    padding:
-      .65rem 1rem;
-
-    background:
-      var(--cl-surface);
-
-    color:
-      var(--cl-text-primary);
-
-    text-align:
-      left;
-  }
-
-
-  .periodic-workspace[
-    data-filters-expanded="false"
-  ]
-  :is(
-    .periodic-category-filters,
-    .periodic-display-toolbar
-  ) {
-    display:
-      none;
-  }
-
-
-  .periodic-display-group {
-    flex-direction:
-      column;
-
-    align-items:
-      flex-start;
-
-    gap:
-      .4rem;
-
-    width:
-      100%;
-  }
-
-
-  .periodic-segmented {
-    width:
-      100%;
-  }
-
-
-  .periodic-segmented button {
-    flex:
-      1;
-
-    padding:
-      .55rem;
-  }
-
-
-  .periodic-reset-view {
-    margin:
-      0;
-
-    width:
-      100%;
-  }
-
-
-  .element-drawer {
-    width:
-      100%;
-  }
-
-
-  .drawer-symbol-card {
-    width:
-      105px;
-
-    height:
-      118px;
-
-    flex-basis:
-      105px;
-  }
-
-
-  .drawer-properties {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0,1fr)
-      );
   }
 
 
@@ -4233,24 +3374,6 @@ th:first-child {
   .v4-brand-name {
     font-size:
       1rem;
-  }
-
-
-  .drawer-hero {
-    gap:
-      .8rem;
-  }
-
-
-  .drawer-element-nav {
-    gap:
-      .5rem;
-  }
-
-
-  .drawer-element-nav span {
-    letter-spacing:
-      0;
   }
 
 

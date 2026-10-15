@@ -63,16 +63,16 @@ body {
 }
 
 button,
-input,
-select,
+input:not(.ui-switch):not(.ui-input):not(.ui-select),
+select:not(.ui-switch):not(.ui-input):not(.ui-select),
 textarea {
   font: inherit;
 }
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
-select:focus-visible,
+input:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
+select:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: none;
@@ -607,18 +607,15 @@ textarea:focus-visible,
 .cl6-final-mark { color:rgba(169,156,255,.18); font-size:90px; font-weight:950; line-height:.8; letter-spacing:-.08em; }
 
 /* ---------- Shared module skin ---------- */
-.pv5,
 .chem-tool-hub,
 .cl-learn,
 #lab,
-.ew5,
 .chem-flow,
 .compound-studio,
 .reaction-studio {
   color: var(--cl6-text);
 }
 
-.pv5,
 .chem-tool-hub,
 .cl-learn,
 #lab {
@@ -626,8 +623,6 @@ textarea:focus-visible,
   margin-inline: auto;
 }
 
-.pv5-head,
-.pv5-toolbar,
 .tool-hub-header,
 .cl-learn-dashboard,
 .cl-mastery,
@@ -635,13 +630,10 @@ textarea:focus-visible,
 .cl-insights > *,
 .vl-head,
 .panel,
-.ew5,
 .tool-stage > * {
   border-color: var(--cl6-border);
 }
 
-.pv5-head,
-.pv5-toolbar,
 .tool-hub-header,
 .cl-learn-dashboard,
 .cl-mastery,
@@ -651,21 +643,18 @@ textarea:focus-visible,
 .vl-head,
 .panel,
 .tool-selector-card,
-.tool-active-bar,
-.ew5 {
+.tool-active-bar {
   background-color: var(--cl6-surface);
   box-shadow: var(--cl6-shadow-soft);
   backdrop-filter: blur(18px);
 }
 
-.pv5-head,
 .tool-hub-header,
 .cl-learn-dashboard,
 .vl-head {
   border-radius: 24px;
 }
 
-.pv5-toolbar,
 .tool-active-bar,
 .cl-mastery,
 .cl-learning-setup,
@@ -684,7 +673,6 @@ textarea:focus-visible,
 
 .cl-start-button,
 .primary-btn,
-.ew5-quick-action,
 .cl-next-button,
 .cl-progress-continue {
   min-height: 46px;
@@ -693,7 +681,6 @@ textarea:focus-visible,
 }
 .cl-start-button:hover,
 .primary-btn:hover,
-.ew5-quick-action:hover,
 .cl-next-button:hover,
 .cl-progress-continue:hover { transform: translateY(-1px); }
 
@@ -711,8 +698,8 @@ textarea:focus-visible,
 }
 
 .v5-command-search { border-bottom-color:var(--cl6-border); }
-.v5-command-search input { color:var(--cl6-text); }
-.v5-command-search input::placeholder { color:var(--cl6-subtle); }
+.v5-command-search input:not(.ui-switch):not(.ui-input):not(.ui-select) { color:var(--cl6-text); }
+.v5-command-search input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder { color:var(--cl6-subtle); }
 
 .v5-view-loader,
 .v5-route-error {
@@ -857,10 +844,10 @@ textarea:focus-visible,
   background: var(--cl6-surface-soft);
 }
 .tool-hub-search svg { width: 18px; height: 18px; color: var(--cl6-muted); flex: 0 0 auto; }
-.tool-hub-search input {
+.tool-hub-search input:not(.ui-switch):not(.ui-input):not(.ui-select) {
   width: 100%; border: 0; outline: 0; color: var(--cl6-text); background: transparent;
 }
-.tool-hub-search input::placeholder { color: var(--cl6-subtle); }
+.tool-hub-search input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder { color: var(--cl6-subtle); }
 .tool-hub-empty {
   grid-column: 1 / -1;
   padding: 22px;
@@ -879,67 +866,6 @@ textarea:focus-visible,
 ========================================================= */
 
 /* Periodic */
-.pv5 {
-  padding-inline: clamp(14px, 2.4vw, 34px);
-  padding-bottom: 42px;
-}
-
-.pv5-head {
-  margin-top: 28px;
-  padding: clamp(20px, 2.4vw, 30px);
-  background:
-    radial-gradient(circle at 88% 18%, rgba(39,213,213,.10), transparent 20rem),
-    linear-gradient(130deg, rgba(139,92,246,.10), transparent 48%),
-    var(--cl6-surface);
-}
-
-.pv5-head h1,
-.pv5-head h2,
-.pv5-head strong {
-  letter-spacing: -.03em;
-}
-
-.pv5-toolbar {
-  padding: 14px;
-  gap: 10px;
-}
-
-.pv5-search,
-.pv5-segmented,
-.pv5-category-filter {
-  border-radius: 14px;
-}
-
-.pv5-element {
-  border-radius: 12px;
-  transition:
-    transform .16s ease,
-    box-shadow .16s ease,
-    border-color .16s ease;
-}
-
-.pv5-element:hover {
-  transform: translateY(-2px) scale(1.015);
-  box-shadow: 0 12px 24px rgba(0,0,0,.16);
-}
-
-.ew5 {
-  border-radius: 28px 0 0 28px;
-}
-
-.ew5-hero,
-.ew5-content,
-.ew5-bottom {
-  border-color: var(--cl6-border);
-}
-
-.ew5-stat-grid > *,
-.ew5-ion-card,
-.ew5-isotope-card,
-.ew5-3d-card,
-.ew5-quick-action {
-  border-radius: 16px;
-}
 
 /* Learning */
 .cl-learn {
@@ -1103,8 +1029,8 @@ textarea:focus-visible,
   border-color: var(--cl6-border);
 }
 
-.cs5-formula-input input,
-.rs52-input-row input,
+.cs5-formula-input input:not(.ui-switch):not(.ui-input):not(.ui-select),
+.rs52-input-row input:not(.ui-switch):not(.ui-input):not(.ui-select),
 .rs52-input-row textarea {
   min-height: 48px;
   border-radius: 14px;
@@ -1129,20 +1055,14 @@ html[data-theme="light"] .cl6-final-banner {
 }
 
 @media (max-width: 767px) {
-  .pv5,
   .cl-learn,
   #lab {
     padding-inline: 0;
   }
 
-  .pv5-head,
   .vl-head {
     margin-top: 10px;
     border-radius: 20px;
-  }
-
-  .ew5 {
-    border-radius: 24px 24px 0 0;
   }
 
   .cs5-window,

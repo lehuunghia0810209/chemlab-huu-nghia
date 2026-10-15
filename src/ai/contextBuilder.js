@@ -33,6 +33,16 @@ function safeClone(value) {
 }
 
 function currentElement() {
+  const structured = window.ChemLabPeriodic?.context?.()
+  if (structured) {
+    return {
+      symbol: structured.symbol,
+      name: structured.name,
+      position: `Z = ${structured.number} · chu kỳ ${structured.period}${structured.group ? ` · nhóm ${structured.group}` : ''} · khối ${structured.block}`,
+      summary: `${structured.category}; cấu hình electron ${structured.configuration}`
+    }
+  }
+
   const drawer = document.querySelector('#element-drawer.open, #element-drawer[aria-hidden="false"]')
   if (!drawer) return null
 

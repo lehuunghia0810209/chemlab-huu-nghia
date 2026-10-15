@@ -223,8 +223,8 @@ button:not(:disabled):active {
 
 
 button:focus-visible,
-input:focus-visible,
-select:focus-visible,
+input:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
+select:not(.ui-switch):not(.ui-input):not(.ui-select):focus-visible,
 textarea:focus-visible {
   outline:
     2px solid
@@ -738,92 +738,6 @@ textarea:focus-visible {
    PERIODIC TABLE V4
 ========================================================= */
 
-#periodic-workspace-root {
-  --v4-card-bg:
-    linear-gradient(
-      155deg,
-      rgba(20,23,34,.96),
-      rgba(10,12,19,.96)
-    );
-}
-
-
-.periodic-workspace {
-  padding-top:
-    30px;
-}
-
-
-.workspace-element-card {
-  border-color:
-    rgba(255,255,255,.07);
-
-  background:
-    var(--v4-card-bg);
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255,255,255,.025);
-
-  transition:
-    transform
-    180ms
-    var(--v4-ease),
-
-    border-color
-    180ms ease,
-
-    box-shadow
-    220ms ease,
-
-    opacity
-    220ms ease,
-
-    filter
-    220ms ease;
-}
-
-
-.workspace-element-card:not(
-  .element-dimmed
-):hover {
-  z-index:
-    3;
-
-  transform:
-    translateY(-3px)
-    scale(1.025);
-
-  border-color:
-    rgba(155,92,255,.48);
-
-  box-shadow:
-    0 12px 28px
-    rgba(0,0,0,.30),
-    0 0 24px
-    rgba(124,58,237,.08);
-}
-
-
-.workspace-element-card:active {
-  transform:
-    translateY(-1px)
-    scale(.99);
-}
-
-
-.workspace-element-card
-.element-symbol {
-  letter-spacing:
-    -.7px;
-}
-
-
-.workspace-element-card
-.element-name {
-  color: var(--cl-text-secondary);
-}
-
 
 .element-dimmed {
   opacity:
@@ -851,9 +765,8 @@ textarea:focus-visible {
    SEARCH / FILTERS
 ========================================================= */
 
-.periodic-workspace input,
-#tools input,
-#tools select,
+#tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
+#tools select:not(.ui-switch):not(.ui-input):not(.ui-select),
 #tools textarea {
   border:
     1px solid
@@ -882,15 +795,13 @@ textarea:focus-visible {
 }
 
 
-.periodic-workspace input:hover,
-#tools input:hover {
+#tools input:not(.ui-switch):not(.ui-input):not(.ui-select):hover {
   border-color:
     rgba(255,255,255,.16);
 }
 
 
-.periodic-workspace input:focus,
-#tools input:focus {
+#tools input:not(.ui-switch):not(.ui-input):not(.ui-select):focus {
   border-color:
     rgba(155,92,255,.70);
 
@@ -903,40 +814,9 @@ textarea:focus-visible {
 }
 
 
-.periodic-workspace button {
-  min-height:
-    36px;
-}
-
-
 /* =========================================================
    ELEMENT DRAWER
 ========================================================= */
-
-.element-drawer {
-  border-left:
-    1px solid
-    var(--v4-border);
-
-  background:
-    rgba(10,12,19,.96);
-
-  backdrop-filter:
-    blur(24px);
-
-  box-shadow:
-    -20px 0 50px
-    rgba(0,0,0,.35);
-}
-
-
-.element-drawer button {
-  min-height:
-    42px;
-
-  border-radius:
-    11px;
-}
 
 
 /* =========================================================
