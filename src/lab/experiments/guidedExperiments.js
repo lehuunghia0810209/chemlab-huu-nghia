@@ -754,7 +754,7 @@ export function initGuidedExperiments() {
         <div>
 
           <span class="guided-eyebrow">
-            CHEMLAB GUIDED LEARNING
+            Thí nghiệm theo chương trình
           </span>
 
 
@@ -1329,7 +1329,7 @@ export function initGuidedExperiments() {
               <div class="guided-continue-copy">
 
                 <span>
-                  HOÀN THÀNH
+                  Hoàn thành
                 </span>
 
                 <strong>
@@ -1883,7 +1883,7 @@ export function initGuidedExperiments() {
                 <div class="guided-exp-objective">
 
                   <span>
-                    MỤC TIÊU
+                    Mục tiêu
                   </span>
 
 
@@ -2208,7 +2208,7 @@ export function initGuidedExperiments() {
         <div class="guided-overview-main">
 
           <span class="guided-overview-label">
-            MỤC TIÊU
+            Mục tiêu
           </span>
 
 
@@ -2298,7 +2298,7 @@ export function initGuidedExperiments() {
         <aside class="guided-resume-card">
 
           <span class="guided-overview-label">
-            TIẾN ĐỘ
+            Tiến độ
           </span>
 
 
@@ -2716,7 +2716,7 @@ export function initGuidedExperiments() {
           <div>
 
             <span class="guided-eyebrow">
-              HOÀN THÀNH
+              Hoàn thành
             </span>
 
 
@@ -2936,7 +2936,7 @@ export function initGuidedExperiments() {
                   <div>
 
                     <span class="guided-step-kicker">
-                      KẾT QUẢ ĐÃ XUẤT HIỆN
+                      Kết quả đã xuất hiện
                     </span>
 
                     <strong>
@@ -3365,7 +3365,7 @@ export function initGuidedExperiments() {
         <div class="guided-action-step">
 
           <span class="guided-step-kicker">
-            THAO TÁC TRONG LAB
+            Thao tác trong phòng thí nghiệm
           </span>
 
 
@@ -3420,7 +3420,7 @@ export function initGuidedExperiments() {
         <div class="guided-action-step">
 
           <span class="guided-step-kicker">
-            GIA NHIỆT
+            Gia nhiệt
           </span>
 
 
@@ -3479,7 +3479,7 @@ export function initGuidedExperiments() {
         <div class="guided-action-step">
 
           <span class="guided-step-kicker">
-            NHIỆT ĐỘ MỤC TIÊU
+            Nhiệt độ mục tiêu
           </span>
 
 
@@ -3549,7 +3549,7 @@ export function initGuidedExperiments() {
         <div class="guided-action-step">
 
           <span class="guided-step-kicker">
-            THỬ BẰNG GIẤY QUỲ TÍM
+            Thử bằng giấy quỳ tím
           </span>
 
           <strong>
@@ -3590,7 +3590,7 @@ export function initGuidedExperiments() {
         <div class="guided-action-step">
 
           <span class="guided-step-kicker">
-            QUAN SÁT PHẢN ỨNG
+            Quan sát phản ứng
           </span>
 
 
@@ -3735,16 +3735,16 @@ function getTypeLabel(
   const labels = {
 
     concept:
-      'Concept Learning',
+      'Học khái niệm',
 
     reaction:
-      'Reaction Lab',
+      'Thí nghiệm phản ứng',
 
     process:
-      'Process Learning',
+      'Quy trình',
 
     challenge:
-      'Challenge',
+      'Thử thách',
 
     theory:
       'Bài học',
@@ -3757,7 +3757,7 @@ function getTypeLabel(
 
   return (
     labels[type] ||
-    'Guided Learning'
+    'Bài học'
   )
 
 }

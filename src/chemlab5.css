@@ -1341,8 +1341,7 @@ button {
 ========================================================= */
 
 #tools,
-#learning-host,
-#lab-host {
+#learning-host {
   width:
     100%;
 
@@ -1526,8 +1525,7 @@ button {
 ========================================================= */
 
 #view-tools button,
-#view-learning button,
-#view-lab button {
+#view-learning button {
   touch-action:
     manipulation;
 }
@@ -1536,9 +1534,7 @@ button {
 #view-tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
 #view-tools select:not(.ui-switch):not(.ui-input):not(.ui-select),
 #view-learning input:not(.ui-switch):not(.ui-input):not(.ui-select),
-#view-learning select:not(.ui-switch):not(.ui-input):not(.ui-select),
-#view-lab input:not(.ui-switch):not(.ui-input):not(.ui-select),
-#view-lab select:not(.ui-switch):not(.ui-input):not(.ui-select) {
+#view-learning select:not(.ui-switch):not(.ui-input):not(.ui-select) {
   min-height:
     44px;
 }
@@ -2423,78 +2419,3 @@ button {
 /* =========================================================
    CHEMLAB 5 — VIRTUAL LAB UPGRADE
 ========================================================= */
-
-.lab-reagent-tools {
-  display: grid;
-
-  grid-template-columns:
-    minmax(0,1fr)
-    145px;
-
-  gap: 8px;
-
-  margin:
-    10px 0 12px;
-}
-
-
-.lab-reagent-tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
-.lab-reagent-tools select:not(.ui-switch):not(.ui-input):not(.ui-select) {
-  width: 100%;
-
-  min-width: 0;
-
-  min-height: 42px;
-
-  padding:
-    9px 12px;
-
-  border:
-    1px solid
-    var(--cl-border);
-
-  border-radius:
-    11px;
-
-  background:
-    rgba(8,10,16,.78);
-
-  color:
-    var(--cl-text-primary);
-
-  outline:
-    none;
-}
-
-
-.lab-reagent-tools input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder {
-  color:
-    var(--cl-text-muted);
-}
-
-
-.lab-reagent-tools input:not(.ui-switch):not(.ui-input):not(.ui-select):focus,
-.lab-reagent-tools select:not(.ui-switch):not(.ui-input):not(.ui-select):focus {
-  border-color:
-    rgba(168,85,247,.7);
-
-  box-shadow:
-    0 0 0 3px
-    rgba(139,92,246,.10);
-}
-
-
-.reagent-card[hidden] {
-  display:
-    none !important;
-}
-
-
-@media (max-width:767px) {
-
-  .lab-reagent-tools {
-    grid-template-columns:
-      1fr;
-  }
-
-}

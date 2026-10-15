@@ -547,7 +547,6 @@
 
 
   .v4-page-head,
-  #view-lab,
   #view-learning,
   #view-tools {
     width:
@@ -677,8 +676,6 @@
   .learning-mode-grid,
   .difficulty-grid,
   .learning-options,
-  .vl-layout,
-  .vl-side,
   .cc-tabs,
   .cc-formula-row,
   .cc-result-summary,
@@ -687,15 +684,6 @@
   .sol-query {
     grid-template-columns:
       minmax(0,1fr) !important;
-  }
-
-
-  .reagent-list {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0,1fr)
-      ) !important;
   }
 
 
@@ -743,12 +731,6 @@
 
       min-height:
         38px !important;
-    }
-
-
-    .reagent-list {
-      grid-template-columns:
-        minmax(0,1fr) !important;
     }
 
   }

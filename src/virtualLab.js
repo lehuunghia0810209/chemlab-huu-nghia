@@ -1,7 +1,6 @@
 import { APP_VERSION } from './appMeta.js'
 
 import './virtualLab.css'
-import './lab/labFilters.css'
 
 import {
   CHEMICALS,
@@ -11,6 +10,8 @@ import {
 import {
   REACTIONS
 } from './lab/reactions.js'
+import { reactionTitle, reactionDescription, reactionMessage } from './lab/reactionsVi.js'
+import { createBeakerEffects } from './lab/beakerEffects.js'
 
 import {
   findAvailableReactions
@@ -69,640 +70,175 @@ export function initVirtualLab() {
 
 
   section.innerHTML = `
-
-    <div class="vl-head">
-
+    <header class="ui-page-head vl-head">
       <div>
-
-        <span>
-          CHEMLAB ${APP_VERSION}
-        </span>
-
-
-        <h2>
-          Phòng thí nghiệm ảo
-        </h2>
-
-
-        <p>
-          Khám phá ${chemOrder.length} hóa chất và
-          ${reactions.length} phản ứng vô cơ, hữu cơ
-          trong môi trường mô phỏng.
-        </p>
-
+        <span class="ui-eyebrow">Phòng thí nghiệm ảo</span>
+        <h1>Phòng thí nghiệm</h1>
+        <p>${chemOrder.length} hóa chất · ${reactions.length} phản ứng vô cơ và hữu cơ. Chọn hóa chất, thêm vào cốc rồi quan sát hiện tượng và phương trình.</p>
       </div>
-
-
-      <div class="vl-live">
-
-        <i></i>
-
-        <b>
-          Đang mô phỏng
-        </b>
-
-      </div>
-
-    </div>
-
+      <p class="vl-safety" role="note">
+        <span aria-hidden="true">!</span>
+        Mô phỏng phục vụ học tập, không thay thế quy tắc an toàn trong phòng thí nghiệm thật.
+      </p>
+    </header>
 
     <div class="vl-layout">
 
-
-      <!-- ==================================================
-           CHEMICAL LIBRARY
-      =================================================== -->
-
-      <aside class="vl-shelf panel">
-
-        <div class="panel-label">
-          HÓA CHẤT
+      <aside class="vl-shelf panel" aria-labelledby="vl-shelf-title">
+        <div class="vl-panel-head">
+          <h2 id="vl-shelf-title">Hóa chất</h2>
+          <strong id="lab-chemical-count" class="ui-badge">${chemOrder.length} chất</strong>
         </div>
-
-
-        <h3>
-          Kho thí nghiệm
-        </h3>
-
 
         <div class="lab-reagent-tools">
-
-
-          <label
-            class="lab-search-shell"
-            for="lab-reagent-search"
-          >
-
-            <span
-              class="lab-search-icon"
-              aria-hidden="true"
-            >
-              ⌕
-            </span>
-
-
-            <input
-              id="lab-reagent-search"
-              type="search"
-              placeholder="Tìm HCl, Ethanol, Glucose..."
-              autocomplete="off"
-              aria-label="Tìm hóa chất"
-            >
-
+          <label class="lab-search-shell" for="lab-reagent-search">
+            <span class="lab-search-icon" aria-hidden="true">⌕</span>
+            <input id="lab-reagent-search" type="search" placeholder="Tìm HCl, Ethanol, Glucose…" autocomplete="off" aria-label="Tìm hóa chất">
           </label>
-
-
           <div class="lab-select-shell">
-
-            <select
-              id="lab-reagent-group"
-              class="lab-filter-select"
-              aria-label="Lọc nhóm hóa chất"
-            >
-
-              <option value="all">
-                Tất cả hóa chất
-              </option>
-
-              <option value="inorganic">
-                Vô cơ
-              </option>
-
-              <option value="organic">
-                Hữu cơ
-              </option>
-
-              <option value="indicator">
-                Chỉ thị / thuốc thử
-              </option>
-
+            <select id="lab-reagent-group" class="lab-filter-select" aria-label="Lọc nhóm hóa chất">
+              <option value="all">Tất cả</option>
+              <option value="inorganic">Vô cơ</option>
+              <option value="organic">Hữu cơ</option>
+              <option value="indicator">Chỉ thị / thuốc thử</option>
             </select>
-
-
-            <span
-              class="lab-select-arrow"
-              aria-hidden="true"
-            ></span>
-
           </div>
-
-        </div>
-
-
-        <!-- FAMILY FILTER -->
-
-        <div class="lab-family-filter">
-
-
-          <div class="lab-family-filter-head">
-
-            <span>
-              NHÓM / HỌ CHẤT
-            </span>
-
-
-            <strong id="lab-chemical-count">
-              ${chemOrder.length} chất
-            </strong>
-
-          </div>
-
-
-          <div
-            class="
-              lab-select-shell
-              lab-select-shell-wide
-            "
-          >
-
-            <select
-              id="lab-reagent-family"
-              class="lab-filter-select"
-              aria-label="Lọc họ hóa chất"
-            >
-
-              <option value="all">
-                Tất cả nhóm chức / họ chất
-              </option>
-
+          <div class="lab-select-shell lab-family-filter">
+            <select id="lab-reagent-family" class="lab-filter-select" aria-label="Lọc họ hóa chất">
+              <option value="all">Tất cả nhóm chức / họ chất</option>
             </select>
-
-
-            <span
-              class="lab-select-arrow"
-              aria-hidden="true"
-            ></span>
-
           </div>
-
         </div>
 
+        <div id="reagent-list" class="reagent-list" aria-label="Danh sách hóa chất"></div>
+        <div id="lab-no-results" class="lab-no-results" hidden>Không tìm thấy hóa chất phù hợp.</div>
 
-        <div
-          id="reagent-list"
-          class="reagent-list"
-        ></div>
+        <div id="vl-selected" class="vl-selected" hidden aria-live="polite"></div>
 
-
-        <div
-          id="lab-no-results"
-          class="lab-no-results"
-          hidden
-        >
-          Không tìm thấy hóa chất phù hợp.
-        </div>
-
-
-        <!-- VOLUME -->
-
-        <div class="vl-volume">
-
-          <span>
-            LƯỢNG THÊM
-          </span>
-
-
+        <div class="vl-volume" role="group" aria-label="Lượng thêm vào cốc">
+          <span>Lượng thêm</span>
           <div>
-
-            <button data-volume="1">
-              1 mL
-            </button>
-
-
-            <button data-volume="10">
-              10 mL
-            </button>
-
-
-            <button
-              data-volume="25"
-              class="active"
-            >
-              25 mL
-            </button>
-
-
-            <button data-volume="50">
-              50 mL
-            </button>
-
+            <button type="button" data-volume="1">1 mL</button>
+            <button type="button" data-volume="10">10 mL</button>
+            <button type="button" data-volume="25" class="active">25 mL</button>
+            <button type="button" data-volume="50">50 mL</button>
           </div>
-
         </div>
 
-
-        <button
-          id="add-reagent"
-          class="primary-btn"
-          disabled
-        >
-          + Thêm vào cốc
-        </button>
-
+        <button id="add-reagent" class="primary-btn" type="button" disabled>Thêm vào cốc</button>
       </aside>
-
-
-      <!-- ==================================================
-           MAIN LAB
-      =================================================== -->
 
       <div class="vl-main">
-
-
-        <div
-          class="vl-stage panel"
-          id="beaker-area"
-        >
-
-          <div class="stage-grid"></div>
-
+        <div class="vl-stage panel" id="beaker-area" aria-label="Khu vực thí nghiệm — có thể thả hóa chất vào cốc">
+          <div class="stage-grid" aria-hidden="true"></div>
 
           <div class="stage-badge left">
-
-            <span>
-              THỂ TÍCH
-            </span>
-
-            <strong id="lab-volume">
-              0 mL
-            </strong>
-
+            <span>Thể tích</span>
+            <strong id="lab-volume">0 mL</strong>
           </div>
-
-
           <div class="stage-badge right">
-
-            <span>
-              TRẠNG THÁI
-            </span>
-
-            <strong id="lab-state">
-              Cốc trống
-            </strong>
-
+            <span>Trạng thái</span>
+            <strong id="lab-state">Cốc trống</strong>
           </div>
-
 
           <div class="beaker-scene">
-
-
-            <div
-              class="steam-layer"
-              id="steam-layer"
-            ></div>
-
-
-            <div
-              class="beaker-wrap"
-              id="beaker-wrap"
-            >
-
+            <div class="steam-layer" id="steam-layer" aria-hidden="true"></div>
+            <div class="beaker-wrap" id="beaker-wrap" title="Kéo ngang để nghiêng cốc">
               <div class="beaker-body">
-
-
                 <div class="beaker-top"></div>
-
-
                 <div class="beaker-inner">
-
-
-                  <div class="beaker-scale">
-
-                    <span>
-                      250
-                    </span>
-
-                    <span>
-                      188
-                    </span>
-
-                    <span>
-                      125
-                    </span>
-
-                    <span>
-                      63
-                    </span>
-
+                  <div class="beaker-scale" aria-hidden="true">
+                    <span>250</span>
+                    <span>188</span>
+                    <span>125</span>
+                    <span>63</span>
                   </div>
-
-
                   <div class="liquid-mask">
-
-
-                    <div
-                      class="liquid"
-                      id="lab-liquid"
-                    >
-
-                      <div class="liquid-top"></div>
-
-                    </div>
-
-                    <div
-                      class="precipitate-layer"
-                      id="precipitate-layer"
-                    ></div>
-
-
-                    <div
-                      class="bubble-layer"
-                      id="bubble-layer"
-                    ></div>
-
-
-                    <div
-                      class="foam-layer"
-                      id="foam-layer"
-                    ></div>
-
+                    <div class="liquid" id="lab-liquid"><div class="liquid-top"></div></div>
+                    <div class="precipitate-layer" id="precipitate-layer"></div>
+                    <div class="bubble-layer" id="bubble-layer"></div>
+                    <div class="foam-layer" id="foam-layer"></div>
                   </div>
-
-
-                  <div
-                    class="drop-layer"
-                    id="drop-layer"
-                  ></div>
-
+                  <div class="drop-layer" id="drop-layer"></div>
                 </div>
-
               </div>
-
             </div>
-
-
-            <div
-              class="flame-box"
-              id="flame-base"
-            >
-
+            <div class="flame-box" id="flame-base" aria-hidden="true">
               <div class="flame-outer"></div>
-
               <div class="flame-core"></div>
-
               <div class="flame-stand"></div>
-
             </div>
-
-
-            <div class="scene-shadow"></div>
-
+            <div class="scene-shadow" aria-hidden="true"></div>
           </div>
-
 
           <div class="stage-note">
-
-            <div
-              class="litmus-paper-result"
-              id="litmus-paper-result"
-              hidden
-            >
-
-              <i
-                class="litmus-paper-strip"
-                id="litmus-paper-strip"
-                aria-hidden="true"
-              ></i>
-
-              <span id="litmus-paper-label">
-                Giấy quỳ tím
-              </span>
-
+            <div class="litmus-paper-result" id="litmus-paper-result" hidden>
+              <i class="litmus-paper-strip" id="litmus-paper-strip" aria-hidden="true"></i>
+              <span id="litmus-paper-label">Giấy quỳ tím</span>
             </div>
-
-
-            <strong id="lab-message-title">
-              Bắt đầu thí nghiệm
-            </strong>
-
-
-            <span id="lab-message">
-              Chọn một hóa chất bên trái để bắt đầu.
-            </span>
-
+            <strong id="lab-message-title">Bắt đầu thí nghiệm</strong>
+            <span id="lab-message">Chọn một hóa chất để bắt đầu.</span>
           </div>
-
         </div>
 
-
-        <!-- CONTROLS -->
-
-        <div class="vl-controls panel">
-
-          <button id="stir-button">
-            Khuấy
-          </button>
-
-
-          <button id="heat-button">
-            Bật lửa
-          </button>
-
-
-          <button id="empty-button">
-            Đổ bỏ
-          </button>
-
-
-          <button id="reset-lab">
-            Đặt lại
-          </button>
-
-
-          <span>
-            Kéo ngang trên cốc để nghiêng
-          </span>
-
+        <div class="vl-controls panel" role="toolbar" aria-label="Thao tác với cốc">
+          <button id="stir-button" type="button">Khuấy</button>
+          <button id="heat-button" type="button" aria-pressed="false">Bật lửa</button>
+          <button id="empty-button" type="button">Đổ bỏ</button>
+          <button id="reset-lab" type="button">Đặt lại</button>
+          <span>Kéo ngang trên cốc để nghiêng</span>
         </div>
-
-
-        <!-- DASHBOARD -->
 
         <div class="vl-dashboard">
-
-
           <div class="meter panel">
-
-            <span>
-              NHIỆT ĐỘ
-            </span>
-
-
-            <strong>
-
-              <b id="temperature-value">
-                25.0
-              </b>
-
-              °C
-
-            </strong>
-
-
-            <div class="bar">
-
-              <i id="temperature-bar"></i>
-
-            </div>
-
+            <span>Nhiệt độ</span>
+            <strong><b id="temperature-value">25.0</b> °C</strong>
+            <div class="bar"><i id="temperature-bar"></i></div>
           </div>
-
-
           <div class="meter panel">
-
-            <span>
-              ĐỘ pH
-            </span>
-
-
-            <strong id="ph-value">
-              7.0
-            </strong>
-
-
-            <div class="ph-bar">
-
-              <i id="ph-marker"></i>
-
-            </div>
-
+            <span>Độ pH (ước tính)</span>
+            <strong id="ph-value">7.0</strong>
+            <div class="ph-bar"><i id="ph-marker"></i></div>
           </div>
-
-
           <div class="meter panel">
-
-            <span>
-              DUNG DỊCH
-            </span>
-
-
-            <strong id="solution-count">
-              0 chất
-            </strong>
-
-
-            <small id="selected-name">
-              Chưa chọn hóa chất
-            </small>
-
+            <span>Dung dịch</span>
+            <strong id="solution-count">0 chất</strong>
+            <small id="selected-name">Chưa chọn hóa chất</small>
           </div>
-
         </div>
-
       </div>
 
-
-      <!-- ==================================================
-           ANALYSIS
-      =================================================== -->
-
-      <aside class="vl-side panel">
-
-        <div class="panel-label">
-          PHÂN TÍCH
+      <aside class="vl-side panel" aria-labelledby="vl-side-title">
+        <div class="vl-panel-head">
+          <h2 id="vl-side-title">Quan sát</h2>
         </div>
 
-
-        <h3>
-          Quan sát
-        </h3>
-
-
-        <div
-          class="info-box"
-          id="reaction-observation"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-
-          <span>
-            HIỆN TƯỢNG
-          </span>
-
-
-          <strong id="observation-title">
-            Chưa có hiện tượng
-          </strong>
-
-
-          <p id="observation-text">
-            Thêm hóa chất vào cốc để bắt đầu mô phỏng.
-          </p>
-
+        <div class="info-box" id="reaction-observation" role="status" aria-live="polite" aria-atomic="true">
+          <span>Hiện tượng</span>
+          <strong id="observation-title">Chưa có hiện tượng</strong>
+          <p id="observation-text">Thêm hóa chất vào cốc để bắt đầu mô phỏng.</p>
         </div>
-
 
         <div class="info-box">
-
-          <span>
-            PHƯƠNG TRÌNH
-          </span>
-
-
-          <strong id="reaction-equation">
-            —
-          </strong>
-
+          <span>Phương trình</span>
+          <strong id="reaction-equation">—</strong>
         </div>
-
 
         <div class="info-box">
-
-          <span>
-            TRONG CỐC
-          </span>
-
-
-          <div
-            id="composition-list"
-            class="composition-list"
-          >
-
-            <p>
-              Cốc đang trống.
-            </p>
-
-          </div>
-
+          <span>Trong cốc</span>
+          <div id="composition-list" class="composition-list"><p>Cốc đang trống.</p></div>
         </div>
-
 
         <div class="info-box log-box">
-
-
           <div class="log-head">
-
-            <span>
-              NHẬT KÝ
-            </span>
-
-
-            <button id="clear-log">
-              Xóa
-            </button>
-
+            <span>Nhật ký</span>
+            <button id="clear-log" type="button">Xóa</button>
           </div>
-
-
-          <div
-            id="lab-log-list"
-            class="log-list"
-          >
-
-            <p class="log-empty">
-              Chưa có hoạt động.
-            </p>
-
-          </div>
-
+          <div id="lab-log-list" class="log-list"><p class="log-empty">Chưa có hoạt động.</p></div>
         </div>
-
       </aside>
-
     </div>
   `
-
 
   host.appendChild(
     section
@@ -874,6 +410,11 @@ export function initVirtualLab() {
 
   const resetButton =
     $('#reset-lab')
+
+  const beakerEffects =
+    createBeakerEffects(
+      section.querySelector('.liquid-mask')
+    )
 
 
   /* =========================================================
@@ -1203,6 +744,9 @@ export function initVirtualLab() {
         'active',
         heating
       )
+
+
+    heatButton.setAttribute('aria-pressed', String(heating))
 
 
     heatButton.textContent =
@@ -1848,6 +1392,34 @@ export function initVirtualLab() {
      SELECT CHEMICAL
   ========================================================= */
 
+  const HAZARD_LABELS = Object.freeze({
+    corrosive: 'Ăn mòn',
+    oxidizing: 'Chất oxi hóa',
+    irritant: 'Gây kích ứng',
+    toxic: 'Độc',
+    flammable: 'Dễ cháy'
+  })
+
+  function renderSelectedReagent(reagent) {
+    const host = section.querySelector('#vl-selected')
+    if (!host) return
+    const color = reagent.solutionColor || reagent.color || '#f8fbff'
+    const hazards = (reagent.hazards || []).filter(item => HAZARD_LABELS[item])
+    host.hidden = false
+    host.innerHTML = `
+      <span class="vl-selected__swatch" style="--c:${color}" aria-hidden="true"></span>
+      <div class="vl-selected__copy">
+        <strong>${escapeHTML(reagent.formula)}</strong>
+        <span>${escapeHTML(reagent.name)} · ${escapeHTML(familyLabel(reagent.family))}</span>
+        ${hazards.length ? `
+          <ul class="vl-hazards" aria-label="Lưu ý an toàn với hóa chất thật">
+            ${hazards.map(item => `<li data-hazard="${item}">${HAZARD_LABELS[item]}</li>`).join('')}
+          </ul>` : ''}
+      </div>
+    `
+  }
+
+
   function selectReagent(
     id
   ) {
@@ -1881,9 +1453,16 @@ export function initVirtualLab() {
 
           )
 
+          card.setAttribute(
+            'aria-pressed',
+            String(card.dataset.reagent === id)
+          )
+
         }
       )
 
+
+    renderSelectedReagent(reagent)
 
     addButton.disabled =
       false
@@ -2603,6 +2182,8 @@ export function initVirtualLab() {
     liquid.style.height =
       `${height}%`
 
+    beakerEffects.setLevel(height / 100)
+
 
     bubbleLayer.style.height =
       `${height}%`
@@ -2868,11 +2449,11 @@ export function initVirtualLab() {
 
 
           observationTitle.textContent =
-            reaction.title
+            reactionTitle(reaction)
 
 
           observationText.textContent =
-            reaction.description ||
+            reactionDescription(reaction) ||
             ''
 
 
@@ -2882,12 +2463,12 @@ export function initVirtualLab() {
 
 
           messageTitle.textContent =
-            reaction.title
+            reactionTitle(reaction)
 
 
           message.textContent =
             reaction.equation ||
-            reaction.description ||
+            reactionDescription(reaction) ||
             'Phản ứng đã xảy ra.'
 
 
@@ -2910,14 +2491,14 @@ export function initVirtualLab() {
                 reaction.id,
 
               title:
-                reaction.title
+                reactionTitle(reaction)
 
             }
           )
 
 
           addLog(
-            reaction.title
+            reactionTitle(reaction)
           )
 
 
@@ -3031,7 +2612,7 @@ export function initVirtualLab() {
         ) {
 
           message.textContent =
-            effect.text
+            reactionMessage(effect.text)
 
         }
 
@@ -3138,6 +2719,8 @@ export function initVirtualLab() {
 
 
   function clearPrecipitate() {
+
+    beakerEffects.clearPrecipitate()
 
     precipitateLayer.replaceChildren()
 
@@ -3430,12 +3013,12 @@ export function initVirtualLab() {
     if (!observations.length) {
 
       observationTitle.textContent =
-        reaction.title ||
+        reactionTitle(reaction) ||
         'Phản ứng đã xảy ra'
 
 
       observationText.textContent =
-        reaction.description ||
+        reactionDescription(reaction) ||
         'Chưa có hiện tượng quan sát rõ.'
 
 
@@ -3471,338 +3054,28 @@ export function initVirtualLab() {
 
 
   function clearBubbles() {
-
-    bubbleTimers.forEach(
-      timer =>
-        clearTimeout(
-          timer
-        )
-    )
-
-
+    bubbleTimers.forEach(timer => clearTimeout(timer))
     bubbleTimers.clear()
-
-
-    bubbleLayer.replaceChildren()
-
+    beakerEffects.clearBubbles()
   }
-
 
   /* =========================================================
      BUBBLES
   ========================================================= */
 
-  function createBubbles(
-    count =
-      12
-  ) {
-
-    const maxBubbles =
-      window.matchMedia(
-        '(max-width: 767px)'
-      ).matches
-
-        ? 10
-
-        : 18
-
-
-    const availableSlots =
-      Math.max(
-        0,
-        maxBubbles -
-          bubbleLayer.childElementCount
-      )
-
-
-    const bubbleCount =
-      Math.min(
-        Math.max(
-          Math.round(
-            Number(count) || 0
-          ),
-          0
-        ),
-        availableSlots
-      )
-
-
-    for (
-      let i = 0;
-      i < bubbleCount;
-      i++
-    ) {
-
-      const bubble =
-        document.createElement(
-          'i'
-        )
-
-
-      bubble.style.left =
-        `${
-          8 +
-          Math.random() *
-          84
-        }%`
-
-
-      const size =
-        6 +
-        Math.random() *
-        8
-
-
-      bubble.style.width =
-        `${size}px`
-
-
-      bubble.style.height =
-        `${size}px`
-
-
-      const duration =
-        1.7 +
-        Math.random() *
-        1.2
-
-
-      const delay =
-        i * 55
-
-
-      bubble.style.animationDuration =
-        `${duration}s`
-
-
-      bubble.style.animationDelay =
-        `${delay}ms`
-
-
-      bubbleLayer.appendChild(
-        bubble
-      )
-
-
-      const timer =
-        window.setTimeout(
-          () => {
-
-            bubble.remove()
-
-            bubbleTimers.delete(
-              timer
-            )
-
-          },
-
-          duration * 1000 + delay + 150
-        )
-
-
-      bubbleTimers.add(
-        timer
-      )
-
-    }
-
+  function createBubbles(count = 12) {
+    beakerEffects.bubbles(Number(count) || 0)
   }
 
-
-  function createPrecipitate(
-    color
-  ) {
-
+  function createPrecipitate(color) {
     clearPrecipitate()
-
-
-    const reducedMotion =
-      window.matchMedia(
-        '(prefers-reduced-motion: reduce)'
-      ).matches
-
-
-    const mobile =
-      window.matchMedia(
-        '(max-width: 767px)'
-      ).matches
-
-
-    const liquidHeightPercent =
-      clamp(
-        totalVolume / 250 * 78,
-        10,
-        78
-      )
-
-
-    const lightColor =
-      precipitateColorLabel(
-        color
-      ) === 'trắng'
-
-
-    precipitateLayer.classList.add(
-      'has-precipitate'
-    )
-
-
-    if (lightColor) {
-
-      precipitateLayer.classList.add(
-        'is-light-precipitate'
-      )
-
+    precipitateLayer.classList.add('has-precipitate')
+    if (precipitateColorLabel(color) === 'trắng') {
+      precipitateLayer.classList.add('is-light-precipitate')
     }
-
-
-    precipitateLayer.style.setProperty(
-      '--precipitate-color',
-      color
-    )
-
-
-    precipitateLayer.style.setProperty(
-      '--cloud-height',
-      `${liquidHeightPercent}%`
-    )
-
-
-    precipitateLayer.style.setProperty(
-      '--sediment-height',
-      `${
-        clamp(
-          14 + totalVolume / 250 * 8,
-          14,
-          22
-        )
-      }px`
-    )
-
-
-    const cloud =
-      document.createElement(
-        'div'
-      )
-
-
-    cloud.className =
-      'precipitate-cloud'
-
-
-    cloud.setAttribute(
-      'aria-hidden',
-      'true'
-    )
-
-
-    const sediment =
-      document.createElement(
-        'div'
-      )
-
-
-    sediment.className =
-      'precipitate-sediment'
-
-
-    sediment.setAttribute(
-      'aria-hidden',
-      'true'
-    )
-
-
-    precipitateLayer.append(
-      cloud,
-      sediment
-    )
-
-
-    const particleCount =
-      reducedMotion
-
-        ? 8
-
-        : mobile
-
-          ? 8
-
-          : 16
-
-
-    for (
-      let i = 0;
-      i < particleCount;
-      i++
-    ) {
-
-      const particle =
-        document.createElement(
-          'i'
-        )
-
-
-      particle.className =
-        'precipitate-particle'
-
-
-      particle.style.left =
-        `${
-          10 +
-          Math.random() *
-          80
-        }%`
-
-
-      particle.style.top =
-        `${
-          100 -
-          liquidHeightPercent *
-            (.2 + Math.random() * .65)
-        }%`
-
-
-      const size =
-        4 +
-        Math.random() *
-        4
-
-
-      particle.style.width =
-        `${size}px`
-
-
-      particle.style.height =
-        `${size}px`
-
-
-      particle.style.opacity =
-        `${
-          .45 +
-          Math.random() *
-          .4
-        }`
-
-
-      particle.style.animationDelay =
-        reducedMotion
-
-          ? '0ms'
-
-          : `${
-              Math.random() *
-              850
-            }ms`
-
-
-      precipitateLayer.appendChild(
-        particle
-      )
-
-    }
-
+    precipitateLayer.style.setProperty('--precipitate-color', color)
+    beakerEffects.precipitate(color)
   }
-
 
   /* =========================================================
      FLASH
@@ -4217,6 +3490,9 @@ export function initVirtualLab() {
         )
 
 
+      heatButton.setAttribute('aria-pressed', String(heating))
+
+
       heatButton.textContent =
         heating
 
@@ -4397,6 +3673,9 @@ export function initVirtualLab() {
       .remove(
         'active'
       )
+
+
+    heatButton.setAttribute('aria-pressed', String(heating))
 
 
     heatButton.textContent =
@@ -4700,6 +3979,9 @@ export function initVirtualLab() {
           'dragging'
         )
 
+
+      scheduleAnimationLoop()
+
     }
   )
 
@@ -4945,7 +4227,10 @@ export function initVirtualLab() {
     )
 
 
-    scheduleAnimationLoop()
+    // Keep animating only while the beaker is held or still settling back.
+    if (dragging || tiltCurrent !== 0 || liquidTilt !== 0) {
+      scheduleAnimationLoop()
+    }
 
   }
 

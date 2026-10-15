@@ -223,6 +223,16 @@ test('90% boundary-surface level encloses ~90% of the probability on the grid', 
   assert.ok(Math.abs(inside / total - 0.9) < 0.02, `${(inside / total).toFixed(3)}`)
 })
 
+/* ---------- lab data ---------- */
+
+const { REACTIONS } = await import('../src/lab/reactions.js')
+const { hasTranslation } = await import('../src/lab/reactionsVi.js')
+
+test('every Virtual Lab reaction has Vietnamese display text', () => {
+  const missing = REACTIONS.filter(reaction => !hasTranslation(reaction.id)).map(reaction => reaction.id)
+  assert.deepEqual(missing, [])
+})
+
 const failures = results.filter(result => !result.pass)
 console.log('\nChemLab chemistry core')
 console.table(results.map(({ name, pass, error }) => ({ name, pass, error: error || '' })))

@@ -609,7 +609,6 @@ textarea:focus-visible,
 /* ---------- Shared module skin ---------- */
 .chem-tool-hub,
 .cl-learn,
-#lab,
 .chem-flow,
 .compound-studio,
 .reaction-studio {
@@ -617,8 +616,7 @@ textarea:focus-visible,
 }
 
 .chem-tool-hub,
-.cl-learn,
-#lab {
+.cl-learn {
   max-width: 1480px;
   margin-inline: auto;
 }
@@ -628,7 +626,6 @@ textarea:focus-visible,
 .cl-mastery,
 .cl-learning-setup,
 .cl-insights > *,
-.vl-head,
 .panel,
 .tool-stage > * {
   border-color: var(--cl6-border);
@@ -640,7 +637,6 @@ textarea:focus-visible,
 .cl-learning-setup,
 .cl-weak-panel,
 .cl-history-panel,
-.vl-head,
 .panel,
 .tool-selector-card,
 .tool-active-bar {
@@ -650,8 +646,7 @@ textarea:focus-visible,
 }
 
 .tool-hub-header,
-.cl-learn-dashboard,
-.vl-head {
+.cl-learn-dashboard {
   border-radius: 24px;
 }
 
@@ -672,7 +667,6 @@ textarea:focus-visible,
 .tool-selector-card.active { box-shadow: 0 12px 30px rgba(109,93,252,.12); }
 
 .cl-start-button,
-.primary-btn,
 .cl-next-button,
 .cl-progress-continue {
   min-height: 46px;
@@ -680,14 +674,8 @@ textarea:focus-visible,
   transition: transform .18s ease, box-shadow .18s ease;
 }
 .cl-start-button:hover,
-.primary-btn:hover,
 .cl-next-button:hover,
 .cl-progress-continue:hover { transform: translateY(-1px); }
-
-.vl-layout { gap: 14px; }
-.vl-stage { border-radius: 24px; overflow: hidden; }
-.reagent-list .bottle { transition: transform .16s ease, border-color .16s ease; }
-.reagent-list .bottle:hover { transform: translateY(-2px); }
 
 .v5-command-panel {
   border:1px solid var(--cl6-border-strong);
@@ -928,50 +916,6 @@ textarea:focus-visible,
 }
 
 /* Virtual Lab */
-#lab {
-  padding-inline: clamp(12px, 2vw, 28px);
-  padding-bottom: 48px;
-}
-
-.vl-head {
-  margin-top: 28px;
-  padding: 20px 22px;
-  background:
-    radial-gradient(circle at 86% 12%, rgba(39,213,213,.10), transparent 18rem),
-    linear-gradient(135deg, rgba(79,140,255,.08), transparent 52%),
-    var(--cl6-surface);
-}
-
-.vl-layout .panel {
-  border-radius: 20px;
-}
-
-.vl-shelf,
-.vl-side,
-.vl-controls {
-  background: color-mix(in srgb, var(--cl6-surface) 92%, transparent);
-}
-
-.lab-search-shell,
-.lab-select-shell,
-.lab-filter-select,
-.vl-volume button,
-.primary-btn {
-  border-radius: 13px;
-}
-
-.reagent-list .bottle {
-  border-radius: 15px;
-}
-
-.vl-dashboard .meter {
-  border-radius: 17px;
-}
-
-.log-list,
-.info-box {
-  border-radius: 14px;
-}
 
 /* Compound + Reaction Studio */
 .cs5-overlay,
@@ -1055,14 +999,8 @@ html[data-theme="light"] .cl6-final-banner {
 }
 
 @media (max-width: 767px) {
-  .cl-learn,
-  #lab {
+  .cl-learn {
     padding-inline: 0;
-  }
-
-  .vl-head {
-    margin-top: 10px;
-    border-radius: 20px;
   }
 
   .cs5-window,

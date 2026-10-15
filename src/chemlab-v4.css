@@ -997,343 +997,31 @@ button:hover:not(:disabled) {
    VIRTUAL LAB V4
 ========================================================= */
 
-#view-lab {
-  padding:
-    0 26px 70px;
-}
-
-
-.virtual-lab-v2 {
-  width:
-    min(1650px, 100%);
-
-  margin:
-    0 auto;
-
-  padding-top:
-    32px;
-}
-
-
-.virtual-lab-v2
-.panel {
-  border-color:
-    var(--v4-border);
-
-  background:
-    linear-gradient(
-      160deg,
-      rgba(16,19,29,.98),
-      rgba(9,11,17,.98)
-    );
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255,255,255,.03),
-    0 18px 45px
-    rgba(0,0,0,.18);
-}
-
 
 /* =========================================================
    FIX BEAKER MOUTH
    Miệng cốc nối thẳng với thành cốc
 ========================================================= */
 
-.virtual-lab-v2
-.beaker-body {
-  width:
-    290px !important;
-
-  height:
-    360px !important;
-}
-
-
-.virtual-lab-v2
-.beaker-top {
-  left:
-    -2px !important;
-
-  right:
-    -2px !important;
-
-  top:
-    8px !important;
-
-  height:
-    20px !important;
-
-  z-index:
-    8;
-
-  border:
-    4px solid
-    rgba(216,233,255,.92) !important;
-
-  border-radius:
-    50% !important;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(235,244,255,.20),
-      rgba(170,205,240,.035)
-    ) !important;
-
-  box-shadow:
-    inset 0 2px 4px
-    rgba(255,255,255,.10),
-    0 0 9px
-    rgba(170,205,255,.08);
-}
-
-
-.virtual-lab-v2
-.beaker-body::before {
-  inset:
-    17px 0 0 !important;
-
-  border-left:
-    5px solid
-    rgba(216,233,255,.88) !important;
-
-  border-right:
-    5px solid
-    rgba(216,233,255,.88) !important;
-
-  border-bottom:
-    5px solid
-    rgba(216,233,255,.88) !important;
-
-  border-bottom-left-radius:
-    35px !important;
-
-  border-bottom-right-radius:
-    35px !important;
-
-  box-shadow:
-    inset 15px 0 18px
-    rgba(255,255,255,.018),
-    inset -15px 0 18px
-    rgba(255,255,255,.012),
-    0 22px 35px
-    rgba(0,0,0,.16) !important;
-}
-
-
-.virtual-lab-v2
-.beaker-inner {
-  left:
-    6px !important;
-
-  right:
-    6px !important;
-
-  top:
-    27px !important;
-
-  bottom:
-    18px !important;
-}
-
-
-.virtual-lab-v2
-.liquid-mask {
-  left:
-    4px !important;
-
-  right:
-    4px !important;
-
-  bottom:
-    5px !important;
-
-  height:
-    292px !important;
-
-  border-bottom-left-radius:
-    29px !important;
-
-  border-bottom-right-radius:
-    29px !important;
-}
-
 
 /* =========================================================
    BEAKER UX
 ========================================================= */
-
-.virtual-lab-v2
-.beaker-wrap {
-  cursor:
-    grab;
-
-  filter:
-    drop-shadow(
-      0 18px 30px
-      rgba(0,0,0,.20)
-    );
-}
-
-
-.virtual-lab-v2
-.beaker-wrap:hover {
-  filter:
-    drop-shadow(
-      0 20px 34px
-      rgba(0,0,0,.26)
-    )
-    drop-shadow(
-      0 0 12px
-      rgba(130,170,230,.06)
-    );
-}
-
-
-.virtual-lab-v2
-.beaker-wrap.dragging {
-  cursor:
-    grabbing;
-}
-
-
-.virtual-lab-v2
-.liquid {
-  transition:
-    height
-    600ms
-    var(--v4-ease),
-
-    background
-    350ms ease,
-
-    filter
-    300ms ease !important;
-}
 
 
 /* =========================================================
    LAB REAGENT CARDS
 ========================================================= */
 
-.virtual-lab-v2
-.reagent-card {
-  min-height:
-    72px;
-
-  border-color:
-    rgba(255,255,255,.075);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(20,23,34,.95),
-      rgba(13,15,23,.95)
-    );
-}
-
-
-.virtual-lab-v2
-.reagent-card:hover {
-  transform:
-    translateY(-2px)
-    translateX(2px);
-
-  border-color:
-    rgba(155,92,255,.34);
-
-  box-shadow:
-    0 9px 24px
-    rgba(0,0,0,.20);
-}
-
-
-.virtual-lab-v2
-.reagent-card.active {
-  border-color:
-    rgba(155,92,255,.72);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(74,30,120,.42),
-      rgba(19,17,30,.96)
-    );
-
-  box-shadow:
-    0 0 0 1px
-    rgba(155,92,255,.12),
-    0 10px 26px
-    rgba(92,35,170,.16);
-}
-
 
 /* =========================================================
    LAB BUTTONS
 ========================================================= */
 
-.virtual-lab-v2
-.primary-btn {
-  min-height:
-    50px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #7c3aed,
-      #a23df0
-    );
-
-  box-shadow:
-    0 10px 25px
-    rgba(124,58,237,.22);
-}
-
-
-.virtual-lab-v2
-.primary-btn:hover:not(:disabled) {
-  transform:
-    translateY(-2px);
-
-  box-shadow:
-    0 14px 32px
-    rgba(124,58,237,.30);
-}
-
-
-.virtual-lab-v2
-.vl-controls button {
-  min-height:
-    44px;
-
-  border-radius:
-    11px;
-}
-
 
 /* =========================================================
    LAB INFO
 ========================================================= */
-
-.virtual-lab-v2
-.info-box {
-  border-color:
-    var(--v4-border);
-
-  background:
-    rgba(14,17,26,.86);
-}
-
-
-.virtual-lab-v2
-.stage-badge {
-  border-color:
-    var(--v4-border);
-
-  backdrop-filter:
-    blur(12px);
-}
 
 
 /* =========================================================
@@ -1376,12 +1064,6 @@ button:hover:not(:disabled) {
   .workspace-title-area {
     margin-left:
       10px;
-  }
-
-
-  #view-lab {
-    padding:
-      0 14px 60px;
   }
 
 }

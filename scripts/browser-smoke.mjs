@@ -218,6 +218,30 @@ async function interactionChecks(browser, baseURL) {
   await page.waitForFunction(() => document.querySelector('[data-oa-busy]')?.hidden === true, null, { timeout: 15000 })
   record('orbital atlas renders and switches family', Boolean(await page.$('#orbital-atlas [data-variant="dz2"][aria-pressed="true"]')))
 
+  /* virtual lab: a data-driven precipitation and a guided experiment */
+  await openView(page, baseURL, 'lab')
+  for (const id of ['agno3', 'nacl']) {
+    await page.click(`.reagent-card[data-reagent="${id}"]`)
+    await page.click('#add-reagent')
+    await page.waitForTimeout(350)
+  }
+  const lab = await page.evaluate(() => ({
+    title: document.querySelector('#observation-title')?.textContent.trim(),
+    equation: document.querySelector('#reaction-equation')?.textContent.trim(),
+    precipitate: document.querySelector('#precipitate-layer')?.classList.contains('has-precipitate'),
+    canvas: Boolean(document.querySelector('.liquid-mask canvas.beaker-effects'))
+  }))
+  record('lab: AgNO₃ + NaCl gives a white precipitate (Vietnamese observation)',
+    lab.precipitate && lab.canvas && /kết tủa/i.test(lab.title) && lab.equation.includes('AgCl'), JSON.stringify(lab))
+
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
+    detail: { grade: 10, lessonId: 'g10-l22', experimentId: 'g10-halide-chloride' }
+  })))
+  await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
+  await page.click('[data-guided-mode="free"]')
+  record('guided experiment opens and returns to free mode',
+    await page.evaluate(() => !document.querySelector('.vl-layout').hidden))
+
   record('console clean during interactions', errors.length === 0, errors.join(' | '))
   await context.close()
 }
@@ -248,9 +272,14 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  await layoutSweep(browser, baseURL)
-  await interactionChecks(browser, baseURL)
-  await pwaCheck(browser, baseURL)
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['pwa', pwaCheck]]) {
+    try {
+      await run(browser, baseURL)
+    }
+    catch (error) {
+      record(`${name} finished without crashing`, false, error.message.split('\n')[0])
+    }
+  }
 }
 finally {
   await browser.close()

@@ -833,38 +833,6 @@ html[data-theme="light"]
    16. GENERIC TOOL SURFACES
 ========================================================= */
 
-html[data-theme="light"]
-:is(
-  .balance-shell,
-  .cc-workspace,
-  .sol-shell,
-  .learning-shell,
-  .learning-start,
-  .learning-question-card,
-  .virtual-lab-v2 .panel
-) {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.88),
-      rgba(246,248,252,.86)
-    )
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-
-  box-shadow:
-    var(--zp-shadow-sm)
-    !important;
-}
-
 
 /* =========================================================
    17. INPUTS
@@ -938,31 +906,9 @@ textarea::placeholder {
    18. BUTTONS
 ========================================================= */
 
-html[data-theme="light"]
-:is(
-  #view-tools,
-  #view-learning,
-  #view-lab
-)
-button:not(
-  .cc-primary
-):not(
-  .primary-btn
-):not(
-  .learning-start-button
-) {
-
-  border-color:
-    var(--zp-border)
-    !important;
-}
-
 
 html[data-theme="light"]
 .cc-primary,
-
-html[data-theme="light"]
-.primary-btn,
 
 html[data-theme="light"]
 .learning-start-button {
@@ -992,9 +938,6 @@ html[data-theme="light"]
 
 html[data-theme="light"]
 .cc-primary:hover,
-
-html[data-theme="light"]
-.primary-btn:hover,
 
 html[data-theme="light"]
 .learning-start-button:hover {
@@ -1218,142 +1161,8 @@ html[data-theme="light"]
    23. VIRTUAL LAB
 ========================================================= */
 
-html[data-theme="light"]
-.virtual-lab-v2 {
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
-
-html[data-theme="light"]
-.virtual-lab-v2
-.panel {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.90),
-      rgba(243,246,250,.88)
-    )
-    !important;
-
-  box-shadow:
-    var(--zp-shadow-sm)
-    !important;
-}
-
-
-html[data-theme="light"]
-.reagent-card {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(255,255,255,.62)
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
-
-html[data-theme="light"]
-.reagent-card:hover {
-
-  background:
-    #ffffff
-    !important;
-
-  border-color:
-    var(--zp-purple-border)
-    !important;
-
-  box-shadow:
-    var(--zp-shadow-sm)
-    !important;
-}
-
-
-html[data-theme="light"]
-.reagent-card.active {
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(139,107,232,.11),
-      rgba(255,255,255,.94)
-    )
-    !important;
-
-  border-color:
-    var(--zp-purple-border)
-    !important;
-}
-
-
-html[data-theme="light"]
-.reagent-text strong {
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
-
-html[data-theme="light"]
-.reagent-text span {
-
-  color:
-    var(--zp-text-3)
-    !important;
-}
-
-
-html[data-theme="light"]
-:is(
-  .info-box,
-  .meter,
-  .stage-note,
-  .stage-badge,
-  .vl-controls
-) {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(255,255,255,.58)
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
 
 /* keep laboratory scene darker for contrast */
-
-html[data-theme="light"]
-.vl-stage {
-
-  background:
-    radial-gradient(
-      circle at 50% 25%,
-      #f6f8fb,
-      #e9edf4
-    )
-    !important;
-}
 
 
 /* =========================================================
@@ -1730,82 +1539,6 @@ html[data-theme="light"]
    32. GUIDED LEARNING
 ========================================================= */
 
-html[data-theme="light"]
-#view-lab .guided-panel,
-html[data-theme="light"]
-#view-lab .guided-modebar {
-  border-color: rgba(76, 86, 109, .14) !important;
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-grade-card,
-html[data-theme="light"]
-#view-lab .guided-experiment-card,
-html[data-theme="light"]
-#view-lab .guided-overview-main,
-html[data-theme="light"]
-#view-lab .guided-resume-card {
-  border-color: rgba(76, 86, 109, .14) !important;
-  background: #fff !important;
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-mode-btn {
-  color: #4c566d !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-mode-btn:hover:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
-html[data-theme="light"]
-#view-lab .guided-mode-btn.active:not(.cc-primary):not(.primary-btn):not(.learning-start-button) {
-  border-color: rgba(115, 86, 214, .24) !important;
-  background: rgba(139, 107, 232, .09) !important;
-  color: #302650 !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-mode-btn small,
-html[data-theme="light"]
-#view-lab .guided-grade-card > p,
-html[data-theme="light"]
-#view-lab .guided-grade-meta,
-html[data-theme="light"]
-#view-lab .guided-hero p {
-  color: #59657a !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-grade-card > strong,
-html[data-theme="light"]
-#view-lab .guided-hero h3,
-html[data-theme="light"]
-#view-lab .guided-toolbar h3,
-html[data-theme="light"]
-#view-lab .guided-coach h3 {
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-progress-track {
-  background: rgba(76, 86, 109, .12) !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .guided-note {
-  border-color: rgba(115, 86, 214, .18) !important;
-  background: rgba(139, 107, 232, .06) !important;
-  color: #4c566d !important;
-}
-
 
 /* =========================================================
    33. PERIODIC TABLE
@@ -1857,15 +1590,6 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.stage-side-info {
-  border-color: rgba(76, 86, 109, .14) !important;
-  background: rgba(255, 255, 255, .88) !important;
-}
-
-
-html[data-theme="light"]
-.stage-side-info strong,
 html[data-theme="light"]
 .balance-stage-message strong {
   color: #202635 !important;
@@ -2472,16 +2196,6 @@ html[data-theme="light"]
 
 
 html[data-theme="light"]
-#view-tools .ion-filter button.active:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
-html[data-theme="light"]
-#view-tools .ion-card.selected:not(.cc-primary):not(.primary-btn):not(.learning-start-button),
-html[data-theme="light"]
-#view-tools .ion-to-solubility:not(.cc-primary):not(.primary-btn):not(.learning-start-button) {
-  border-color: rgba(115, 86, 214, .32) !important;
-}
-
-
-html[data-theme="light"]
 .ion-card-formula sup,
 html[data-theme="light"]
 .ion-detail-grid strong,
@@ -2566,19 +2280,6 @@ html[data-theme="light"]
 
 
 html[data-theme="light"]
-.virtual-lab-v2 .panel,
-html[data-theme="light"]
-#view-lab .guided-panel,
-html[data-theme="light"]
-#view-lab .guided-modebar {
-  border-color: rgba(54, 68, 86, .2) !important;
-  background: #e9edf2 !important;
-  color: #202b3a !important;
-  box-shadow: 0 5px 18px rgba(37, 49, 65, .055) !important;
-}
-
-
-html[data-theme="light"]
 :is(
   .cl-learn-profile,
   .cl-learn-stats,
@@ -2638,210 +2339,6 @@ html[data-theme="light"]
 /* =========================================================
    40. LAB LIGHT DETAILS
 ========================================================= */
-
-html[data-theme="light"]
-.reagent-card,
-html[data-theme="light"]
-.vl-controls button,
-html[data-theme="light"]
-.vl-volume button,
-html[data-theme="light"]
-.log-head button {
-  border-color: rgba(54, 68, 86, .2) !important;
-  background: #dfe5ed !important;
-  color: #263446 !important;
-  box-shadow: none !important;
-}
-
-
-html[data-theme="light"]
-.reagent-card.active {
-  border-color: rgba(95, 75, 158, .38) !important;
-  background: #e2e5ef !important;
-  box-shadow: inset 0 0 0 1px rgba(95, 75, 158, .12) !important;
-}
-
-
-html[data-theme="light"]
-.reagent-card:hover,
-html[data-theme="light"]
-.vl-controls button:hover,
-html[data-theme="light"]
-.vl-volume button:hover {
-  border-color: rgba(95, 75, 158, .34) !important;
-  background: #e7e8f0 !important;
-}
-
-
-html[data-theme="light"]
-.vl-volume button.active,
-html[data-theme="light"]
-.vl-controls button.active,
-html[data-theme="light"]
-.primary-btn {
-  border-color: #6653a7 !important;
-  background: #6653a7 !important;
-  color: #fff !important;
-  box-shadow: 0 3px 10px rgba(60, 49, 99, .16) !important;
-}
-
-
-html[data-theme="light"]
-.vl-live {
-  border-color: rgba(54, 68, 86, .17) !important;
-  background: #e1e8e3 !important;
-  color: #31573f !important;
-}
-
-
-html[data-theme="light"]
-.vl-live b {
-  color: #31573f !important;
-}
-
-
-html[data-theme="light"]
-.stage-badge,
-html[data-theme="light"]
-.info-box,
-html[data-theme="light"]
-.meter,
-html[data-theme="light"]
-.stage-note {
-  border-color: rgba(54, 68, 86, .18) !important;
-  background: #e1e6ed !important;
-  color: #263446 !important;
-  box-shadow: none !important;
-}
-
-
-html[data-theme="light"]
-.stage-note strong,
-html[data-theme="light"]
-.stage-badge strong,
-html[data-theme="light"]
-.meter strong,
-html[data-theme="light"]
-.info-box strong {
-  color: #202b3a !important;
-}
-
-
-html[data-theme="light"]
-.stage-note span,
-html[data-theme="light"]
-.meter small,
-html[data-theme="light"]
-.info-box p,
-html[data-theme="light"]
-.composition-list p,
-html[data-theme="light"]
-.log-empty,
-html[data-theme="light"]
-.log-item p,
-html[data-theme="light"]
-.vl-controls span {
-  color: #465568 !important;
-}
-
-
-html[data-theme="light"]
-.composition-list div,
-html[data-theme="light"]
-.log-item {
-  border: 1px solid rgba(54, 68, 86, .14) !important;
-  background: #e6ebf1 !important;
-  color: #263446 !important;
-}
-
-
-html[data-theme="light"]
-.composition-list strong {
-  color: #202b3a !important;
-}
-
-
-html[data-theme="light"]
-.log-item span {
-  color: #526071 !important;
-}
-
-
-html[data-theme="light"]
-.vl-stage::after {
-  opacity: .35 !important;
-}
-
-
-html[data-theme="light"]
-.stage-grid {
-  background-image:
-    linear-gradient(rgba(69, 85, 104, .075) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(69, 85, 104, .075) 1px, transparent 1px)
-    !important;
-}
-
-
-html[data-theme="light"]
-.beaker-body::before {
-  border-color: rgba(89, 109, 134, .58) !important;
-  background: rgba(184, 199, 217, .16) !important;
-  box-shadow: 0 8px 18px rgba(50, 66, 88, .08) !important;
-}
-
-
-html[data-theme="light"]
-.beaker-top {
-  border-color: rgba(89, 109, 134, .66) !important;
-  background: linear-gradient(180deg, rgba(245, 248, 252, .62), rgba(204, 216, 231, .24)) !important;
-}
-
-
-html[data-theme="light"]
-.beaker-scale {
-  color: #44556b !important;
-}
-
-
-html[data-theme="light"]
-.beaker-scale span::before {
-  background: rgba(68, 85, 107, .5) !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .reagent-card {
-  border-color: rgba(54, 68, 86, .2) !important;
-  background: #dfe5ed !important;
-  color: #263446 !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .reagent-card.active {
-  border-color: rgba(95, 75, 158, .4) !important;
-  background: #d9deea !important;
-  color: #263446 !important;
-  box-shadow: inset 0 0 0 1px rgba(95, 75, 158, .14) !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .info-box {
-  border-color: rgba(54, 68, 86, .18) !important;
-  background: #e1e6ed !important;
-  color: #263446 !important;
-}
-
-
-html[data-theme="light"]
-#view-lab .vl-volume button.active,
-html[data-theme="light"]
-#view-lab .vl-controls button.active {
-  border-color: #6653a7 !important;
-  background: #6653a7 !important;
-  color: #fff !important;
-}
 
 
 /* =========================================================

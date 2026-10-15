@@ -4,84 +4,28 @@
 ========================================================= */
 
 .guided-lab-shell {
-  --guided-bg: rgba(12, 14, 22, .58);
-  --guided-surface: rgba(20, 23, 34, .82);
-  --guided-surface-strong: rgba(26, 28, 42, .92);
-  --guided-surface-soft: rgba(255, 255, 255, .025);
-  --guided-border: rgba(255, 255, 255, .07);
-  --guided-border-strong: rgba(139, 92, 246, .24);
-
-  --guided-text: var(--cl-text-primary, #f5f7fb);
-  --guided-text-2: var(--cl-text-secondary, #9ca6ba);
-  --guided-text-3: #7b8498;
-
-  --guided-accent: #a98bff;
-  --guided-accent-2: #7c4dff;
-
-  --guided-success: #72d696;
-  --guided-danger: #ef9a9a;
-
-  --guided-radius-sm: 10px;
-  --guided-radius: 14px;
-  --guided-radius-lg: 17px;
-
-  --guided-control-h: 46px;
+  /* Mapped onto the app design tokens, so both themes follow automatically. */
+  --guided-bg: var(--bg-sunken);
+  --guided-surface: var(--surface-1);
+  --guided-surface-strong: var(--surface-2);
+  --guided-surface-soft: var(--surface-hover);
+  --guided-border: var(--border-subtle);
+  --guided-border-strong: var(--border-strong);
+  --guided-text: var(--text-primary);
+  --guided-text-2: var(--text-secondary);
+  --guided-text-3: var(--text-muted);
+  --guided-accent: var(--accent-text);
+  --guided-accent-2: var(--accent);
+  --guided-success: var(--status-success);
+  --guided-danger: var(--status-danger);
+  --guided-radius-sm: var(--radius-sm);
+  --guided-radius: var(--radius-md);
+  --guided-radius-lg: var(--radius-lg);
+  --guided-control-h: var(--touch-min);
 
   display: grid;
-
-  gap: 18px;
-
-  margin:
-    14px
-    0
-    18px;
-}
-
-
-/* =========================================================
-   LIGHT THEME TOKENS
-========================================================= */
-
-html[data-theme="light"]
-.guided-lab-shell {
-  --guided-bg:
-    rgba(241, 244, 249, .92);
-
-  --guided-surface:
-    rgba(255, 255, 255, .88);
-
-  --guided-surface-strong:
-    #ffffff;
-
-  --guided-surface-soft:
-    rgba(47, 58, 78, .035);
-
-  --guided-border:
-    rgba(45, 55, 75, .11);
-
-  --guided-border-strong:
-    rgba(109, 74, 198, .22);
-
-  --guided-text:
-    #202633;
-
-  --guided-text-2:
-    #596275;
-
-  --guided-text-3:
-    #717b8f;
-
-  --guided-accent:
-    #7352c7;
-
-  --guided-accent-2:
-    #6846b6;
-
-  --guided-success:
-    #31885a;
-
-  --guided-danger:
-    #b64a4a;
+  gap: var(--space-4);
+  margin: var(--space-4) 0;
 }
 
 
@@ -172,10 +116,10 @@ html[data-theme="light"]
     translateY(-1px);
 
   border-color:
-    rgba(139, 92, 246, .14);
+    color-mix(in oklab, var(--accent) 14%, transparent);
 
   background:
-    rgba(139, 92, 246, .06);
+    color-mix(in oklab, var(--accent) 6%, transparent);
 
   color:
     var(--guided-text);
@@ -184,13 +128,13 @@ html[data-theme="light"]
 
 .guided-mode-btn.active {
   border-color:
-    rgba(139, 92, 246, .28);
+    color-mix(in oklab, var(--accent) 28%, transparent);
 
   background:
     linear-gradient(
       135deg,
-      rgba(139, 92, 246, .16),
-      rgba(80, 66, 160, .07)
+      color-mix(in oklab, var(--accent) 16%, transparent),
+      color-mix(in oklab, var(--accent) 7%, transparent)
     );
 
   color:
@@ -214,7 +158,7 @@ html[data-theme="light"]
     11px;
 
   background:
-    rgba(139, 92, 246, .11);
+    color-mix(in oklab, var(--accent) 11%, transparent);
 
   color:
     var(--guided-accent);
@@ -374,7 +318,7 @@ html[data-theme="light"]
     900;
 
   letter-spacing:
-    .13em;
+    .01em;
 }
 
 
@@ -396,13 +340,13 @@ html[data-theme="light"]
 
   border:
     1px solid
-    rgba(46, 204, 113, .18);
+    color-mix(in oklab, var(--status-success) 18%, transparent);
 
   border-radius:
     999px;
 
   background:
-    rgba(46, 204, 113, .07);
+    color-mix(in oklab, var(--status-success) 7%, transparent);
 
   color:
     var(--guided-success);
@@ -457,22 +401,6 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.guided-grade-card,
-
-html[data-theme="light"]
-.guided-experiment-card,
-
-html[data-theme="light"]
-.guided-overview-main,
-
-html[data-theme="light"]
-.guided-resume-card {
-  background:
-    var(--guided-surface);
-}
-
-
 .guided-grade-card {
   display:
     flex;
@@ -508,7 +436,7 @@ html[data-theme="light"]
     translateY(-2px);
 
   border-color:
-    rgba(139, 92, 246, .35);
+    color-mix(in oklab, var(--accent) 35%, transparent);
 
   background:
     linear-gradient(
@@ -520,13 +448,6 @@ html[data-theme="light"]
   box-shadow:
     0 12px 30px
     rgba(0, 0, 0, .12);
-}
-
-
-html[data-theme="light"]
-.guided-grade-card:hover {
-  background:
-    var(--guided-surface-strong);
 }
 
 
@@ -567,7 +488,7 @@ html[data-theme="light"]
     13px;
 
   background:
-    rgba(139, 92, 246, .13);
+    color-mix(in oklab, var(--accent) 13%, transparent);
 
   color:
     var(--guided-accent);
@@ -704,13 +625,6 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.guided-progress-track {
-  background:
-    rgba(40, 48, 65, .08);
-}
-
-
 .guided-progress-track.large {
   height:
     9px;
@@ -730,8 +644,8 @@ html[data-theme="light"]
   background:
     linear-gradient(
       90deg,
-      #7554d5,
-      #a687ff
+      var(--accent),
+      var(--accent)
     );
 }
 
@@ -746,13 +660,13 @@ html[data-theme="light"]
 
   border:
     1px solid
-    rgba(139, 92, 246, .12);
+    color-mix(in oklab, var(--accent) 12%, transparent);
 
   border-radius:
     11px;
 
   background:
-    rgba(139, 92, 246, .04);
+    color-mix(in oklab, var(--accent) 4%, transparent);
 
   color:
     var(--guided-text-2);
@@ -837,12 +751,12 @@ html[data-theme="light"]
 
   border:
     1px solid
-    rgba(139, 92, 246, .30);
+    color-mix(in oklab, var(--accent) 30%, transparent);
 
   background:
     linear-gradient(
       135deg,
-      #7c4dff,
+      var(--accent),
       #6750c7
     );
 
@@ -868,14 +782,14 @@ html[data-theme="light"]
 .guided-primary-btn:hover {
   box-shadow:
     0 8px 22px
-    rgba(99, 64, 190, .20);
+    color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 
 .guided-secondary-btn:hover,
 .guided-back-btn:hover {
   border-color:
-    rgba(139, 92, 246, .22);
+    color-mix(in oklab, var(--accent) 22%, transparent);
 
   color:
     var(--guided-text);
@@ -957,13 +871,13 @@ html[data-theme="light"]
 
   border:
     1px solid
-    rgba(139, 92, 246, .16);
+    color-mix(in oklab, var(--accent) 16%, transparent);
 
   border-radius:
     13px;
 
   background:
-    rgba(139, 92, 246, .055);
+    color-mix(in oklab, var(--accent) 5.5%, transparent);
 }
 
 
@@ -1017,7 +931,7 @@ html[data-theme="light"]
 
   border:
     1px solid
-    rgba(139, 92, 246, .20);
+    color-mix(in oklab, var(--accent) 20%, transparent);
 
   border-radius:
     15px;
@@ -1025,7 +939,7 @@ html[data-theme="light"]
   background:
     radial-gradient(
       circle at 0 0,
-      rgba(139, 92, 246, .12),
+      color-mix(in oklab, var(--accent) 12%, transparent),
       transparent 35%
     ),
     linear-gradient(
@@ -1036,24 +950,12 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.guided-continue-card {
-  background:
-    radial-gradient(
-      circle at 0 0,
-      rgba(109, 74, 198, .09),
-      transparent 38%
-    ),
-    rgba(255, 255, 255, .88);
-}
-
-
 .guided-continue-card.complete {
   border-color:
-    rgba(46, 204, 113, .16);
+    color-mix(in oklab, var(--status-success) 16%, transparent);
 
   background:
-    rgba(46, 204, 113, .035);
+    color-mix(in oklab, var(--status-success) 3.5%, transparent);
 }
 
 
@@ -1074,7 +976,7 @@ html[data-theme="light"]
     12px;
 
   background:
-    rgba(139, 92, 246, .12);
+    color-mix(in oklab, var(--accent) 12%, transparent);
 
   color:
     var(--guided-accent);
@@ -1087,7 +989,7 @@ html[data-theme="light"]
 .guided-continue-card.complete
 .guided-continue-icon {
   background:
-    rgba(46, 204, 113, .08);
+    color-mix(in oklab, var(--status-success) 8%, transparent);
 
   color:
     var(--guided-success);
@@ -1118,7 +1020,7 @@ html[data-theme="light"]
     900;
 
   letter-spacing:
-    .12em;
+    .01em;
 }
 
 
@@ -1251,13 +1153,6 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.guided-search input {
-  background:
-    rgba(255, 255, 255, .88);
-}
-
-
 .guided-search input::placeholder {
   color:
     var(--guided-text-3);
@@ -1273,14 +1168,7 @@ html[data-theme="light"]
 
   box-shadow:
     0 0 0 3px
-    rgba(139, 92, 246, .09);
-}
-
-
-html[data-theme="light"]
-.guided-search input:focus {
-  background:
-    #fff;
+    color-mix(in oklab, var(--accent) 9%, transparent);
 }
 
 
@@ -1351,10 +1239,10 @@ html[data-theme="light"]
 
 .guided-filter-tabs button.active {
   border-color:
-    rgba(139, 92, 246, .18);
+    color-mix(in oklab, var(--accent) 18%, transparent);
 
   background:
-    rgba(139, 92, 246, .11);
+    color-mix(in oklab, var(--accent) 11%, transparent);
 
   color:
     var(--guided-accent);
@@ -1405,13 +1293,6 @@ html[data-theme="light"]
 
   background:
     var(--guided-bg);
-}
-
-
-html[data-theme="light"]
-.guided-chapter {
-  background:
-    var(--guided-surface);
 }
 
 
@@ -1503,7 +1384,7 @@ summary
     11px;
 
   background:
-    rgba(139, 92, 246, .10);
+    color-mix(in oklab, var(--accent) 10%, transparent);
 
   color:
     var(--guided-accent);
@@ -1598,14 +1479,6 @@ summary
 }
 
 
-html[data-theme="light"]
-.guided-chapter-progress
-> span {
-  background:
-    rgba(40, 48, 65, .08);
-}
-
-
 .guided-chapter-progress i {
   display:
     block;
@@ -1619,8 +1492,8 @@ html[data-theme="light"]
   background:
     linear-gradient(
       90deg,
-      #7554d5,
-      #a687ff
+      var(--accent),
+      var(--accent)
     );
 }
 
@@ -1682,13 +1555,6 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.guided-lesson-row {
-  background:
-    rgba(45, 55, 75, .025);
-}
-
-
 .guided-lesson-row.is-ready {
   cursor:
     pointer;
@@ -1698,10 +1564,10 @@ html[data-theme="light"]
 .guided-lesson-row.is-ready:hover,
 .guided-lesson-row.status-active {
   border-color:
-    rgba(139, 92, 246, .19);
+    color-mix(in oklab, var(--accent) 19%, transparent);
 
   background:
-    rgba(139, 92, 246, .055);
+    color-mix(in oklab, var(--accent) 5.5%, transparent);
 }
 
 
@@ -1795,7 +1661,7 @@ html[data-theme="light"]
 .guided-lesson-row.status-completed
 .guided-lesson-number {
   background:
-    rgba(46, 204, 113, .08);
+    color-mix(in oklab, var(--status-success) 8%, transparent);
 
   color:
     var(--guided-success);
@@ -1832,13 +1698,13 @@ html[data-theme="light"]
 
 .guided-experiment-card.is-active {
   border-color:
-    rgba(139, 92, 246, .20);
+    color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 
 .guided-experiment-card.is-completed {
   border-color:
-    rgba(46, 204, 113, .18);
+    color-mix(in oklab, var(--status-success) 18%, transparent);
 }
 
 
@@ -1917,7 +1783,7 @@ html[data-theme="light"]
     850;
 
   letter-spacing:
-    .1em;
+    .01em;
 }
 
 
@@ -2004,13 +1870,13 @@ span:last-child {
 
   border:
     1px solid
-    rgba(139, 92, 246, .14);
+    color-mix(in oklab, var(--accent) 14%, transparent);
 
   border-radius:
     999px;
 
   background:
-    rgba(139, 92, 246, .06);
+    color-mix(in oklab, var(--accent) 6%, transparent);
 
   color:
     var(--guided-accent);
@@ -2151,7 +2017,7 @@ span:last-child {
     20;
 
   border-color:
-    rgba(139, 92, 246, .18);
+    color-mix(in oklab, var(--accent) 18%, transparent);
 
   box-shadow:
     0 18px 40px
@@ -2201,13 +2067,6 @@ span:last-child {
 }
 
 
-html[data-theme="light"]
-.guided-step-progress i {
-  background:
-    rgba(40, 48, 65, .09);
-}
-
-
 .guided-step-progress i.done {
   background:
     #7656cf;
@@ -2216,7 +2075,7 @@ html[data-theme="light"]
 
 .guided-step-progress i.active {
   background:
-    #a78bfa;
+    var(--accent);
 }
 
 
@@ -2324,13 +2183,13 @@ html[data-theme="light"]
 
   border:
     1px solid
-    rgba(139, 92, 246, .18);
+    color-mix(in oklab, var(--accent) 18%, transparent);
 
   border-radius:
     10px;
 
   background:
-    rgba(139, 92, 246, .07);
+    color-mix(in oklab, var(--accent) 7%, transparent);
 
   color:
     var(--guided-accent);
@@ -2478,10 +2337,10 @@ button:hover {
     translateY(-1px);
 
   border-color:
-    rgba(139, 92, 246, .30);
+    color-mix(in oklab, var(--accent) 30%, transparent);
 
   background:
-    rgba(139, 92, 246, .07);
+    color-mix(in oklab, var(--accent) 7%, transparent);
 
   color:
     var(--guided-text);
@@ -2510,7 +2369,7 @@ button:hover {
 
 .guided-feedback.success {
   background:
-    rgba(46, 204, 113, .055);
+    color-mix(in oklab, var(--status-success) 5.5%, transparent);
 
   color:
     var(--guided-success);
@@ -3184,7 +3043,7 @@ button:hover {
     1px solid
     var(
       --guided-border-strong,
-      rgba(139, 92, 246, .24)
+      color-mix(in oklab, var(--accent) 24%, transparent)
     );
 
   border-radius:
@@ -3197,7 +3056,7 @@ button:hover {
     linear-gradient(
       135deg,
       rgba(59, 130, 246, .08),
-      rgba(124, 58, 237, .08)
+      color-mix(in oklab, var(--accent) 8%, transparent)
     );
 }
 

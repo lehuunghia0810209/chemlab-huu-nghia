@@ -1228,19 +1228,6 @@ input:not(.ui-switch):not(.ui-input):not(.ui-select) {
 }
 
 
-.workspace-view
-.virtual-lab-v3 {
-  max-width:
-    1380px !important;
-
-  padding-top:
-    55px !important;
-
-  padding-bottom:
-    80px !important;
-}
-
-
 /* =========================================================
    LAPTOP
 ========================================================= */

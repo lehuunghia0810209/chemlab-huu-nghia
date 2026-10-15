@@ -2450,157 +2450,25 @@ section {
    VIRTUAL LAB
 ===================================================== */
 
-.virtual-lab-section {
-  max-width: 1200px;
-
-  margin:
-    0 auto;
-
-  padding:
-    100px 30px 120px;
-
-  scroll-margin-top:
-    80px;
-
-  border-top:
-    1px solid #18181b;
-}
-
 
 /* =====================================================
    LAB TITLE
 ===================================================== */
-
-.lab-heading {
-  text-align:
-    center;
-
-  margin-bottom:
-    45px;
-}
-
-
-.lab-heading h2 {
-  font-size:
-    42px;
-
-  margin-bottom:
-    12px;
-}
-
-
-.lab-heading > p:last-child {
-  color: var(--cl-text-secondary);
-
-  line-height:
-    1.7;
-}
 
 
 /* =====================================================
    LAYOUT
 ===================================================== */
 
-.lab-layout {
-  display:
-    grid;
-
-  grid-template-columns:
-    320px 1fr;
-
-  gap:
-    20px;
-}
-
 
 /* =====================================================
    CONTROL
 ===================================================== */
 
-.lab-control {
-  padding:
-    25px;
-
-  border:
-    1px solid #27272a;
-
-  border-radius:
-    20px;
-
-  background:
-    #111114;
-}
-
-
-.lab-control-title {
-  margin-bottom:
-    22px;
-
-  color:
-    #f4f4f5;
-
-  font-size: var(--cl-text-lead);
-
-  font-weight:
-    bold;
-}
-
 
 /* =====================================================
    REAGENT
 ===================================================== */
-
-.reagent-box {
-  margin-bottom:
-    22px;
-}
-
-
-.reagent-box label {
-  display:
-    block;
-
-  margin-bottom:
-    8px;
-
-  color:
-    #a1a1aa;
-
-  font-size: var(--cl-text-small);
-}
-
-
-.reagent-box select:not(.ui-switch):not(.ui-input):not(.ui-select) {
-  width:
-    100%;
-
-  padding:
-    12px;
-
-  border:
-    1px solid #3f3f46;
-
-  border-radius:
-    9px;
-
-  outline:
-    none;
-
-  background:
-    #09090b;
-
-  color:
-    white;
-
-  cursor:
-    pointer;
-}
-
-
-.reagent-box select:not(.ui-switch):not(.ui-input):not(.ui-select):focus {
-  border-color:
-    #a855f7;
-}
 
 
 .pour-button {
@@ -2697,246 +2565,24 @@ section {
 }
 
 
-.lab-safety-note {
-  margin-top:
-    18px;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-
-  line-height:
-    1.5;
-}
-
-
 /* =====================================================
    EXPERIMENT AREA
 ===================================================== */
-
-.experiment-area {
-  overflow:
-    hidden;
-
-  border:
-    1px solid #27272a;
-
-  border-radius:
-    20px;
-
-  background:
-    #08080b;
-}
-
-
-.experiment-stage {
-  min-height:
-    480px;
-
-  position:
-    relative;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(88, 28, 135, 0.10),
-      transparent 55%
-    );
-}
 
 
 /* =====================================================
    STATUS
 ===================================================== */
 
-.lab-status {
-  position:
-    absolute;
-
-  top:
-    20px;
-
-  left:
-    22px;
-}
-
-
-.lab-status span {
-  display:
-    block;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-
-  letter-spacing:
-    2px;
-}
-
-
-.lab-status strong {
-  display:
-    block;
-
-  margin-top:
-    5px;
-
-  color:
-    #c084fc;
-
-  font-size: var(--cl-text-small);
-}
-
 
 /* =====================================================
    BEAKER
 ===================================================== */
 
-.beaker-wrapper {
-  text-align:
-    center;
-}
-
-
-.beaker {
-  width:
-    230px;
-
-  height:
-    290px;
-
-  position:
-    relative;
-
-  overflow:
-    hidden;
-
-  border-left:
-    5px solid
-    rgba(148, 163, 184, 0.55);
-
-  border-right:
-    5px solid
-    rgba(148, 163, 184, 0.55);
-
-  border-bottom:
-    5px solid
-    rgba(148, 163, 184, 0.55);
-
-  border-radius:
-    0 0 34px 34px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,0.025),
-      rgba(255,255,255,0.07),
-      rgba(255,255,255,0.02)
-    );
-
-  box-shadow:
-    inset 0 0 35px
-    rgba(255,255,255,0.025);
-}
-
-
-.beaker::before {
-  content:
-    "";
-
-  position:
-    absolute;
-
-  top:
-    0;
-
-  left:
-    -8px;
-
-  width:
-    245px;
-
-  height:
-    8px;
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(148, 163, 184, 0.6);
-}
-
 
 /* =====================================================
    LIQUID
 ===================================================== */
-
-.lab-liquid {
-  width:
-    100%;
-
-  height:
-    0;
-
-  position:
-    absolute;
-
-  bottom:
-    0;
-
-  left:
-    0;
-
-  transition:
-    height 0.6s ease,
-    background 0.6s ease;
-
-  box-shadow:
-    inset 0 10px 25px
-    rgba(255,255,255,0.08);
-}
-
-
-.lab-liquid::before {
-  content:
-    "";
-
-  width:
-    100%;
-
-  height:
-    12px;
-
-  position:
-    absolute;
-
-  top:
-    -5px;
-
-  left:
-    0;
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(255,255,255,0.13);
-}
-
-
-.liquid-wave::before {
-  animation:
-    labWave 0.6s ease;
-}
 
 
 @keyframes labWave {
@@ -2976,39 +2622,6 @@ section {
 /* =====================================================
    PRECIPITATE
 ===================================================== */
-
-.precipitate {
-  width:
-    88%;
-
-  height:
-    0;
-
-  position:
-    absolute;
-
-  left:
-    6%;
-
-  bottom:
-    3px;
-
-  z-index:
-    5;
-
-  opacity:
-    0;
-
-  border-radius:
-    40% 40% 20px 20px;
-
-  transition:
-    height 1.2s ease,
-    opacity 0.8s ease;
-
-  filter:
-    blur(1px);
-}
 
 
 .show-precipitate {
@@ -3131,47 +2744,6 @@ section {
    BEAKER SCALE
 ===================================================== */
 
-.beaker-scale {
-  position:
-    absolute;
-
-  top:
-    60px;
-
-  right:
-    8px;
-
-  z-index:
-    20;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    42px;
-
-  color:
-    rgba(255,255,255,0.25);
-
-  font-size: var(--cl-text-caption);
-}
-
-
-.beaker-label {
-  margin-top:
-    15px;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-
-  letter-spacing:
-    2px;
-}
-
 
 /* =====================================================
    OBSERVATION
@@ -3274,11 +2846,6 @@ section {
    PRESETS
 ===================================================== */
 
-.lab-presets {
-  margin-top:
-    30px;
-}
-
 
 .preset-title {
   margin-bottom:
@@ -3309,85 +2876,11 @@ section {
 }
 
 
-.lab-preset {
-  padding:
-    18px;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    flex-start;
-
-  gap:
-    6px;
-
-  border:
-    1px solid #27272a;
-
-  border-radius:
-    12px;
-
-  background:
-    #111114;
-
-  color:
-    white;
-
-  cursor:
-    pointer;
-
-  text-align:
-    left;
-
-  transition:
-    0.2s;
-}
-
-
-.lab-preset:hover {
-  transform:
-    translateY(-3px);
-
-  border-color:
-    #7c3aed;
-
-  background:
-    #18181b;
-}
-
-
-.lab-preset > span {
-  font-size:
-    20px;
-}
-
-
-.lab-preset strong {
-  font-size: var(--cl-text-small);
-}
-
-
-.lab-preset small {
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-small);
-}
-
-
 /* =====================================================
    MOBILE
 ===================================================== */
 
 @media (max-width: 850px) {
-
-  .lab-layout {
-    grid-template-columns:
-      1fr;
-  }
 
 
   .preset-grid {
@@ -3403,30 +2896,10 @@ section {
 
 @media (max-width: 550px) {
 
-  .virtual-lab-section {
-    padding:
-      70px 15px;
-  }
-
-
-  .lab-heading h2 {
-    font-size:
-      34px;
-  }
-
 
   .preset-grid {
     grid-template-columns:
       1fr;
-  }
-
-
-  .beaker {
-    width:
-      190px;
-
-    height:
-      250px;
   }
 
 }
@@ -3434,264 +2907,30 @@ section {
    VIRTUAL LAB V2
 ===================================================== */
 
-.lab-v2 {
-  max-width: 1250px;
-}
-
 
 /* =====================================================
    V2 LAYOUT
 ===================================================== */
-
-.lab-v2-layout {
-  display: grid;
-
-  grid-template-columns:
-    290px 1fr;
-
-  gap: 20px;
-}
 
 
 /* =====================================================
    PANEL
 ===================================================== */
 
-.reagent-shelf,
-.lab-workspace {
-  border:
-    1px solid #27272a;
-
-  border-radius:
-    20px;
-
-  background:
-    #0d0d10;
-}
-
-
-.reagent-shelf {
-  padding: 22px;
-}
-
-
-.lab-panel-title {
-  color:
-    #f4f4f5;
-
-  font-size: var(--cl-text-body);
-
-  font-weight:
-    bold;
-}
-
-
-.lab-panel-description {
-  margin-top:
-    6px;
-
-  margin-bottom:
-    20px;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-small);
-
-  line-height:
-    1.5;
-}
-
 
 /* =====================================================
    REAGENT BOTTLES
 ===================================================== */
-
-.reagent-bottles {
-  display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap:
-    11px;
-}
-
-
-.reagent-bottle {
-  cursor:
-    grab;
-
-  user-select:
-    none;
-
-  transition:
-    transform 0.2s,
-    opacity 0.2s;
-}
-
-
-.reagent-bottle:hover {
-  transform:
-    translateY(-4px);
-}
-
-
-.reagent-bottle.dragging {
-  opacity:
-    0.4;
-}
-
-
-.bottle-cap {
-  width:
-    45%;
-
-  height:
-    13px;
-
-  margin:
-    auto;
-
-  border-radius:
-    4px 4px 2px 2px;
-}
-
-
-.bottle-body {
-  min-height:
-    105px;
-
-  padding:
-    12px 7px;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  border:
-    1px solid #3f3f46;
-
-  border-radius:
-    8px 8px 15px 15px;
-
-  background:
-    linear-gradient(
-      150deg,
-      rgba(255,255,255,0.08),
-      rgba(255,255,255,0.015)
-    );
-
-  box-shadow:
-    inset 0 -20px 30px
-    color-mix(
-      in srgb,
-      var(--bottle-color) 18%,
-      transparent
-    );
-
-  text-align:
-    center;
-}
-
-
-.bottle-body strong {
-  color:
-    white;
-
-  font-size: var(--cl-text-body);
-}
-
-
-.bottle-body small {
-  margin-top:
-    5px;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-
-  line-height:
-    1.25;
-}
-
-
-.bottle-body span {
-  margin-top:
-    8px;
-
-  padding:
-    3px 5px;
-
-  border-radius:
-    4px;
-
-  background:
-    #09090b;
-
-  color:
-    #a1a1aa;
-
-  font-size: var(--cl-text-caption);
-}
 
 
 /* =====================================================
    WORKSPACE
 ===================================================== */
 
-.lab-workspace {
-  overflow:
-    hidden;
-}
-
 
 /* =====================================================
    TOOLBAR
 ===================================================== */
-
-.lab-toolbar {
-  min-height:
-    75px;
-
-  padding:
-    15px 20px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  border-bottom:
-    1px solid #27272a;
-
-  background:
-    #111114;
-}
-
-
-.lab-toolbar > div > span {
-  display:
-    block;
-
-  margin-bottom:
-    7px;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-}
 
 
 .apparatus-buttons {
@@ -3736,73 +2975,9 @@ section {
 }
 
 
-.lab-v2-reset {
-  padding:
-    8px 12px;
-
-  border:
-    1px solid #3f3f46;
-
-  border-radius:
-    7px;
-
-  background:
-    #18181b;
-
-  color:
-    #a1a1aa;
-
-  cursor:
-    pointer;
-}
-
-
-.lab-v2-reset:hover {
-  color:
-    white;
-}
-
-
 /* =====================================================
    DROP ZONE
 ===================================================== */
-
-.lab-drop-zone {
-  min-height:
-    510px;
-
-  position:
-    relative;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(88,28,135,0.10),
-      transparent 55%
-    );
-
-  transition:
-    background 0.2s;
-}
-
-
-.lab-drop-zone.drag-over {
-  background:
-    radial-gradient(
-      circle at center,
-      rgba(126,34,206,0.22),
-      transparent 60%
-    );
-}
 
 
 .drop-hint {
@@ -3840,314 +3015,26 @@ section {
    STATUS
 ===================================================== */
 
-.lab-v2-status {
-  position:
-    absolute;
-
-  top:
-    22px;
-
-  left:
-    22px;
-}
-
-
-.lab-v2-status span {
-  display:
-    block;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-
-  letter-spacing:
-    1.5px;
-}
-
-
-.lab-v2-status strong {
-  display:
-    block;
-
-  margin-top:
-    4px;
-
-  color:
-    #c084fc;
-
-  font-size: var(--cl-text-small);
-}
-
 
 /* =====================================================
    APPARATUS
 ===================================================== */
 
-.lab-apparatus {
-  position:
-    relative;
-
-  overflow:
-    hidden;
-
-  border-color:
-    rgba(148,163,184,0.55);
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,0.02),
-      rgba(255,255,255,0.07),
-      rgba(255,255,255,0.02)
-    );
-
-  transition:
-    width 0.3s,
-    height 0.3s,
-    border-radius 0.3s;
-}
-
 
 /* cốc */
 
-.lab-apparatus.beaker-mode {
-  width:
-    230px;
-
-  height:
-    290px;
-
-  border-left:
-    5px solid;
-
-  border-right:
-    5px solid;
-
-  border-bottom:
-    5px solid;
-
-  border-radius:
-    0 0 36px 36px;
-}
-
-
-.lab-apparatus.beaker-mode::before {
-  content:
-    "";
-
-  position:
-    absolute;
-
-  top:
-    0;
-
-  left:
-    -8px;
-
-  width:
-    240px;
-
-  height:
-    8px;
-
-  z-index:
-    20;
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(148,163,184,0.65);
-}
-
 
 /* ống nghiệm */
-
-.lab-apparatus.tube-mode {
-  width:
-    100px;
-
-  height:
-    320px;
-
-  border-left:
-    5px solid;
-
-  border-right:
-    5px solid;
-
-  border-bottom:
-    5px solid;
-
-  border-radius:
-    0 0 50px 50px;
-}
-
-
-.lab-apparatus.tube-mode::before {
-  content:
-    "";
-
-  position:
-    absolute;
-
-  top:
-    0;
-
-  left:
-    -7px;
-
-  width:
-    104px;
-
-  height:
-    7px;
-
-  z-index:
-    20;
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(148,163,184,0.65);
-}
 
 
 /* =====================================================
    LIQUID
 ===================================================== */
 
-.lab-v2-liquid {
-  width:
-    100%;
-
-  height:
-    0;
-
-  position:
-    absolute;
-
-  bottom:
-    0;
-
-  left:
-    0;
-
-  z-index:
-    2;
-
-  transition:
-    height 0.55s ease,
-    background 0.5s ease;
-
-  box-shadow:
-    inset 0 10px 20px
-    rgba(255,255,255,0.07);
-}
-
-
-.lab-v2-liquid::before {
-  content:
-    "";
-
-  width:
-    100%;
-
-  height:
-    10px;
-
-  position:
-    absolute;
-
-  top:
-    -5px;
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(255,255,255,0.12);
-}
-
-
-.lab-liquid-warm {
-  box-shadow:
-    0 0 30px
-    rgba(249,115,22,0.28),
-
-    inset 0 0 20px
-    rgba(249,115,22,0.10);
-}
-
 
 /* =====================================================
    PRECIPITATE
 ===================================================== */
-
-.lab-v2-precipitate {
-  width:
-    92%;
-
-  height:
-    0;
-
-  position:
-    absolute;
-
-  bottom:
-    3px;
-
-  left:
-    4%;
-
-  z-index:
-    5;
-
-  opacity:
-    0;
-
-  overflow:
-    hidden;
-
-  border-radius:
-    50% 50% 20px 20px;
-
-  transition:
-    height 1s,
-    opacity 0.6s;
-}
-
-
-.lab-v2-precipitate.active {
-  height:
-    48px;
-
-  opacity:
-    0.85;
-}
-
-
-.lab-v2-precipitate i {
-  width:
-    5px;
-
-  height:
-    5px;
-
-  position:
-    absolute;
-
-  top:
-    -12px;
-
-  border-radius:
-    50%;
-
-  animation:
-    labParticleFall 1.2s
-    ease forwards;
-}
 
 
 @keyframes labParticleFall {
@@ -4174,52 +3061,6 @@ section {
 /* =====================================================
    BUBBLES
 ===================================================== */
-
-.lab-v2-bubbles {
-  position:
-    absolute;
-
-  inset:
-    0;
-
-  z-index:
-    10;
-
-  pointer-events:
-    none;
-}
-
-
-.lab-v2-bubbles i {
-  display:
-    none;
-
-  position:
-    absolute;
-
-  bottom:
-    15px;
-
-  border:
-    1px solid
-    rgba(255,255,255,0.8);
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(255,255,255,0.07);
-}
-
-
-.lab-v2-bubbles.active i {
-  display:
-    block;
-
-  animation:
-    labV2BubbleRise 1.5s
-    linear infinite;
-}
 
 
 @keyframes labV2BubbleRise {
@@ -4254,67 +3095,17 @@ section {
    ADDED LABEL
 ===================================================== */
 
-.lab-v2-added {
-  position:
-    absolute;
-
-  bottom:
-    20px;
-
-  left:
-    50%;
-
-  transform:
-    translateX(-50%);
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-small);
-
-  white-space:
-    nowrap;
-}
-
-
-.lab-v2-added span {
-  color:
-    #d8b4fe;
-
-  font-weight:
-    bold;
-}
-
-
-.lab-v2-added b {
-  margin:
-    0 4px;
-
-  color: var(--cl-text-secondary);
-}
-
 
 /* =====================================================
    ANALYSIS
 ===================================================== */
-
-.lab-analysis {
-  display:
-    grid;
-
-  grid-template-columns:
-    300px 1fr;
-
-  border-top:
-    1px solid #27272a;
-}
 
 
 /* =====================================================
    PH
 ===================================================== */
 
-.ph-panel,
-.lab-v2-observation {
+.ph-panel {
   padding:
     20px;
 }
@@ -4386,193 +3177,23 @@ section {
    OBSERVATION
 ===================================================== */
 
-.lab-v2-observation p {
-  margin-top:
-    13px;
-
-  color:
-    #a1a1aa;
-
-  font-size: var(--cl-text-small);
-
-  line-height:
-    1.6;
-}
-
-
-.lab-v2-equation {
-  margin-top:
-    15px;
-
-  padding:
-    12px;
-
-  border:
-    1px solid
-    rgba(168,85,247,0.18);
-
-  border-radius:
-    8px;
-
-  background:
-    #09090b;
-}
-
-
-.lab-v2-equation.hidden {
-  display:
-    none;
-}
-
-
-.lab-v2-equation span {
-  display:
-    block;
-
-  margin-bottom:
-    6px;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-
-  letter-spacing:
-    1.5px;
-}
-
-
-.lab-v2-equation strong {
-  color:
-    #d8b4fe;
-
-  font-size: var(--cl-text-body);
-}
-
 
 /* =====================================================
    PRESETS
 ===================================================== */
-
-.lab-v2-presets {
-  margin-top:
-    25px;
-
-  padding:
-    22px;
-
-  border:
-    1px solid #27272a;
-
-  border-radius:
-    16px;
-
-  background:
-    #0d0d10;
-}
-
-
-.lab-v2-preset-grid {
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(3, 1fr);
-
-  gap:
-    8px;
-
-  margin-top:
-    13px;
-}
-
-
-.lab-v2-preset-grid button {
-  padding:
-    12px;
-
-  border:
-    1px solid #27272a;
-
-  border-radius:
-    8px;
-
-  background:
-    #151518;
-
-  color:
-    #a1a1aa;
-
-  cursor:
-    pointer;
-
-  font-size: var(--cl-text-small);
-
-  transition:
-    0.2s;
-}
-
-
-.lab-v2-preset-grid button:hover {
-  transform:
-    translateY(-2px);
-
-  border-color:
-    #7c3aed;
-
-  color:
-    white;
-}
 
 
 /* =====================================================
    WARNING
 ===================================================== */
 
-.lab-v2-warning {
-  margin-top:
-    15px;
-
-  text-align:
-    center;
-
-  color: var(--cl-text-secondary);
-
-  font-size: var(--cl-text-caption);
-}
-
 
 /* =====================================================
    MOBILE
 ===================================================== */
 
-@media (max-width: 950px) {
-
-  .lab-v2-layout {
-    grid-template-columns:
-      1fr;
-  }
-
-
-  .reagent-bottles {
-    grid-template-columns:
-      repeat(4, 1fr);
-  }
-
-}
-
 
 @media (max-width: 700px) {
-
-  .reagent-bottles {
-    grid-template-columns:
-      repeat(2, 1fr);
-  }
-
-
-  .lab-analysis {
-    grid-template-columns:
-      1fr;
-  }
 
 
   .ph-panel {
@@ -4581,22 +3202,6 @@ section {
 
     border-bottom:
       1px solid #27272a;
-  }
-
-
-  .lab-v2-preset-grid {
-    grid-template-columns:
-      1fr 1fr;
-  }
-
-}
-
-
-@media (max-width: 450px) {
-
-  .lab-v2-preset-grid {
-    grid-template-columns:
-      1fr;
   }
 
 }
