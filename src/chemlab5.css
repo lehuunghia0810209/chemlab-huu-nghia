@@ -1340,7 +1340,6 @@ button {
    CONTENT WIDTH
 ========================================================= */
 
-#tools,
 #learning-host {
   width:
     100%;
@@ -1357,182 +1356,17 @@ button {
    TOOL HUB 5 OVERRIDES
 ========================================================= */
 
-.tool-hub-header {
-  min-height:
-    126px;
-
-  padding:
-    20px 22px !important;
-
-  border:
-    1px solid
-    var(--cl-border) !important;
-
-  border-radius:
-    var(--cl-radius-lg) !important;
-
-  background:
-    radial-gradient(
-      circle at 92% 0%,
-      rgba(124,58,237,.09),
-      transparent 30%
-    ),
-    linear-gradient(
-      145deg,
-      rgba(19,23,33,.98),
-      rgba(13,16,24,.98)
-    ) !important;
-
-  box-shadow:
-    var(--cl-shadow-sm);
-}
-
-
-.tool-hub-header h2 {
-  font-size:
-    24px !important;
-}
-
-
-.tool-hub-header p {
-  font-size:
-    13px !important;
-}
-
-
-.tool-selector {
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(210px,1fr)
-    ) !important;
-
-  gap:
-    10px !important;
-}
-
-
-.tool-selector-card {
-  min-height:
-    126px !important;
-
-  border:
-    1px solid
-    var(--cl-border) !important;
-
-  border-radius:
-    15px !important;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(19,23,33,.96),
-      rgba(13,16,24,.98)
-    ) !important;
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255,255,255,.025);
-
-  transition:
-    transform
-      var(--cl-normal)
-      cubic-bezier(
-        .22,.8,.28,1
-      ),
-    border-color
-      var(--cl-normal)
-      ease,
-    box-shadow
-      var(--cl-normal)
-      ease !important;
-}
-
-
-.tool-selector-card:hover {
-  transform:
-    translateY(-3px) !important;
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--tool-color)
-      32%,
-      rgba(255,255,255,.10)
-    ) !important;
-
-  box-shadow:
-    0 15px 38px
-    rgba(0,0,0,.22),
-    inset 0 1px 0
-    rgba(255,255,255,.035) !important;
-}
-
-
-.tool-selector-card.active {
-  border-color:
-    color-mix(
-      in srgb,
-      var(--tool-color)
-      48%,
-      transparent
-    ) !important;
-
-  box-shadow:
-    0 12px 35px
-    rgba(0,0,0,.17),
-    inset 0 1px 0
-    rgba(255,255,255,.04) !important;
-}
-
-
-.tool-selector-copy strong {
-  font-size:
-    14px !important;
-}
-
-
-.tool-selector-copy small {
-  font-size:
-    11px !important;
-
-  line-height:
-    1.5 !important;
-}
-
-
-.tool-active-bar {
-  min-height:
-    62px !important;
-
-  border:
-    1px solid
-    var(--cl-border) !important;
-
-  border-radius:
-    13px !important;
-
-  background:
-    rgba(16,20,30,.72) !important;
-
-  backdrop-filter:
-    blur(14px);
-}
-
 
 /* =========================================================
    LARGE CONTROL STANDARD
 ========================================================= */
 
-#view-tools button,
 #view-learning button {
   touch-action:
     manipulation;
 }
 
 
-#view-tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
-#view-tools select:not(.ui-switch):not(.ui-input):not(.ui-select),
 #view-learning input:not(.ui-switch):not(.ui-input):not(.ui-select),
 #view-learning select:not(.ui-switch):not(.ui-input):not(.ui-select) {
   min-height:
@@ -2408,7 +2242,6 @@ button {
 
   .workspace-app,
   .sidebar-button,
-  .tool-selector-card,
   .v5-command-button,
   .v5-top-button {
     transition:

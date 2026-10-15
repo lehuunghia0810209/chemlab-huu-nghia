@@ -432,37 +432,6 @@
    TOOL HUB — UIVERSE-STYLE CARD FEEDBACK, CHEMLAB LANGUAGE
 ========================================================= */
 
-.tool-selector-card {
-  isolation: isolate;
-}
-
-.tool-selector-card::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: auto -20% -55% 18%;
-  height: 90%;
-  border-radius: 50%;
-  background: var(--tool-color, var(--cl-ux-violet));
-  opacity: 0;
-  filter: blur(46px);
-  transition: opacity .24s ease;
-  pointer-events: none;
-}
-
-.tool-selector-card:hover::after,
-.tool-selector-card.active::after {
-  opacity: .095;
-}
-
-.tool-selector-card:hover {
-  transform: translateY(-2px);
-}
-
-.tool-selector-card:active {
-  transform: translateY(0) scale(.992);
-}
-
 
 /* =========================================================
    LIGHT THEME FOR NEW EXPERIENCE COMPONENTS
@@ -598,16 +567,13 @@ html[data-theme="light"] .v5-route-error button {
   .workspace-brand,
   .v5-command-button,
   .v5-top-button,
-  .sidebar-button,
-  .tool-selector-card {
+  .sidebar-button {
     transition-duration: .01ms;
   }
 
   .workspace-brand:hover,
   .v5-command-button:hover,
-  .v5-top-button:hover,
-  .tool-selector-card:hover,
-  .tool-selector-card:active {
+  .v5-top-button:hover {
     transform: none;
   }
 }

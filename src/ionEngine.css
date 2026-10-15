@@ -12,23 +12,16 @@
 
   border:
     1px solid
-    rgba(255,255,255,.08);
+    var(--border-subtle);
 
   border-radius:
     1.4rem;
 
   background:
-    linear-gradient(
-      155deg,
-      rgba(16,19,29,.98),
-      rgba(8,10,16,.98)
-    );
+    var(--surface-1);
 
   box-shadow:
-    0 24px 65px
-    rgba(0,0,0,.22),
-    inset 0 1px 0
-    rgba(255,255,255,.03);
+    var(--shadow-md);
 }
 
 
@@ -57,13 +50,13 @@
 
   border-bottom:
     1px solid
-    rgba(255,255,255,.07);
+    var(--border-subtle);
 }
 
 
 .ion-eyebrow {
   color:
-    #a78bfa;
+    var(--accent-text);
 
   font-size:
     .76rem;
@@ -72,7 +65,7 @@
     850;
 
   letter-spacing:
-    .11em;
+    .01em;
 }
 
 
@@ -81,7 +74,7 @@
     .45rem 0 .35rem;
 
   color:
-    #fff;
+    var(--text-primary);
 
   font-size:
     1.9rem;
@@ -102,7 +95,7 @@
     0;
 
   color:
-    #8d97ad;
+    var(--text-secondary);
 
   font-size:
     .95rem;
@@ -133,16 +126,16 @@
 
   border:
     1px solid
-    rgba(168,85,247,.24);
+    color-mix(in oklab, var(--accent) 39%, transparent);
 
   border-radius:
     999px;
 
   background:
-    rgba(124,58,237,.06);
+    color-mix(in oklab, var(--accent) 10%, transparent);
 
   color:
-    #bcaee1;
+    var(--accent-text);
 
   font-size:
     .8rem;
@@ -160,11 +153,10 @@
     50%;
 
   background:
-    #a855f7;
+    var(--accent);
 
   box-shadow:
-    0 0 11px
-    rgba(168,85,247,.7);
+    var(--glow-accent);
 }
 
 
@@ -198,7 +190,7 @@
 
   border-right:
     1px solid
-    rgba(255,255,255,.07);
+    var(--border-subtle);
 }
 
 
@@ -237,29 +229,28 @@
 
   border:
     1px solid
-    rgba(255,255,255,.10);
+    var(--border-default);
 
   border-radius:
     .8rem;
 
   background:
-    #0d1018;
+    var(--surface-1);
 }
 
 
 .ion-search:focus-within {
   border-color:
-    rgba(168,85,247,.62);
+    var(--accent);
 
   box-shadow:
-    0 0 0 4px
-    rgba(124,58,237,.09);
+    var(--glow-accent);
 }
 
 
 .ion-search span {
   color:
-    #69748c;
+    var(--text-muted);
 }
 
 
@@ -283,10 +274,10 @@
     transparent !important;
 
   box-shadow:
-    none !important;
+    var(--shadow-sm) !important;
 
   color:
-    #f5f6fa;
+    var(--text-primary);
 
   font-size:
     .95rem !important;
@@ -315,16 +306,16 @@
 
   border:
     1px solid
-    rgba(255,255,255,.09);
+    var(--border-subtle);
 
   border-radius:
     .75rem;
 
   background:
-    #11141d;
+    var(--surface-1);
 
   color:
-    #8e98ad;
+    var(--text-secondary);
 
   font-size:
     .83rem;
@@ -336,22 +327,22 @@
 
 .ion-filter button:hover {
   color:
-    #fff;
+    var(--text-primary);
 
   border-color:
-    rgba(168,85,247,.28);
+    color-mix(in oklab, var(--accent) 43%, transparent);
 }
 
 
 .ion-filter button.active {
   color:
-    #fff;
+    var(--text-primary);
 
   border-color:
-    rgba(168,85,247,.45);
+    color-mix(in oklab, var(--accent) 60%, transparent);
 
   background:
-    rgba(124,58,237,.16);
+    color-mix(in oklab, var(--accent) 20%, transparent);
 }
 
 
@@ -376,7 +367,7 @@
 
 .ion-library-count span {
   color:
-    #a78bfa;
+    var(--accent-text);
 
   font-size:
     .72rem;
@@ -385,7 +376,7 @@
     850;
 
   letter-spacing:
-    .09em;
+    .01em;
 }
 
 
@@ -400,10 +391,10 @@
     .5rem;
 
   background:
-    rgba(255,255,255,.035);
+    var(--surface-hover);
 
   color:
-    #a7b0c4;
+    var(--text-secondary);
 
   font-size:
     .77rem;
@@ -471,20 +462,16 @@
 
   border:
     1px solid
-    rgba(255,255,255,.07);
+    var(--border-subtle);
 
   border-radius:
     .9rem;
 
   background:
-    linear-gradient(
-      145deg,
-      #121620,
-      #0e1119
-    );
+    var(--surface-1);
 
   color:
-    #fff;
+    var(--text-primary);
 
   text-align:
     left;
@@ -520,13 +507,13 @@
 
 .ion-card.cation::after {
   background:
-    #a855f7;
+    var(--accent);
 }
 
 
 .ion-card.anion::after {
   background:
-    #38bdf8;
+    var(--accent);
 }
 
 
@@ -535,34 +522,32 @@
     translateY(-2px);
 
   border-color:
-    rgba(255,255,255,.16);
+    var(--border-default);
 
   box-shadow:
-    0 10px 26px
-    rgba(0,0,0,.20);
+    var(--shadow-md);
 }
 
 
 .ion-card.selected {
   border-color:
-    rgba(196,181,253,.55);
+    color-mix(in oklab, var(--accent) 70%, transparent);
 
   background:
     linear-gradient(
       145deg,
-      rgba(124,58,237,.14),
+      color-mix(in oklab, var(--accent) 14%, transparent),
       #10131c
     );
 
   box-shadow:
-    0 0 0 1px
-    rgba(168,85,247,.10);
+    var(--glow-accent);
 }
 
 
 .ion-card-type {
   color:
-    #68738b;
+    var(--text-muted);
 
   font-size:
     .62rem;
@@ -571,7 +556,7 @@
     850;
 
   letter-spacing:
-    .08em;
+    .01em;
 }
 
 
@@ -580,7 +565,7 @@
     .4rem;
 
   color:
-    #fff;
+    var(--text-primary);
 
   font-family:
     Consolas,
@@ -596,7 +581,7 @@
 
 .ion-card-formula sup {
   color:
-    #c4b5fd;
+    var(--accent-text);
 
   font-size:
     .55em;
@@ -614,7 +599,7 @@
     hidden;
 
   color:
-    #b1b9cb;
+    var(--text-secondary);
 
   font-size:
     .8rem;
@@ -638,7 +623,7 @@
     hidden;
 
   color:
-    #606b82;
+    var(--text-muted);
 
   font-size:
     .67rem;
@@ -672,13 +657,13 @@
 
   border:
     1px dashed
-    rgba(255,255,255,.09);
+    var(--border-subtle);
 
   border-radius:
     1rem;
 
   color:
-    #778198;
+    var(--text-muted);
 
   text-align:
     center;
@@ -687,7 +672,7 @@
 
 .ion-empty strong {
   color:
-    #dce0e9;
+    var(--text-primary);
 
   font-size:
     1rem;
@@ -724,7 +709,7 @@
     1rem;
 
   background:
-    rgba(9,11,17,.48);
+    var(--bg-sunken);
 }
 
 
@@ -739,13 +724,13 @@
 
   border:
     1px solid
-    rgba(255,255,255,.075);
+    var(--border-subtle);
 
   border-radius:
     1rem;
 
   background:
-    #10131c;
+    var(--surface-1);
 }
 
 
@@ -768,7 +753,7 @@
 > div
 > span {
   color:
-    #a78bfa;
+    var(--accent-text);
 
   font-size:
     .68rem;
@@ -777,7 +762,7 @@
     850;
 
   letter-spacing:
-    .08em;
+    .01em;
 }
 
 
@@ -786,7 +771,7 @@
     .3rem 0 0;
 
   color:
-    #fff;
+    var(--text-primary);
 
   font-size:
     1.35rem;
@@ -818,26 +803,26 @@
 .ion-detail-symbol.cation {
   border:
     1px solid
-    rgba(168,85,247,.28);
+    color-mix(in oklab, var(--accent) 43%, transparent);
 
   background:
-    rgba(124,58,237,.09);
+    color-mix(in oklab, var(--accent) 13%, transparent);
 
   color:
-    #ddd0ff;
+    var(--text-primary);
 }
 
 
 .ion-detail-symbol.anion {
   border:
     1px solid
-    rgba(56,189,248,.25);
+    color-mix(in oklab, var(--accent) 40%, transparent);
 
   background:
-    rgba(56,189,248,.07);
+    color-mix(in oklab, var(--accent) 11%, transparent);
 
   color:
-    #bae6fd;
+    var(--accent-text);
 }
 
 
@@ -887,19 +872,19 @@
 
   border:
     1px solid
-    rgba(255,255,255,.06);
+    var(--border-subtle);
 
   border-radius:
     .7rem;
 
   background:
-    rgba(255,255,255,.018);
+    var(--surface-hover);
 }
 
 
 .ion-detail-grid span {
   color:
-    #727d94;
+    var(--text-muted);
 
   font-size:
     .7rem;
@@ -911,7 +896,7 @@
     .25rem;
 
   color:
-    #f2f3f7;
+    var(--text-primary);
 
   font-size:
     .95rem;
@@ -930,23 +915,23 @@
 
   border-top:
     1px solid
-    rgba(255,255,255,.06);
+    var(--border-subtle);
 }
 
 
 .ion-composition
 > span {
   color:
-    #6c768c;
+    var(--text-muted);
 
   font-size:
     .65rem;
 
   font-weight:
-    800;
+    var(--weight-bold);
 
   letter-spacing:
-    .07em;
+    .01em;
 }
 
 
@@ -972,16 +957,16 @@
 
   border:
     1px solid
-    rgba(255,255,255,.07);
+    var(--border-subtle);
 
   border-radius:
     .55rem;
 
   background:
-    #151924;
+    var(--surface-2);
 
   color:
-    #cbd1df;
+    var(--text-primary);
 
   font-family:
     Consolas,
@@ -997,7 +982,7 @@
     .8rem 0 0;
 
   color:
-    #7c869c;
+    var(--text-muted);
 
   font-size:
     .78rem;
@@ -1014,7 +999,7 @@
 .compound-builder-head
 > span {
   color:
-    #a78bfa;
+    var(--accent-text);
 
   font-size:
     .68rem;
@@ -1023,7 +1008,7 @@
     850;
 
   letter-spacing:
-    .08em;
+    .01em;
 }
 
 
@@ -1032,7 +1017,7 @@
     .3rem 0;
 
   color:
-    #fff;
+    var(--text-primary);
 
   font-size:
     1.3rem;
@@ -1044,7 +1029,7 @@
     0;
 
   color:
-    #7c869d;
+    var(--text-muted);
 
   font-size:
     .78rem;
@@ -1100,13 +1085,13 @@
 
   border:
     1px solid
-    rgba(255,255,255,.08);
+    var(--border-subtle);
 
   border-radius:
     .8rem;
 
   background:
-    #0d1018;
+    var(--surface-1);
 
   cursor:
     pointer;
@@ -1118,14 +1103,14 @@
     translateY(-1px);
 
   border-color:
-    rgba(168,85,247,.30);
+    color-mix(in oklab, var(--accent) 45%, transparent);
 }
 
 
 .selected-ion
 > span {
   color:
-    #677188;
+    var(--text-muted);
 
   font-size:
     .6rem;
@@ -1141,7 +1126,7 @@
     .25rem;
 
   color:
-    #fff;
+    var(--text-primary);
 
   font-family:
     Consolas,
@@ -1164,7 +1149,7 @@
     hidden;
 
   color:
-    #7a849a;
+    var(--text-muted);
 
   font-size:
     .68rem;
@@ -1182,7 +1167,7 @@
 
 .ion-plus {
   color:
-    #69738a;
+    var(--text-muted);
 
   font-size:
     1.2rem;
@@ -1202,17 +1187,13 @@
 
   border:
     1px solid
-    rgba(34,197,94,.14);
+    color-mix(in oklab, var(--status-success) 29%, transparent);
 
   border-radius:
     .85rem;
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(34,197,94,.045),
-      rgba(13,16,24,.96)
-    );
+    var(--surface-1);
 
   text-align:
     center;
@@ -1221,7 +1202,7 @@
 
 .compound-result-label {
   color:
-    #6c768d;
+    var(--text-muted);
 
   font-size:
     .64rem;
@@ -1230,7 +1211,7 @@
     850;
 
   letter-spacing:
-    .08em;
+    .01em;
 }
 
 
@@ -1242,7 +1223,7 @@
     .55rem 0 .85rem;
 
   color:
-    #e9fff0;
+    var(--text-primary);
 
   font-family:
     Consolas,
@@ -1292,7 +1273,7 @@
     .6rem;
 
   background:
-    rgba(255,255,255,.025);
+    var(--surface-hover);
 }
 
 
@@ -1301,7 +1282,7 @@
     block;
 
   color:
-    #707b91;
+    var(--text-muted);
 
   font-size:
     .6rem;
@@ -1316,7 +1297,7 @@
     .15rem;
 
   color:
-    #fff;
+    var(--text-primary);
 
   font-size:
     .88rem;
@@ -1332,16 +1313,16 @@
 
   border:
     1px solid
-    rgba(168,85,247,.10);
+    color-mix(in oklab, var(--accent) 25%, transparent);
 
   border-radius:
     .6rem;
 
   background:
-    rgba(124,58,237,.035);
+    color-mix(in oklab, var(--accent) 7.5%, transparent);
 
   color:
-    #a99bc8;
+    var(--text-secondary);
 
   font-family:
     Consolas,
@@ -1360,7 +1341,7 @@
     0 .25rem;
 
   color:
-    #626d83;
+    var(--text-muted);
 }
 
 
@@ -1380,16 +1361,16 @@
 
   border:
     1px solid
-    rgba(168,85,247,.32);
+    color-mix(in oklab, var(--accent) 47%, transparent);
 
   border-radius:
     .75rem;
 
   background:
-    rgba(124,58,237,.10);
+    color-mix(in oklab, var(--accent) 14%, transparent);
 
   color:
-    #e2d8ff;
+    var(--text-primary);
 
   font-size:
     .83rem;
@@ -1409,10 +1390,10 @@
     translateY(-1px);
 
   border-color:
-    rgba(168,85,247,.55);
+    color-mix(in oklab, var(--accent) 70%, transparent);
 
   background:
-    rgba(124,58,237,.17);
+    color-mix(in oklab, var(--accent) 21%, transparent);
 }
 
 
@@ -1430,7 +1411,7 @@
     .55rem 0 0;
 
   color:
-    #667188;
+    var(--text-muted);
 
   font-size:
     .7rem;
@@ -1463,7 +1444,7 @@
 
     border-bottom:
       1px solid
-      rgba(255,255,255,.07);
+      var(--border-subtle);
   }
 
 

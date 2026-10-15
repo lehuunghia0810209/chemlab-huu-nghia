@@ -27,7 +27,7 @@ export function initChemCalculator() {
 
       <div class="cc-header">
         <div>
-          <span class="cc-eyebrow">TÍNH TOÁN HÓA HỌC</span>
+          <span class="cc-eyebrow">Tính toán hóa học</span>
           <h2>Máy tính hóa học</h2>
           <p>
             Tính khối lượng mol, số mol, nồng độ và thể tích khí
@@ -85,7 +85,7 @@ export function initChemCalculator() {
 
           <div class="cc-panel-head">
             <div>
-              <span>KHỐI LƯỢNG MOL</span>
+              <span>Khối lượng mol</span>
               <h3>Phân tích công thức hóa học</h3>
               <p>
                 Nhập công thức để xem tổng khối lượng và đóng góp
@@ -142,12 +142,12 @@ export function initChemCalculator() {
             <div class="cc-result-summary">
 
               <div>
-                <span>CÔNG THỨC</span>
+                <span>Công thức</span>
                 <strong id="cc-result-formula">—</strong>
               </div>
 
               <div class="cc-main-value">
-                <span>KHỐI LƯỢNG MOL</span>
+                <span>Khối lượng mol</span>
 
                 <strong>
                   <b id="cc-result-mass">0</b>
@@ -159,7 +159,7 @@ export function initChemCalculator() {
 
             <div class="cc-breakdown-head">
               <div>
-                <span>PHÂN TÍCH</span>
+                <span>Phân tích</span>
                 <h4>Thành phần nguyên tố</h4>
               </div>
 
@@ -183,7 +183,7 @@ export function initChemCalculator() {
 
           <div class="cc-panel-head">
             <div>
-              <span>SỐ MOL</span>
+              <span>Số mol</span>
               <h3>Tính số mol từ khối lượng</h3>
               <p>
                 Công thức:
@@ -240,7 +240,7 @@ export function initChemCalculator() {
           <div id="cc-mole-result" class="cc-answer hidden">
 
             <div>
-              <span>KHỐI LƯỢNG MOL</span>
+              <span>Khối lượng mol</span>
 
               <strong>
                 <b id="cc-mole-M">0</b>
@@ -249,7 +249,7 @@ export function initChemCalculator() {
             </div>
 
             <div>
-              <span>SỐ MOL</span>
+              <span>Số mol</span>
 
               <strong class="highlight">
                 <b id="cc-mole-n">0</b>
@@ -274,7 +274,7 @@ export function initChemCalculator() {
 
           <div class="cc-panel-head">
             <div>
-              <span>NỒNG ĐỘ MOL</span>
+              <span>Nồng độ mol</span>
               <h3>Tính nồng độ dung dịch</h3>
               <p>
                 Công thức:
@@ -341,7 +341,7 @@ export function initChemCalculator() {
           <div id="cc-concentration-result" class="cc-answer hidden">
 
             <div>
-              <span>THỂ TÍCH</span>
+              <span>Thể tích</span>
 
               <strong>
                 <b id="cc-volume-liters">0</b>
@@ -350,7 +350,7 @@ export function initChemCalculator() {
             </div>
 
             <div>
-              <span>NỒNG ĐỘ MOL</span>
+              <span>Nồng độ mol</span>
 
               <strong class="highlight">
                 <b id="cc-concentration-value">0</b>
@@ -375,7 +375,7 @@ export function initChemCalculator() {
 
           <div class="cc-panel-head">
             <div>
-              <span>CHẤT KHÍ</span>
+              <span>Chất khí</span>
               <h3>Tính thể tích khí</h3>
               <p>
                 Sử dụng thể tích mol
@@ -418,7 +418,7 @@ export function initChemCalculator() {
           <div id="cc-gas-result" class="cc-answer hidden">
 
             <div>
-              <span>SỐ MOL</span>
+              <span>Số mol</span>
 
               <strong>
                 <b id="cc-gas-n">0</b>
@@ -427,7 +427,7 @@ export function initChemCalculator() {
             </div>
 
             <div>
-              <span>THỂ TÍCH KHÍ</span>
+              <span>Thể tích khí</span>
 
               <strong class="highlight">
                 <b id="cc-gas-volume">0</b>

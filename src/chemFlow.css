@@ -55,21 +55,16 @@
 
   border:
     1px solid
-    rgba(168,85,247,.18);
+    color-mix(in oklab, var(--accent) 33%, transparent);
 
   border-radius:
     16px;
 
   background:
-    linear-gradient(
-      135deg,
-      rgba(16,19,29,.97),
-      rgba(10,12,19,.97)
-    );
+    var(--surface-1);
 
   box-shadow:
-    0 20px 70px
-    rgba(0,0,0,.42);
+    var(--shadow-md);
 
   backdrop-filter:
     blur(18px);
@@ -116,23 +111,23 @@
 
   border:
     1px solid
-    rgba(168,85,247,.25);
+    color-mix(in oklab, var(--accent) 40%, transparent);
 
   border-radius:
     11px;
 
   background:
-    rgba(126,34,206,.08);
+    color-mix(in oklab, var(--accent) 12%, transparent);
 
   color:
-    #c084fc;
+    var(--accent-text);
 
   font-size:
     22px;
 
   box-shadow:
     inset 0 0 24px
-    rgba(168,85,247,.04);
+    color-mix(in oklab, var(--accent) 19%, transparent);
 }
 
 
@@ -148,16 +143,16 @@
     block;
 
   color:
-    #786b99;
+    var(--text-muted);
 
   font-size:
-    9px;
+    var(--text-xs);
 
   font-weight:
     850;
 
   letter-spacing:
-    .11em;
+    .01em;
 }
 
 
@@ -172,7 +167,7 @@
     hidden;
 
   color:
-    #f1f2f6;
+    var(--text-primary);
 
   font-size:
     16px;
@@ -204,10 +199,10 @@
     hidden;
 
   color:
-    #858ea1;
+    var(--text-muted);
 
   font-size:
-    10.5px;
+    var(--text-xs);
 
   text-overflow:
     ellipsis;
@@ -236,10 +231,10 @@
 .cl5-flow-steps
 > i {
   color:
-    #444c5d;
+    var(--text-primary);
 
   font-size:
-    11px;
+    var(--text-xs);
 
   font-style:
     normal;
@@ -273,16 +268,16 @@
 
   border:
     1px solid
-    rgba(255,255,255,.055);
+    var(--border-subtle);
 
   border-radius:
     10px;
 
   background:
-    rgba(255,255,255,.015);
+    var(--surface-hover);
 
   color:
-    #7f899c;
+    var(--text-muted);
 
   cursor:
     pointer;
@@ -301,33 +296,33 @@ button:hover {
     translateY(-1px);
 
   border-color:
-    rgba(168,85,247,.24);
+    color-mix(in oklab, var(--accent) 39%, transparent);
 
   background:
-    rgba(126,34,206,.06);
+    color-mix(in oklab, var(--accent) 10%, transparent);
 
   color:
-    #d8dce5;
+    var(--text-primary);
 }
 
 
 .cl5-flow-steps
 button.active {
   border-color:
-    rgba(168,85,247,.34);
+    color-mix(in oklab, var(--accent) 49%, transparent);
 
   background:
-    rgba(126,34,206,.10);
+    color-mix(in oklab, var(--accent) 14%, transparent);
 
   color:
-    #ede9fe;
+    var(--text-primary);
 }
 
 
 .cl5-flow-steps
 button span {
   color:
-    #a78bfa;
+    var(--accent-text);
 
   font-size:
     17px;
@@ -340,7 +335,7 @@ button span {
 .cl5-flow-steps
 button b {
   font-size:
-    10px;
+    var(--text-xs);
 
   font-weight:
     700;
@@ -369,7 +364,7 @@ button b {
 
   border:
     1px solid
-    rgba(255,255,255,.065);
+    var(--border-subtle);
 
   border-radius:
     10px;
@@ -378,7 +373,7 @@ button b {
     transparent;
 
   color:
-    #737d90;
+    var(--text-muted);
 
   font-size:
     19px;
@@ -395,13 +390,13 @@ button b {
 
 .cl5-flow-close:hover {
   border-color:
-    rgba(244,63,94,.25);
+    color-mix(in oklab, var(--status-danger) 40%, transparent);
 
   background:
-    rgba(244,63,94,.05);
+    color-mix(in oklab, var(--status-danger) 9%, transparent);
 
   color:
-    #fca5a5;
+    var(--status-danger);
 }
 
 
@@ -461,17 +456,16 @@ button b {
 
   border:
     1px solid
-    rgba(168,85,247,.20);
+    color-mix(in oklab, var(--accent) 35%, transparent);
 
   border-radius:
     13px;
 
   background:
-    rgba(14,17,26,.98);
+    var(--surface-1);
 
   box-shadow:
-    0 20px 60px
-    rgba(0,0,0,.45);
+    var(--shadow-md);
 
   pointer-events:
     none;
@@ -509,10 +503,10 @@ button b {
     10px;
 
   background:
-    rgba(34,197,94,.08);
+    color-mix(in oklab, var(--status-success) 12%, transparent);
 
   color:
-    #86efac;
+    var(--status-success);
 
   font-size:
     16px;
@@ -527,10 +521,10 @@ button b {
     block;
 
   color:
-    #e8eaf0;
+    var(--text-primary);
 
   font-size:
-    12px;
+    var(--text-xs);
 }
 
 
@@ -542,10 +536,10 @@ button b {
     3px;
 
   color:
-    #8b94a6;
+    var(--text-muted);
 
   font-size:
-    10.5px;
+    var(--text-xs);
 }
 
 
@@ -581,7 +575,7 @@ button b {
   .cl5-flow-steps
   button b {
     font-size:
-      9px;
+      var(--text-xs);
   }
 
 }

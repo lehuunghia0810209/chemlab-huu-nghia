@@ -45,6 +45,8 @@ Mỗi milestone: `npm run check`, `npm run build`, Playwright ở 360/390/768/10
 
 - **M3** — Virtual Lab: bố cục mới (giữ mọi ID mà engine và Guided dùng), cốc thủy tinh có vạch chia khớp đúng mực chất lỏng, mặt khum, chuyển màu mượt; `src/lab/beakerEffects.js` (Canvas 2D: bọt khí nổi lên, kết tủa lắng tạo cặn; chỉ chạy khi có chuyển động); vòng lặp nghiêng cốc không còn chạy liên tục mỗi khung hình; 96 phản ứng có mô tả tiếng Việt (`reactionsVi.js`, có kiểm thử); thẻ hóa chất đang chọn kèm nhãn nguy hiểm (ăn mòn/độc/dễ cháy…) và lời nhắc an toàn. Guided Experiments chuyển sang token (cả hai theme), Việt hóa nhãn. Gỡ thêm ≈ 300 rule CSS legacy và các rule light-mode toàn cục đè màu chữ.
 
+- **M4** — Tool Center và 7 công cụ chuyển sang token (chuyển đổi màu theo ngữ nghĩa, rà soát trực quan cả hai theme); nhãn tiếng Anh/chữ hoa trong Balancer, Calculator, Ion Engine, Solubility, Compound/Reaction Studio Việt hóa (công thức hóa học giữ nguyên); ô nhập chuẩn hóa; gỡ thêm 241 rule CSS legacy của Tool Center.
+
 ## Ranh giới
 
 Không đổi: dữ liệu hóa học, curriculum, điều kiện hoàn thành guided experiment, storage keys/format, `/api/chat`, phiên bản `6.2.0`.

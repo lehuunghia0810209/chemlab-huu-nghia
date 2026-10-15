@@ -500,7 +500,7 @@ export function openReactionStudio({
           <div>
 
             <span>
-              REACTION INPUT
+              Phản ứng
             </span>
 
             <strong>
@@ -580,7 +580,7 @@ export function openReactionStudio({
             <div class="rs52-equation-label">
 
               <span>
-                BALANCED EQUATION
+                Phương trình đã cân bằng
               </span>
 
               <b data-rs-status>
@@ -625,25 +625,25 @@ export function openReactionStudio({
           <section class="rs52-metrics">
 
             ${metric(
-              'TYPE',
+              'Loại',
               '—',
               'type'
             )}
 
             ${metric(
-              'RATIO',
+              'Tỉ lệ',
               '—',
               'ratio'
             )}
 
             ${metric(
-              'ELEMENTS',
+              'Nguyên tố',
               '—',
               'elements'
             )}
 
             ${metric(
-              'STATUS',
+              'Trạng thái',
               '—',
               'balance'
             )}
@@ -658,7 +658,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  STOICHIOMETRY
+                  Tỉ lượng
                 </span>
 
                 <h3>
@@ -689,7 +689,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  ATOM AUDIT
+                  Kiểm tra bảo toàn nguyên tố
                 </span>
 
                 <h3>
@@ -720,7 +720,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  SPECIES
+                  Các chất
                 </span>
 
                 <h3>
@@ -755,7 +755,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  OBSERVATION
+                  Hiện tượng
                 </span>
 
                 <h3>
@@ -788,7 +788,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  SOURCE
+                  Nguồn
                 </span>
 
                 <h3>
@@ -817,7 +817,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  CHEM CONTEXT
+                  Ngữ cảnh ChemLab
                 </span>
 
                 <h3>
@@ -849,7 +849,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  CHEM FLOW
+                  Chem Flow
                 </span>
 
                 <h3>
@@ -874,7 +874,7 @@ export function openReactionStudio({
               <div>
 
                 <strong>
-                  Run in Virtual Lab
+                  Chạy trong Phòng thí nghiệm
                 </strong>
 
                 <small>
@@ -1376,7 +1376,7 @@ export function openReactionStudio({
       <div class="rs52-ratio-side">
 
         <span>
-          CHẤT PHẢN ỨNG
+          Chất phản ứng
         </span>
 
         ${
@@ -1401,7 +1401,7 @@ export function openReactionStudio({
       <div class="rs52-ratio-side">
 
         <span>
-          SẢN PHẨM
+          Sản phẩm
         </span>
 
         ${
@@ -1587,7 +1587,7 @@ export function openReactionStudio({
               <div>
 
                 <span>
-                  Molar mass
+                  Khối lượng mol
                 </span>
 
                 <strong>

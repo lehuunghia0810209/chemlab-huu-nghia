@@ -547,8 +547,7 @@
 
 
   .v4-page-head,
-  #view-learning,
-  #view-tools {
+  #view-learning {
     width:
       100% !important;
 
@@ -625,24 +624,6 @@
      TOOLS
   ========================================================= */
 
-  .workspace-view
-  #tools.chem-tools-section {
-    width:
-      100% !important;
-
-    max-width:
-      none !important;
-
-    padding-left:
-      var(--mobile-page-pad) !important;
-
-    padding-right:
-      var(--mobile-page-pad) !important;
-
-    padding-bottom:
-      24px !important;
-  }
-
 
   .tools-jump {
     flex-wrap:
@@ -675,13 +656,7 @@
   .learning-dashboard,
   .learning-mode-grid,
   .difficulty-grid,
-  .learning-options,
-  .cc-tabs,
-  .cc-formula-row,
-  .cc-result-summary,
-  .cc-calc-grid,
-  .cc-answer,
-  .sol-query {
+  .learning-options {
     grid-template-columns:
       minmax(0,1fr) !important;
   }

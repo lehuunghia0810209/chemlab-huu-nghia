@@ -607,64 +607,46 @@ textarea:focus-visible,
 .cl6-final-mark { color:rgba(169,156,255,.18); font-size:90px; font-weight:950; line-height:.8; letter-spacing:-.08em; }
 
 /* ---------- Shared module skin ---------- */
-.chem-tool-hub,
 .cl-learn,
-.chem-flow,
 .compound-studio,
 .reaction-studio {
   color: var(--cl6-text);
 }
 
-.chem-tool-hub,
 .cl-learn {
   max-width: 1480px;
   margin-inline: auto;
 }
 
-.tool-hub-header,
 .cl-learn-dashboard,
 .cl-mastery,
 .cl-learning-setup,
 .cl-insights > *,
-.panel,
-.tool-stage > * {
+.panel {
   border-color: var(--cl6-border);
 }
 
-.tool-hub-header,
 .cl-learn-dashboard,
 .cl-mastery,
 .cl-learning-setup,
 .cl-weak-panel,
 .cl-history-panel,
-.panel,
-.tool-selector-card,
-.tool-active-bar {
+.panel {
   background-color: var(--cl6-surface);
   box-shadow: var(--cl6-shadow-soft);
   backdrop-filter: blur(18px);
 }
 
-.tool-hub-header,
 .cl-learn-dashboard {
   border-radius: 24px;
 }
 
-.tool-active-bar,
 .cl-mastery,
 .cl-learning-setup,
 .cl-weak-panel,
 .cl-history-panel {
   border-radius: 20px;
 }
-
-.tool-selector-card {
-  border-radius: 18px;
-  transition: transform .18s ease, border-color .18s ease, background .18s ease;
-}
-.tool-selector-card:hover { transform: translateY(-2px); border-color: var(--cl6-border-strong); }
-.tool-selector-card[aria-selected="true"],
-.tool-selector-card.active { box-shadow: 0 12px 30px rgba(109,93,252,.12); }
 
 .cl-start-button,
 .cl-next-button,
@@ -769,8 +751,7 @@ textarea:focus-visible,
   .cl6-meter i,
   .cl6-quick-card,
   .cl6-button,
-  .sidebar-button,
-  .tool-selector-card {
+  .sidebar-button {
     animation:none;
     transition:none;
   }
@@ -820,30 +801,6 @@ textarea:focus-visible,
 .cl6-flow > i { color: var(--cl6-subtle); font-style: normal; font-size: 18px; }
 
 /* ---------- Tool Center 2.0 search ---------- */
-.tool-hub-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 14px 0 4px;
-  padding: 0 14px;
-  min-height: 46px;
-  border: 1px solid var(--cl6-border);
-  border-radius: 15px;
-  background: var(--cl6-surface-soft);
-}
-.tool-hub-search svg { width: 18px; height: 18px; color: var(--cl6-muted); flex: 0 0 auto; }
-.tool-hub-search input:not(.ui-switch):not(.ui-input):not(.ui-select) {
-  width: 100%; border: 0; outline: 0; color: var(--cl6-text); background: transparent;
-}
-.tool-hub-search input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder { color: var(--cl6-subtle); }
-.tool-hub-empty {
-  grid-column: 1 / -1;
-  padding: 22px;
-  border: 1px dashed var(--cl6-border-strong);
-  border-radius: 16px;
-  color: var(--cl6-muted);
-  text-align: center;
-}
 
 @media (max-width: 900px) {
   .cl6-flow { grid-template-columns: repeat(11, max-content); }

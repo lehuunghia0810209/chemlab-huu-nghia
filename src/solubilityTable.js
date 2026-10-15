@@ -40,7 +40,7 @@ export function initSolubilityTable() {
 
       <div class="sol-head">
         <div>
-          <span>BẢNG TÍNH TAN</span>
+          <span>Bảng tính tan</span>
           <h2>Tra cứu độ tan</h2>
           <p>
             Chọn cation và anion để tạo hợp chất
@@ -71,7 +71,7 @@ export function initSolubilityTable() {
         <div class="sol-arrow">→</div>
 
         <div id="sol-result-card" class="sol-result-card">
-          <span>HỢP CHẤT</span>
+          <span>Hợp chất</span>
           <strong id="sol-formula">NaCl</strong>
           <b id="sol-status">Tan</b>
         </div>
@@ -94,7 +94,7 @@ export function initSolubilityTable() {
 
       <div class="sol-matrix-head">
         <div>
-          <span>TRA NHANH</span>
+          <span>Tra nhanh</span>
           <h3>Bảng độ tan</h3>
         </div>
 

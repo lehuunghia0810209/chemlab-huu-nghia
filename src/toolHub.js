@@ -151,7 +151,7 @@ export function initToolHub() {
     <section class="tool-hub-header">
       <div>
         <span class="tool-hub-eyebrow">
-          CHEMLAB TOOLBOX
+          Hộp công cụ
         </span>
 
         <h2>
@@ -241,7 +241,7 @@ export function initToolHub() {
     <div class="tool-active-bar">
       <div>
         <span>
-          ĐANG SỬ DỤNG
+          Đang sử dụng
         </span>
 
         <strong id="tool-active-name">

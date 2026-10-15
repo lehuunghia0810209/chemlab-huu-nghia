@@ -765,54 +765,6 @@ textarea:focus-visible {
    SEARCH / FILTERS
 ========================================================= */
 
-#tools input:not(.ui-switch):not(.ui-input):not(.ui-select),
-#tools select:not(.ui-switch):not(.ui-input):not(.ui-select),
-#tools textarea {
-  border:
-    1px solid
-    rgba(255,255,255,.09);
-
-  border-radius:
-    12px;
-
-  background:
-    rgba(13,15,23,.96);
-
-  color:
-    #f4f6fb;
-
-  box-shadow:
-    inset 0 1px 0
-    rgba(255,255,255,.025);
-
-  transition:
-    border-color
-    180ms ease,
-    box-shadow
-    220ms ease,
-    background
-    180ms ease;
-}
-
-
-#tools input:not(.ui-switch):not(.ui-input):not(.ui-select):hover {
-  border-color:
-    rgba(255,255,255,.16);
-}
-
-
-#tools input:not(.ui-switch):not(.ui-input):not(.ui-select):focus {
-  border-color:
-    rgba(155,92,255,.70);
-
-  background:
-    #10131c;
-
-  box-shadow:
-    0 0 0 4px
-    rgba(124,58,237,.09);
-}
-
 
 /* =========================================================
    ELEMENT DRAWER
@@ -822,26 +774,6 @@ textarea:focus-visible {
 /* =========================================================
    TOOLS
 ========================================================= */
-
-#tools {
-  width:
-    min(1480px, 100%);
-
-  margin:
-    0 auto;
-
-  padding:
-    12px 32px 70px;
-}
-
-
-#tools > * {
-  animation:
-    v4ContentIn
-    350ms
-    var(--v4-ease)
-    both;
-}
 
 
 @keyframes v4ContentIn {
@@ -868,85 +800,6 @@ textarea:focus-visible {
 /* =========================================================
    BALANCER V4
 ========================================================= */
-
-.balance-tool {
-  border:
-    1px solid
-    var(--v4-border) !important;
-
-  border-radius:
-    24px !important;
-
-  background:
-    linear-gradient(
-      160deg,
-      rgba(15,18,27,.98),
-      rgba(9,10,16,.98)
-    ) !important;
-
-  box-shadow:
-    var(--v4-shadow),
-    inset 0 1px 0
-    rgba(255,255,255,.03);
-}
-
-
-.balance-header {
-  border-color:
-    var(--v4-border) !important;
-}
-
-
-.balance-stage {
-  background:
-    radial-gradient(
-      circle at 50% 48%,
-      rgba(34,39,55,.72),
-      rgba(12,14,21,.96) 58%,
-      #090b10
-    ) !important;
-}
-
-
-.balance-main-button {
-  min-height:
-    50px;
-
-  border:
-    1px solid
-    rgba(168,85,247,.55) !important;
-
-  background:
-    linear-gradient(
-      135deg,
-      #7c3aed,
-      #9333ea
-    ) !important;
-
-  box-shadow:
-    0 9px 25px
-    rgba(124,58,237,.22) !important;
-}
-
-
-.balance-main-button:hover {
-  transform:
-    translateY(-2px);
-
-  box-shadow:
-    0 13px 30px
-    rgba(124,58,237,.30) !important;
-}
-
-
-.balance-equation-editor
-.equation-side {
-  border-color:
-    var(--v4-border);
-
-  background:
-    #11141d;
-}
 
 
 /* =========================================================
@@ -1028,8 +881,6 @@ button:hover:not(:disabled) {
    GENERIC TOOL CARDS
 ========================================================= */
 
-#tools
-[class*="card"],
 #learning-host
 [class*="card"] {
   border-color:
@@ -1120,7 +971,6 @@ button:hover:not(:disabled) {
   }
 
 
-  #tools,
   #learning-host {
     padding-left:
       18px;

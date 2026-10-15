@@ -9,7 +9,7 @@ export function initEquationBalancer() {
 
       <div class="balance-header">
         <div>
-          <div class="balance-eyebrow">INTERACTIVE STOICHIOMETRY</div>
+          <div class="balance-eyebrow">Cân bằng tương tác</div>
           <h2>Cân bằng phương trình</h2>
           <p>Nhập chất vào từng vế. Cân sẽ phản ứng ngay theo số nguyên tử đang có.</p>
         </div>
@@ -57,12 +57,12 @@ export function initEquationBalancer() {
         </div>
 
         <div class="stage-side-info left">
-          <span>CHẤT PHẢN ỨNG</span>
+          <span>Chất phản ứng</span>
           <strong id="left-atom-total">0 nguyên tử</strong>
         </div>
 
         <div class="stage-side-info right">
-          <span>SẢN PHẨM</span>
+          <span>Sản phẩm</span>
           <strong id="right-atom-total">0 nguyên tử</strong>
         </div>
 
@@ -79,12 +79,13 @@ export function initEquationBalancer() {
             <span class="side-badge reactant">R</span>
 
             <div>
-              <strong>CHẤT PHẢN ỨNG</strong>
+              <strong>Chất phản ứng</strong>
               <small>Các chất trước phản ứng</small>
             </div>
           </div>
 
           <input
+            class="ui-input"
             id="balance-reactants"
             type="text"
             placeholder="Ví dụ: H2 + O2"
@@ -100,12 +101,13 @@ export function initEquationBalancer() {
             <span class="side-badge product">P</span>
 
             <div>
-              <strong>SẢN PHẨM</strong>
+              <strong>Sản phẩm</strong>
               <small>Các chất tạo thành</small>
             </div>
           </div>
 
           <input
+            class="ui-input"
             id="balance-products"
             type="text"
             placeholder="Ví dụ: H2O"
@@ -117,7 +119,7 @@ export function initEquationBalancer() {
 
       <div id="balance-result" class="balance-result empty">
         <div>
-          <span>PHƯƠNG TRÌNH</span>
+          <span>Phương trình</span>
           <strong id="balance-result-equation">Chưa cân bằng</strong>
         </div>
       </div>
@@ -139,7 +141,7 @@ export function initEquationBalancer() {
       </div>
 
       <div class="balance-examples">
-        <span>THỬ NHANH</span>
+        <span>Thử nhanh</span>
 
         <button
           data-reactants="H2 + O2"
@@ -174,7 +176,7 @@ export function initEquationBalancer() {
 
         <div class="balance-analysis-header">
           <div>
-            <span>KIỂM TRA</span>
+            <span>Kiểm tra</span>
             <h3>Số nguyên tử hai vế</h3>
           </div>
 
@@ -875,7 +877,7 @@ export function initEquationBalancer() {
       ).join('')
 
     moleRatio.innerHTML = `
-      <span>TỈ LỆ MOL</span>
+      <span>Tỉ lệ mol</span>
 
       <strong>
         ${

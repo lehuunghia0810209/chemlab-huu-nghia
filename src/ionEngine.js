@@ -716,7 +716,7 @@ export function initIonEngine() {
           <div>
 
             <span class="ion-eyebrow">
-              ION ENGINE
+              Ion Engine
             </span>
 
             <h2>
@@ -810,7 +810,7 @@ export function initIonEngine() {
             <div class="ion-library-count">
 
               <span>
-                THƯ VIỆN ION
+                Thư viện ion
               </span>
 
               <strong id="ion-result-count">
@@ -854,7 +854,7 @@ export function initIonEngine() {
               <div class="compound-builder-head">
 
                 <span>
-                  TẠO HỢP CHẤT
+                  Tạo hợp chất
                 </span>
 
                 <h3>
@@ -1362,7 +1362,7 @@ export function initIonEngine() {
         <div>
 
           <span>
-            ION ĐANG CHỌN
+            Ion đang chọn
           </span>
 
           <h3>
@@ -1465,7 +1465,7 @@ export function initIonEngine() {
       <div class="ion-composition">
 
         <span>
-          THÀNH PHẦN
+          Thành phần
         </span>
 
         <div>
@@ -1560,7 +1560,7 @@ export function initIonEngine() {
 
     host.innerHTML = `
       <div class="compound-result-label">
-        HỢP CHẤT TRUNG HÒA
+        Hợp chất trung hòa
       </div>
 
 

@@ -38,7 +38,7 @@ const DESTINATIONS = {
   },
 
   molar: {
-    label: 'Molar Mass',
+    label: 'Khối lượng mol',
     view: 'tools',
 
     aliases: [
@@ -1162,7 +1162,7 @@ function renderFlowDock() {
       <div>
 
         <small>
-          CHEM FLOW
+          Chem Flow
         </small>
 
         <strong>

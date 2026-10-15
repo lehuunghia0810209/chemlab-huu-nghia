@@ -225,7 +225,7 @@ export function openCompoundStudio({
         <div class="cs5-formula-input">
 
           <span>
-            CÔNG THỨC
+            Công thức
           </span>
 
 
@@ -295,7 +295,7 @@ export function openCompoundStudio({
           <div class="cs5-formula-hero">
 
             <span>
-              CÔNG THỨC ĐANG PHÂN TÍCH
+              Công thức đang phân tích
             </span>
 
 
@@ -314,7 +314,7 @@ export function openCompoundStudio({
           <div class="cs5-metrics">
 
             ${metricCard(
-              'MOLAR MASS',
+              'Khối lượng mol',
               '—',
               'g/mol',
               'mass'
@@ -344,7 +344,7 @@ export function openCompoundStudio({
               <div>
 
                 <span>
-                  COMPOSITION
+                  Thành phần
                 </span>
 
                 <h3>
@@ -371,7 +371,7 @@ export function openCompoundStudio({
               <div>
 
                 <span>
-                  STRUCTURE HINT
+                  Gợi ý cấu trúc
                 </span>
 
                 <h3>
@@ -402,7 +402,7 @@ export function openCompoundStudio({
               <div>
 
                 <span>
-                  SAMPLE
+                  Mẫu chất
                 </span>
 
                 <h3>
@@ -479,7 +479,7 @@ export function openCompoundStudio({
               <div>
 
                 <span>
-                  RECENT
+                  Gần đây
                 </span>
 
                 <h3>
@@ -506,7 +506,7 @@ export function openCompoundStudio({
               <div>
 
                 <span>
-                  CHEM FLOW
+                  Chem Flow
                 </span>
 
                 <h3>
@@ -526,7 +526,7 @@ export function openCompoundStudio({
 
               <div>
                 <strong>
-                  Molar Mass
+                  Khối lượng mol
                 </strong>
 
                 <small>

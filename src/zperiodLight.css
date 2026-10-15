@@ -630,203 +630,10 @@ html[data-theme="light"]
    14. TOOL HUB
 ========================================================= */
 
-html[data-theme="light"]
-.tool-hub-header {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    radial-gradient(
-      circle at 94% 0%,
-      rgba(139,107,232,.10),
-      transparent 32%
-    ),
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.85),
-      rgba(244,247,251,.82)
-    )
-    !important;
-
-  box-shadow:
-    var(--zp-shadow)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-hub-header
-:is(
-  h2,
-  strong
-) {
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-hub-header p {
-
-  color:
-    var(--zp-text-3)
-    !important;
-}
-
 
 /* =========================================================
    15. TOOL SELECTOR CARDS
 ========================================================= */
-
-html[data-theme="light"]
-.tool-selector-card {
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--tool-color)
-      20%,
-      var(--zp-border)
-    )
-    !important;
-
-  background:
-    radial-gradient(
-      circle at 92% 0%,
-      color-mix(
-        in srgb,
-        var(--tool-color)
-        10%,
-        transparent
-      ),
-      transparent 43%
-    ),
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.92),
-      rgba(243,246,250,.91)
-    )
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-
-  box-shadow:
-    var(--zp-shadow-sm),
-    inset 0 1px 0
-    rgba(255,255,255,.86)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-selector-card:hover {
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--tool-color)
-      42%,
-      rgba(82,94,116,.12)
-    )
-    !important;
-
-  background:
-    radial-gradient(
-      circle at 92% 0%,
-      color-mix(
-        in srgb,
-        var(--tool-color)
-        15%,
-        transparent
-      ),
-      transparent 43%
-    ),
-    #ffffff
-    !important;
-
-  box-shadow:
-    0 13px 32px
-    rgba(45,57,75,.11)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-selector-card.active {
-
-  border-color:
-    color-mix(
-      in srgb,
-      var(--tool-color)
-      55%,
-      rgba(82,94,116,.12)
-    )
-    !important;
-
-  background:
-    radial-gradient(
-      circle at 92% 0%,
-      color-mix(
-        in srgb,
-        var(--tool-color)
-        18%,
-        transparent
-      ),
-      transparent 43%
-    ),
-    rgba(255,255,255,.98)
-    !important;
-
-  box-shadow:
-    0 13px 34px
-    rgba(45,57,75,.10)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-selector-copy strong {
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-selector-copy small {
-
-  color:
-    var(--zp-text-3)
-    !important;
-}
-
-
-html[data-theme="light"]
-.tool-active-bar {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(255,255,255,.62)
-    !important;
-
-  color:
-    var(--zp-text-2)
-    !important;
-
-  box-shadow:
-    var(--zp-shadow-xs)
-    !important;
-}
 
 
 /* =========================================================
@@ -908,9 +715,6 @@ textarea::placeholder {
 
 
 html[data-theme="light"]
-.cc-primary,
-
-html[data-theme="light"]
 .learning-start-button {
 
   border-color:
@@ -937,9 +741,6 @@ html[data-theme="light"]
 
 
 html[data-theme="light"]
-.cc-primary:hover,
-
-html[data-theme="light"]
 .learning-start-button:hover {
 
   background:
@@ -961,150 +762,15 @@ html[data-theme="light"]
    19. CHEM CALCULATOR
 ========================================================= */
 
-html[data-theme="light"]
-.cc-tabs {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(229,234,242,.58)
-    !important;
-}
-
-
-html[data-theme="light"]
-.cc-tabs button {
-
-  background:
-    transparent
-    !important;
-
-  color:
-    var(--zp-text-3)
-    !important;
-}
-
-
-html[data-theme="light"]
-.cc-tabs button.active {
-
-  background:
-    rgba(255,255,255,.96)
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-
-  box-shadow:
-    var(--zp-shadow-sm)
-    !important;
-}
-
-
-html[data-theme="light"]
-:is(
-  .cc-input-card,
-  .cc-formula-box,
-  .cc-answer,
-  .cc-result,
-  .cc-element-row,
-  .cc-note
-) {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(255,255,255,.62)
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
 
 /* =========================================================
    20. BALANCER
 ========================================================= */
 
-html[data-theme="light"]
-:is(
-  .balance-card,
-  .balance-input-card,
-  .balance-result,
-  .balance-equation,
-  .balance-stage
-) {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(255,255,255,.65)
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
 
 /* =========================================================
    21. SOLUBILITY
 ========================================================= */
-
-html[data-theme="light"]
-:is(
-  .sol-query,
-  .sol-table-scroll,
-  .sol-matrix-head,
-  .sol-note
-) {
-
-  border-color:
-    var(--zp-border)
-    !important;
-
-  background:
-    rgba(255,255,255,.62)
-    !important;
-
-  color:
-    var(--zp-text)
-    !important;
-}
-
-
-html[data-theme="light"]
-.sol-table-scroll table {
-
-  background:
-    transparent
-    !important;
-}
-
-
-html[data-theme="light"]
-.sol-table-scroll
-:is(
-  th,
-  td
-) {
-
-  border-color:
-    var(--zp-border-soft)
-    !important;
-
-  color:
-    var(--zp-text-2)
-    !important;
-}
 
 
 /* =========================================================
@@ -1549,94 +1215,6 @@ html[data-theme="light"]
    34. EQUATION BALANCER
 ========================================================= */
 
-html[data-theme="light"]
-.balance-tool {
-  border-color: rgba(76, 86, 109, .16) !important;
-  background: rgba(255, 255, 255, .92) !important;
-  box-shadow: 0 14px 38px rgba(43, 53, 72, .09) !important;
-}
-
-
-html[data-theme="light"]
-.balance-header {
-  border-color: rgba(76, 86, 109, .14) !important;
-}
-
-
-html[data-theme="light"]
-.balance-status-pill {
-  border-color: rgba(76, 86, 109, .14) !important;
-  background: #f4f6fa !important;
-  color: #4c566d !important;
-}
-
-
-html[data-theme="light"]
-.balance-stage {
-  border-color: rgba(76, 86, 109, .14) !important;
-  background:
-    radial-gradient(circle at 50% 45%, #f8fafc, #edf1f6 78%)
-    !important;
-}
-
-
-html[data-theme="light"]
-.balance-stage-grid {
-  opacity: .24 !important;
-  background-image:
-    linear-gradient(rgba(76, 86, 109, .22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(76, 86, 109, .22) 1px, transparent 1px)
-    !important;
-}
-
-
-html[data-theme="light"]
-.balance-stage-message strong {
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-.equation-side,
-html[data-theme="light"]
-.equation-side:focus-within {
-  border-color: rgba(76, 86, 109, .17) !important;
-  background: #fff !important;
-}
-
-
-html[data-theme="light"]
-.equation-side-title strong,
-html[data-theme="light"]
-.equation-side input:not(.ui-switch):not(.ui-input):not(.ui-select) {
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-.equation-side input:not(.ui-switch):not(.ui-input):not(.ui-select)::placeholder {
-  color: #788398 !important;
-}
-
-
-html[data-theme="light"]
-.balance-result.empty {
-  border-color: rgba(76, 86, 109, .14) !important;
-  background: #f6f8fb !important;
-}
-
-
-html[data-theme="light"]
-.balance-result strong {
-  color: #435067 !important;
-}
-
-
-html[data-theme="light"]
-.balance-result.success strong {
-  color: #17603a !important;
-}
-
 
 /* =========================================================
    35. LEARNING
@@ -1918,297 +1496,38 @@ html[data-theme="light"]
    36. SOLUBILITY TABLE
 ========================================================= */
 
-html[data-theme="light"]
-.sol-tool {
-  border-color: rgba(76, 86, 109, .15) !important;
-  background: linear-gradient(145deg, #fff, #f3f6fa) !important;
-  box-shadow: 0 12px 34px rgba(43, 53, 72, .08) !important;
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-.sol-head,
-html[data-theme="light"]
-.sol-query {
-  border-color: rgba(76, 86, 109, .14) !important;
-}
-
-
-html[data-theme="light"]
-.sol-head h2,
-html[data-theme="light"]
-.sol-matrix-head h3,
-html[data-theme="light"]
-.sol-result-card > strong,
-html[data-theme="light"]
-.sol-description strong {
-  color: #202635 !important;
-}
-
-
-html[data-theme="light"]
-.sol-head > div:first-child > span,
-html[data-theme="light"]
-.sol-matrix-head > div > span {
-  color: #7356d6 !important;
-}
-
-
-html[data-theme="light"]
-.sol-head p,
-html[data-theme="light"]
-.sol-select-box label,
-html[data-theme="light"]
-.sol-combine,
-html[data-theme="light"]
-.sol-arrow,
-html[data-theme="light"]
-.sol-result-card > span,
-html[data-theme="light"]
-.sol-description p,
-html[data-theme="light"]
-.sol-legend span,
-html[data-theme="light"]
-.sol-note {
-  color: #59657a !important;
-}
-
-
-html[data-theme="light"]
-.sol-head-badge {
-  border-color: rgba(22, 101, 52, .18) !important;
-  background: #edf8f0 !important;
-  color: #28613c !important;
-}
-
-
-html[data-theme="light"]
-.sol-result-card,
-html[data-theme="light"]
-.sol-description {
-  border-color: rgba(76, 86, 109, .14) !important;
-  background: #fff !important;
-}
-
-
-html[data-theme="light"]
-.sol-result-card.soluble > b {
-  background: #e9f7ed !important;
-  color: #17603a !important;
-}
-
-
-html[data-theme="light"]
-.sol-result-card.slight > b {
-  background: #fff5df !important;
-  color: #875000 !important;
-}
-
-
-html[data-theme="light"]
-.sol-result-card.insoluble > b {
-  background: #fff0f0 !important;
-  color: #922f2f !important;
-}
-
-
-html[data-theme="light"]
-.sol-table-scroll {
-  border-color: rgba(76, 86, 109, .14) !important;
-}
-
-
-html[data-theme="light"]
-.sol-table {
-  background: #fff !important;
-}
-
-
-html[data-theme="light"]
-.sol-table th,
-html[data-theme="light"]
-.sol-table td {
-  border-color: rgba(76, 86, 109, .12) !important;
-}
-
-
-html[data-theme="light"]
-.sol-table thead th,
-html[data-theme="light"]
-.sol-table tbody th {
-  background: #f1f4f8 !important;
-  color: #3e4a60 !important;
-}
-
-
-html[data-theme="light"]
-.sol-cell.soluble {
-  background: #edf8f0 !important;
-  color: #17603a !important;
-}
-
-
-html[data-theme="light"]
-.sol-cell.slight {
-  background: #fff6e5 !important;
-  color: #875000 !important;
-}
-
-
-html[data-theme="light"]
-.sol-cell.insoluble {
-  background: #fff0f0 !important;
-  color: #922f2f !important;
-}
-
-
-html[data-theme="light"]
-.sol-cell.selected {
-  border-color: #7356d6 !important;
-  box-shadow: 0 0 0 2px rgba(115, 86, 214, .17) !important;
-}
-
 
 /* =========================================================
    37. ION ENGINE
 ========================================================= */
 
-html[data-theme="light"]
-.ion-engine {
-  border-color: rgba(76, 86, 109, .15) !important;
-  background: linear-gradient(145deg, #fff, #f3f6fa) !important;
-  box-shadow: 0 12px 34px rgba(43, 53, 72, .08) !important;
-  color: #202635 !important;
-}
-
 
 html[data-theme="light"]
-.ion-head,
-html[data-theme="light"]
-.ion-library {
-  border-color: rgba(76, 86, 109, .14) !important;
-}
-
-
-html[data-theme="light"]
-.ion-eyebrow,
-html[data-theme="light"]
-.ion-detail-head > div > span,
-html[data-theme="light"]
-.compound-builder-head > span,
-html[data-theme="light"]
-.ion-library-count > span {
+.compound-builder-head > span {
   color: #7356d6 !important;
 }
 
 
 html[data-theme="light"]
-.ion-head h2,
-html[data-theme="light"]
-.ion-detail-head h3,
-html[data-theme="light"]
-.compound-builder-head h3,
-html[data-theme="light"]
-.ion-detail-grid strong,
-html[data-theme="light"]
-.ion-card-formula,
-html[data-theme="light"]
-.ion-card-name,
-html[data-theme="light"]
-.selected-ion > strong {
+.compound-builder-head h3 {
   color: #202635 !important;
 }
 
 
 html[data-theme="light"]
-.ion-head p,
-html[data-theme="light"]
-.ion-search span,
-html[data-theme="light"]
-.ion-filter button,
-html[data-theme="light"]
-.ion-card-type,
-html[data-theme="light"]
-.ion-card small,
-html[data-theme="light"]
-.ion-detail-grid span,
-html[data-theme="light"]
-.ion-composition > span,
-html[data-theme="light"]
-.ion-detail-note,
-html[data-theme="light"]
-.compound-builder-head p,
-html[data-theme="light"]
-.selected-ion > span,
-html[data-theme="light"]
-.selected-ion > small,
-html[data-theme="light"]
-.ion-plus {
+.compound-builder-head p {
   color: #59657a !important;
 }
 
 
 html[data-theme="light"]
-.ion-engine-status {
-  border-color: rgba(22, 101, 52, .18) !important;
-  background: #edf8f0 !important;
-  color: #28613c !important;
-}
-
-
-html[data-theme="light"]
-.ion-search,
-html[data-theme="light"]
-.ion-filter button,
-html[data-theme="light"]
-.ion-library-count strong,
-html[data-theme="light"]
-.ion-card,
-html[data-theme="light"]
-.ion-detail,
-html[data-theme="light"]
-.compound-builder,
-html[data-theme="light"]
-.ion-detail-grid > div,
-html[data-theme="light"]
-.selected-ion {
+.compound-builder {
   border-color: rgba(76, 86, 109, .14) !important;
   background: #fff !important;
   color: #202635 !important;
 }
 
 
-html[data-theme="light"]
-.ion-workspace {
-  background: rgba(239, 243, 248, .72) !important;
-}
-
-
-html[data-theme="light"]
-.ion-filter button.active,
-html[data-theme="light"]
-.ion-card.selected {
-  border-color: rgba(115, 86, 214, .3) !important;
-  background: #f1edff !important;
-  color: #49358b !important;
-}
-
-
-html[data-theme="light"]
-.ion-card-formula sup,
-html[data-theme="light"]
-.ion-detail-grid strong,
-html[data-theme="light"]
-.ion-detail-symbol.cation,
-html[data-theme="light"]
-.ion-detail-symbol.anion {
-  color: #49358b !important;
-}
-
-
-html[data-theme="light"]
-.ion-composition b,
 html[data-theme="light"]
 .compound-balance > div {
   border-color: rgba(76, 86, 109, .12) !important;
@@ -2217,15 +1536,6 @@ html[data-theme="light"]
 }
 
 
-html[data-theme="light"]
-.compound-result {
-  border-color: rgba(22, 101, 52, .18) !important;
-  background: linear-gradient(145deg, #f2faf4, #fff) !important;
-}
-
-
-html[data-theme="light"]
-.compound-result-label,
 html[data-theme="light"]
 .compound-balance span {
   color: #59657a !important;
@@ -2241,9 +1551,7 @@ html[data-theme="light"]
 
 
 html[data-theme="light"]
-.compound-equation,
-html[data-theme="light"]
-.ion-to-solubility {
+.compound-equation {
   border-color: rgba(115, 86, 214, .16) !important;
   background: #f1edff !important;
   color: #49358b !important;

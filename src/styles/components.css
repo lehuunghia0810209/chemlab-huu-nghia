@@ -352,6 +352,22 @@
   border-color: var(--accent);
 }
 
+/* Zero-specificity defaults for form fields inside module workspaces;
+   module stylesheets still win where they style their own fields. */
+:where(.chem-tools-section, #learning-host) :where(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select) {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-2);
+  color: var(--text-primary);
+  font-size: var(--text-md);
+}
+
+:where(.chem-tools-section, #learning-host) :where(textarea) {
+  padding-block: var(--space-2);
+}
+
 /* ---------- progress ---------- */
 .ui-progress {
   position: relative;

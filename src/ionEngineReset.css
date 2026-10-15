@@ -16,14 +16,14 @@
   justify-content: center;
   gap: 6px;
 
-  border: 1px solid rgba(255,255,255,.09);
+  border: 1px solid var(--border-subtle);
   border-radius: 9px;
 
-  background: rgba(255,255,255,.025);
+  background: var(--surface-hover);
 
-  color: #9099ad;
+  color: var(--text-secondary);
 
-  font-size: 12px !important;
+  font-size: var(--text-xs) !important;
   font-weight: 700;
 
   cursor: pointer;
@@ -36,13 +36,13 @@
 }
 
 .ion-reset-builder:hover:not(:disabled) {
-  color: #fff;
+  color: var(--text-primary);
 
   border-color:
-    rgba(168,85,247,.35);
+    color-mix(in oklab, var(--accent) 50%, transparent);
 
   background:
-    rgba(124,58,237,.09);
+    color-mix(in oklab, var(--accent) 13%, transparent);
 
   transform:
     translateY(-1px);
@@ -83,21 +83,20 @@
 
   border:
     1px solid
-    rgba(168,85,247,.28);
+    color-mix(in oklab, var(--accent) 43%, transparent);
 
   border-radius: 10px;
 
   background:
-    rgba(15,18,27,.96);
+    var(--surface-1);
 
   backdrop-filter:
     blur(18px);
 
   box-shadow:
-    0 16px 45px
-    rgba(0,0,0,.35);
+    var(--shadow-md);
 
-  color: #eeeaff;
+  color: var(--text-primary);
 
   font-size: 13px;
   font-weight: 650;
