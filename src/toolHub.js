@@ -620,7 +620,7 @@ async function launchStudio(
 
 function findToolElement(
   root,
-  selectors
+  selectors = []
 ) {
   for (
     const selector
