@@ -182,29 +182,7 @@ finally {
   globalThis.fetch = originalFetch
 }
 
-let resilienceCallCount = 0
-const resilienceUrls = []
-
-globalThis.fetch = async (url) => {
-  resilienceCallCount += 1
-  resilienceUrls.push(String(url))
-
-  if (resilienceCallCount <= 2) {
-    return new Response(
-      JSON.stringify({
-        error: {
-          code: 503,
-          status: 'UNAVAILABLE',
-          message: 'This model is currently experiencing high demand.'
-        }
-      }),
-      {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-  }
-
+function geminiSuccess(model = 'gemini-3.6-flash') {
   return new Response(
     JSON.stringify({
       candidates: [{
@@ -220,7 +198,7 @@ globalThis.fetch = async (url) => {
         },
         finishReason: 'STOP'
       }],
-      modelVersion: 'gemini-3.7-flash'
+      modelVersion: model
     }),
     {
       status: 200,
@@ -229,32 +207,230 @@ globalThis.fetch = async (url) => {
   )
 }
 
-try {
-  const fallbackResponse = await onRequestPost({
-    request: makeRequest(
-      { message: 'H2O là gì?' },
-      { 'CF-Connecting-IP': '203.0.113.20' }
-    ),
-    env: {
-      GEMINI_API_KEY: 'test-only-key',
-      GEMINI_MODEL: 'gemini-3.8-flash',
-      GEMINI_THINKING_LEVEL: 'low'
+function geminiError(status, providerCode, message, extraHeaders = {}) {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: status,
+        status: providerCode,
+        message
+      }
+    }),
+    {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        ...extraHeaders
+      }
     }
+  )
+}
+
+let scenarioIp = 20
+
+async function requestWithMock(fetchMock, env = {}) {
+  globalThis.fetch = fetchMock
+  scenarioIp += 1
+
+  try {
+    const response = await onRequestPost({
+      request: makeRequest(
+        { message: 'H2O là gì?' },
+        { 'CF-Connecting-IP': `203.0.113.${scenarioIp}` }
+      ),
+      env: {
+        GEMINI_API_KEY: 'test-only-key',
+        GEMINI_MODEL: 'gemini-3.8-flash',
+        GEMINI_THINKING_LEVEL: 'low',
+        ...env
+      }
+    })
+
+    return { response, payload: await response.json() }
+  }
+  finally {
+    globalThis.fetch = originalFetch
+  }
+}
+
+const modelFallbackUrls = []
+const modelFallback = await requestWithMock(async (url) => {
+  modelFallbackUrls.push(String(url))
+
+  return modelFallbackUrls.length === 1
+    ? geminiError(
+        404,
+        'NOT_FOUND',
+        'models/gemini-3.8-flash is not found for API version v1beta, or is not supported for generateContent.'
+      )
+    : geminiSuccess()
+}, {
+  GEMINI_FALLBACK_MODELS: 'gemini-3.8-flash, gemini-3.6-flash, gemini-3.6-flash'
+})
+
+assert.equal(modelFallback.response.status, 200)
+assert.equal(modelFallback.payload.ok, true)
+assert.equal(modelFallback.payload.meta.fallbackUsed, true)
+assert.equal(modelFallback.payload.meta.attempts, 2)
+assert.equal(modelFallback.payload.meta.model, 'gemini-3.6-flash')
+assert.equal(modelFallbackUrls.length, 2)
+assert.match(modelFallbackUrls[0], /gemini-3\.8-flash:generateContent/)
+assert.match(modelFallbackUrls[1], /gemini-3\.6-flash:generateContent/)
+
+let endpoint404Calls = 0
+const endpoint404 = await requestWithMock(async () => {
+  endpoint404Calls += 1
+  return geminiError(404, 'NOT_FOUND', 'Requested endpoint was not found.')
+})
+
+assert.equal(endpoint404.response.status, 502)
+assert.equal(endpoint404.payload.code, 'AI_UPSTREAM_ERROR')
+assert.equal(endpoint404.payload.upstreamCode, 'NOT_FOUND')
+assert.equal(endpoint404.payload.attempts, 1)
+assert.equal(endpoint404Calls, 1)
+
+let transientCalls = 0
+const transientUrls = []
+const transientFallback = await requestWithMock(async (url) => {
+  transientCalls += 1
+  transientUrls.push(String(url))
+
+  return transientCalls <= 2
+    ? geminiError(
+        503,
+        'UNAVAILABLE',
+        'This model is currently experiencing high demand.',
+        { 'Retry-After': '0' }
+      )
+    : geminiSuccess()
+})
+
+assert.equal(transientFallback.response.status, 200)
+assert.equal(transientFallback.payload.meta.fallbackUsed, true)
+assert.equal(transientFallback.payload.meta.attempts, 3)
+assert.equal(transientCalls, 3)
+assert.match(transientUrls[0], /gemini-3\.8-flash:generateContent/)
+assert.match(transientUrls[1], /gemini-3\.8-flash:generateContent/)
+assert.match(transientUrls[2], /gemini-3\.6-flash:generateContent/)
+
+let rateLimitCalls = 0
+const rateLimit = await requestWithMock(async () => {
+  rateLimitCalls += 1
+  return geminiError(
+    429,
+    'RATE_LIMIT_EXCEEDED',
+    'Too many requests.',
+    { 'Retry-After': '0' }
+  )
+})
+
+assert.equal(rateLimit.response.status, 429)
+assert.equal(rateLimit.payload.code, 'RATE_LIMITED')
+assert.equal(rateLimit.payload.attempts, 2)
+assert.equal(rateLimit.payload.fallbackUsed, false)
+assert.equal(rateLimitCalls, 2)
+
+let longRetryAfterCalls = 0
+const longRetryAfter = await requestWithMock(async () => {
+  longRetryAfterCalls += 1
+  return geminiError(
+    429,
+    'RATE_LIMIT_EXCEEDED',
+    'Retry later.',
+    { 'Retry-After': '60' }
+  )
+})
+
+assert.equal(longRetryAfter.response.status, 429)
+assert.equal(longRetryAfter.payload.code, 'RATE_LIMITED')
+assert.equal(longRetryAfter.payload.attempts, 1)
+assert.equal(longRetryAfterCalls, 1)
+
+let quotaCalls = 0
+const quota = await requestWithMock(async () => {
+  quotaCalls += 1
+  return new Response(
+    JSON.stringify({
+      error: {
+        code: 'quota_exceeded',
+        message: 'Daily quota exhausted.'
+      }
+    }),
+    {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  )
+})
+
+assert.equal(quota.response.status, 429)
+assert.equal(quota.payload.code, 'RATE_LIMITED')
+assert.match(quota.payload.message, /hết hạn mức/)
+assert.equal(quota.payload.attempts, 1)
+assert.equal(quotaCalls, 1)
+
+let badRequestCalls = 0
+const badRequest = await requestWithMock(async () => {
+  badRequestCalls += 1
+  return geminiError(400, 'INVALID_ARGUMENT', 'Invalid request payload.')
+})
+
+assert.equal(badRequest.response.status, 502)
+assert.equal(badRequest.payload.code, 'GEMINI_BAD_REQUEST')
+assert.equal(badRequestCalls, 1)
+
+for (const authStatus of [401, 403]) {
+  let authCalls = 0
+  const authFailure = await requestWithMock(async () => {
+    authCalls += 1
+    return geminiError(authStatus, 'PERMISSION_DENIED', 'Credentials rejected.')
   })
 
-  const fallbackPayload = await fallbackResponse.json()
-  assert.equal(fallbackResponse.status, 200)
-  assert.equal(fallbackPayload.ok, true)
-  assert.equal(fallbackPayload.meta.fallbackUsed, true)
-  assert.equal(fallbackPayload.meta.attempts, 3)
-  assert.equal(fallbackPayload.meta.model, 'gemini-3.7-flash')
-  assert.equal(resilienceCallCount, 3)
-  assert.match(resilienceUrls[0], /gemini-3\.8-flash:generateContent/)
-  assert.match(resilienceUrls[1], /gemini-3\.8-flash:generateContent/)
-  assert.match(resilienceUrls[2], /gemini-3\.7-flash:generateContent/)
+  assert.equal(authFailure.response.status, 502)
+  assert.equal(authFailure.payload.code, 'GEMINI_AUTH_FAILED')
+  assert.equal(authCalls, 1)
 }
-finally {
-  globalThis.fetch = originalFetch
-}
+
+let exhaustedCalls = 0
+const exhaustedFallback = await requestWithMock(async (url) => {
+  exhaustedCalls += 1
+  const model = String(url).includes('gemini-3.8-flash')
+    ? 'gemini-3.8-flash'
+    : 'gemini-3.6-flash'
+
+  return geminiError(
+    404,
+    'NOT_FOUND',
+    `models/${model} is not found for API version v1beta, or is not supported for generateContent.`
+  )
+})
+
+assert.equal(exhaustedFallback.response.status, 502)
+assert.equal(exhaustedFallback.payload.code, 'GEMINI_MODEL_UNAVAILABLE')
+assert.equal(exhaustedFallback.payload.attempts, 2)
+assert.equal(exhaustedFallback.payload.fallbackUsed, true)
+assert.equal(exhaustedCalls, 2)
+
+let networkCalls = 0
+const networkRecovery = await requestWithMock(async () => {
+  networkCalls += 1
+  if (networkCalls === 1) throw new TypeError('fetch failed')
+  return geminiSuccess('gemini-3.8-flash')
+})
+
+assert.equal(networkRecovery.response.status, 200)
+assert.equal(networkRecovery.payload.meta.attempts, 2)
+assert.equal(networkRecovery.payload.meta.fallbackUsed, false)
+assert.equal(networkCalls, 2)
+
+let timeoutCalls = 0
+const networkTimeout = await requestWithMock(async () => {
+  timeoutCalls += 1
+  throw new DOMException('Upstream timed out.', 'AbortError')
+})
+
+assert.equal(networkTimeout.response.status, 502)
+assert.equal(networkTimeout.payload.code, 'AI_TIMEOUT')
+assert.equal(timeoutCalls, 3)
 
 console.log('\nPASS — ChemAI Gemini API mock tests passed.\n')

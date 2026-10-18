@@ -12,7 +12,7 @@ ChemLab 6.2 là bản phát hành cuối cùng của dự án. Bản này khóa 
 
 ## ChemAI Gemini
 
-Backend chạy tại Cloudflare Pages Function `/api/chat` và gọi Gemini Interactions API ổn định (`/v1/interactions`). Model mặc định là `gemini-3.8-flash`.
+Backend chạy tại Cloudflare Pages Function `/api/chat` và gọi Gemini GenerateContent API (`/v1beta/models/{model}:generateContent`). Model mặc định là `gemini-3.8-flash`, fallback mặc định là `gemini-3.6-flash`.
 
 ChemAI dùng structured output để nhận ba phần: `answer`, `actions`, `suggestions`. Dữ liệu ChemLab được truy hồi server-side từ Periodic Elements, Chemical Database, Reaction Database và Curriculum rồi đưa vào context. Các khối context/knowledge được coi là dữ liệu, không phải instruction, để giảm prompt injection.
 

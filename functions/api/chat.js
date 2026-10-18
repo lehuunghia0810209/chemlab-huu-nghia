@@ -3,11 +3,11 @@ import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
 const DEFAULT_FALLBACK_MODELS = Object.freeze([
-  'gemini-3.7-flash',
   'gemini-3.6-flash'
 ])
 const TRANSIENT_UPSTREAM_STATUS = new Set([408, 429, 500, 502, 503, 504])
 const MAX_UPSTREAM_ATTEMPTS = 4
+const MAX_RETRY_DELAY_MS = 10_000
 const GEMINI_API_ROOT = 'https://generativelanguage.googleapis.com/v1beta/models'
 const MAX_MESSAGE_LENGTH = 4000
 const MAX_HISTORY_ITEMS = 10
@@ -277,12 +277,32 @@ function extractGenerateContentText(payload) {
 }
 
 function providerError(payload, rawText = '') {
-  const code = payload?.error?.status || null
+  const code = payload?.error?.status || payload?.error?.code || null
   const message = String(payload?.error?.message || rawText || '').trim()
   return {
     code,
     message: message.slice(0, 500)
   }
+}
+
+function isQuotaExhausted(result) {
+  if (result?.upstream?.status !== 429) return false
+
+  const provider = providerError(result.payload, result.rawText)
+  return String(provider.code || '').toUpperCase() === 'QUOTA_EXCEEDED'
+}
+
+function isModelUnavailable(result) {
+  if (result?.upstream?.status !== 404) return false
+
+  const provider = providerError(result.payload, result.rawText)
+  const code = String(provider.code || '').toUpperCase()
+
+  return code === 'MODEL_NOT_FOUND' || (
+    code === 'NOT_FOUND' &&
+    provider.message.includes(result.model) &&
+    /not found|not supported for generateContent/i.test(provider.message)
+  )
 }
 
 function cleanStructuredText(value) {
@@ -343,14 +363,41 @@ function fallbackModels(value, primaryModel) {
     .slice(0, 2)
 }
 
-function retryDelay(attemptIndex) {
+function retryDelay(attemptIndex, retryAfter = null) {
+  if (retryAfter !== null && retryAfter !== '') {
+    const seconds = Number(retryAfter)
+    const retryAt = Date.parse(retryAfter)
+    const requestedDelay = Number.isFinite(seconds) && seconds >= 0
+      ? seconds * 1000
+      : retryAt - Date.now()
+
+    if (Number.isFinite(requestedDelay) && requestedDelay >= 0) {
+      return requestedDelay <= MAX_RETRY_DELAY_MS
+        ? Math.round(requestedDelay)
+        : null
+    }
+  }
+
   const base = Math.min(3200, 700 * (2 ** Math.max(0, attemptIndex)))
   const jitter = Math.floor(Math.random() * 280)
   return base + jitter
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+function sleep(ms, signal) {
+  if (signal?.aborted) return Promise.reject(signal.reason)
+
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(signal.reason)
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 }
 
 function generateContentBody({ message, history, appContext, knowledge, thinkingLevel }) {
@@ -429,23 +476,60 @@ async function requestGeminiResilient({
   ].slice(0, MAX_UPSTREAM_ATTEMPTS)
 
   let lastResult = null
+  let attemptCount = 0
 
   for (let index = 0; index < attemptPlan.length; index += 1) {
     const model = attemptPlan[index]
-    const result = await requestGemini({
-      model,
-      apiKey,
-      body,
-      signal
-    })
+    let result
+
+    attemptCount += 1
+
+    try {
+      result = await requestGemini({
+        model,
+        apiKey,
+        body,
+        signal
+      })
+    }
+    catch (error) {
+      if (signal?.aborted || index >= attemptPlan.length - 1) throw error
+
+      console.warn(
+        '[ChemAI] Gemini network error, retrying',
+        error?.name || 'Error',
+        `attempt=${attemptCount}/${attemptPlan.length}`,
+        `model=${model}`
+      )
+
+      await sleep(retryDelay(index), signal)
+      continue
+    }
 
     lastResult = {
       ...result,
-      attemptCount: index + 1,
+      attemptCount,
       fallbackUsed: model !== primaryModel
     }
 
     if (result.upstream.ok) return lastResult
+
+    if (isModelUnavailable(result)) {
+      while (attemptPlan[index + 1] === model) index += 1
+
+      if (index >= attemptPlan.length - 1) return lastResult
+
+      const provider = providerError(result.payload, result.rawText)
+      console.warn(
+        '[ChemAI] Gemini model unavailable, trying fallback',
+        provider.code,
+        `attempt=${attemptCount}/${attemptPlan.length}`,
+        `model=${model}`
+      )
+      continue
+    }
+
+    if (isQuotaExhausted(result)) return lastResult
 
     if (!TRANSIENT_UPSTREAM_STATUS.has(result.upstream.status)) {
       return lastResult
@@ -460,16 +544,19 @@ async function requestGeminiResilient({
     const hasNextAttempt = index < attemptPlan.length - 1
     if (!hasNextAttempt) break
 
+    const delay = retryDelay(index, result.upstream.headers.get('Retry-After'))
+    if (delay === null) return lastResult
+
     const provider = providerError(result.payload, result.rawText)
     console.warn(
       '[ChemAI] Gemini transient error, retrying',
       result.upstream.status,
       provider.code,
-      `attempt=${index + 1}/${attemptPlan.length}`,
+      `attempt=${attemptCount}/${attemptPlan.length}`,
       `model=${model}`
     )
 
-    await sleep(retryDelay(index))
+    await sleep(delay, signal)
   }
 
   return lastResult
@@ -644,7 +731,7 @@ export async function onRequestPost(context) {
     if (!upstream.ok) {
       const provider = providerError(payload, rawUpstream)
       const isAuthError = upstream.status === 401 || upstream.status === 403
-      const isModelError = upstream.status === 404
+      const isModelError = isModelUnavailable(result)
       const isBadRequest = upstream.status === 400
       const isRateLimited = upstream.status === 429
 
@@ -666,7 +753,9 @@ export async function onRequestPost(context) {
       }
       else if (isRateLimited) {
         code = 'RATE_LIMITED'
-        message = 'Gemini đang nhận quá nhiều yêu cầu. ChemAI đã tự thử lại; hãy chờ một lúc rồi thử tiếp.'
+        message = isQuotaExhausted(result)
+          ? 'Gemini đã hết hạn mức sử dụng hiện tại. Hãy chờ hạn mức được làm mới rồi thử lại.'
+          : 'Gemini đang nhận quá nhiều yêu cầu. ChemAI đã tự thử lại; hãy chờ một lúc rồi thử tiếp.'
         status = 429
       }
       else if (upstream.status === 503) {
@@ -737,7 +826,7 @@ export async function onRequestPost(context) {
     })
   }
   catch (error) {
-    const timedOut = error?.name === 'AbortError' || error === 'timeout'
+      const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
 
     console.error('[ChemAI] Request failed:', error?.message || error)
 

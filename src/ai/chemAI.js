@@ -677,6 +677,7 @@ export function initChemAI({ version = '6.2.0' } = {}) {
           'GEMINI_AUTH_FAILED',
           'GEMINI_MODEL_UNAVAILABLE',
           'GEMINI_BAD_REQUEST',
+          'GEMINI_OVERLOADED',
           'AI_REQUEST_FAILED'
         ])
 

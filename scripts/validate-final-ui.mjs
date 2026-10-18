@@ -120,6 +120,7 @@ expect('ChemAI hides product launcher while open', aiCss.includes('html.chemai-o
 expect('ChemAI mobile send target is at least 52px', aiCss.includes('width: 52px') && aiCss.includes('height: 52px'))
 expect('ChemAI exposes retry after request failure', aiJs.includes('data-ai-retry') && aiJs.includes('lastFailedQuestion'))
 expect('ChemAI distinguishes Gemini auth errors', aiJs.includes('GEMINI_AUTH_FAILED') && api.includes('GEMINI_AUTH_FAILED'))
+expect('ChemAI keeps upstream overloads reachable', aiJs.includes("'GEMINI_OVERLOADED'") && api.includes("code = 'GEMINI_OVERLOADED'"))
 expect('desktop backdrop remains subtle', aiCss.includes('background: rgba(2,4,10,.19)'))
 
 /* Gemini backend / security */
@@ -127,7 +128,7 @@ expect('Cloudflare Function uses server-side Gemini secret', api.includes('env.G
 expect('Gemini generateContent API is used', api.includes('generativelanguage.googleapis.com/v1beta/models') && api.includes(':generateContent'))
 expect('Gemini current Flash model is default', api.includes("DEFAULT_MODEL = 'gemini-3.8-flash'"))
 expect('Gemini transient errors use retry/backoff', api.includes('TRANSIENT_UPSTREAM_STATUS') && api.includes('retryDelay') && api.includes('requestGeminiResilient'))
-expect('Gemini has stable Flash fallback models', api.includes('gemini-3.7-flash') && api.includes('gemini-3.6-flash') && api.includes('GEMINI_FALLBACK_MODELS'))
+expect('Gemini has a stable Flash fallback model', api.includes('gemini-3.6-flash') && !api.includes('gemini-3.7-flash') && api.includes('GEMINI_FALLBACK_MODELS'))
 expect('Gemini auth uses x-goog-api-key header', api.includes("'x-goog-api-key': apiKey") && api.includes('env.GEMINI_API_KEY'))
 expect('Gemini JSON response mode is enabled', api.includes("responseMimeType: 'application/json'") && api.includes('BẮT BUỘC chỉ trả về một JSON object hợp lệ'))
 expect('Gemini reasoning level is configurable', api.includes('GEMINI_THINKING_LEVEL') && api.includes("new Set(['low', 'medium', 'high'])"))
