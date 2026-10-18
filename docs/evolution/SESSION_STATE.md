@@ -13,19 +13,23 @@
 | `fd65bc9` | EV-02b — Hoàn tác (snapshot), khóa trong chế độ Guided |
 | `2aa9a11` | EV-02c — Khuấy chỉ tạo bọt khi đã có phản ứng sinh khí |
 | `c904cc0` | EV-03 — 14 phân tử 3D (hình học thực nghiệm, có test), thẻ trong Compound Studio; Tool Center không còn tải Three.js |
-| (EV-04/06) | Bài học → mô hình 3D: bước kiến thức có `models` (g10-l12, g10-l13, g11 N₂), mở Compound Studio đè lên bài và quay lại đúng bước |
+| `2aee851` | EV-04/06 — Bài học → mô hình 3D: bước kiến thức có `models` (g10-l12, g10-l13, g11 N₂), mở Compound Studio đè lên bài và quay lại đúng bước |
+
+| `1f52c34` | EV-05 — Bảng tính tan: Ag₂SO₄/Li₃PO₄ ít tan; 7 cặp "không tồn tại trong nước" kèm phương trình |
+| (docs) | EV-07 — đo LCP/CLS/tương tác có throttling, phiên dài 3D/Lab (xem EVOLUTION_AUDIT.md) |
 
 ## Kiểm thử gần nhất
 
-`npm run check` PASS (chem 28) · `npm run build` PASS (không còn cảnh báo chunk > 500 kB) · `npm run check:browser` 146/146 PASS.
+`npm run check` PASS (chem 28) · `npm run build` PASS (không còn cảnh báo chunk > 500 kB) · `npm run check:browser` 150/150 PASS.
 
 ## Còn mở
 
 - pH cho acid/base yếu, hệ đệm: chưa có nồng độ trong catalog → vẫn định tính.
 - Phản ứng trong Lab là định tính (không tiêu thụ chất phản ứng; kết tủa không tan lại khi dư acid).
 - Chưa có kiểm thử browser cho toàn bộ luồng guided g11-lesson-02 (đã mô phỏng logic bằng script).
-- EV-05 (Tools Pro: ion/tính tan), EV-07 (đo hiệu năng có throttling, a11y bằng công cụ) chưa làm.
+- Lần mở chi tiết nguyên tố đầu tiên ~280 ms (CPU 4×); các lần sau < 150 ms.
+- Chưa có kiểm thử a11y bằng công cụ (axe chưa cài).
 
 ## Bước tiếp theo
 
-EV-05: audit Ion Engine + Solubility Table so với dữ liệu tính tan chuẩn; EV-07: đo LCP/INP với CPU/network throttling.
+Người dùng review nhánh `evolution/next` (chưa push). Ứng viên tiếp: cài axe để kiểm tra a11y; phản ứng Lab theo lượng chất (tiêu thụ chất phản ứng); mở rộng thư viện phân tử.
