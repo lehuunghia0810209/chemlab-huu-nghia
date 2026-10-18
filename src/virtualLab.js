@@ -185,6 +185,7 @@ export function initVirtualLab() {
         <div class="vl-controls panel" role="toolbar" aria-label="Thao tác với cốc">
           <button id="stir-button" type="button">Khuấy</button>
           <button id="heat-button" type="button" aria-pressed="false">Bật lửa</button>
+          <button id="undo-button" type="button" disabled>Hoàn tác</button>
           <button id="empty-button" type="button">Đổ bỏ</button>
           <button id="reset-lab" type="button">Đặt lại</button>
           <span>Kéo ngang trên cốc để nghiêng</span>
@@ -412,6 +413,12 @@ export function initVirtualLab() {
   const emptyButton =
     $('#empty-button')
 
+
+  const undoButton =
+    $('#undo-button')
+
+  /* Snapshots taken before each user change (free mode only). */
+  const undoStack = []
 
   const resetButton =
     $('#reset-lab')
@@ -809,6 +816,9 @@ export function initVirtualLab() {
       restoreLabSnapshot(
         event.detail
       )
+
+      undoStack.length = 0
+      syncUndoButton()
 
     }
 
@@ -1722,6 +1732,8 @@ export function initVirtualLab() {
 
     }
 
+
+    rememberForUndo()
 
     const wasEmpty =
       totalVolume ===
@@ -3544,6 +3556,41 @@ export function initVirtualLab() {
   )
 
 
+  undoButton.addEventListener('click', undoLastAction)
+
+
+  function isGuidedActive() {
+    return window.ChemLabGuidedLab?.context?.()?.mode === 'guided'
+  }
+
+  function syncUndoButton() {
+    undoButton.disabled = !undoStack.length
+  }
+
+  function rememberForUndo() {
+    undoStack.push(createLabSnapshot())
+    if (undoStack.length > 20) undoStack.shift()
+    syncUndoButton()
+  }
+
+  function undoLastAction() {
+    // Guided steps count actions already done; rolling the beaker back would desync them.
+    if (isGuidedActive()) {
+      messageTitle.textContent = 'Không hoàn tác trong thí nghiệm có hướng dẫn'
+      message.textContent = 'Các bước đã hoàn thành được tính theo thao tác; hãy dùng “Đặt lại” nếu muốn làm lại.'
+      return
+    }
+
+    const snapshot = undoStack.pop()
+    if (!snapshot) return
+
+    restoreLabSnapshot(snapshot)
+    syncUndoButton()
+    messageTitle.textContent = 'Đã hoàn tác'
+    message.textContent = 'Cốc đã trở về trạng thái trước thao tác gần nhất.'
+    addLog('Hoàn tác thao tác gần nhất.')
+  }
+
   function emptyBeaker(
     {
       writeLog =
@@ -3551,12 +3598,12 @@ export function initVirtualLab() {
     } = {}
   ) {
 
-    mixture =
-      {}
+    if (writeLog && totalVolume > 0) {
+      rememberForUndo()
+    }
 
-
-    additionHistory =
-      []
+    mixture = {}
+    additionHistory = []
 
 
     totalVolume =
@@ -3690,6 +3737,9 @@ export function initVirtualLab() {
         false
 
     })
+
+    undoStack.length = 0
+    syncUndoButton()
 
 
     selectedReagent =
