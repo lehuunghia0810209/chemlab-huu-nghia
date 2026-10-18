@@ -15,7 +15,7 @@ import { createBeakerEffects } from './lab/beakerEffects.js'
 import { computeAcidBase } from './lab/acidBase.js'
 import { stockConcentration } from './lab/concentrations.js'
 import { AMPHOTERIC } from './lab/stoichiometry.js'
-import { engineDrivesGas, simulateLab } from './lab/engine/simulate.js'
+import { engineDrivesGas, remainingFractions, simulateLab } from './lab/engine/simulate.js'
 import { solidsOf } from './lab/engine/precipitates.js'
 
 import {
@@ -2216,6 +2216,18 @@ export function initVirtualLab() {
      LIQUID
   ========================================================= */
 
+  /* Colourless (near-white, low-chroma) and not a suspension: draw it see-through,
+     so "không màu" does not look like milk and white solids stay visible. */
+  function isClearColourless(color) {
+    if (Object.keys(mixture).some(id => mixture[id] > 0 && reagents[id]?.state === 'suspension')) return false
+    const rgb = hexToRgb(color)
+    if (!rgb) return false
+    const [red, green, blue] = [rgb.r, rgb.g, rgb.b].map(value => value / 255)
+    const max = Math.max(red, green, blue)
+    const min = Math.min(red, green, blue)
+    return (max + min) / 2 > 0.9 && max - min < 0.14
+  }
+
   function updateLiquid() {
 
     const height =
@@ -2252,6 +2264,11 @@ export function initVirtualLab() {
 
       getDisplayedColor()
 
+    )
+
+    liquid.style.setProperty(
+      '--liquid-opacity',
+      isClearColourless(getDisplayedColor()) ? '0.42' : '0.9'
     )
 
 
@@ -2772,9 +2789,10 @@ export function initVirtualLab() {
   }
 
 
-  function clearPrecipitate() {
+  function clearPrecipitate({ fade = false } = {}) {
 
-    beakerEffects.clearPrecipitate()
+    if (fade) beakerEffects.dissolvePrecipitate()
+    else beakerEffects.clearPrecipitate()
 
     precipitateLayer.replaceChildren()
 
@@ -3099,12 +3117,39 @@ export function initVirtualLab() {
     }
   }
 
+  /* When every triggered reaction is quantitative and none has its own colour
+     data, the solution colour comes from what is still dissolved: consumed
+     coloured ions no longer tint it (dissolved products here are colourless
+     Na⁺/K⁺/NH₄⁺ salts). Otherwise the reaction data decides the colour. */
+  function syncSolutionColor(simulation) {
+    const results = [...simulation.results.values()]
+    if (!results.length || results.some(result => result.status !== 'quantitative')) return
+    if ([...triggeredReactions].some(id => reactions.find(item => item.id === id)?.effects?.some(effect => effect.type === 'solutionColor'))) return
+    const fractions = remainingFractions(simulation)
+    let weight = 0
+    const sum = { r: 0, g: 0, b: 0 }
+    for (const [id, volume] of Object.entries(mixture)) {
+      if (!(volume > 0)) continue
+      const keep = fractions[id] ?? 1
+      for (const [color, part] of [[reagents[id]?.solutionColor || reagents[id]?.color || '#f8fbff', volume * keep], ['#f8fbff', volume * (1 - keep)]]) {
+        const rgb = hexToRgb(color)
+        if (!rgb || part <= 0) continue
+        sum.r += rgb.r * part
+        sum.g += rgb.g * part
+        sum.b += rgb.b * part
+        weight += part
+      }
+    }
+    if (weight > 0) currentColor = rgbToHex(sum.r / weight, sum.g / weight, sum.b / weight)
+  }
+
   function renderStoichiometry() {
     const ids = [...triggeredReactions]
     const reaction = reactions.find(item => item.id === ids[ids.length - 1])
     stoichBox.hidden = !reaction
 
     const simulation = currentSimulation()
+    syncSolutionColor(simulation)
 
     // Bubbles only for gas produced since the last state (open beaker: released gas stays in the history).
     const newGas = simulation.gasMoles - gasBaseline
@@ -3137,7 +3182,7 @@ export function initVirtualLab() {
     const solidColor = reaction.effects?.find(effect => effect.type === 'precipitate')?.color
     if (solidColor && solidMoles <= 0 && precipitate) {
       precipitate = null
-      clearPrecipitate()
+      clearPrecipitate({ fade: true })
       observationTitle.textContent = 'Kết tủa tan hết'
       observationText.textContent = `${subscript(result.dissolved?.formula || 'Kết tủa')} lưỡng tính tan trong ${reagents[AMPHOTERIC_REAGENT[reaction.id]]?.formula || 'kiềm'} dư, dung dịch trong trở lại.`
     }
@@ -3228,6 +3273,11 @@ export function initVirtualLab() {
 
       getDisplayedColor()
 
+    )
+
+    liquid.style.setProperty(
+      '--liquid-opacity',
+      isClearColourless(getDisplayedColor()) ? '0.42' : '0.9'
     )
 
 

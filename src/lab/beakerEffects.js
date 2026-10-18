@@ -32,6 +32,7 @@ export function createBeakerEffects(host) {
   let ratio = 1
   let level = 0
   let bubbles = []
+  let rings = []
   let particles = []
   let sediment = null
   let frame = null
@@ -54,7 +55,8 @@ export function createBeakerEffects(host) {
   }
 
   function active() {
-    return bubbles.length > 0 || particles.some(p => !p.settled)
+    return bubbles.length > 0 || rings.length > 0 || particles.some(p => !p.settled || p.fading) ||
+      Boolean(sediment && (sediment.fading || Math.abs(sediment.depth - sediment.depthTarget) > 0.2))
   }
 
   function schedule() {
@@ -77,11 +79,28 @@ export function createBeakerEffects(host) {
       bubble.y -= bubble.vy * dt
       bubble.x = bubble.x0 + Math.sin(bubble.age * bubble.freq + bubble.phase) * bubble.amp
       bubble.r = Math.min(bubble.rMax, bubble.r + 0.6 * dt)
-      return bubble.y - bubble.r > top + 1
+      if (bubble.y - bubble.r > top + 1) return true
+      // Bursting at the surface leaves a short ripple.
+      rings.push({ x: bubble.x, r: bubble.r, age: 0 })
+      return false
     })
+    rings = rings.filter(ring => (ring.age += dt) < 0.35)
+
+    if (sediment) {
+      sediment.depth += (sediment.depthTarget - sediment.depth) * Math.min(1, dt * 4)
+      if (sediment.fading) {
+        sediment.fade = Math.max(0, sediment.fade - dt / 0.9)
+        if (sediment.fade <= 0) {
+          sediment = null
+          particles = []
+          delete host.dataset.precipitateAmount
+        }
+      }
+    }
+    particles = particles.filter(particle => !particle.fading || (particle.alpha -= dt * 1.4) > 0)
 
     for (const particle of particles) {
-      if (particle.settled) continue
+      if (particle.settled || particle.fading) continue
       if (particle.delay > 0) {
         particle.delay -= dt
         continue
@@ -108,20 +127,21 @@ export function createBeakerEffects(host) {
 
     if (sediment) {
       const [r, g, b] = sediment.rgb
-      const falling = particles.filter(p => !p.settled && p.delay <= 0).length
+      const fade = sediment.fade
+      const falling = particles.filter(p => !p.settled && !p.fading && p.delay <= 0).length
       // Turbidity fades as particles leave the bulk liquid.
-      const turbidity = sediment.total ? (falling / sediment.total) * 0.38 : 0
+      const turbidity = sediment.total ? (falling / sediment.total) * 0.38 * fade : 0
       if (turbidity > 0.01) {
         context.fillStyle = `rgba(${r},${g},${b},${turbidity})`
         context.fillRect(0, top, width, height - top)
       }
 
       const fraction = sediment.total ? sediment.settled / sediment.total : 1
-      const depth = sediment.depth * fraction
+      const depth = sediment.depth * fraction * fade
       if (depth > 0.5) {
         const gradient = context.createLinearGradient(0, height - depth, 0, height)
-        gradient.addColorStop(0, `rgba(${r},${g},${b},0.75)`)
-        gradient.addColorStop(1, `rgba(${r},${g},${b},0.95)`)
+        gradient.addColorStop(0, `rgba(${r},${g},${b},${0.75 * fade})`)
+        gradient.addColorStop(1, `rgba(${r},${g},${b},${0.95 * fade})`)
         context.fillStyle = gradient
         context.beginPath()
         context.moveTo(0, height)
@@ -130,22 +150,45 @@ export function createBeakerEffects(host) {
         context.lineTo(width, height)
         context.closePath()
         context.fill()
-        context.strokeStyle = `rgba(${Math.round(r * 0.5)},${Math.round(g * 0.5)},${Math.round(b * 0.5)},0.7)`
+        context.strokeStyle = `rgba(${Math.round(r * 0.5)},${Math.round(g * 0.5)},${Math.round(b * 0.5)},${0.7 * fade})`
         context.lineWidth = 1
         context.stroke()
+
+        // Granular texture: slightly darker grains of the same colour, so a
+        // white solid stays visible without being drawn grey.
+        context.save()
+        context.clip()
+        for (const grain of sediment.grains) {
+          const shade = grain.shade
+          context.fillStyle = `rgba(${Math.round(r * shade)},${Math.round(g * shade)},${Math.round(b * shade)},${0.55 * fade})`
+          context.beginPath()
+          context.arc(grain.x * width, height - depth * grain.y, grain.r, 0, Math.PI * 2)
+          context.fill()
+        }
+        context.restore()
       }
 
       // A thin dark rim keeps particles visible against a liquid of similar colour.
       context.lineWidth = 0.8
-      context.strokeStyle = `rgba(${Math.round(r * 0.45)},${Math.round(g * 0.45)},${Math.round(b * 0.45)},0.65)`
       for (const particle of particles) {
-        if (particle.delay > 0 || particle.settled) continue
-        context.fillStyle = `rgba(${r},${g},${b},${particle.alpha})`
+        if (particle.delay > 0 || (particle.settled && !particle.fading)) continue
+        const alpha = Math.max(0, particle.alpha) * fade
+        context.strokeStyle = `rgba(${Math.round(r * 0.45)},${Math.round(g * 0.45)},${Math.round(b * 0.45)},${0.65 * alpha})`
+        context.fillStyle = `rgba(${r},${g},${b},${alpha})`
         context.beginPath()
         context.arc(particle.x, particle.y, particle.r, 0, Math.PI * 2)
         context.fill()
         context.stroke()
       }
+    }
+
+    for (const ring of rings) {
+      const progress = ring.age / 0.35
+      context.beginPath()
+      context.ellipse(ring.x, top + 1, ring.r + progress * 6, 1 + progress * 1.5, 0, 0, Math.PI * 2)
+      context.lineWidth = 1
+      context.strokeStyle = `rgba(255,255,255,${0.55 * (1 - progress)})`
+      context.stroke()
     }
 
     for (const bubble of bubbles) {
@@ -192,20 +235,35 @@ export function createBeakerEffects(host) {
     if (Math.abs(value - sediment.amount) < 0.01) return
     const still = reducedMotion()
     const total = particleCount(value)
-    if (total > particles.length) {
+    const kept = particles.filter(particle => !particle.fading)
+    if (total > kept.length) {
       const top = surfaceY()
-      for (let i = particles.length; i < total; i += 1) particles.push(newParticle(top, still))
+      for (let i = kept.length; i < total; i += 1) particles.push(newParticle(top, still))
+    }
+    else if (still) {
+      particles = kept.slice(0, total)
     }
     else {
-      particles = particles.slice(0, total)
+      // Less solid (partial redissolution): the surplus fades out instead of vanishing.
+      kept.slice(total).forEach(particle => { particle.fading = true })
     }
     sediment.amount = value
     sediment.total = total
-    sediment.settled = particles.filter(particle => particle.settled).length
-    sediment.depth = Math.max(4, Math.min(34, (8 + level * 14) * value))
+    sediment.settled = particles.filter(particle => particle.settled && !particle.fading).length
+    sediment.depthTarget = Math.max(4, Math.min(34, (8 + level * 14) * value))
+    if (still || !sediment.depth) sediment.depth = sediment.depthTarget
     host.dataset.precipitateAmount = value.toFixed(2)
     draw()
     schedule()
+  }
+
+  function makeGrains() {
+    return Array.from({ length: 70 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: 0.6 + Math.random() * 1.1,
+      shade: 0.8 + Math.random() * 0.1
+    }))
   }
 
   return {
@@ -250,19 +308,35 @@ export function createBeakerEffects(host) {
 
     clearBubbles() {
       bubbles = []
+      rings = []
       draw()
     },
 
     /* amount: relative quantity (1 ≈ 2.5 mmol of solid). The drawing is
        proportional to it but is an illustration, not a measured volume. */
     precipitate(color, amount = 1) {
-      sediment = { rgb: hexToRgb(color), total: 0, settled: 0, depth: 0, amount: 0 }
+      sediment = { rgb: hexToRgb(color), total: 0, settled: 0, depth: 0, depthTarget: 0, amount: 0, fade: 1, fading: false, grains: makeGrains() }
       particles = []
       setAmount(amount)
     },
 
     setPrecipitateAmount(amount) {
-      if (sediment) setAmount(amount)
+      if (sediment && !sediment.fading) setAmount(amount)
+    },
+
+    /* All solid redissolved: turbidity, particles and sediment fade out. */
+    dissolvePrecipitate() {
+      if (!sediment) return
+      if (reducedMotion()) {
+        particles = []
+        sediment = null
+        delete host.dataset.precipitateAmount
+        draw()
+        return
+      }
+      sediment.fading = true
+      host.dataset.precipitateAmount = '0.00'
+      schedule()
     },
 
     clearPrecipitate() {

@@ -605,11 +605,13 @@
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .14), transparent 30%, transparent 75%, rgba(0, 0, 0, .12)),
     linear-gradient(180deg, color-mix(in oklab, var(--liquid-color, #7ecbff) 78%, white), var(--liquid-color, #7ecbff) 60%, color-mix(in oklab, var(--liquid-color, #7ecbff) 80%, black));
-  opacity: .9;
+  /* Colourless solutions are see-through; coloured or turbid ones stay dense. */
+  opacity: var(--liquid-opacity, .9);
   transform: rotate(var(--liquid-tilt, 0deg));
   transform-origin: 50% 100%;
   transition:
     height .6s var(--ease-out),
+    opacity .6s var(--ease-out),
     --liquid-color .6s var(--ease-out);
 }
 

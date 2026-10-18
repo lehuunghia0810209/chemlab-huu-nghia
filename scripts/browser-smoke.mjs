@@ -530,12 +530,19 @@ async function labStoichChecks(browser, baseURL) {
   await add('cuso4')
   await add('naoh')
   record('lab amounts: CuSO₄ + 2NaOH → Cu(OH)₂↓ 1,25 mmol, NaOH limiting', /Cu\(OH\)₂↓ 1,25 mmol/.test((await panel()).text) && /hạn chế\) NaOH/.test((await panel()).text), (await panel()).text)
+  const liquidLook = () => page.evaluate(() => getComputedStyle(document.querySelector('.liquid')).getPropertyValue('--liquid-opacity').trim())
+  const tinted = await liquidLook()
+  await add('naoh', 25)
+  const cleared = await liquidLook()
+  record('solution colour follows the chemistry: Cu²⁺ left → blue; all Cu²⁺ precipitated → colourless, see-through',
+    tinted === '0.9' && cleared === '0.42', `${tinted} → ${cleared}`)
 
   await page.click('#reset-lab')
   await add('alcl3')
   await add('naoh', 50)
   const alumina = await drawn()
   await add('naoh', 50)
+  await page.waitForTimeout(1200) // the dissolving solid fades out over ~0.9 s
   const dissolved = await drawn()
   const dissolvedText = (await panel()).text
   record('lab amounts: Al(OH)₃↓ forms, then dissolves completely in excess NaOH (10 mmol OH⁻ per 2,5 mmol Al³⁺)',

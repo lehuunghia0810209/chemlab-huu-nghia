@@ -92,3 +92,17 @@ export function engineDrivesGas(reaction, simulation) {
     (simulation.results.get(reaction.id).kind === 'stepwise' ||
       simulation.results.get(reaction.id).products?.some(product => product.gas))
 }
+
+/* Fraction of each added reagent still dissolved, for reagents consumed by
+   quantitative (non-stepwise) reactions; others are absent (= 1). */
+export function remainingFractions(simulation) {
+  const fractions = {}
+  for (const result of simulation.results.values()) {
+    if (result.status !== 'quantitative' || result.kind === 'stepwise') continue
+    for (const reactant of result.reactants) {
+      const left = result.excess.find(item => item.id === reactant.id)?.moles || 0
+      fractions[reactant.id] = reactant.moles > 0 ? left / reactant.moles : 0
+    }
+  }
+  return fractions
+}
