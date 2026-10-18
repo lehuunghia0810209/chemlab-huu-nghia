@@ -14,7 +14,8 @@ import { reactionTitle, reactionDescription, reactionMessage } from './lab/react
 import { createBeakerEffects } from './lab/beakerEffects.js'
 import { computeAcidBase } from './lab/acidBase.js'
 import { stockConcentration } from './lab/concentrations.js'
-import { AMPHOTERIC, computeStoichiometry } from './lab/stoichiometry.js'
+import { AMPHOTERIC } from './lab/stoichiometry.js'
+import { engineDrivesGas, simulateLab } from './lab/engine/simulate.js'
 
 import {
   findAvailableReactions
@@ -473,6 +474,14 @@ export function initVirtualLab() {
   let additionHistory =
     []
 
+  /* Ordered log of every addition: the single source the chemistry
+     state is recomputed from (see lab/engine/simulate.js). */
+  let additions =
+    []
+
+  // Gas already accounted for, so bubbles appear only for new gas.
+  let gasBaseline = 0
+
 
   let triggeredReactions =
     new Set()
@@ -522,6 +531,9 @@ export function initVirtualLab() {
         [
           ...additionHistory
         ],
+
+      additions:
+        additions.map(item => ({ ...item })),
 
 
       totalVolume,
@@ -623,6 +635,13 @@ export function initVirtualLab() {
         : Object.keys(
             mixture
           )
+
+    // Older snapshots have no log: rebuild one addition per substance in the recorded order.
+    additions = Array.isArray(snapshot.additions)
+      ? snapshot.additions.map(item => ({ id: item.id, volume: Number(item.volume) || 0 }))
+      : [...new Set([...additionHistory, ...Object.keys(mixture)])]
+          .filter(id => mixture[id] > 0)
+          .map(id => ({ id, volume: mixture[id] }))
 
 
     totalVolume =
@@ -810,6 +829,7 @@ export function initVirtualLab() {
 
     updateLiquid()
 
+    syncGasBaseline()
     updateDashboard()
 
 
@@ -1760,6 +1780,8 @@ export function initVirtualLab() {
       ) +
       acceptedAmount
 
+    additions.push({ id, volume: acceptedAmount })
+
 
     totalVolume +=
       acceptedAmount
@@ -2503,7 +2525,8 @@ export function initVirtualLab() {
 
 
           reaction.effects
-            ?.forEach(
+            ?.filter(effect => effect.type !== 'gas' || !engineDrivesGas(reaction, currentSimulation()))
+            .forEach(
               applyReactionEffect
             )
 
@@ -3145,30 +3168,84 @@ export function initVirtualLab() {
   const mmol = moles => `${(moles * 1000).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mmol`
   const grams = mass => `${mass.toLocaleString('vi-VN', { maximumSignificantDigits: 3 })} g`
 
+  function currentSimulation() {
+    return simulateLab({ additions, triggeredIds: triggeredReactions, reactions, reagents })
+  }
+
+  // After undo/restore/reset the gas already made is history, not new bubbles.
+  function syncGasBaseline() {
+    gasBaseline = currentSimulation().gasMoles
+  }
+
+  function renderStepwise(result) {
+    const { system, state } = result
+    const row = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`
+    const left = [
+      state.dibasic > 1e-12 && `${system.labels.dibasic} ${mmol(state.dibasic)}`,
+      state.monobasic > 1e-12 && `${system.labels.monobasic} ${mmol(state.monobasic)}`,
+      state.acid > 1e-12 && `H⁺ dư ${mmol(state.acid)}`
+    ].filter(Boolean)
+    stoichBody.innerHTML = `
+      <dl class="stoich-list">
+        ${state.stage1 > 0 ? row(`Nấc 1 · ${system.stage1}`, mmol(state.stage1)) : ''}
+        ${state.stage2 > 0 ? row(`Nấc 2 · ${system.stage2}`, mmol(state.stage2)) : ''}
+        ${state.direct > 0 ? row(`Acid dư · ${system.direct}`, mmol(state.direct)) : ''}
+        ${row(`${system.labels.gas}↑ đã thoát ra`, state.gas > 0 ? mmol(state.gas) : 'chưa có')}
+        ${left.length ? row('Còn trong cốc', left.join(' · ')) : ''}
+      </dl>
+      <p class="stoich-note">Mô hình hai nấc lý tưởng, theo đúng thứ tự bạn thêm hóa chất: nhỏ acid vào muối thì nấc 1 xong mới có khí; cho muối vào acid dư thì có khí ngay. Thực tế có thể thoát ít khí sớm hơn và một phần khí còn hòa tan.</p>
+    `
+
+    // Observation follows the computed stage, not the trigger.
+    if (state.gas > 0) {
+      observationTitle.textContent = `Có khí ${system.labels.gas} thoát ra`
+      observationText.textContent = system.id === 'sulfite'
+        ? 'Sủi bọt khí SO₂ không màu, mùi hắc và độc — trong phòng thí nghiệm thật phải làm trong tủ hút.'
+        : 'Sủi bọt khí CO₂ không màu.'
+      equationText.textContent = state.direct > 0 && state.stage2 === 0 ? system.direct : system.stage2
+    }
+    else {
+      observationTitle.textContent = 'Chưa có khí thoát ra'
+      observationText.textContent = `H⁺ mới chuyển ${system.labels.dibasic} thành ${system.labels.monobasic} (nấc 1), chưa tạo khí ${system.labels.gas}.`
+      equationText.textContent = system.stage1
+    }
+  }
+
   function renderStoichiometry() {
     const ids = [...triggeredReactions]
     const reaction = reactions.find(item => item.id === ids[ids.length - 1])
     stoichBox.hidden = !reaction
-    if (!reaction) return
 
-    const shared = ids.slice(0, -1).some(id => reactions.find(item => item.id === id)?.reactants.some(r => reaction.reactants.includes(r)))
-    const result = shared ? null : computeStoichiometry(reaction, mixture, reagents, stockConcentration)
+    const simulation = currentSimulation()
+
+    // Bubbles only for gas produced since the last state (open beaker: released gas stays in the history).
+    const newGas = simulation.gasMoles - gasBaseline
+    gasBaseline = simulation.gasMoles
+    if (newGas > 1e-9) {
+      createBubbles(Math.round(Math.min(40, Math.max(6, newGas / 1e-4))))
+    }
+
+    if (!reaction) return
+    const result = simulation.results.get(reaction.id)
+
+    if (result?.kind === 'stepwise') {
+      renderStepwise(result)
+      return
+    }
 
     if (!result || result.status === 'qualitative') {
       stoichBody.innerHTML = `<p>${escapeHTML(
-        shared
-          ? 'Nhiều phản ứng dùng chung một chất trong cốc nên ChemLab không tính riêng lượng chất của từng phản ứng.'
-          : result?.reason
-            ? result.reason
-            : result
-              ? `Phản ứng được mô phỏng định tính: dữ liệu chưa có nồng độ của ${result.missing.join(', ')}, nên ChemLab không tính lượng chất.`
-              : 'Phản ứng được mô phỏng định tính.'
+        result?.reason
+          ? result.reason
+          : result?.missing
+            ? `Phản ứng được mô phỏng định tính: dữ liệu chưa có nồng độ của ${result.missing.join(', ')}, nên ChemLab không tính lượng chất.`
+            : 'Phản ứng được mô phỏng định tính.'
       )}</p>`
       return
     }
 
-    // The drawn precipitate follows the computed amount of solid (one source: the mixture volumes).
-    const solidMoles = result.products.filter(item => item.precipitate).reduce((sum, item) => sum + item.moles, 0)
+    // The drawn precipitate follows the computed amount of solid (one source: the action log).
+    const solidMoles = simulation.solidMoles
     const solidColor = reaction.effects?.find(effect => effect.type === 'precipitate')?.color
     if (solidColor && solidMoles <= 0 && precipitate) {
       precipitate = null
@@ -3187,15 +3264,16 @@ export function initVirtualLab() {
     const row = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`
     const limiting = result.reactants.filter(item => result.limiting.includes(item.id))
     const products = result.products.filter(item => item.formula !== 'H2O' && item.moles > 0)
+    const productLabel = item => `${subscript(item.formula)}${item.precipitate ? '↓' : ''}${item.gas ? '↑' : ''} ${mmol(item.moles)} (${grams(item.mass)})`
     stoichBody.innerHTML = `
       <dl class="stoich-list">
         ${row('Đã thêm', result.reactants.map(item => `${escapeHTML(item.formula)} ${mmol(item.moles)}`).join(' · '))}
         ${row(limiting.length === result.reactants.length ? 'Phản ứng vừa đủ' : 'Chất hết (hạn chế)', limiting.map(item => escapeHTML(item.formula)).join(', '))}
         ${result.excess.length ? row('Còn dư', result.excess.map(item => `${escapeHTML(item.formula)} ${mmol(item.moles)}`).join(' · ')) : ''}
         ${result.dissolved?.moles > 0 ? row(result.dissolved.complete ? 'Kết tủa tan hết' : 'Kết tủa tan một phần', `${subscript(result.dissolved.formula)} ${mmol(result.dissolved.moles)} tan trong kiềm dư`) : ''}
-        ${row('Tạo thành', products.map(item => `${subscript(item.formula)}${item.precipitate ? '↓' : ''} ${mmol(item.moles)} (${grams(item.mass)})`).join(' · ') + (products.length < result.products.length ? ' · và H₂O' : ''))}
+        ${row('Tạo thành', products.map(productLabel).join(' · ') + (products.length < result.products.length ? ' · và H₂O' : ''))}
       </dl>
-      <p class="stoich-note">Tính từ thể tích × dung dịch gốc 0,1 M và hệ số phương trình, coi phản ứng xảy ra hoàn toàn.${solidMoles > 0 ? ' Lượng kết tủa vẽ trong cốc tỉ lệ với số mol, chỉ để minh họa — không phải thể tích hay kích thước hạt thật.' : ''}</p>
+      <p class="stoich-note">Tính từ thể tích × dung dịch gốc 0,1 M và hệ số phương trình, coi phản ứng xảy ra hoàn toàn${products.some(item => item.gas) ? ' và khí thoát hết khỏi cốc hở' : ''}.${solidMoles > 0 ? ' Lượng kết tủa vẽ trong cốc tỉ lệ với số mol, chỉ để minh họa — không phải thể tích hay kích thước hạt thật.' : ''}</p>
     `
   }
 
@@ -3517,11 +3595,13 @@ export function initVirtualLab() {
 
 
       // Stirring only releases bubbles when a gas-forming reaction has happened.
+      const simulation = currentSimulation()
       const releasesGas =
         reactions.some(
           reaction =>
             triggeredReactions.has(reaction.id) &&
-            reaction.effects?.some(effect => effect.type === 'gas')
+            reaction.effects?.some(effect => effect.type === 'gas') &&
+            (!engineDrivesGas(reaction, simulation) || simulation.gasMoles > 0)
         )
 
       if (releasesGas) {
@@ -3689,6 +3769,7 @@ export function initVirtualLab() {
 
     mixture = {}
     additionHistory = []
+    additions = []
 
 
     totalVolume =
@@ -3757,6 +3838,7 @@ export function initVirtualLab() {
 
     updateLiquid()
 
+    syncGasBaseline()
     updateDashboard()
 
 

@@ -498,6 +498,64 @@ test('lab pH: spectator salts are counted, H⁺/OH⁻-consuming salts fall back 
   assert.equal(pHOf({ glucose: 25, hcl: 25 }).mode, 'estimate')
 })
 
+const { replayStepwise, STEPWISE_SYSTEMS } = await import('../src/lab/engine/stepwise.js')
+const { simulateLab, SHARED_REASON } = await import('../src/lab/engine/simulate.js')
+const carbonate = STEPWISE_SYSTEMS.find(system => system.id === 'carbonate')
+const mmolOf = value => value * 1000
+const replay = additions => replayStepwise(carbonate, additions.map(([id, volume]) => ({ id, volume })), stockOf)
+
+test('stepwise CO₃²⁻ + HCl: acid added to carbonate gives HCO₃⁻ first, gas only after', () => {
+  const first = replay([['na2co3', 25], ['hcl', 10]])
+  near(mmolOf(first.gas), 0, 1e-12)
+  near(mmolOf(first.monobasic), 1, 1e-9)
+  near(mmolOf(first.dibasic), 1.5, 1e-9)
+  const more = replay([['na2co3', 25], ['hcl', 10], ['hcl', 25]])
+  near(mmolOf(more.dibasic), 0, 1e-12)
+  near(mmolOf(more.gas), 1, 1e-9) // 3.5 mmol H⁺: 2.5 to HCO₃⁻, 1.0 to CO₂
+  near(mmolOf(more.monobasic), 1.5, 1e-9)
+  const all = replay([['na2co3', 25], ['hcl', 50]])
+  near(mmolOf(all.gas), 2.5, 1e-9)
+  near(mmolOf(all.acid), 0, 1e-12)
+})
+
+test('stepwise CO₃²⁻ + HCl: carbonate added to acid releases gas at once (order matters)', () => {
+  const excessAcid = replay([['hcl', 25], ['na2co3', 10]])
+  near(mmolOf(excessAcid.gas), 1, 1e-9)
+  near(mmolOf(excessAcid.acid), 0.5, 1e-9)
+  const littleAcid = replay([['hcl', 10], ['na2co3', 25]])
+  near(mmolOf(littleAcid.gas), 0.5, 1e-9) // n(CO₂) = n(HCl) / 2
+  near(mmolOf(littleAcid.dibasic), 2, 1e-9)
+  // Same totals, other order: 1 mmol HCl onto 2.5 mmol CO₃²⁻ gives no gas.
+  near(mmolOf(replay([['na2co3', 25], ['hcl', 10]]).gas), 0, 1e-12)
+  near(mmolOf(replay([['nahco3', 25], ['hcl', 10]]).gas), 1, 1e-9) // HCO₃⁻ + H⁺ is one step
+})
+
+test('stepwise replay conserves carbon and H⁺ for random addition sequences', () => {
+  let seed = 7
+  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+  for (let run = 0; run < 200; run += 1) {
+    const additions = Array.from({ length: 1 + Math.floor(random() * 6) }, () => [['hcl', 'na2co3', 'nahco3'][Math.floor(random() * 3)], [1, 10, 25, 50][Math.floor(random() * 4)]])
+    const state = replay(additions)
+    const added = id => additions.filter(([item]) => item === id).reduce((sum, [, volume]) => sum + 0.1 * volume / 1000, 0)
+    near(state.dibasic + state.monobasic + state.gas, added('na2co3') + added('nahco3'), 1e-12)
+    near(state.acid + state.stage1 + state.stage2 + 2 * state.direct, added('hcl'), 1e-12)
+    for (const value of Object.values(state)) assert.ok(value >= -1e-15, JSON.stringify(state))
+  }
+})
+
+test('simulateLab: competing reactions are not computed independently', () => {
+  const sim = (pairs, ids) => simulateLab({ additions: pairs.map(([id, volume]) => ({ id, volume })), triggeredIds: ids, reactions: REACTIONS, reagents: catalogue })
+  const single = sim([['agno3', 25], ['nacl', 10]], ['agno3-nacl'])
+  near(mmolOf(single.solidMoles), 1, 1e-9)
+  const competing = sim([['hcl', 25], ['naoh', 10], ['na2co3', 25]], ['hcl-naoh', 'na2co3-hcl'])
+  assert.equal(competing.results.get('hcl-naoh').reason, SHARED_REASON)
+  assert.equal(competing.results.get('na2co3-hcl').reason, SHARED_REASON)
+  assert.equal(competing.gasMoles, 0)
+  const twoCarbonates = sim([['na2co3', 25], ['nahco3', 25], ['hcl', 50]], ['na2co3-hcl', 'nahco3-hcl'])
+  assert.equal(twoCarbonates.results.get('na2co3-hcl').kind, 'stepwise') // one system, not a competition
+  near(mmolOf(twoCarbonates.gasMoles), 2.5, 1e-9)
+})
+
 // Word equations (colour tests, R-group notation) cannot be atom-checked.
 const QUALITATIVE_EQUATIONS = new Set([
   'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'

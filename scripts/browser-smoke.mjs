@@ -545,10 +545,42 @@ async function labStoichChecks(browser, baseURL) {
   await page.waitForTimeout(200)
   record('lab amounts: undo brings the Al(OH)₃ precipitate back', (await drawn()).layer)
 
+  const bursts = () => page.evaluate(() => Number(document.querySelector('.liquid-mask').dataset.gasBursts || 0))
+  const observed = () => page.evaluate(() => ({
+    title: document.querySelector('#observation-title').textContent.trim(),
+    equation: document.querySelector('#reaction-equation').textContent.trim()
+  }))
   await page.click('#reset-lab')
+  const before = await bursts()
   await add('na2co3')
   await add('hcl', 10)
-  record('lab amounts: Na₂CO₃ + HCl stays qualitative (two-step reaction)', /hai nấc/.test((await panel()).text) && !/mmol/.test((await panel()).text), (await panel()).text)
+  const stage1 = await observed()
+  record('carbonate: 1 mmol HCl into 2,5 mmol Na₂CO₃ → no bubbles, stage 1 HCO₃⁻ shown',
+    (await bursts()) === before && /Chưa có khí/.test(stage1.title) && /HCO₃⁻/.test(stage1.equation) && /CO₂↑ đã thoát ra chưa có/.test((await panel()).text), `${await bursts() - before} ${JSON.stringify(stage1)} ${(await panel()).text}`)
+  await add('hcl', 25)
+  const stage2 = await observed()
+  record('carbonate: more HCl → stage 2, CO₂ 1,00 mmol released and bubbles start',
+    (await bursts()) > before && /Có khí CO₂/.test(stage2.title) && /CO₂↑ đã thoát ra 1,00 mmol/.test((await panel()).text), `${JSON.stringify(stage2)} ${(await panel()).text}`)
+  await page.click('#undo-button')
+  await page.waitForTimeout(200)
+  const undoBursts = await bursts()
+  record('carbonate: undo returns to stage 1 without new bubbles', /Chưa có khí/.test((await observed()).title) && /chưa có/.test((await panel()).text), (await panel()).text)
+  await page.click('#stir-button')
+  record('carbonate: stirring at stage 1 releases no bubbles', (await bursts()) === undoBursts)
+
+  await page.click('#reset-lab')
+  const reverse = await bursts()
+  await add('hcl')
+  await add('na2co3', 10)
+  record('carbonate: Na₂CO₃ into excess HCl → gas at once (1,00 mmol CO₂)', (await bursts()) > reverse && /CO₂↑ đã thoát ra 1,00 mmol/.test((await panel()).text), (await panel()).text)
+
+  await page.click('#reset-lab')
+  const plain = await bursts()
+  await add('agno3')
+  await add('nacl')
+  await page.click('#stir-button')
+  record('no false bubbling: AgNO₃ + NaCl and stirring produce no gas', (await bursts()) === plain)
+
   record('console clean in lab amounts flow', errors.length === 0, errors.join(' | '))
   await context.close()
 }

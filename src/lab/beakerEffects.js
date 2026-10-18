@@ -216,6 +216,8 @@ export function createBeakerEffects(host) {
 
     bubbles(count = 12) {
       if (level <= 0) return
+      // Counter for tests: every burst of gas the chemistry asked for.
+      host.dataset.gasBursts = String(Number(host.dataset.gasBursts || 0) + 1)
       const limit = window.matchMedia('(max-width: 767px)').matches ? 40 : 80
       const add = Math.min(Math.max(0, Math.round(count)), limit - bubbles.length)
       const still = reducedMotion()
