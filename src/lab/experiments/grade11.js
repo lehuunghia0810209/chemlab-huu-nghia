@@ -793,10 +793,14 @@ export const GRADE11_EXPERIMENTS = [
         'Thêm dung dịch Na₂SO₃.'
       ),
 
-      A(
-        'hcl',
-        'Thêm HCl và quan sát hiện tượng tạo khí.'
-      ),
+      {
+        ...A(
+          'hcl',
+          'Thêm HCl dư (tổng ít nhất 50 mL — gấp đôi 25 mL Na₂SO₃) và quan sát hiện tượng tạo khí.',
+          'Nấc 1: SO₃²⁻ + H⁺ → HSO₃⁻ chưa tạo khí. Cần thêm H⁺ để HSO₃⁻ + H⁺ → SO₂↑ + H₂O.'
+        ),
+        minAmount: 50
+      },
 
       O(
         'Sulfur dioxide',

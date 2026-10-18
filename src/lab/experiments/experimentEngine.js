@@ -209,7 +209,13 @@ function actionMatchesStep(
         'add' &&
 
       action.chemical ===
-        step.chemical
+        step.chemical &&
+
+      // minAmount (mL, total added so far) for steps that need an excess, e.g. two-stage reactions.
+      (
+        !step.minAmount ||
+        Number(action.snapshot?.mixture?.[step.chemical] ?? action.amount ?? 0) >= step.minAmount
+      )
 
     )
 

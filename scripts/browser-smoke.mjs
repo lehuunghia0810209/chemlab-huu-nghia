@@ -669,6 +669,39 @@ async function observationChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- guided g11-l7: sulfite needs excess HCl before SO₂ appears ---------- */
+async function guidedSulfiteChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
+  await openView(page, baseURL, 'lab')
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
+    detail: { grade: 11, lessonId: 'g11-l7', experimentId: 'g11-lesson-07' }
+  })))
+  await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
+  const step = () => page.evaluate(() => Number(/Bước (\d+)\/6/.exec(document.querySelector('.guided-lab-shell').innerText)?.[1]) || 0)
+  const add = async id => {
+    await page.click(`.reagent-card[data-reagent="${id}"]`)
+    await page.click('[data-volume="25"]')
+    await page.click('#add-reagent')
+    await page.waitForTimeout(300)
+  }
+  await page.click('[data-continue-learning]')
+  await page.waitForTimeout(300)
+  await page.click('[data-prediction-option="a"]')
+  await page.waitForTimeout(300)
+  await add('na2so3')
+  await add('hcl')
+  const afterFirst = { step: await step(), title: (await page.textContent('#observation-title')).trim() }
+  await add('hcl')
+  if (await page.$('[data-confirm-lab-result]')) await page.click('[data-confirm-lab-result]')
+  await page.waitForTimeout(300)
+  const afterSecond = { step: await step(), title: (await page.textContent('#observation-title')).trim() }
+  record('guided g11-l7: 25 mL HCl (1:1) stays at the step with no SO₂ yet; excess HCl advances with SO₂ released',
+    afterFirst.step === 4 && /Chưa có khí/.test(afterFirst.title) && afterSecond.step === 5 && /SO₂/.test(afterSecond.title),
+    `${JSON.stringify(afterFirst)} ${JSON.stringify(afterSecond)}`)
+  record('console clean in guided sulfite lesson', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -679,7 +712,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }
