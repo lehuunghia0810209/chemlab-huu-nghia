@@ -50,9 +50,7 @@ export const REACTIONS = [
     'Neutralization',
     'HCl + NaOH → NaCl + H₂O',
     'Acid and base neutralize each other.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -66,9 +64,7 @@ export const REACTIONS = [
     'Neutralization',
     'HCl + KOH → KCl + H₂O',
     'Hydrochloric acid reacts with potassium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -82,9 +78,7 @@ export const REACTIONS = [
     'Neutralization',
     'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O',
     'Sulfuric acid reacts with sodium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -98,9 +92,7 @@ export const REACTIONS = [
     'Neutralization',
     'H₂SO₄ + 2KOH → K₂SO₄ + 2H₂O',
     'Sulfuric acid reacts with potassium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -114,9 +106,7 @@ export const REACTIONS = [
     'Neutralization',
     'HNO₃ + NaOH → NaNO₃ + H₂O',
     'Nitric acid reacts with sodium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -130,9 +120,7 @@ export const REACTIONS = [
     'Neutralization',
     'H₃PO₄ + 3NaOH → Na₃PO₄ + 3H₂O',
     'Phosphoric acid is neutralized.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -146,9 +134,7 @@ export const REACTIONS = [
     'Neutralization',
     'HCOOH + NaOH → HCOONa + H₂O',
     'Methanoic acid reacts with sodium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -162,9 +148,7 @@ export const REACTIONS = [
     'Neutralization',
     'CH₃COOH + NaOH → CH₃COONa + H₂O',
     'Ethanoic acid reacts with sodium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -178,9 +162,7 @@ export const REACTIONS = [
     'Neutralization',
     'C₂H₅COOH + NaOH → C₂H₅COONa + H₂O',
     'Propanoic acid reacts with sodium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -194,9 +176,7 @@ export const REACTIONS = [
     'Neutralization',
     'C₆H₅COOH + NaOH → C₆H₅COONa + H₂O',
     'Benzoic acid reacts with sodium hydroxide.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -210,9 +190,7 @@ export const REACTIONS = [
     'Neutralization',
     'H₂C₂O₄ + 2NaOH → Na₂C₂O₄ + 2H₂O',
     'Oxalic acid is neutralized.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base'
   ),
 
@@ -226,9 +204,7 @@ export const REACTIONS = [
     'Ammonium salt formed',
     'HCl + NH₃ → NH₄Cl',
     'Ammonia neutralizes hydrochloric acid.',
-    [
-      E('flash')
-    ],
+    [],
     'acid-base',
     {},
     22
@@ -2080,10 +2056,6 @@ export const REACTIONS = [
     'Ethyl ethanoate is formed in the simulation.',
     [
       E(
-        'flash'
-      ),
-
-      E(
         'message',
         {
           text:
@@ -2113,11 +2085,7 @@ export const REACTIONS = [
     'Esterification',
     'CH₃COOH + CH₃OH ⇌ CH₃COOCH₃ + H₂O',
     'Methyl ethanoate is formed in the simulation.',
-    [
-      E(
-        'flash'
-      )
-    ],
+    [],
     'organic',
     {
       heating:
@@ -2140,11 +2108,7 @@ export const REACTIONS = [
     'Esterification',
     'HCOOH + C₂H₅OH ⇌ HCOOC₂H₅ + H₂O',
     'Ethyl methanoate is formed in the simulation.',
-    [
-      E(
-        'flash'
-      )
-    ],
+    [],
     'organic',
     {
       heating:
@@ -2167,9 +2131,6 @@ export const REACTIONS = [
     'CH₃COOC₂H₅ + NaOH → CH₃COONa + C₂H₅OH',
     'Ethyl ethanoate undergoes alkaline hydrolysis (saponification), forming sodium ethanoate and ethanol.',
     [
-      E(
-        'flash'
-      ),
       E(
         'message',
         {
@@ -2201,9 +2162,6 @@ export const REACTIONS = [
     'Methyl ethanoate undergoes alkaline hydrolysis (saponification), forming sodium ethanoate and methanol.',
     [
       E(
-        'flash'
-      ),
-      E(
         'message',
         {
           text:
@@ -2234,9 +2192,6 @@ export const REACTIONS = [
     'Ethyl methanoate undergoes alkaline hydrolysis (saponification), forming sodium methanoate and ethanol.',
     [
       E(
-        'flash'
-      ),
-      E(
         'message',
         {
           text:
@@ -2266,9 +2221,6 @@ export const REACTIONS = [
     '(RCOO)₃C₃H₅ + 3NaOH → C₃H₅(OH)₃ + 3RCOONa',
     'A triglyceride reacts with sodium hydroxide on heating to form glycerol and sodium salts of fatty acids (soap).',
     [
-      E(
-        'flash'
-      ),
       E(
         'foam',
         {
@@ -2365,11 +2317,7 @@ export const REACTIONS = [
     'Phenol reacts with base',
     'C₆H₅OH + NaOH → C₆H₅ONa + H₂O',
     'Phenol reacts with sodium hydroxide.',
-    [
-      E(
-        'flash'
-      )
-    ],
+    [],
     'organic',
     {},
     45
@@ -2444,10 +2392,6 @@ export const REACTIONS = [
           color:
             '#f4f4f4'
         }
-      ),
-
-      E(
-        'flash'
       )
     ],
     'acid-base',

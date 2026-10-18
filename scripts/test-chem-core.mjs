@@ -556,6 +556,82 @@ test('simulateLab: competing reactions are not computed independently', () => {
   near(mmolOf(twoCarbonates.gasMoles), 2.5, 1e-9)
 })
 
+const { profileReaction, SUPPORT } = await import('../src/lab/engine/profiles.js')
+const { PRECIPITATES } = await import('../src/lab/engine/precipitates.js')
+const profiles = REACTIONS.map(reaction => profileReaction(reaction, catalogue))
+
+test('reaction catalogue: unique ids, every reaction valid and classified', () => {
+  assert.equal(new Set(REACTIONS.map(item => item.id)).size, REACTIONS.length)
+  const invalid = profiles.filter(profile => profile.support === SUPPORT.INVALID).map(profile => `${profile.id}: ${profile.problems.join('; ')}`)
+  assert.deepEqual(invalid, [])
+  for (const profile of profiles) {
+    assert.ok(Object.values(SUPPORT).includes(profile.support), profile.id)
+    assert.ok(profile.categories.length, profile.id)
+  }
+})
+
+test('reaction catalogue: the validator catches broken definitions (mutation check)', () => {
+  const base = REACTIONS.find(item => item.id === 'agno3-nacl')
+  const broken = [
+    { ...base, equation: 'AgNO₃ + NaCl → AgCl↓ + NaNO₂' },
+    { ...base, effects: [] },
+    { ...base, effects: [{ type: 'precipitate', color: '#333333' }] },
+    { ...base, effects: [...base.effects, { type: 'flash' }] },
+    { ...base, reactants: ['agno3', 'notAChemical'] },
+    { ...base, effects: [...base.effects, { type: 'gas' }] }
+  ]
+  for (const reaction of broken) assert.equal(profileReaction(reaction, catalogue).support, SUPPORT.INVALID, JSON.stringify(reaction.effects) + reaction.equation)
+})
+
+test('reaction catalogue: no generic effects; reactions without a phenomenon draw nothing', () => {
+  for (const reaction of REACTIONS) {
+    assert.ok(!reaction.effects.some(effect => effect.type === 'flash'), reaction.id)
+    const profile = profiles.find(item => item.id === reaction.id)
+    if (!profile.phenomena.visible) {
+      assert.deepEqual(reaction.effects.filter(effect => effect.type !== 'message'), [], reaction.id)
+    }
+  }
+})
+
+test('reaction catalogue: equilibria are never quantitative; quantitative ones conserve atoms', () => {
+  for (const profile of profiles) if (profile.phenomena.reversible) assert.notEqual(profile.support, SUPPORT.QUANTITATIVE, profile.id)
+  for (const reaction of REACTIONS) {
+    if (profiles.find(item => item.id === reaction.id).support !== SUPPORT.QUANTITATIVE) continue
+    for (const volumes of [[25, 10], [10, 25], [25, 25], [1, 50]]) {
+      const mixture = Object.fromEntries(reaction.reactants.map((id, index) => [id, volumes[index % 2]]))
+      const result = computeStoichiometry(reaction, mixture, catalogue, stockOf)
+      if (!result || result.status !== 'quantitative') continue // stepwise systems are checked by replay tests
+      const atoms = {}
+      const add = (formula, moles, sign) => {
+        for (const [symbol, count] of Object.entries(parseFormula(formula))) atoms[symbol] = (atoms[symbol] || 0) + sign * count * moles
+      }
+      for (const item of result.reactants) add(item.formula, item.moles - (result.excess.find(left => left.id === item.id)?.moles || 0), 1)
+      for (const item of result.products) add(item.formula, item.moles, -1)
+      for (const [symbol, value] of Object.entries(atoms)) assert.ok(Math.abs(value) < 1e-12, `${reaction.id} ${volumes} ${symbol} ${value}`)
+      for (const item of [...result.reactants, ...result.excess, ...result.products]) assert.ok(item.moles >= -1e-15, `${reaction.id} negative ${item.formula}`)
+    }
+  }
+})
+
+test('precipitate table: textbook colour names for the reference solids', () => {
+  const expected = { AgCl: 'trắng', BaSO4: 'trắng', 'Cu(OH)2': 'xanh lam', 'Fe(OH)3': 'nâu đỏ', PbI2: 'vàng', Ag2S: 'đen', AgI: 'vàng', CuS: 'đen', 'Fe(OH)2': 'trắng xanh', Cu2O: 'đỏ gạch' }
+  for (const [formula, label] of Object.entries(expected)) assert.equal(PRECIPITATES[formula].label, label, formula)
+  // Colours must look like their name: white is light and grey-free, black is dark.
+  const lightness = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255); return (Math.max(r, g, b) + Math.min(r, g, b)) / 2 }
+  for (const [formula, entry] of Object.entries(PRECIPITATES)) {
+    if (entry.label === 'trắng' || entry.label === 'keo trắng') assert.ok(lightness(entry.color) > 0.9, formula)
+    if (entry.label === 'đen') assert.ok(lightness(entry.color) < 0.25, formula)
+  }
+})
+
+const fs = await import('node:fs')
+const { buildCoverage, COVERAGE_PATH } = await import('./reaction-coverage.mjs')
+
+test('reaction coverage matrix in docs is up to date (npm run report:reactions)', () => {
+  assert.ok(fs.existsSync(COVERAGE_PATH), 'missing — run npm run report:reactions')
+  assert.equal(fs.readFileSync(COVERAGE_PATH, 'utf8').replace(/\r\n/g, '\n'), buildCoverage())
+})
+
 // Word equations (colour tests, R-group notation) cannot be atom-checked.
 const QUALITATIVE_EQUATIONS = new Set([
   'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'

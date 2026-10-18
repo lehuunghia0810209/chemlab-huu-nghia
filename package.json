@@ -15,7 +15,8 @@
     "check:ui": "node scripts/validate-final-ui.mjs",
     "check:ai": "node scripts/test-chemai-api.mjs",
     "check:browser": "node scripts/browser-smoke.mjs",
-    "check:a11y": "node scripts/a11y-audit.mjs"
+    "check:a11y": "node scripts/a11y-audit.mjs",
+    "report:reactions": "node scripts/reaction-coverage.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",

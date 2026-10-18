@@ -625,6 +625,43 @@ async function guidedPHChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- observations come from the verified reaction data ---------- */
+async function observationChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
+  await openView(page, baseURL, 'lab')
+  const add = async (id, volume = 25) => {
+    await page.click(`.reagent-card[data-reagent="${id}"]`)
+    await page.click(`[data-volume="${volume}"]`)
+    await page.click('#add-reagent')
+    await page.waitForTimeout(150)
+  }
+  const seen = () => page.evaluate(() => ({
+    title: document.querySelector('#observation-title').textContent.trim(),
+    text: document.querySelector('#observation-text').textContent.trim(),
+    bursts: Number(document.querySelector('.liquid-mask').dataset.gasBursts || 0),
+    solid: document.querySelector('#precipitate-layer').classList.contains('has-precipitate')
+  }))
+  const cases = [
+    [['agno3', 'ki'], o => /Kết tủa vàng/.test(o.title) && /AgI/.test(o.text) && o.solid, 'AgNO₃ + KI → yellow AgI named from the table'],
+    [['feso4', 'naoh'], o => /trắng xanh/.test(o.title), 'FeSO₄ + NaOH → "trắng xanh" Fe(OH)₂ (textbook name, not a guess from the colour)'],
+    [['cuso4', 'na2s'], o => /Kết tủa đen/.test(o.title), 'CuSO₄ + Na₂S → black CuS'],
+    [['hcl', 'naoh'], o => /Không thấy biến đổi rõ/.test(o.text) && !o.solid && o.bursts === 0, 'HCl + NaOH: no visible change is stated, nothing drawn'],
+    [['fecl3', 'kscn'], o => /đổi màu/.test(o.title), 'FeCl₃ + KSCN → colour change'],
+    [['nacl', 'kno3'], o => /Chưa có hiện tượng|làm trống/.test(o.title + o.text) && !o.solid && o.bursts === 0, 'NaCl + KNO₃: no reaction, no effects']
+  ]
+  for (const [ids, check, label] of cases) {
+    await page.click('#reset-lab')
+    await page.evaluate(() => { document.querySelector('.liquid-mask').dataset.gasBursts = '0' })
+    for (const id of ids) await add(id)
+    const observed = await seen()
+    record(`observation: ${label}`, check(observed), JSON.stringify(observed))
+  }
+  const panelHidden = await page.evaluate(() => document.querySelector('#stoich-box').hidden)
+  record('observation: no reaction → no amounts panel', panelHidden)
+  record('console clean in observation checks', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -635,7 +672,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

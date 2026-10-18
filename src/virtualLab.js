@@ -16,6 +16,7 @@ import { computeAcidBase } from './lab/acidBase.js'
 import { stockConcentration } from './lab/concentrations.js'
 import { AMPHOTERIC } from './lab/stoichiometry.js'
 import { engineDrivesGas, simulateLab } from './lab/engine/simulate.js'
+import { solidsOf } from './lab/engine/precipitates.js'
 
 import {
   findAvailableReactions
@@ -2955,156 +2956,43 @@ export function initVirtualLab() {
   function updateReactionObservation(
     reaction
   ) {
-
     if (observationPanel) {
-
-      observationPanel
-        .classList
-        .remove(
-          'reaction-observed'
-        )
-
-
+      observationPanel.classList.remove('reaction-observed')
       void observationPanel.offsetWidth
-
-
-      observationPanel
-        .classList
-        .add(
-          'reaction-observed'
-        )
-
+      observationPanel.classList.add('reaction-observed')
     }
 
-    const effects =
-      reaction.effects ||
-      []
-
-
-    const precipitateEffect =
-      effects.find(
-        effect =>
-          effect.type ===
-          'precipitate'
-      )
-
-
-    const hasGas =
-      effects.some(
-        effect =>
-          effect.type ===
-          'gas'
-      )
-
-
-    const hasFoam =
-      effects.some(
-        effect =>
-          effect.type ===
-          'foam'
-      )
-
-
-    const changesColor =
-      effects.some(
-        effect =>
-          effect.type ===
-          'solutionColor'
-      )
-
-
+    const effects = reaction.effects || []
+    const precipitateEffect = effects.find(effect => effect.type === 'precipitate')
+    // Names come from the verified precipitate table, not from the drawing colour.
+    const solids = solidsOf(reaction)
+    const solidNames = solids.map(solid => `${solid.label || precipitateColorLabel(solid.color || precipitateEffect?.color)} (${solid.display})`)
+    const hasGas = effects.some(effect => effect.type === 'gas')
+    const hasFoam = effects.some(effect => effect.type === 'foam')
+    const changesColor = effects.some(effect => effect.type === 'solutionColor')
     const observations = []
 
-
-    if (
-      precipitateEffect
-    ) {
-
-      observations.push(
-        `Xuất hiện kết tủa ${
-          precipitateColorLabel(
-            precipitateEffect.color
-          )
-        }.`
-      )
-
-
-      observations.push(
-        'Dung dịch đục nhẹ, chất rắn đang lắng xuống đáy cốc.'
-      )
-
+    if (precipitateEffect) {
+      observations.push(solidNames.length ? `Xuất hiện kết tủa ${solidNames.join(' và ')}.` : `Xuất hiện kết tủa ${precipitateColorLabel(precipitateEffect.color)}.`)
+      observations.push('Dung dịch đục, chất rắn lắng dần xuống đáy cốc.')
     }
-
-
-    if (hasGas) {
-
-      observations.push(
-        'Có khí thoát ra.'
-      )
-
-    }
-
-
-    if (hasFoam) {
-
-      observations.push(
-        'Xuất hiện lớp bọt mô phỏng của xà phòng trên bề mặt hỗn hợp.'
-      )
-
-    }
-
-
-    if (changesColor) {
-
-      observations.push(
-        'Dung dịch đổi màu.'
-      )
-
-    }
-
+    if (hasGas) observations.push('Có khí thoát ra.')
+    if (hasFoam) observations.push('Xuất hiện lớp bọt mô phỏng của xà phòng trên bề mặt hỗn hợp.')
+    if (changesColor) observations.push('Dung dịch đổi màu.')
 
     if (!observations.length) {
-
-      observationTitle.textContent =
-        reactionTitle(reaction) ||
-        'Phản ứng đã xảy ra'
-
-
-      observationText.textContent =
-        reactionDescription(reaction) ||
-        'Chưa có hiện tượng quan sát rõ.'
-
-
+      observationTitle.textContent = reactionTitle(reaction) || 'Phản ứng đã xảy ra'
+      observationText.textContent = `${reactionDescription(reaction) || ''} Không thấy biến đổi rõ trong cốc (không kết tủa, không khí, không đổi màu).`.trim()
       return
-
     }
 
-
-    observationTitle.textContent =
-      precipitateEffect
-
-        ? `Kết tủa ${
-            precipitateColorLabel(
-              precipitateEffect.color
-            )
-          } xuất hiện`
-
-        : hasGas
-
-          ? 'Có khí thoát ra'
-
-          : hasFoam
-
-            ? 'Xuất hiện bọt xà phòng'
-
-            : 'Dung dịch đổi màu'
-
-
-    observationText.textContent =
-      observations.join(' ')
-
+    observationTitle.textContent = precipitateEffect
+      ? `Kết tủa ${solids.length ? solids.map(solid => solid.label || precipitateColorLabel(solid.color)).join(' và ') : precipitateColorLabel(precipitateEffect.color)} xuất hiện`
+      : hasGas ? 'Có khí thoát ra'
+        : hasFoam ? 'Xuất hiện bọt xà phòng'
+          : 'Dung dịch đổi màu'
+    observationText.textContent = observations.join(' ')
   }
-
 
   function clearBubbles() {
     bubbleTimers.forEach(timer => clearTimeout(timer))
