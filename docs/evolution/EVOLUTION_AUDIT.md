@@ -20,7 +20,7 @@ Ngày: 2026-10-18 · Nhánh: `evolution/next` (tách từ `remake/ultimate-ui` @
 | E4 | P1 | Balancer: kiểm tra trực tiếp bỏ qua hệ số người dùng nhập ("2H₂ + O₂ → 2H₂O" báo chưa cân bằng) | Đã sửa |
 | E5 | P2 | Balancer chấp nhận ký hiệu không tồn tại ("Hcl" → nguyên tố "Hcl"), không đọc chỉ số Unicode (H₂O), không hỗ trợ ion | Đã sửa: kiểm tra ký hiệu, Unicode, điện tích `^2+`/`²⁺` |
 | E6 | P2 | Balancer im lặng chọn bộ hệ số nhỏ nhất khi nghiệm không duy nhất → kết quả sai hóa học với redox (vd. H₂O₂ + MnO₄⁻) | Đã thêm cảnh báo nhiều nghiệm |
-| E7 | P2 | 4 parser công thức trùng lặp (Balancer, Calculator, Compound Studio, Reaction Studio), không có test | Balancer + Calculator dùng `src/chem/formula.js`; 2 Studio còn parser riêng |
+| E7 | P2 | 4 parser công thức trùng lặp (Balancer, Calculator, Compound Studio, Reaction Studio), không có test | Đã gộp: cả 4 công cụ dùng `src/chem/formula.js`; Reaction Studio dùng bộ cân bằng chung |
 | E8 | P2 | Hệ số đứng đầu bị hiển thị thành chỉ số dưới trên đĩa cân (₂MnO₄) | Đã sửa |
 | E9 | P2 | pH Virtual Lab là điểm tuyến tính không theo nồng độ | Đã sửa cho acid/base mạnh (số mol, 0,1 M); acid/base yếu hiển thị định tính |
 | E10 | P2 | Khuấy luôn tạo bọt khí kể cả khi không có phản ứng sinh khí | Đã sửa |
