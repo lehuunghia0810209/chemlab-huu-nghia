@@ -1,3 +1,4 @@
+import { findMolecule } from './chem/molecules.js'
 import { parseFormula as parseSharedFormula } from './chem/formula.js'
 import { APP_VERSION } from './appMeta.js'
 
@@ -391,6 +392,42 @@ export function openCompoundStudio({
 
           </section>
 
+
+          <section
+            class="cs5-card cs5-molecule"
+            data-cs-molecule
+            hidden
+          >
+
+            <header>
+              <div>
+                <span>Hình học phân tử</span>
+                <h3 data-cs-molecule-title>Mô hình 3D</h3>
+              </div>
+            </header>
+
+            <dl class="cs5-molecule-facts" data-cs-molecule-facts></dl>
+
+            <div class="cs5-molecule-stage" data-cs-molecule-stage>
+              <button type="button" class="cs5-molecule-load" data-cs-molecule-load>
+                Hiển thị mô hình 3D
+              </button>
+            </div>
+
+            <div class="cs5-molecule-tools" data-cs-molecule-tools hidden>
+              <div class="cs5-segmented" role="group" aria-label="Kiểu mô hình">
+                <button type="button" data-cs-molecule-style="ball" aria-pressed="true">Que – cầu</button>
+                <button type="button" data-cs-molecule-style="space" aria-pressed="false">Đặc</button>
+              </div>
+              <button type="button" data-cs-molecule-reset>Đặt lại góc nhìn</button>
+            </div>
+
+            <p class="cs5-molecule-note">
+              Độ dài và góc liên kết: giá trị thực nghiệm ở pha khí, đã làm tròn. Mô hình que – cầu thu nhỏ nguyên tử để thấy liên kết; mô hình đặc dùng bán kính van der Waals. Kéo để xoay, cuộn hoặc chụm hai ngón để thu phóng.
+            </p>
+
+          </section>
+
         </section>
 
 
@@ -696,6 +733,10 @@ export function openCompoundStudio({
 
 
       updateConverter()
+
+      renderMolecule(
+        Object.fromEntries(counts)
+      )
 
     }
 
@@ -1309,7 +1350,115 @@ export function openCompoundStudio({
      CLOSE
   ===================================================== */
 
+
+  /* =====================================================
+     MOLECULE 3D (lazy: Three.js loads on request)
+  ===================================================== */
+
+  let molecule = null
+  let moleculeHost = null
+  let moleculeView = null
+
+  function disposeMoleculeView() {
+    moleculeHost?.dispose()
+    moleculeHost = null
+    moleculeView = null
+    overlay.querySelector('[data-cs-molecule-tools]').hidden = true
+    overlay.querySelector('[data-cs-molecule-stage]').innerHTML = `
+      <button type="button" class="cs5-molecule-load" data-cs-molecule-load>
+        Hiển thị mô hình 3D
+      </button>
+    `
+  }
+
+  function renderMolecule(atoms) {
+    const card = overlay.querySelector('[data-cs-molecule]')
+    const next = findMolecule(atoms)
+
+    if (next === molecule && moleculeHost) return
+
+    disposeMoleculeView()
+    molecule = next
+    card.hidden = !molecule
+    if (!molecule) return
+
+    overlay.querySelector('[data-cs-molecule-title]').textContent = `${molecule.name} · ${molecule.shape}`
+
+    const facts = [
+      ['Hình dạng', molecule.shape],
+      molecule.angle && ['Góc liên kết', `${molecule.angle[0]} ≈ ${String(molecule.angle[1]).replace('.', ',')}°`],
+      ['Độ dài liên kết', `${molecule.length[0]} ≈ ${String(molecule.length[1]).replace('.', ',')} Å`],
+      molecule.lonePairs !== undefined && [`Cặp e không liên kết ở ${molecule.atoms[0][0]}`, String(molecule.lonePairs)]
+    ].filter(Boolean)
+
+    overlay.querySelector('[data-cs-molecule-facts]').innerHTML = facts
+      .map(([term, value]) => `<div><dt>${escapeHTML(term)}</dt><dd>${escapeHTML(value)}</dd></div>`)
+      .join('')
+  }
+
+  async function showMoleculeView() {
+    if (!molecule || moleculeHost) return
+    const stage = overlay.querySelector('[data-cs-molecule-stage]')
+    const target = molecule
+    stage.innerHTML = '<p class="cs5-molecule-loading">Đang tải mô hình 3D…</p>'
+
+    try {
+      const [{ createSceneHost }, { createMoleculeScene }] = await Promise.all([
+        import('./three/sceneHost.js'),
+        import('./atomic/moleculeScene.js')
+      ])
+      // The studio may have closed or switched formula while loading.
+      if (!overlay.isConnected || molecule !== target) return
+
+      stage.innerHTML = ''
+      moleculeHost = createSceneHost({
+        container: stage,
+        cameraPosition: { x: 0, y: 0, z: 8 },
+        label: `Mô hình 3D phân tử ${molecule.formula}`
+      })
+      if (!moleculeHost) return
+
+      moleculeView = createMoleculeScene(moleculeHost, molecule)
+      // Seen from above and to the side so no atom hides behind the central one.
+      const distance = Math.max(3.4, moleculeView.radius * 2.6 + 2.4)
+      const home = new moleculeHost.THREE.Vector3(0.35, 0.9, 1).setLength(distance)
+      moleculeHost.camera.position.copy(home)
+      moleculeHost.setHome(home)
+      moleculeHost.controls.update()
+      moleculeHost.requestRender()
+
+      overlay.querySelector('[data-cs-molecule-tools]').hidden = false
+      overlay.querySelectorAll('[data-cs-molecule-style]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.csMoleculeStyle === 'ball'))
+      })
+    }
+    catch {
+      stage.innerHTML = '<p class="cs5-molecule-loading">Không tải được mô hình 3D. Hãy thử lại.</p>'
+    }
+  }
+
+  overlay.addEventListener('click', event => {
+    if (event.target.closest('[data-cs-molecule-load]')) {
+      showMoleculeView()
+      return
+    }
+    const styleButton = event.target.closest('[data-cs-molecule-style]')
+    if (styleButton && moleculeView) {
+      moleculeView.setStyle(styleButton.dataset.csMoleculeStyle)
+      overlay.querySelectorAll('[data-cs-molecule-style]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button === styleButton))
+      })
+      return
+    }
+    if (event.target.closest('[data-cs-molecule-reset]')) {
+      moleculeHost?.resetView()
+    }
+  })
+
   function close() {
+
+    moleculeHost?.dispose()
+    moleculeHost = null
 
     document.removeEventListener(
       'keydown',

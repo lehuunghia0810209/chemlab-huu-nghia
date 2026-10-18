@@ -7,8 +7,8 @@
 import './atomic/atomicExplorer.css'
 import './orbitalAtlas.css'
 import { orbitalVariants, nodeCounts } from './chem/orbitalMath.js'
-import { createSceneHost, QUALITY, prefersReducedMotion } from './three/sceneHost.js'
-import { createOrbitalScene, PHASE_COLORS, WORLD_RADIUS } from './atomic/orbitalScene.js'
+import { QUALITY, prefersReducedMotion } from './three/sceneConfig.js'
+import { PHASE_COLORS, WORLD_RADIUS } from './atomic/orbitalConstants.js'
 import { icon } from './shell/icons.js'
 
 const FAMILIES = Object.freeze({
@@ -150,7 +150,7 @@ export function initOrbitalAtlas() {
     busy.hidden = false
     requestAnimationFrame(() => setTimeout(() => {
       if (!host) return
-      scene ??= createOrbitalScene(host)
+      scene ??= renderer.createOrbitalScene(host)
       scene.setOptions(state.options)
       scene.show(state.n, FAMILIES[state.family].l, state.variant)
       busy.hidden = true
@@ -158,15 +158,37 @@ export function initOrbitalAtlas() {
     }, 16))
   }
 
-  function ensureHost() {
-    if (host || section.dataset.noWebgl) return
-    host = createSceneHost({
+  // Three.js (~190 kB gzip) loads only when the atlas is first on screen.
+  let renderer = null
+  let loading = false
+
+  async function ensureHost() {
+    if (host || loading || section.dataset.noWebgl) return
+    loading = true
+    busy.hidden = false
+    try {
+      const [{ createSceneHost }, { createOrbitalScene }] = await Promise.all([
+        import('./three/sceneHost.js'),
+        import('./atomic/orbitalScene.js')
+      ])
+      renderer = { createSceneHost, createOrbitalScene }
+    }
+    catch {
+      busy.hidden = true
+      loading = false
+      canvasHost.innerHTML = '<div class="scene-fallback" role="note"><strong>Chưa tải được mô hình 3D</strong><span>Kiểm tra kết nối rồi tải lại trang.</span></div>'
+      return
+    }
+    loading = false
+    if (!section.isConnected) return
+    host = renderer.createSceneHost({
       container: canvasHost,
       cameraPosition: { x: WORLD_RADIUS * 2.5, y: WORLD_RADIUS * 1.1, z: WORLD_RADIUS * 1.25 },
       label: 'Mô hình orbital 3D'
     })
     if (!host) {
       section.dataset.noWebgl = 'true'
+      busy.hidden = true
       return
     }
     host.scene.background = new host.THREE.Color(getComputedStyle(section).getPropertyValue('--scene-bg').trim() || '#070d18')

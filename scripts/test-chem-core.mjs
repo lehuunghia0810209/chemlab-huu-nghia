@@ -286,6 +286,53 @@ test('balancer: impossible and non-unique equations are reported', () => {
   assert.equal(balanceSpecies(reactants, products).unique, false)
 })
 
+/* ---------- molecule geometry ---------- */
+
+const { MOLECULES, findMolecule, countAtoms } = await import('../src/chem/molecules.js')
+
+test('molecule models reproduce their stated bond lengths and angles', () => {
+  const problems = []
+  for (const molecule of MOLECULES) {
+    const position = index => molecule.atoms[index].slice(1)
+    const vector = (from, to) => position(to).map((value, axis) => value - position(from)[axis])
+    const length = v => Math.hypot(...v)
+    const symbol = index => molecule.atoms[index][0]
+
+    const [a, b] = molecule.length[0].split(/[–=≡]/)
+    const hasLength = molecule.bonds.some(([i, j]) =>
+      [symbol(i), symbol(j)].sort().join() === [a, b].sort().join() &&
+      Math.abs(length(vector(i, j)) - molecule.length[1]) < 1e-3)
+    if (!hasLength) problems.push(`${molecule.formula} length`)
+
+    if (molecule.angle) {
+      const [outer1, middle, outer2] = molecule.angle[0].split(/[–=≡]/)
+      let found = false
+      molecule.atoms.forEach(([element], centre) => {
+        if (element !== middle) return
+        const partners = molecule.bonds.filter(bond => bond.includes(centre)).map(([i, j]) => (i === centre ? j : i))
+        for (const p of partners) for (const q of partners) {
+          if (p >= q || [symbol(p), symbol(q)].sort().join() !== [outer1, outer2].sort().join()) continue
+          const u = vector(centre, p)
+          const v = vector(centre, q)
+          const cos = u.reduce((sum, value, axis) => sum + value * v[axis], 0) / (length(u) * length(v))
+          if (Math.abs(Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI - molecule.angle[1]) < 0.1) found = true
+        }
+      })
+      if (!found) problems.push(`${molecule.formula} angle`)
+    }
+
+    assert.deepEqual(parseFormula(molecule.formula), countAtoms(molecule), molecule.formula)
+  }
+  assert.deepEqual(problems, [])
+})
+
+test('molecule lookup uses the parsed formula, not the text', () => {
+  assert.equal(findMolecule(parseFormula('H₂O')).formula, 'H2O')
+  assert.equal(findMolecule(parseFormula('CH4')).formula, 'CH4')
+  assert.equal(findMolecule(parseFormula('H2O2')), null)
+  assert.equal(findMolecule(parseFormula('C2H6')), null)
+})
+
 /* ---------- lab data ---------- */
 
 const { REACTIONS } = await import('../src/lab/reactions.js')

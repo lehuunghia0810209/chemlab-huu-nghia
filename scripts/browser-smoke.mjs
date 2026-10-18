@@ -340,7 +340,25 @@ async function toolChecks(browser, baseURL) {
   await page.click('[data-cs-analyze]')
   const compoundError = await page.textContent('[data-cs-error]')
   record('compound studio rejects an unknown element symbol', /Xy/.test(compoundError), compoundError)
+
+  await page.fill('[data-cs-formula]', 'C6H12O6')
+  await page.click('[data-cs-analyze]')
+  record('molecule card hidden for formulas without verified geometry', await page.locator('[data-cs-molecule]').isHidden())
+  await page.fill('[data-cs-formula]', 'H₂O')
+  await page.click('[data-cs-analyze]')
+  const facts = await page.textContent('[data-cs-molecule-facts]')
+  record('molecule card shows H₂O bent, 104,5°', /Gấp khúc/.test(facts) && /104,5°/.test(facts), facts)
+  const threeBefore = await page.evaluate(() => performance.getEntriesByType('resource').some(entry => /sceneHost-/.test(entry.name)))
+  await page.click('[data-cs-molecule-load]')
+  await page.waitForSelector('[data-cs-molecule-stage] canvas', { timeout: 10000 }).catch(() => {})
+  await page.click('[data-cs-molecule-style="space"]')
+  const viewer = await page.evaluate(() => ({
+    canvas: Boolean(document.querySelector('[data-cs-molecule-stage] canvas')),
+    space: document.querySelector('[data-cs-molecule-style="space"]').getAttribute('aria-pressed')
+  }))
+  record('molecule 3D loads Three.js only on request and switches to space-filling', !threeBefore && viewer.canvas && viewer.space === 'true', JSON.stringify({ threeBefore, ...viewer }))
   await page.click('[data-cs-close]')
+  record('closing the studio removes the molecule canvas', !(await page.$('[data-cs-molecule-stage] canvas')))
 
   await page.click('.tool-selector [data-tool="reaction"]')
   await page.fill('[data-rs-input]', 'Cu + HNO3 -> Cu(NO3)2 + NO + H2O')

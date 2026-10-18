@@ -10,21 +10,11 @@
 
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { QUALITY, prefersReducedMotion } from './sceneConfig.js'
 
-export const QUALITY = Object.freeze({
-  low: { label: 'Thấp', pixelRatio: 1, antialias: false, detail: 0.5 },
-  balanced: { label: 'Cân bằng', pixelRatio: 1.5, antialias: true, detail: 1 },
-  high: { label: 'Cao', pixelRatio: 2, antialias: true, detail: 1.6 }
-})
+export { QUALITY, prefersReducedMotion }
 
 const QUALITY_KEY = 'chemlab-3d-quality'
-
-export function prefersReducedMotion() {
-  return (
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-    document.documentElement.dataset.reduceMotion === 'true'
-  )
-}
 
 export function webglAvailable() {
   try {

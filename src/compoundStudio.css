@@ -1362,3 +1362,109 @@ button.primary {
   }
 
 }
+
+/* =========================================================
+   MOLECULE 3D
+========================================================= */
+
+.cs5-molecule[hidden],
+.cs5-molecule-tools[hidden] {
+  display: none;
+}
+
+.cs5-molecule-facts {
+  margin: 12px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.cs5-molecule-facts div {
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-1);
+}
+
+.cs5-molecule-facts dt {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.cs5-molecule-facts dd {
+  margin: 2px 0 0;
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.cs5-molecule-stage {
+  position: relative;
+  height: clamp(220px, 40vh, 320px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 11px;
+  background: radial-gradient(circle at 50% 40%, #1e293b, #0b1220);
+}
+
+.cs5-molecule-stage .scene-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cs5-molecule-stage .scene-fallback {
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+  color: #cbd5e1;
+  text-align: center;
+}
+
+.cs5-molecule-load,
+.cs5-molecule-tools button {
+  min-height: var(--touch-min);
+  padding: 0 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.cs5-molecule-load {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--text-on-accent);
+}
+
+.cs5-molecule-loading {
+  color: #cbd5e1;
+}
+
+.cs5-molecule-tools {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cs5-segmented {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cs5-molecule-tools button[aria-pressed='true'] {
+  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+}
+
+.cs5-molecule-note {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}

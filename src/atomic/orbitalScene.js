@@ -9,8 +9,9 @@
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js'
 import { radialExtent, sampleDensity, sampleGrid } from '../chem/orbitalMath.js'
 
-export const WORLD_RADIUS = 4
-export const PHASE_COLORS = Object.freeze({ positive: '#3b82f6', negative: '#f59e0b' })
+import { PHASE_COLORS, WORLD_RADIUS } from './orbitalConstants.js'
+
+export { PHASE_COLORS, WORLD_RADIUS }
 
 const POINTS_BY_QUALITY = { low: 9000, balanced: 22000, high: 42000 }
 const GRID_BY_QUALITY = { low: 36, balanced: 48, high: 64 }
