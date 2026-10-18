@@ -470,6 +470,45 @@ async function lessonModelChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- virtual lab: amounts of substance ---------- */
+async function labStoichChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
+  await openView(page, baseURL, 'lab')
+  const add = async (id, volume = 25) => {
+    await page.click(`.reagent-card[data-reagent="${id}"]`)
+    await page.click(`[data-volume="${volume}"]`)
+    await page.click('#add-reagent')
+    await page.waitForTimeout(150)
+  }
+  const panel = () => page.evaluate(() => ({
+    hidden: document.querySelector('#stoich-box').hidden,
+    text: document.querySelector('#stoich-body').innerText.replace(/\s+/g, ' ').trim()
+  }))
+
+  await add('hcl')
+  await add('naoh', 10)
+  const a = await panel()
+  record('lab amounts: 2.5 mmol HCl + 1 mmol NaOH → NaOH limiting, 1,50 mmol HCl left, 1,00 mmol NaCl',
+    !a.hidden && /hạn chế\) NaOH/.test(a.text) && /Còn dư HCl 1,50 mmol/.test(a.text) && /NaCl 1,00 mmol/.test(a.text), a.text)
+  await add('naoh', 25)
+  const b = await panel()
+  record('lab amounts update after more NaOH (now HCl limiting, NaOH 1,00 mmol left)', /hạn chế\) HCl/.test(b.text) && /Còn dư NaOH 1,00 mmol/.test(b.text), b.text)
+
+  await page.click('#reset-lab')
+  await add('baoh2')
+  await add('h2so4', 10)
+  const c = await panel()
+  record('lab amounts: BaSO₄ precipitate 1,00 mmol ≈ 0,233 g', /BaSO₄↓ 1,00 mmol \(0,233 g\)/.test(c.text), c.text)
+
+  await page.click('#reset-lab')
+  await add('agno3')
+  await add('nacl')
+  const d = await panel()
+  record('lab amounts: AgNO₃ + NaCl says qualitative (no concentration data)', /định tính/.test(d.text) && !/mmol/.test(d.text), d.text)
+  record('console clean in lab amounts flow', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -480,7 +519,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

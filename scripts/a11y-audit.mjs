@@ -288,7 +288,7 @@ finally {
 
 console.log(`\nChemLab accessibility audit — axe-core, ${runs} scans (${SCENARIOS.length} areas × ${VIEWPORTS.length} widths × ${THEMES.length} themes)`)
 if (!findings.size) {
-  console.log('PASS — no WCAG A/AA violations found by axe.\n')
+  console.log('PASS — no WCAG A/AA violations found by axe; keyboard focus checks passed.\n')
 }
 else {
   const verbose = process.env.CHEMLAB_A11Y_VERBOSE === '1'

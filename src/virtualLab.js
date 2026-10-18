@@ -12,7 +12,8 @@ import {
 } from './lab/reactions.js'
 import { reactionTitle, reactionDescription, reactionMessage } from './lab/reactionsVi.js'
 import { createBeakerEffects } from './lab/beakerEffects.js'
-import { computeAcidBase } from './lab/acidBase.js'
+import { computeAcidBase, STOCK_CONCENTRATION, STRONG } from './lab/acidBase.js'
+import { computeStoichiometry } from './lab/stoichiometry.js'
 
 import {
   findAvailableReactions
@@ -227,6 +228,11 @@ export function initVirtualLab() {
           <strong id="reaction-equation">—</strong>
         </div>
 
+        <div class="info-box stoich-box" id="stoich-box" hidden>
+          <span>Định lượng</span>
+          <div id="stoich-body"></div>
+        </div>
+
         <div class="info-box">
           <span>Trong cốc</span>
           <div id="composition-list" class="composition-list"><p>Cốc đang trống.</p></div>
@@ -342,6 +348,12 @@ export function initVirtualLab() {
   const phText =
     $('#ph-value')
 
+
+  const stoichBox =
+    $('#stoich-box')
+
+  const stoichBody =
+    $('#stoich-body')
 
   const phMode =
     $('#ph-mode')
@@ -3123,6 +3135,47 @@ export function initVirtualLab() {
      PH
   ========================================================= */
 
+  /* ---------- stoichiometry of the latest reaction ---------- */
+
+  const concentrationOf = id => (STRONG[id] ? STOCK_CONCENTRATION : null)
+  const subscript = formula => String(formula).replace(/(?<=[A-Za-z)\]])\d+/g, digits => [...digits].map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join(''))
+  const mmol = moles => `${(moles * 1000).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mmol`
+  const grams = mass => `${mass.toLocaleString('vi-VN', { maximumSignificantDigits: 3 })} g`
+
+  function renderStoichiometry() {
+    const ids = [...triggeredReactions]
+    const reaction = reactions.find(item => item.id === ids[ids.length - 1])
+    stoichBox.hidden = !reaction
+    if (!reaction) return
+
+    const shared = ids.slice(0, -1).some(id => reactions.find(item => item.id === id)?.reactants.some(r => reaction.reactants.includes(r)))
+    const result = shared ? null : computeStoichiometry(reaction, mixture, reagents, concentrationOf)
+
+    if (!result || result.status === 'qualitative') {
+      stoichBody.innerHTML = `<p>${escapeHTML(
+        shared
+          ? 'Nhiều phản ứng dùng chung một chất trong cốc nên ChemLab không tính riêng lượng chất của từng phản ứng.'
+          : result
+            ? `Phản ứng được mô phỏng định tính: dữ liệu chưa có nồng độ của ${result.missing.join(', ')}, nên ChemLab không tính lượng chất.`
+            : 'Phản ứng được mô phỏng định tính.'
+      )}</p>`
+      return
+    }
+
+    const row = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`
+    const limiting = result.reactants.filter(item => result.limiting.includes(item.id))
+    const products = result.products.filter(item => item.formula !== 'H2O')
+    stoichBody.innerHTML = `
+      <dl class="stoich-list">
+        ${row('Đã thêm', result.reactants.map(item => `${escapeHTML(item.formula)} ${mmol(item.moles)}`).join(' · '))}
+        ${row(limiting.length === result.reactants.length ? 'Phản ứng vừa đủ' : 'Chất hết (hạn chế)', limiting.map(item => escapeHTML(item.formula)).join(', '))}
+        ${result.excess.length ? row('Còn dư', result.excess.map(item => `${escapeHTML(item.formula)} ${mmol(item.moles)}`).join(' · ')) : ''}
+        ${row('Tạo thành', products.map(item => `${subscript(item.formula)}${item.precipitate ? '↓' : ''} ${mmol(item.moles)} (${grams(item.mass)})`).join(' · ') + (products.length < result.products.length ? ' · và H₂O' : ''))}
+      </dl>
+      <p class="stoich-note">Tính từ thể tích × dung dịch gốc 0,1 M và hệ số phương trình.</p>
+    `
+  }
+
   function phSummary() {
     const { pH, mode } =
       computeAcidBase(
@@ -3157,6 +3210,8 @@ export function initVirtualLab() {
 
     const pH =
       acidBase.pH
+
+    renderStoichiometry()
 
     const [modeLabel, modeTitle] = {
       empty: ['Cốc trống', 'Chưa có dung dịch trong cốc.'],

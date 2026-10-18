@@ -387,6 +387,51 @@ test('lab pH: weak acids, bases and hydrolysing salts are flagged as estimates',
   }
 })
 
+const { computeStoichiometry } = await import('../src/lab/stoichiometry.js')
+const { STRONG, STOCK_CONCENTRATION } = await import('../src/lab/acidBase.js')
+const reaction = id => REACTIONS.find(item => item.id === id)
+const stockOf = id => (STRONG[id] ? STOCK_CONCENTRATION : null)
+const stoich = (id, mixture) => computeStoichiometry(reaction(id), mixture, catalogue, stockOf)
+
+test('lab stoichiometry: limiting reactant, excess and products', () => {
+  const a = stoich('hcl-naoh', { hcl: 25, naoh: 10 })
+  assert.deepEqual(a.limiting, ['naoh'])
+  near(a.excess[0].moles * 1000, 1.5, 1e-9)
+  const salt = a.products.find(item => item.formula === 'NaCl')
+  near(salt.moles * 1000, 1, 1e-9)
+  near(salt.mass, 0.001 * (22.990 + 35.45), 1e-6)
+
+  // H₂SO₄ + 2NaOH: 2.5 mmol acid needs 5 mmol base; 2.5 mmol NaOH → extent 1.25 mmol
+  const b = stoich('h2so4-naoh', { h2so4: 25, naoh: 25 })
+  assert.deepEqual(b.limiting, ['naoh'])
+  near(b.excess[0].moles * 1000, 1.25, 1e-9)
+  near(b.products.find(item => item.formula === 'Na2SO4').moles * 1000, 1.25, 1e-9)
+
+  const c = stoich('baoh2-h2so4', { baoh2: 25, h2so4: 10 })
+  const barite = c.products.find(item => item.precipitate)
+  assert.equal(barite.formula, 'BaSO4')
+  near(barite.mass, 0.001 * (137.33 + 32.06 + 4 * 15.999), 1e-3)
+
+  const d = stoich('hcl-naoh', { hcl: 25, naoh: 25 })
+  assert.deepEqual(d.limiting.sort(), ['hcl', 'naoh'])
+  assert.equal(d.excess.length, 0)
+})
+
+test('lab stoichiometry: every reaction with known concentrations maps to its equation', () => {
+  const unmapped = REACTIONS
+    .filter(item => item.reactants.every(id => stockOf(id) !== null))
+    .filter(item => computeStoichiometry(item, Object.fromEntries(item.reactants.map(id => [id, 10])), catalogue, stockOf)?.status !== 'quantitative')
+    .map(item => item.id)
+  assert.deepEqual(unmapped, [])
+  for (const item of REACTIONS) computeStoichiometry(item, {}, catalogue, stockOf) // must not throw
+})
+
+test('lab stoichiometry: unknown concentrations stay qualitative', () => {
+  const result = stoich('agno3-nacl', { agno3: 25, nacl: 25 })
+  assert.equal(result.status, 'qualitative')
+  assert.deepEqual(result.missing, ['AgNO₃', 'NaCl'])
+})
+
 // Word equations (colour tests, R-group notation) cannot be atom-checked.
 const QUALITATIVE_EQUATIONS = new Set([
   'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'
