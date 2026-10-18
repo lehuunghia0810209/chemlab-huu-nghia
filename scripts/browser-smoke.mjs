@@ -432,6 +432,30 @@ async function labPHChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- lesson → 3D molecule → back to the lesson ---------- */
+async function lessonModelChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
+  await openView(page, baseURL, 'lab')
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
+    detail: { grade: 10, lessonId: 'g10-l12', experimentId: 'g10-lesson-12' }
+  })))
+  await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
+  const buttons = await page.$$eval('[data-open-molecule]', nodes => nodes.map(node => node.dataset.openMolecule))
+  record('lesson g10-l12 offers 3D models H₂, O₂, N₂', buttons.join() === 'H2,O2,N2', buttons.join())
+  await page.click('[data-open-molecule="N2"]')
+  await page.waitForSelector('[data-cs-molecule-stage] canvas', { timeout: 15000 }).catch(() => {})
+  const studio = await page.evaluate(() => ({
+    canvas: Boolean(document.querySelector('[data-cs-molecule-stage] canvas')),
+    title: document.querySelector('[data-cs-molecule-title]')?.textContent.trim()
+  }))
+  record('lesson model button opens the N₂ model directly', studio.canvas && /Nitrogen/.test(studio.title), JSON.stringify(studio))
+  await page.click('[data-cs-close]')
+  const back = await page.evaluate(() => Boolean(document.querySelector('[data-open-molecule="N2"]')) && !document.querySelector('.cs5-overlay'))
+  record('closing the studio returns to the same lesson step', back)
+  record('console clean in lesson → model flow', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -442,7 +466,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

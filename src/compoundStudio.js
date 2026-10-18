@@ -150,7 +150,8 @@ const PRESETS = [
 ========================================================= */
 
 export function openCompoundStudio({
-  context = null
+  context = null,
+  showMolecule = false
 } = {}) {
 
   closeCompoundStudio()
@@ -1546,6 +1547,10 @@ export function openCompoundStudio({
   renderHistory()
 
   analyze()
+
+  if (showMolecule) {
+    showMoleculeView()
+  }
 
 }
 

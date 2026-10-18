@@ -7,11 +7,14 @@ const LETTERS =
   ['a', 'b', 'c', 'd']
 
 
+/* models: molecule formulas from src/chem/molecules.js that the
+   step can open as 3D models. */
 function I(
   title,
   text,
   points = [],
-  formula = ''
+  formula = '',
+  models = []
 ) {
 
   return {
@@ -20,7 +23,8 @@ function I(
     title,
     text,
     points,
-    formula
+    formula,
+    models
   }
 
 }
@@ -560,7 +564,8 @@ export const GRADE11_EXPERIMENTS = [
         'Phân tử N₂',
         'Hai nguyên tử nitrogen liên kết với nhau bằng liên kết ba rất bền.',
         [],
-        'N≡N'
+        'N≡N',
+        ['N2']
       ),
 
       Q(

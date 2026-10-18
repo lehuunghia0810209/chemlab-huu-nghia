@@ -3033,6 +3033,20 @@ export function initGuidedExperiments() {
       )
 
 
+    // Opens over the lesson, so closing the studio returns to the same step.
+    panel
+      .querySelectorAll('[data-open-molecule]')
+      .forEach(button => {
+        button.addEventListener('click', async () => {
+          const { openCompoundStudio } = await import('../../compoundStudio.js')
+          openCompoundStudio({
+            context: { formula: button.dataset.openMolecule },
+            showMolecule: true
+          })
+        })
+      })
+
+
     panel
       .querySelector(
         '[data-continue-learning]'
@@ -3246,6 +3260,20 @@ export function initGuidedExperiments() {
 
               `
 
+              : ''
+          }
+
+
+          ${
+            step.models?.length
+              ? `
+                <div class="guided-learning-models">
+                  <span>Xem mô hình 3D:</span>
+                  ${step.models
+                    .map(formula => `<button type="button" class="guided-model-btn" data-open-molecule="${escapeHTML(formula)}">${escapeHTML(formula.replace(/\d/g, digit => '₀₁₂₃₄₅₆₇₈₉'[digit]))}</button>`)
+                    .join('')}
+                </div>
+              `
               : ''
           }
 

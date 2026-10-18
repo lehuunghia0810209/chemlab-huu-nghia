@@ -289,6 +289,7 @@ test('balancer: impossible and non-unique equations are reported', () => {
 /* ---------- molecule geometry ---------- */
 
 const { MOLECULES, findMolecule, countAtoms } = await import('../src/chem/molecules.js')
+const { EXPERIMENTS } = await import('../src/lab/experiments/experiments.js')
 
 test('molecule models reproduce their stated bond lengths and angles', () => {
   const problems = []
@@ -331,6 +332,18 @@ test('molecule lookup uses the parsed formula, not the text', () => {
   assert.equal(findMolecule(parseFormula('CH4')).formula, 'CH4')
   assert.equal(findMolecule(parseFormula('H2O2')), null)
   assert.equal(findMolecule(parseFormula('C2H6')), null)
+})
+
+test('every lesson 3D model link points at a molecule in the library', () => {
+  const missing = []
+  for (const experiment of EXPERIMENTS) {
+    for (const step of experiment.steps) {
+      for (const formula of step.models || []) {
+        if (!MOLECULES.some(molecule => molecule.formula === formula)) missing.push(`${experiment.id}: ${formula}`)
+      }
+    }
+  }
+  assert.deepEqual(missing, [])
 })
 
 /* ---------- lab data ---------- */

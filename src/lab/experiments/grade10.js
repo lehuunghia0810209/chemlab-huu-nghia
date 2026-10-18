@@ -14,11 +14,14 @@ const LETTERS =
   ['a', 'b', 'c', 'd']
 
 
+/* models: molecule formulas from src/chem/molecules.js that the
+   step can open as 3D models. */
 function I(
   title,
   text,
   points = [],
-  formula = ''
+  formula = '',
+  models = []
 ) {
 
   return {
@@ -27,7 +30,8 @@ function I(
     title,
     text,
     points,
-    formula
+    formula,
+    models
   }
 
 }
@@ -1048,7 +1052,10 @@ export const GRADE10_EXPERIMENTS = [
 
       I(
         'Cặp electron chung',
-        'Liên kết cộng hóa trị được tạo thành khi hai nguyên tử dùng chung một hay nhiều cặp electron.'
+        'Liên kết cộng hóa trị được tạo thành khi hai nguyên tử dùng chung một hay nhiều cặp electron.',
+        [],
+        '',
+        ['H2', 'O2', 'N2']
       ),
 
       Q(
@@ -1066,7 +1073,10 @@ export const GRADE10_EXPERIMENTS = [
 
       I(
         'Liên kết phân cực',
-        'Nếu hai nguyên tử có độ âm điện khác nhau, cặp electron chung bị lệch về phía nguyên tử có độ âm điện lớn hơn.'
+        'Nếu hai nguyên tử có độ âm điện khác nhau, cặp electron chung bị lệch về phía nguyên tử có độ âm điện lớn hơn.',
+        [],
+        '',
+        ['HCl', 'H2O']
       ),
 
       Q(
@@ -1108,7 +1118,9 @@ export const GRADE10_EXPERIMENTS = [
         [
           'Thường gặp với O, N, F.',
           'Ảnh hưởng rõ đến nhiệt độ sôi và độ tan.'
-        ]
+        ],
+        '',
+        ['H2O', 'NH3']
       ),
 
       Q(
