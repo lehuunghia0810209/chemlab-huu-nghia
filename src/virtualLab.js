@@ -3438,10 +3438,17 @@ export function initVirtualLab() {
       }
 
 
-      createBubbles(
-        6
-      )
+      // Stirring only releases bubbles when a gas-forming reaction has happened.
+      const releasesGas =
+        reactions.some(
+          reaction =>
+            triggeredReactions.has(reaction.id) &&
+            reaction.effects?.some(effect => effect.type === 'gas')
+        )
 
+      if (releasesGas) {
+        createBubbles(6)
+      }
 
       addLog(
         'Đã khuấy dung dịch.'
