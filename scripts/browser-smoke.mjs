@@ -509,6 +509,46 @@ async function labStoichChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- guided lesson g11-l2 end to end on the mole-based pH ---------- */
+async function guidedPHChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'light' })
+  await openView(page, baseURL, 'lab')
+  // Mirrors the step list of g11-lesson-02 in src/lab/experiments/grade11.js.
+  const plan = ['info', 'quiz:a', 'add:hcl', 'litmus:acid', 'observation', 'add:naoh', 'litmus:neutral', 'observation', 'add:naoh', 'litmus:base', 'observation', 'quiz:b']
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
+    detail: { grade: 11, lessonId: 'g11-l2', experimentId: 'g11-lesson-02' }
+  })))
+  await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
+  const litmus = []
+  for (let guard = 0; guard < 40; guard += 1) {
+    await page.waitForTimeout(300)
+    const state = await page.evaluate(() => ({
+      step: Number(/Bước (\d+)\/12/.exec(document.querySelector('.guided-lab-shell').innerText)?.[1]) || 0,
+      confirm: Boolean(document.querySelector('[data-confirm-lab-result]')),
+      done: /Bạn đã hoàn thành 12\/12 bước/.test(document.querySelector('.guided-lab-shell').innerText)
+    }))
+    if (state.done) break
+    if (state.confirm) { await page.click('[data-confirm-lab-result]'); continue }
+    const [kind, value] = plan[state.step - 1].split(':')
+    if (kind === 'quiz') await page.click(`[data-prediction-option="${value}"]`)
+    else if (kind === 'add') {
+      await page.click(`.reagent-card[data-reagent="${value}"]`)
+      await page.click('#add-reagent')
+    }
+    else if (kind === 'litmus') {
+      await page.click('.reagent-card[data-reagent="litmusPaper"]')
+      await page.click('#add-reagent')
+      litmus.push((await page.textContent('#litmus-paper-label')).trim())
+    }
+    else await page.click('[data-continue-learning]')
+  }
+  const done = await page.evaluate(() => /Bạn đã hoàn thành 12\/12 bước/.test(document.querySelector('.guided-lab-shell').innerText))
+  record('guided g11-l2 completes: litmus red → purple → blue with the mole-based pH',
+    done && /đỏ/.test(litmus[0]) && /tím/.test(litmus[1]) && /xanh/.test(litmus[2]), `${done} ${litmus.join(' | ')}`)
+  record('console clean in guided pH lesson', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -519,7 +559,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

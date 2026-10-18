@@ -42,11 +42,10 @@ Ngày: 2026-10-18 · Nhánh: `evolution/next` (tách từ `remake/ultimate-ui` @
 
 Mở chi tiết nguyên tố lần đầu tốn thêm ~100 ms layout (4×) do tải font/thiết lập style lần đầu; chưa xử lý.
 Phiên dài: 20 lần mở/đóng mô hình phân tử 3D — không còn canvas, không cảnh báo WebGL, heap 6,9 → 7,9 MB; 30 vòng thêm/khuấy/hoàn tác/đặt lại trong Lab — heap 3,48 → 3,56 MB, không lỗi.
-Không có công cụ a11y tự động (axe chưa cài) — chỉ kiểm tra thủ công nhãn/aria của phần mới.
+A11y (2026-10-19): axe-core phát hiện 4 nhóm lỗi (ARIA lưới bảng tuần hoàn, tên truy cập lệch chữ hiển thị, tương phản 3,67/4,36/2,93:1) và kiểm tra bàn phím phát hiện vòng focus bị ghi đè, Studio không nhận focus, drawer mất focus khi bật giảm chuyển động — đã sửa hết, `npm run check:a11y` PASS.
 
 ## Cơ hội tiếp theo (chưa làm)
 
 - pH cho acid/base yếu và hệ đệm (cần nồng độ + Ka đã kiểm chứng).
-- Phản ứng Lab vẫn định tính: không tiêu thụ chất, kết tủa không tan lại khi dư thuốc thử.
+- Định lượng cho phản ứng kết tủa/muối: cần nồng độ chuẩn của dung dịch muối.
 - Mở rộng thư viện phân tử 3D (SO₂, PCl₅, C₂H₅OH…) khi có số liệu kiểm chứng.
-- Kiểm thử a11y bằng công cụ (axe) — cần cài dev dependency.

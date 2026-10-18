@@ -15,20 +15,24 @@
 | `c904cc0` | EV-03 — 14 phân tử 3D (hình học thực nghiệm, có test), thẻ trong Compound Studio; Tool Center không còn tải Three.js |
 | `2aee851` | EV-04/06 — Bài học → mô hình 3D: bước kiến thức có `models` (g10-l12, g10-l13, g11 N₂), mở Compound Studio đè lên bài và quay lại đúng bước |
 | `1f52c34` | EV-05 — Bảng tính tan: Ag₂SO₄/Li₃PO₄ ít tan; 7 cặp "không tồn tại trong nước" kèm phương trình |
-| (docs) | EV-07 — đo LCP/CLS/tương tác có throttling, phiên dài 3D/Lab (xem EVOLUTION_AUDIT.md) |
+| `2230e63` | EV-07 — đo LCP/CLS/tương tác có throttling, phiên dài 3D/Lab (xem EVOLUTION_AUDIT.md) |
+| `2870b80` | A11y — `npm run check:a11y` (axe-core 4.14 + kiểm tra bàn phím/focus); sửa tương phản, ARIA bảng tuần hoàn, tên nút, vòng focus, focus trong Studio/drawer |
+| `b8e0427` | EV-02d — Lab định lượng: số mol, chất hạn chế, chất dư, sản phẩm (khối lượng kết tủa) cho phản ứng có nồng độ xác định |
+| (QA) | Kiểm thử browser trọn bài Guided g11-l2 trên mô hình pH mới |
 
 ## Kiểm thử gần nhất
 
-`npm run check` PASS (chem 28) · `npm run build` PASS (không còn cảnh báo chunk > 500 kB) · `npm run check:browser` 150/150 PASS.
+`npm run check` PASS (chem 31) · `npm run build` PASS · `npm run check:browser` 157/157 PASS · `npm run check:a11y` PASS (44 lần quét axe + kiểm tra bàn phím).
+
+Quy trình QA đầy đủ: `npm run check` → `npm run build` → `npm run check:browser` → `npm run check:a11y`.
 
 ## Còn mở
 
 - pH cho acid/base yếu, hệ đệm: chưa có nồng độ trong catalog → vẫn định tính.
-- Phản ứng trong Lab là định tính (không tiêu thụ chất phản ứng; kết tủa không tan lại khi dư acid).
-- Chưa có kiểm thử browser cho toàn bộ luồng guided g11-lesson-02 (đã mô phỏng logic bằng script).
+- Định lượng chỉ có cho 6 phản ứng acid/base mạnh (catalog chưa có nồng độ muối) — cần quyết định nồng độ chuẩn cho muối để mở rộng.
+- Lượng kết tủa vẽ trong cốc chưa tỉ lệ với khối lượng tính được; kết tủa không tan lại khi dư thuốc thử.
 - Lần mở chi tiết nguyên tố đầu tiên ~280 ms (CPU 4×); các lần sau < 150 ms.
-- Chưa có kiểm thử a11y bằng công cụ (axe chưa cài).
 
 ## Bước tiếp theo
 
-Người dùng review nhánh `evolution/next` (chưa push). Ứng viên tiếp: cài axe để kiểm tra a11y; phản ứng Lab theo lượng chất (tiêu thụ chất phản ứng); mở rộng thư viện phân tử.
+Người dùng review nhánh `evolution/next` (chưa push). Cần quyết định: nồng độ chuẩn cho dung dịch muối (vd. 0,1 M) để mở rộng định lượng sang phản ứng kết tủa. Ứng viên khác: kết tủa vẽ theo lượng; mở rộng thư viện phân tử.
