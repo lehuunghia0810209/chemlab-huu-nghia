@@ -3,17 +3,19 @@
    pH from moles, not from a colour score.
 
    Quantitative mode (25 °C, ideal solution, activities = 1):
-   used when every acid/base-active substance in the beaker is
-   a strong acid or base listed in STRONG below. Those stock
+   used when every substance in the beaker is a strong acid or
+   base listed in STRONG, a spectator salt, water or an indicator. Those stock
    solutions are taken as 0.1 M (the lab catalogue has no
    concentrations). H₂SO₄ uses its second dissociation
    (Ka₂ = 1.0×10⁻², pKa₂ ≈ 1.99), so 0.1 M H₂SO₄ gives pH ≈ 0.96,
    not 0.70.
 
-   Anything else acid/base-active (weak acids and bases, salts
-   that hydrolyse, Ca(OH)₂ lime water whose strength is set by
-   solubility) falls back to the qualitative score the lab used
-   before, flagged mode: 'estimate'.
+   Spectator salts (Na⁺/K⁺ with Cl⁻, Br⁻, I⁻, NO₃⁻, SO₄²⁻) enter
+   the charge balance at 0.1 M too; water and indicators only
+   dilute. Anything else — weak acids/bases, hydrolysing salts,
+   Ca(OH)₂ lime water, and substances that consume H⁺/OH⁻ in a
+   reaction (e.g. MgCl₂ + NaOH → Mg(OH)₂↓, ester saponification) —
+   falls back to the qualitative score, flagged mode: 'estimate'.
 ========================================================= */
 
 export const STOCK_CONCENTRATION = 0.1 // mol/L
@@ -30,6 +32,22 @@ export const STRONG = {
   koh: { base: 1 },
   baoh2: { base: 2 }
 }
+
+/* Ions that take no part in acid/base chemistry: cation
+   equivalents count as "base", anion equivalents as "acid", so
+   they cancel except for sulfate's HSO₄⁻ equilibrium. */
+export const SPECTATOR = {
+  nacl: { acid: 1, base: 1 },
+  kcl: { acid: 1, base: 1 },
+  kbr: { acid: 1, base: 1 },
+  ki: { acid: 1, base: 1 },
+  nano3: { acid: 1, base: 1 },
+  kno3: { acid: 1, base: 1 },
+  na2so4: { base: 2, sulfate: 1 },
+  k2so4: { base: 2, sulfate: 1 }
+}
+
+const DILUENT_ONLY = new Set(['water'])
 
 /* Charge balance: [H⁺] + [M⁺] = [OH⁻] + [A⁻] + [HSO₄⁻] + 2[SO₄²⁻] */
 export function solveStrongPH({ acid = 0, base = 0, sulfate = 0 }) {
@@ -67,13 +85,13 @@ export function computeAcidBase(mixture, reagents) {
   let quantitative = true
 
   for (const [id, volume] of entries) {
-    const strong = STRONG[id]
-    if (strong) {
+    const ions = STRONG[id] || SPECTATOR[id]
+    if (ions) {
       const moles = STOCK_CONCENTRATION * volume / 1000
-      for (const key of Object.keys(totals)) totals[key] += (strong[key] || 0) * moles
+      for (const key of Object.keys(totals)) totals[key] += (ions[key] || 0) * moles
       species.push({ id, volume, moles, stock: STOCK_CONCENTRATION, concentration: moles / litres })
     }
-    else if (Number(reagents[id]?.acidBase || 0) !== 0) {
+    else if (!DILUENT_ONLY.has(id) && reagents[id]?.family !== 'indicator') {
       quantitative = false
     }
   }

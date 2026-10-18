@@ -387,10 +387,11 @@ test('lab pH: weak acids, bases and hydrolysing salts are flagged as estimates',
   }
 })
 
-const { computeStoichiometry } = await import('../src/lab/stoichiometry.js')
-const { STRONG, STOCK_CONCENTRATION } = await import('../src/lab/acidBase.js')
+const { computeStoichiometry, molarMass } = await import('../src/lab/stoichiometry.js')
+const molarMassOf = formula => molarMass(parseFormula(formula))
+const { stockConcentration, SALT_SOLUBILITY } = await import('../src/lab/concentrations.js')
 const reaction = id => REACTIONS.find(item => item.id === id)
-const stockOf = id => (STRONG[id] ? STOCK_CONCENTRATION : null)
+const stockOf = stockConcentration
 const stoich = (id, mixture) => computeStoichiometry(reaction(id), mixture, catalogue, stockOf)
 
 test('lab stoichiometry: limiting reactant, excess and products', () => {
@@ -420,16 +421,81 @@ test('lab stoichiometry: limiting reactant, excess and products', () => {
 test('lab stoichiometry: every reaction with known concentrations maps to its equation', () => {
   const unmapped = REACTIONS
     .filter(item => item.reactants.every(id => stockOf(id) !== null))
-    .filter(item => computeStoichiometry(item, Object.fromEntries(item.reactants.map(id => [id, 10])), catalogue, stockOf)?.status !== 'quantitative')
-    .map(item => item.id)
+    .map(item => [item.id, computeStoichiometry(item, Object.fromEntries(item.reactants.map(id => [id, 10])), catalogue, stockOf)])
+    .filter(([, result]) => result?.status !== 'quantitative' && !result?.reason)
+    .map(([id]) => id)
   assert.deepEqual(unmapped, [])
   for (const item of REACTIONS) computeStoichiometry(item, {}, catalogue, stockOf) // must not throw
 })
 
-test('lab stoichiometry: unknown concentrations stay qualitative', () => {
-  const result = stoich('agno3-nacl', { agno3: 25, nacl: 25 })
-  assert.equal(result.status, 'qualitative')
-  assert.deepEqual(result.missing, ['AgNO₃', 'NaCl'])
+test('lab stoichiometry: precipitation with excess, deficit and exact amounts', () => {
+  const silver = stoich('agno3-nacl', { agno3: 25, nacl: 10 })
+  assert.deepEqual(silver.limiting, ['nacl'])
+  near(silver.excess[0].moles * 1000, 1.5, 1e-9)
+  const agcl = silver.products.find(item => item.precipitate)
+  assert.equal(agcl.formula, 'AgCl')
+  near(agcl.mass, 0.001 * (107.87 + 35.45), 1e-3)
+
+  const barium = stoich('bacl2-na2so4', { bacl2: 25, na2so4: 25 })
+  assert.equal(barium.limiting.length, 2)
+  assert.equal(barium.excess.length, 0)
+  near(barium.products.find(item => item.formula === 'BaSO4').moles * 1000, 2.5, 1e-9)
+
+  // CuSO₄ + 2NaOH: 2.5 mmol NaOH precipitates 1.25 mmol Cu(OH)₂, 1.25 mmol CuSO₄ left
+  const copper = stoich('cuso4-naoh', { cuso4: 25, naoh: 25 })
+  assert.deepEqual(copper.limiting, ['naoh'])
+  near(copper.products.find(item => item.formula === 'Cu(OH)2').moles * 1000, 1.25, 1e-9)
+  near(copper.excess[0].moles * 1000, 1.25, 1e-9)
+
+  // Water dilutes but does not change the amounts; several additions add up.
+  assert.deepEqual(stoich('agno3-nacl', { agno3: 25, nacl: 10, water: 100 }).products, silver.products)
+  assert.deepEqual(stoich('agno3-nacl', { agno3: 10 + 15, nacl: 10 }).products, silver.products)
+})
+
+test('lab stoichiometry: amphoteric Al(OH)₃ / Zn(OH)₂ redissolve only in excess NaOH', () => {
+  const al = naoh => stoich('alcl3-naoh', { alcl3: 25, naoh })
+  const solid = result => result.products.find(item => item.formula === 'Al(OH)3').moles * 1000
+  near(solid(al(25)), 2.5 / 3, 1e-9) // OH⁻ < 3 Al³⁺: no dissolution
+  assert.equal(al(25).dissolved, null)
+  near(solid(al(75)), 2.5, 1e-9) // exactly 3:1
+  near(solid(al(80)), 2.0, 1e-9) // 0.5 mmol OH⁻ excess dissolves 0.5 mmol
+  assert.equal(solid(al(100)), 0) // 4:1 dissolves all
+  assert.equal(al(100).dissolved.complete, true)
+  near(al(125).excess.find(item => item.id === 'naoh').moles * 1000, 2.5, 1e-9)
+
+  const zn = stoich('znso4-naoh', { znso4: 25, naoh: 75 }) // 7.5 mmol OH⁻: 5 precipitate, 2.5 dissolve 1.25 mmol
+  near(zn.products.find(item => item.formula === 'Zn(OH)2').moles * 1000, 1.25, 1e-9)
+
+  // Cu(OH)₂ is not treated as amphoteric.
+  assert.equal(stoich('cuso4-naoh', { cuso4: 25, naoh: 100 }).dissolved, null)
+})
+
+test('lab stoichiometry: unknown data, two-step and equilibrium reactions stay qualitative', () => {
+  const weak = stoich('ethanoic-naoh', { ethanoic: 25, naoh: 25 })
+  assert.equal(weak.status, 'qualitative')
+  assert.deepEqual(weak.missing, ['CH₃COOH'])
+  assert.match(stoich('na2co3-hcl', { na2co3: 25, hcl: 10 }).reason, /hai nấc/)
+  assert.match(stoich('fecl3-kscn', { fecl3: 25, kscn: 25 }).reason, /cân bằng/)
+  assert.match(stoich('cuso4-na2co3', { cuso4: 25, na2co3: 25 }).reason, /carbonate base/)
+})
+
+test('lab concentrations: 0.1 M only for catalogue solutions well below saturation', () => {
+  for (const [id, solubility] of Object.entries(SALT_SOLUBILITY)) {
+    const reagent = catalogue[id]
+    assert.ok(reagent, `${id} missing from catalogue`)
+    assert.equal(reagent.state, 'solution', id)
+    // g/100 g water → rough mol/L; must be at least 3 × the 0.1 M stock.
+    const saturation = solubility * 10 / molarMassOf(reagent.formula)
+    assert.ok(saturation >= 0.3, `${id}: ~${saturation.toFixed(2)} M`)
+  }
+  for (const id of ['caoh2', 'mgoh2', 'caco3', 'ethanoic', 'nh3', 'kmno4', 'fe2so43']) assert.equal(stockOf(id), null, id)
+})
+
+test('lab pH: spectator salts are counted, H⁺/OH⁻-consuming salts fall back to estimate', () => {
+  near(pHOf({ hcl: 25, nacl: 25 }).pH, -Math.log10(2.5 / 50))
+  assert.equal(pHOf({ na2so4: 25 }).mode, 'quantitative')
+  assert.equal(pHOf({ mgcl2: 25, naoh: 10 }).mode, 'estimate') // Mg(OH)₂↓ consumes OH⁻
+  assert.equal(pHOf({ glucose: 25, hcl: 25 }).mode, 'estimate')
 })
 
 // Word equations (colour tests, R-group notation) cannot be atom-checked.

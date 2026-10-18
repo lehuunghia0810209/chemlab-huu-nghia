@@ -169,6 +169,45 @@ export function createBeakerEffects(host) {
   }
   document.addEventListener('visibilitychange', onVisibility)
 
+  function particleCount(amount) {
+    const base = window.matchMedia('(max-width: 767px)').matches ? 90 : 160
+    return Math.max(12, Math.round(base * amount))
+  }
+
+  function newParticle(top, still) {
+    return {
+      x: width * (0.06 + Math.random() * 0.88),
+      y: top + Math.random() * (height - top) * 0.85,
+      r: 1.6 + Math.random() * 2.2,
+      vy: 14 + Math.random() * 26,
+      phase: Math.random() * 10,
+      alpha: 0.7 + Math.random() * 0.3,
+      delay: Math.random() * 0.6,
+      settled: still
+    }
+  }
+
+  function setAmount(amount) {
+    const value = Math.max(0.1, Math.min(2, Number(amount) || 1))
+    if (Math.abs(value - sediment.amount) < 0.01) return
+    const still = reducedMotion()
+    const total = particleCount(value)
+    if (total > particles.length) {
+      const top = surfaceY()
+      for (let i = particles.length; i < total; i += 1) particles.push(newParticle(top, still))
+    }
+    else {
+      particles = particles.slice(0, total)
+    }
+    sediment.amount = value
+    sediment.total = total
+    sediment.settled = particles.filter(particle => particle.settled).length
+    sediment.depth = Math.max(4, Math.min(34, (8 + level * 14) * value))
+    host.dataset.precipitateAmount = value.toFixed(2)
+    draw()
+    schedule()
+  }
+
   return {
     setLevel(fraction) {
       level = Math.max(0, Math.min(1, Number(fraction) || 0))
@@ -212,28 +251,22 @@ export function createBeakerEffects(host) {
       draw()
     },
 
+    /* amount: relative quantity (1 ≈ 2.5 mmol of solid). The drawing is
+       proportional to it but is an illustration, not a measured volume. */
     precipitate(color, amount = 1) {
-      const total = Math.round((window.matchMedia('(max-width: 767px)').matches ? 90 : 160) * amount)
-      const top = surfaceY()
-      const still = reducedMotion()
-      sediment = { rgb: hexToRgb(color), total, settled: still ? total : 0, depth: Math.max(10, Math.min(26, 12 + level * 16)) }
-      particles = Array.from({ length: total }, () => ({
-        x: width * (0.06 + Math.random() * 0.88),
-        y: top + Math.random() * (height - top) * 0.85,
-        r: 1.6 + Math.random() * 2.2,
-        vy: 14 + Math.random() * 26,
-        phase: Math.random() * 10,
-        alpha: 0.7 + Math.random() * 0.3,
-        delay: Math.random() * 0.6,
-        settled: still
-      }))
-      draw()
-      schedule()
+      sediment = { rgb: hexToRgb(color), total: 0, settled: 0, depth: 0, amount: 0 }
+      particles = []
+      setAmount(amount)
+    },
+
+    setPrecipitateAmount(amount) {
+      if (sediment) setAmount(amount)
     },
 
     clearPrecipitate() {
       particles = []
       sediment = null
+      delete host.dataset.precipitateAmount
       draw()
     },
 

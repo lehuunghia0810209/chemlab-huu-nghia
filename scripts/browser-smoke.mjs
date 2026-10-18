@@ -500,11 +500,55 @@ async function labStoichChecks(browser, baseURL) {
   const c = await panel()
   record('lab amounts: BaSO₄ precipitate 1,00 mmol ≈ 0,233 g', /BaSO₄↓ 1,00 mmol \(0,233 g\)/.test(c.text), c.text)
 
+  const drawn = () => page.evaluate(() => ({
+    amount: document.querySelector('.liquid-mask').dataset.precipitateAmount || null,
+    layer: document.querySelector('#precipitate-layer').classList.contains('has-precipitate'),
+    title: document.querySelector('#observation-title').textContent.trim()
+  }))
+
   await page.click('#reset-lab')
   await add('agno3')
-  await add('nacl')
-  const d = await panel()
-  record('lab amounts: AgNO₃ + NaCl says qualitative (no concentration data)', /định tính/.test(d.text) && !/mmol/.test(d.text), d.text)
+  await add('nacl', 10)
+  const silver = await panel()
+  const silverDrawn = await drawn()
+  record('lab amounts: AgNO₃ 2,5 + NaCl 1 mmol → AgCl↓ 1,00 mmol, AgNO₃ left; drawing scaled to 0.40',
+    /AgCl↓ 1,00 mmol/.test(silver.text) && /Còn dư AgNO₃ 1,50 mmol/.test(silver.text) && silverDrawn.amount === '0.40', `${silver.text} ${JSON.stringify(silverDrawn)}`)
+  await add('nacl', 25)
+  const silverMore = await drawn()
+  record('lab amounts: more NaCl → AgCl↓ 2,50 mmol and a larger precipitate (1.00)', /AgCl↓ 2,50 mmol/.test((await panel()).text) && silverMore.amount === '1.00', JSON.stringify(silverMore))
+  await page.click('#undo-button')
+  await page.waitForTimeout(200)
+  record('lab amounts: undo restores AgCl↓ 1,00 mmol and the smaller drawing', /AgCl↓ 1,00 mmol/.test((await panel()).text) && (await drawn()).amount === '0.40')
+
+  await page.click('#reset-lab')
+  record('lab amounts: reset clears the panel and the precipitate', (await panel()).hidden && (await drawn()).amount === null)
+  await add('bacl2')
+  await add('na2so4')
+  record('lab amounts: BaCl₂ + Na₂SO₄ equal amounts → "vừa đủ", BaSO₄↓ 2,50 mmol', /vừa đủ/.test((await panel()).text) && /BaSO₄↓ 2,50 mmol/.test((await panel()).text), (await panel()).text)
+
+  await page.click('#reset-lab')
+  await add('cuso4')
+  await add('naoh')
+  record('lab amounts: CuSO₄ + 2NaOH → Cu(OH)₂↓ 1,25 mmol, NaOH limiting', /Cu\(OH\)₂↓ 1,25 mmol/.test((await panel()).text) && /hạn chế\) NaOH/.test((await panel()).text), (await panel()).text)
+
+  await page.click('#reset-lab')
+  await add('alcl3')
+  await add('naoh', 50)
+  const alumina = await drawn()
+  await add('naoh', 50)
+  const dissolved = await drawn()
+  const dissolvedText = (await panel()).text
+  record('lab amounts: Al(OH)₃↓ forms, then dissolves completely in excess NaOH (10 mmol OH⁻ per 2,5 mmol Al³⁺)',
+    alumina.layer && !dissolved.layer && dissolved.amount === null && /tan hết/.test(dissolved.title) && /Na\[Al\(OH\)₄\] 2,50 mmol/.test(dissolvedText),
+    `${JSON.stringify(alumina)} ${JSON.stringify(dissolved)} ${dissolvedText}`)
+  await page.click('#undo-button')
+  await page.waitForTimeout(200)
+  record('lab amounts: undo brings the Al(OH)₃ precipitate back', (await drawn()).layer)
+
+  await page.click('#reset-lab')
+  await add('na2co3')
+  await add('hcl', 10)
+  record('lab amounts: Na₂CO₃ + HCl stays qualitative (two-step reaction)', /hai nấc/.test((await panel()).text) && !/mmol/.test((await panel()).text), (await panel()).text)
   record('console clean in lab amounts flow', errors.length === 0, errors.join(' | '))
   await context.close()
 }

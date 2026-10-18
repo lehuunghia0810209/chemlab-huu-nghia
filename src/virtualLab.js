@@ -12,8 +12,9 @@ import {
 } from './lab/reactions.js'
 import { reactionTitle, reactionDescription, reactionMessage } from './lab/reactionsVi.js'
 import { createBeakerEffects } from './lab/beakerEffects.js'
-import { computeAcidBase, STOCK_CONCENTRATION, STRONG } from './lab/acidBase.js'
-import { computeStoichiometry } from './lab/stoichiometry.js'
+import { computeAcidBase } from './lab/acidBase.js'
+import { stockConcentration } from './lab/concentrations.js'
+import { AMPHOTERIC, computeStoichiometry } from './lab/stoichiometry.js'
 
 import {
   findAvailableReactions
@@ -3137,7 +3138,9 @@ export function initVirtualLab() {
 
   /* ---------- stoichiometry of the latest reaction ---------- */
 
-  const concentrationOf = id => (STRONG[id] ? STOCK_CONCENTRATION : null)
+  // 1 on the drawing scale ≈ 2.5 mmol of solid (25 mL of a 0.1 M stock).
+  const PRECIPITATE_REFERENCE_MOLES = 2.5e-3
+  const AMPHOTERIC_REAGENT = Object.fromEntries(Object.entries(AMPHOTERIC).map(([id, item]) => [id, item.reagent]))
   const subscript = formula => String(formula).replace(/(?<=[A-Za-z)\]])\d+/g, digits => [...digits].map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join(''))
   const mmol = moles => `${(moles * 1000).toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mmol`
   const grams = mass => `${mass.toLocaleString('vi-VN', { maximumSignificantDigits: 3 })} g`
@@ -3149,30 +3152,50 @@ export function initVirtualLab() {
     if (!reaction) return
 
     const shared = ids.slice(0, -1).some(id => reactions.find(item => item.id === id)?.reactants.some(r => reaction.reactants.includes(r)))
-    const result = shared ? null : computeStoichiometry(reaction, mixture, reagents, concentrationOf)
+    const result = shared ? null : computeStoichiometry(reaction, mixture, reagents, stockConcentration)
 
     if (!result || result.status === 'qualitative') {
       stoichBody.innerHTML = `<p>${escapeHTML(
         shared
           ? 'Nhiều phản ứng dùng chung một chất trong cốc nên ChemLab không tính riêng lượng chất của từng phản ứng.'
-          : result
-            ? `Phản ứng được mô phỏng định tính: dữ liệu chưa có nồng độ của ${result.missing.join(', ')}, nên ChemLab không tính lượng chất.`
-            : 'Phản ứng được mô phỏng định tính.'
+          : result?.reason
+            ? result.reason
+            : result
+              ? `Phản ứng được mô phỏng định tính: dữ liệu chưa có nồng độ của ${result.missing.join(', ')}, nên ChemLab không tính lượng chất.`
+              : 'Phản ứng được mô phỏng định tính.'
       )}</p>`
       return
     }
 
+    // The drawn precipitate follows the computed amount of solid (one source: the mixture volumes).
+    const solidMoles = result.products.filter(item => item.precipitate).reduce((sum, item) => sum + item.moles, 0)
+    const solidColor = reaction.effects?.find(effect => effect.type === 'precipitate')?.color
+    if (solidColor && solidMoles <= 0 && precipitate) {
+      precipitate = null
+      clearPrecipitate()
+      observationTitle.textContent = 'Kết tủa tan hết'
+      observationText.textContent = `${subscript(result.dissolved?.formula || 'Kết tủa')} lưỡng tính tan trong ${reagents[AMPHOTERIC_REAGENT[reaction.id]]?.formula || 'kiềm'} dư, dung dịch trong trở lại.`
+    }
+    else if (solidColor && solidMoles > 0 && !precipitate) {
+      precipitate = solidColor
+      createPrecipitate(solidColor)
+    }
+    if (solidMoles > 0 && precipitate) {
+      beakerEffects.setPrecipitateAmount(solidMoles / PRECIPITATE_REFERENCE_MOLES)
+    }
+
     const row = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`
     const limiting = result.reactants.filter(item => result.limiting.includes(item.id))
-    const products = result.products.filter(item => item.formula !== 'H2O')
+    const products = result.products.filter(item => item.formula !== 'H2O' && item.moles > 0)
     stoichBody.innerHTML = `
       <dl class="stoich-list">
         ${row('Đã thêm', result.reactants.map(item => `${escapeHTML(item.formula)} ${mmol(item.moles)}`).join(' · '))}
         ${row(limiting.length === result.reactants.length ? 'Phản ứng vừa đủ' : 'Chất hết (hạn chế)', limiting.map(item => escapeHTML(item.formula)).join(', '))}
         ${result.excess.length ? row('Còn dư', result.excess.map(item => `${escapeHTML(item.formula)} ${mmol(item.moles)}`).join(' · ')) : ''}
+        ${result.dissolved?.moles > 0 ? row(result.dissolved.complete ? 'Kết tủa tan hết' : 'Kết tủa tan một phần', `${subscript(result.dissolved.formula)} ${mmol(result.dissolved.moles)} tan trong kiềm dư`) : ''}
         ${row('Tạo thành', products.map(item => `${subscript(item.formula)}${item.precipitate ? '↓' : ''} ${mmol(item.moles)} (${grams(item.mass)})`).join(' · ') + (products.length < result.products.length ? ' · và H₂O' : ''))}
       </dl>
-      <p class="stoich-note">Tính từ thể tích × dung dịch gốc 0,1 M và hệ số phương trình.</p>
+      <p class="stoich-note">Tính từ thể tích × dung dịch gốc 0,1 M và hệ số phương trình, coi phản ứng xảy ra hoàn toàn.${solidMoles > 0 ? ' Lượng kết tủa vẽ trong cốc tỉ lệ với số mol, chỉ để minh họa — không phải thể tích hay kích thước hạt thật.' : ''}</p>
     `
   }
 
@@ -3311,7 +3334,7 @@ export function initVirtualLab() {
                 volume
               )
             } mL${
-              acidBase.species.some(item => item.id === id)
+              stockConcentration(id) !== null
                 ? ' · 0,1 M'
                 : ''
             }
