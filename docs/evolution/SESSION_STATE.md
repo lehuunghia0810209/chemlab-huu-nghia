@@ -18,21 +18,22 @@
 | `2230e63` | EV-07 — đo LCP/CLS/tương tác có throttling, phiên dài 3D/Lab (xem EVOLUTION_AUDIT.md) |
 | `2870b80` | A11y — `npm run check:a11y` (axe-core 4.14 + kiểm tra bàn phím/focus); sửa tương phản, ARIA bảng tuần hoàn, tên nút, vòng focus, focus trong Studio/drawer |
 | `b8e0427` | EV-02d — Lab định lượng: số mol, chất hạn chế, chất dư, sản phẩm (khối lượng kết tủa) cho phản ứng có nồng độ xác định |
-| (QA) | Kiểm thử browser trọn bài Guided g11-l2 trên mô hình pH mới |
+| `0a4b1dd` | QA — kiểm thử browser trọn bài Guided g11-l2 |
+| `49a3cd0` | EV-02e — kết tủa định lượng: 0,1 M cho 30 muối tan đã kiểm độ tan; 38 phản ứng có số mol/chất hạn chế/sản phẩm; Al(OH)₃, Zn(OH)₂ tan lại trong NaOH dư; hình kết tủa theo số mol; sửa pH khi có chất tiêu thụ OH⁻ |
 
 ## Kiểm thử gần nhất
 
-`npm run check` PASS (chem 31) · `npm run build` PASS · `npm run check:browser` 157/157 PASS · `npm run check:a11y` PASS (44 lần quét axe + kiểm tra bàn phím).
+`npm run check` PASS (chem 35) · `npm run build` PASS · `npm run check:browser` 165/165 PASS · `npm run check:a11y` PASS (44 lần quét axe + kiểm tra bàn phím).
 
 Quy trình QA đầy đủ: `npm run check` → `npm run build` → `npm run check:browser` → `npm run check:a11y`.
 
 ## Còn mở
 
 - pH cho acid/base yếu, hệ đệm: chưa có nồng độ trong catalog → vẫn định tính.
-- Định lượng chỉ có cho 6 phản ứng acid/base mạnh (catalog chưa có nồng độ muối) — cần quyết định nồng độ chuẩn cho muối để mở rộng.
-- Lượng kết tủa vẽ trong cốc chưa tỉ lệ với khối lượng tính được; kết tủa không tan lại khi dư thuốc thử.
+- Định tính có lý do: Fe³⁺/SCN⁻ (cân bằng), Na₂CO₃/Na₂SO₃ + HCl (hai nấc), CuSO₄/MgCl₂ + Na₂CO₃ (carbonate base). Có thể mô hình hai nấc carbonate sau.
+- pH khi có muối phản ứng/thủy phân chỉ định tính.
 - Lần mở chi tiết nguyên tố đầu tiên ~280 ms (CPU 4×); các lần sau < 150 ms.
 
 ## Bước tiếp theo
 
-Người dùng review nhánh `evolution/next` (chưa push). Cần quyết định: nồng độ chuẩn cho dung dịch muối (vd. 0,1 M) để mở rộng định lượng sang phản ứng kết tủa. Ứng viên khác: kết tủa vẽ theo lượng; mở rộng thư viện phân tử.
+Người dùng review nhánh `evolution/next` (chưa push). Ứng viên tiếp: mô hình hai nấc Na₂CO₃ + HCl (khí chỉ xuất hiện sau nấc 1 — cần đồng bộ hiệu ứng bọt khí); mở rộng thư viện phân tử.
