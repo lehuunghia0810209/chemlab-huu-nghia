@@ -814,6 +814,25 @@
   text-align: center;
 }
 
+.atom-check-card.unbalanced {
+  border-color: color-mix(in oklab, var(--status-warning) 55%, transparent);
+  background: var(--status-warning-soft);
+}
+
+.atom-check-card.unbalanced .atom-check-equal {
+  color: var(--status-warning);
+}
+
+.mole-ratio[hidden] {
+  display: none;
+}
+
+.balance-error.is-note {
+  border-color: color-mix(in oklab, var(--status-warning) 45%, transparent);
+  background: var(--status-warning-soft);
+  color: var(--text-primary);
+}
+
 .balance-error {
   margin: 0 24px 24px;
   padding: 13px 16px;

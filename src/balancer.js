@@ -1,4 +1,11 @@
 import './balancer.css'
+import {
+  balanceSpecies,
+  compareSides,
+  parseSide,
+  sideTotals,
+  splitSpecies
+} from './chem/equation.js'
 
 export function initEquationBalancer() {
   const tools = document.querySelector('#tools')
@@ -428,10 +435,7 @@ export function initEquationBalancer() {
           parseSide(leftText)
 
         leftTotals =
-          calculateAtomTotals(
-            compounds,
-            compounds.map(() => 1)
-          )
+          sideTotals(compounds).atoms
 
         leftCount =
           totalAtoms(leftTotals)
@@ -454,10 +458,7 @@ export function initEquationBalancer() {
           parseSide(rightText)
 
         rightTotals =
-          calculateAtomTotals(
-            compounds,
-            compounds.map(() => 1)
-          )
+          sideTotals(compounds).atoms
 
         rightCount =
           totalAtoms(rightTotals)
@@ -538,13 +539,13 @@ export function initEquationBalancer() {
       return
     }
 
-    const balanced =
-      atomMapsEqual(
-        leftTotals,
-        rightTotals
-      )
+    const reactants = parseSide(leftText)
+    const products = parseSide(rightText)
+    const comparison = compareSides(reactants, products)
 
-    if (balanced) {
+    renderAnalysis(comparison, null)
+
+    if (comparison.balanced) {
       setBeamAngle(0)
 
       setStatus(
@@ -564,9 +565,17 @@ export function initEquationBalancer() {
         'Chưa cân bằng'
       )
 
+      const mismatched = comparison.rows
+        .filter(row => row.left !== row.right)
+        .map(row => row.symbol)
+
+      if (comparison.charge.left !== comparison.charge.right) {
+        mismatched.push('điện tích')
+      }
+
       stageMessage.innerHTML = `
         <strong>Hai vế chưa cân bằng</strong>
-        <span>Nhấn “Tự động cân bằng” để tìm hệ số.</span>
+        <span>Lệch: ${mismatched.join(', ')}. Sửa hệ số hoặc nhấn “Tự động cân bằng”.</span>
       `
     }
   }
@@ -673,17 +682,19 @@ export function initEquationBalancer() {
           const products =
             parseSide(rightText)
 
-          const coefficients =
-            solveEquation(
+          const solution =
+            balanceSpecies(
               reactants,
               products
             )
 
-          if (!coefficients) {
+          if (!solution) {
             throw new Error(
-              'Không tìm được hệ số cân bằng dương.'
+              'Không tìm được hệ số cân bằng dương. Kiểm tra lại sản phẩm: mỗi nguyên tố (và tổng điện tích) phải xuất hiện được ở cả hai vế.'
             )
           }
+
+          const { coefficients } = solution
 
           const leftCoefficients =
             coefficients.slice(
@@ -760,30 +771,28 @@ export function initEquationBalancer() {
             )
           )
 
-          const leftTotals =
-            calculateAtomTotals(
-              reactants,
-              leftCoefficients
-            )
-
-          const rightTotals =
-            calculateAtomTotals(
-              products,
-              rightCoefficients
-            )
-
           leftAtomTotal.textContent =
-            `${totalAtoms(leftTotals)} nguyên tử`
+            `${totalAtoms(sideTotals(reactants, leftCoefficients).atoms)} nguyên tử`
 
           rightAtomTotal.textContent =
-            `${totalAtoms(rightTotals)} nguyên tử`
+            `${totalAtoms(sideTotals(products, rightCoefficients).atoms)} nguyên tử`
 
           renderAnalysis(
-            reactants,
-            products,
-            leftCoefficients,
-            rightCoefficients
+            compareSides(
+              reactants,
+              products,
+              leftCoefficients,
+              rightCoefficients
+            ),
+            coefficients
           )
+
+          if (!solution.unique) {
+            showError(
+              'Lưu ý: chỉ bảo toàn nguyên tố và điện tích thì phương trình này có nhiều bộ hệ số đúng. ChemLab chọn bộ nhỏ nhất; với phản ứng oxi hóa – khử, hãy kiểm tra thêm bằng thăng bằng electron.',
+              'note'
+            )
+          }
         }
 
         catch (error) {
@@ -817,44 +826,30 @@ export function initEquationBalancer() {
   ===================================================== */
 
   function renderAnalysis(
-    reactants,
-    products,
-    leftCoefficients,
-    rightCoefficients
+    comparison,
+    coefficients
   ) {
-    const leftTotals =
-      calculateAtomTotals(
-        reactants,
-        leftCoefficients
-      )
+    const rows = [...comparison.rows]
 
-    const rightTotals =
-      calculateAtomTotals(
-        products,
-        rightCoefficients
-      )
-
-    const allElements = [
-      ...new Set([
-        ...Object.keys(leftTotals),
-        ...Object.keys(rightTotals)
-      ])
-    ]
+    if (comparison.charge.left || comparison.charge.right) {
+      rows.push({
+        symbol: '±',
+        label: 'Điện tích',
+        left: comparison.charge.left,
+        right: comparison.charge.right
+      })
+    }
 
     atomGrid.innerHTML =
-      allElements.map(
-        element => {
-          const left =
-            leftTotals[element] ?? 0
-
-          const right =
-            rightTotals[element] ?? 0
+      rows.map(
+        ({ symbol, label, left, right }) => {
+          const ok = left === right
 
           return `
-            <div class="atom-check-card balanced">
+            <div class="atom-check-card ${ok ? 'balanced' : 'unbalanced'}">
 
-              <div class="atom-check-symbol">
-                ${element}
+              <div class="atom-check-symbol"${label ? ` title="${label}" aria-label="${label}"` : ''}>
+                ${symbol}
               </div>
 
               <div class="atom-side-count">
@@ -862,8 +857,8 @@ export function initEquationBalancer() {
                 <strong>${left}</strong>
               </div>
 
-              <div class="atom-check-equal">
-                =
+              <div class="atom-check-equal" aria-label="${ok ? 'bằng' : 'khác'}">
+                ${ok ? '=' : '≠'}
               </div>
 
               <div class="atom-side-count">
@@ -876,22 +871,30 @@ export function initEquationBalancer() {
         }
       ).join('')
 
-    moleRatio.innerHTML = `
+    moleRatio.hidden = !coefficients
+
+    moleRatio.innerHTML = coefficients
+      ? `
       <span>Tỉ lệ mol</span>
 
       <strong>
-        ${
-          [
-            ...leftCoefficients,
-            ...rightCoefficients
-          ].join(' : ')
-        }
+        ${coefficients.join(' : ')}
       </strong>
     `
+      : ''
 
     analysis.classList.remove(
       'hidden'
     )
+  }
+
+  function totalAtoms(atoms) {
+    return Object
+      .values(atoms)
+      .reduce(
+        (sum, value) => sum + value,
+        0
+      )
   }
 
   /* =====================================================
@@ -994,7 +997,8 @@ export function initEquationBalancer() {
      ERRORS
   ===================================================== */
 
-  function showError(message) {
+  function showError(message, tone = 'error') {
+    errorBox.classList.toggle('is-note', tone === 'note')
     errorBox.textContent = message
 
     errorBox.classList.remove(
@@ -1006,798 +1010,6 @@ export function initEquationBalancer() {
     errorBox.classList.add(
       'hidden'
     )
-  }
-
-  /* =====================================================
-     PARSER
-  ===================================================== */
-
-  function splitSpecies(text) {
-    if (!text.trim()) return []
-
-    return text
-      .split(/\s*\+\s*/)
-      .map(item => item.trim())
-      .filter(Boolean)
-  }
-
-  function parseSide(text) {
-    const species =
-      splitSpecies(text)
-
-    if (
-      species.length === 0
-    ) {
-      throw new Error(
-        'Không tìm thấy chất hóa học.'
-      )
-    }
-
-    return species.map(
-      rawFormula => {
-        const formula =
-          rawFormula.replace(
-            /^\d+\s*/,
-            ''
-          )
-
-        return {
-          formula,
-          atoms:
-            parseCompound(formula)
-        }
-      }
-    )
-  }
-
-  function parseCompound(formula) {
-    const normalized =
-      formula.replaceAll(' ', '')
-
-    if (!normalized) {
-      throw new Error(
-        'Công thức hóa học đang trống.'
-      )
-    }
-
-    const parts =
-      normalized.split(/[·.]/)
-
-    const finalCounts = {}
-
-    parts.forEach(
-      part => {
-        const coefficientMatch =
-          part.match(/^(\d+)(.*)$/)
-
-        let multiplier = 1
-        let formulaPart = part
-
-        if (coefficientMatch) {
-          multiplier =
-            Number(
-              coefficientMatch[1]
-            )
-
-          formulaPart =
-            coefficientMatch[2]
-        }
-
-        const counts =
-          parseFormulaPart(
-            formulaPart
-          )
-
-        mergeCounts(
-          finalCounts,
-          counts,
-          multiplier
-        )
-      }
-    )
-
-    return finalCounts
-  }
-
-  function parseFormulaPart(formula) {
-    const stack = [{}]
-
-    let index = 0
-
-    while (
-      index < formula.length
-    ) {
-      const char =
-        formula[index]
-
-      if (
-        char === '(' ||
-        char === '[' ||
-        char === '{'
-      ) {
-        stack.push({})
-        index++
-        continue
-      }
-
-      if (
-        char === ')' ||
-        char === ']' ||
-        char === '}'
-      ) {
-        if (
-          stack.length === 1
-        ) {
-          throw new Error(
-            `Ngoặc không hợp lệ trong ${formula}.`
-          )
-        }
-
-        const group =
-          stack.pop()
-
-        index++
-
-        const numberResult =
-          readNumber(
-            formula,
-            index
-          )
-
-        index =
-          numberResult.next
-
-        mergeCounts(
-          stack[
-            stack.length - 1
-          ],
-          group,
-          numberResult.value
-        )
-
-        continue
-      }
-
-      if (
-        /[A-Z]/.test(char)
-      ) {
-        let symbol = char
-
-        index++
-
-        while (
-          index <
-            formula.length &&
-          /[a-z]/.test(
-            formula[index]
-          )
-        ) {
-          symbol +=
-            formula[index]
-
-          index++
-        }
-
-        const numberResult =
-          readNumber(
-            formula,
-            index
-          )
-
-        index =
-          numberResult.next
-
-        const current =
-          stack[
-            stack.length - 1
-          ]
-
-        current[symbol] =
-          (
-            current[symbol] ?? 0
-          ) +
-          numberResult.value
-
-        continue
-      }
-
-      throw new Error(
-        `Không hiểu ký tự "${char}" trong ${formula}.`
-      )
-    }
-
-    if (
-      stack.length !== 1
-    ) {
-      throw new Error(
-        `Ngoặc chưa đóng trong ${formula}.`
-      )
-    }
-
-    return stack[0]
-  }
-
-  function readNumber(
-    text,
-    start
-  ) {
-    let index = start
-    let numberText = ''
-
-    while (
-      index < text.length &&
-      /\d/.test(text[index])
-    ) {
-      numberText +=
-        text[index]
-
-      index++
-    }
-
-    return {
-      value:
-        numberText
-          ? Number(numberText)
-          : 1,
-
-      next:
-        index
-    }
-  }
-
-  function mergeCounts(
-    target,
-    source,
-    multiplier = 1
-  ) {
-    Object.entries(source)
-      .forEach(
-        ([
-          element,
-          amount
-        ]) => {
-          target[element] =
-            (
-              target[element] ?? 0
-            ) +
-            amount * multiplier
-        }
-      )
-  }
-
-  /* =====================================================
-     ATOMS
-  ===================================================== */
-
-  function calculateAtomTotals(
-    compounds,
-    coefficients
-  ) {
-    const totals = {}
-
-    compounds.forEach(
-      (
-        compound,
-        index
-      ) => {
-        const coefficient =
-          coefficients[index] ?? 1
-
-        Object.entries(
-          compound.atoms
-        ).forEach(
-          ([
-            element,
-            amount
-          ]) => {
-            totals[element] =
-              (
-                totals[element] ?? 0
-              ) +
-              amount * coefficient
-          }
-        )
-      }
-    )
-
-    return totals
-  }
-
-  function totalAtoms(totals) {
-    return Object
-      .values(totals)
-      .reduce(
-        (
-          sum,
-          value
-        ) =>
-          sum + value,
-        0
-      )
-  }
-
-  function atomMapsEqual(
-    first,
-    second
-  ) {
-    const symbols =
-      new Set([
-        ...Object.keys(first),
-        ...Object.keys(second)
-      ])
-
-    return [...symbols].every(
-      symbol =>
-        (
-          first[symbol] ?? 0
-        ) ===
-        (
-          second[symbol] ?? 0
-        )
-    )
-  }
-
-  /* =====================================================
-     SOLVER
-  ===================================================== */
-
-  function solveEquation(
-    reactants,
-    products
-  ) {
-    const compounds = [
-      ...reactants,
-      ...products
-    ]
-
-    const elementSymbols = [
-      ...new Set(
-        compounds.flatMap(
-          compound =>
-            Object.keys(
-              compound.atoms
-            )
-        )
-      )
-    ]
-
-    const matrix =
-      elementSymbols.map(
-        symbol =>
-          compounds.map(
-            (
-              compound,
-              index
-            ) => {
-              const amount =
-                compound.atoms[
-                  symbol
-                ] ?? 0
-
-              return new Fraction(
-                index <
-                  reactants.length
-                  ? amount
-                  : -amount
-              )
-            }
-          )
-      )
-
-    const {
-      matrix: rref,
-      pivotColumns
-    } =
-      toRREF(matrix)
-
-    const columnCount =
-      compounds.length
-
-    const freeColumns = []
-
-    for (
-      let column = 0;
-      column < columnCount;
-      column++
-    ) {
-      if (
-        !pivotColumns.includes(
-          column
-        )
-      ) {
-        freeColumns.push(column)
-      }
-    }
-
-    if (
-      freeColumns.length === 0
-    ) {
-      return null
-    }
-
-    const assignments =
-      generateAssignments(
-        freeColumns.length,
-        1,
-        5
-      )
-
-    let best = null
-
-    for (
-      const assignment
-      of assignments
-    ) {
-      const vector =
-        Array(columnCount)
-          .fill(null)
-          .map(
-            () =>
-              new Fraction(0)
-          )
-
-      freeColumns.forEach(
-        (
-          column,
-          index
-        ) => {
-          vector[column] =
-            new Fraction(
-              assignment[index]
-            )
-        }
-      )
-
-      pivotColumns.forEach(
-        (
-          pivotColumn,
-          row
-        ) => {
-          let sum =
-            new Fraction(0)
-
-          freeColumns.forEach(
-            freeColumn => {
-              sum =
-                sum.add(
-                  rref[row][freeColumn]
-                    .multiply(
-                      vector[
-                        freeColumn
-                      ]
-                    )
-                )
-            }
-          )
-
-          vector[pivotColumn] =
-            sum.negate()
-        }
-      )
-
-      const integers =
-        fractionsToIntegers(
-          vector
-        )
-
-      if (
-        integers.every(
-          value =>
-            value > 0
-        )
-      ) {
-        const normalized =
-          normalizeIntegerVector(
-            integers
-          )
-
-        if (
-          !best ||
-          sumArray(normalized) <
-          sumArray(best)
-        ) {
-          best = normalized
-        }
-      }
-    }
-
-    return best
-  }
-
-  function toRREF(source) {
-    const matrix =
-      source.map(
-        row =>
-          row.map(
-            value =>
-              value.clone()
-          )
-      )
-
-    const rows =
-      matrix.length
-
-    const columns =
-      matrix[0]?.length ?? 0
-
-    const pivotColumns = []
-
-    let pivotRow = 0
-
-    for (
-      let column = 0;
-      column < columns &&
-      pivotRow < rows;
-      column++
-    ) {
-      let selected =
-        pivotRow
-
-      while (
-        selected < rows &&
-        matrix[selected][column]
-          .isZero()
-      ) {
-        selected++
-      }
-
-      if (
-        selected === rows
-      ) {
-        continue
-      }
-
-      ;[
-        matrix[pivotRow],
-        matrix[selected]
-      ] = [
-        matrix[selected],
-        matrix[pivotRow]
-      ]
-
-      const pivot =
-        matrix[pivotRow][column]
-
-      for (
-        let c = 0;
-        c < columns;
-        c++
-      ) {
-        matrix[pivotRow][c] =
-          matrix[pivotRow][c]
-            .divide(pivot)
-      }
-
-      for (
-        let row = 0;
-        row < rows;
-        row++
-      ) {
-        if (
-          row === pivotRow
-        ) {
-          continue
-        }
-
-        const factor =
-          matrix[row][column]
-
-        if (
-          factor.isZero()
-        ) {
-          continue
-        }
-
-        for (
-          let c = 0;
-          c < columns;
-          c++
-        ) {
-          matrix[row][c] =
-            matrix[row][c]
-              .subtract(
-                factor.multiply(
-                  matrix[
-                    pivotRow
-                  ][c]
-                )
-              )
-        }
-      }
-
-      pivotColumns.push(column)
-      pivotRow++
-    }
-
-    return {
-      matrix,
-      pivotColumns
-    }
-  }
-
-  /* =====================================================
-     FRACTION
-  ===================================================== */
-
-  class Fraction {
-    constructor(
-      numerator,
-      denominator = 1
-    ) {
-      if (
-        denominator === 0
-      ) {
-        throw new Error(
-          'Phép tính không hợp lệ.'
-        )
-      }
-
-      if (
-        denominator < 0
-      ) {
-        numerator *= -1
-        denominator *= -1
-      }
-
-      const divisor =
-        gcd(
-          Math.abs(numerator),
-          Math.abs(denominator)
-        )
-
-      this.n =
-        numerator / divisor
-
-      this.d =
-        denominator / divisor
-    }
-
-    add(other) {
-      return new Fraction(
-        this.n * other.d +
-        other.n * this.d,
-
-        this.d * other.d
-      )
-    }
-
-    subtract(other) {
-      return this.add(
-        other.negate()
-      )
-    }
-
-    multiply(other) {
-      return new Fraction(
-        this.n * other.n,
-        this.d * other.d
-      )
-    }
-
-    divide(other) {
-      return new Fraction(
-        this.n * other.d,
-        this.d * other.n
-      )
-    }
-
-    negate() {
-      return new Fraction(
-        -this.n,
-        this.d
-      )
-    }
-
-    isZero() {
-      return this.n === 0
-    }
-
-    clone() {
-      return new Fraction(
-        this.n,
-        this.d
-      )
-    }
-  }
-
-  /* =====================================================
-     INTEGER HELPERS
-  ===================================================== */
-
-  function fractionsToIntegers(
-    fractions
-  ) {
-    let denominatorLCM = 1
-
-    fractions.forEach(
-      fraction => {
-        denominatorLCM =
-          lcm(
-            denominatorLCM,
-            fraction.d
-          )
-      }
-    )
-
-    return fractions.map(
-      fraction =>
-        fraction.n *
-        (
-          denominatorLCM /
-          fraction.d
-        )
-    )
-  }
-
-  function normalizeIntegerVector(
-    values
-  ) {
-    let divisor = 0
-
-    values.forEach(
-      value => {
-        divisor =
-          gcd(
-            divisor,
-            Math.abs(value)
-          )
-      }
-    )
-
-    const result =
-      values.map(
-        value =>
-          value /
-          (divisor || 1)
-      )
-
-    if (
-      result.every(
-        value => value < 0
-      )
-    ) {
-      return result.map(
-        value => -value
-      )
-    }
-
-    return result
-  }
-
-  function generateAssignments(
-    length,
-    min,
-    max
-  ) {
-    const result = []
-
-    function build(current) {
-      if (
-        current.length === length
-      ) {
-        result.push([
-          ...current
-        ])
-
-        return
-      }
-
-      for (
-        let value = min;
-        value <= max;
-        value++
-      ) {
-        current.push(value)
-
-        build(current)
-
-        current.pop()
-      }
-    }
-
-    build([])
-
-    return result
   }
 
   /* =====================================================
@@ -1891,8 +1103,12 @@ export function initEquationBalancer() {
     formula
   ) {
     return String(formula)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Subscript counts only, not a leading coefficient (2MnO4 → 2MnO₄)
       .replace(
-        /(\d+)/g,
+        /(?<=[A-Za-z)\]])(\d+)/g,
         '<sub>$1</sub>'
       )
   }
@@ -1900,36 +1116,6 @@ export function initEquationBalancer() {
   /* =====================================================
      MATH
   ===================================================== */
-
-  function gcd(a, b) {
-    a =
-      Math.round(
-        Math.abs(a)
-      )
-
-    b =
-      Math.round(
-        Math.abs(b)
-      )
-
-    while (
-      b !== 0
-    ) {
-      const temp = b
-
-      b = a % b
-      a = temp
-    }
-
-    return a || 1
-  }
-
-  function lcm(a, b) {
-    return Math.abs(
-      a * b
-    ) /
-    gcd(a, b)
-  }
 
   function clamp(
     value,
@@ -1945,16 +1131,7 @@ export function initEquationBalancer() {
     )
   }
 
-  function sumArray(values) {
-    return values.reduce(
-      (
-        total,
-        value
-      ) =>
-        total + value,
-      0
-    )
-  }
+
 
   setBeamAngle(0)
   previewEquation()

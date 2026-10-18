@@ -147,6 +147,7 @@ async function interactionChecks(browser, baseURL) {
   const tools = await page.$$eval('.tool-selector [data-tool]', nodes => nodes.map(node => node.dataset.tool))
   record('Tool Hub lists all 7 tools', tools.length === 7, tools.join(','))
 
+
   await page.click('.app-sidebar [data-open-settings]')
   const dialogOpen = await page.locator('#user-settings').isVisible()
   await page.keyboard.press('Escape')
@@ -298,6 +299,42 @@ async function pwaCheck(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- chemistry tools: real input → result ---------- */
+async function toolChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
+  await openView(page, baseURL, 'tools')
+  // Balancer: typed coefficients count in the live check; ions and redox are balanced with charge.
+  await page.click('.tool-selector [data-tool="balancer"]')
+  await page.fill('#balance-reactants', '2H₂ + O₂')
+  await page.fill('#balance-products', '2H₂O')
+  const typed = await page.textContent('#balance-status-text')
+  record('balancer: typed coefficients 2H₂ + O₂ → 2H₂O read as balanced', typed.trim() === 'Đã cân bằng', typed)
+  await page.fill('#balance-reactants', 'H2 + O2')
+  await page.fill('#balance-products', 'H2O')
+  const mismatch = await page.$$eval('#atom-balance-grid .atom-check-card.unbalanced .atom-check-symbol', nodes => nodes.map(node => node.textContent.trim()))
+  record('balancer: live check highlights the unbalanced element (O)', mismatch.join() === 'O', mismatch.join())
+  await page.fill('#balance-reactants', 'Fe^2+ + MnO4^- + H^+')
+  await page.fill('#balance-products', 'Fe^3+ + Mn^2+ + H2O')
+  await page.click('#balance-button')
+  await page.waitForSelector('#balance-result.success', { timeout: 5000 }).catch(() => {})
+  const ratio = (await page.textContent('#mole-ratio')).replace(/\s+/g, ' ')
+  record('balancer: ionic redox Fe²⁺/MnO₄⁻ balanced 5:1:8:5:1:4', ratio.includes('5 : 1 : 8 : 5 : 1 : 4'), ratio)
+  await page.fill('#balance-reactants', 'Hcl + NaOH')
+  await page.fill('#balance-products', 'NaCl + H2O')
+  await page.click('#balance-button')
+  await page.waitForSelector('#balance-error:not(.hidden)', { timeout: 5000 }).catch(() => {})
+  const symbolError = await page.textContent('#balance-error')
+  record('balancer: wrong capitalisation (Hcl) is rejected with a hint', /Hc/.test(symbolError), symbolError)
+
+  await page.click('.tool-selector [data-tool="calculator"]')
+  await page.fill('#cc-formula', 'CuSO₄·5H₂O')
+  await page.click('#cc-analyze')
+  const molar = await page.textContent('#cc-result-mass')
+  record('calculator: Unicode formula CuSO₄·5H₂O → 249.6 g/mol', Math.abs(Number(molar.replace(',', '.')) - 249.68) < 0.1, molar)
+  record('console clean in chemistry tools', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -308,7 +345,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

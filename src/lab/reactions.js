@@ -1177,7 +1177,7 @@ export const REACTIONS = [
       'nh3'
     ],
     'Deep blue complex',
-    'Cu²⁺ + NH₃ → copper-ammonia complex',
+    'Cu²⁺ + 4NH₃ → [Cu(NH₃)₄]²⁺',
     'The solution becomes deep blue.',
     [
       E(
@@ -1205,7 +1205,7 @@ export const REACTIONS = [
       'nh3'
     ],
     'Deep blue complex',
-    'Cu²⁺ + NH₃ → copper-ammonia complex',
+    'Cu²⁺ + 4NH₃ → [Cu(NH₃)₄]²⁺',
     'The solution becomes deep blue.',
     [
       E(
@@ -1233,7 +1233,7 @@ export const REACTIONS = [
       'fecl3'
     ],
     'Violet complex',
-    'Phenol + Fe³⁺ → violet complex',
+    'C₆H₅OH + Fe³⁺ → phức chất màu tím',
     'A violet coloration appears.',
     [
       E(
@@ -1257,7 +1257,7 @@ export const REACTIONS = [
       'iodine'
     ],
     'Starch test',
-    'Starch + I₂ → starch–iodine complex',
+    'Hồ tinh bột + I₂ → hợp chất màu xanh tím',
     'A dark blue-violet color appears.',
     [
       E(
@@ -1353,7 +1353,7 @@ export const REACTIONS = [
       'bromineWater'
     ],
     'Bromine water decolorized',
-    'C₂H₂ + Br₂ → addition product',
+    'C₂H₂ + 2Br₂ → C₂H₂Br₄',
     'The bromine-water color fades.',
     [
       E(
@@ -1409,7 +1409,7 @@ export const REACTIONS = [
       'kmno4'
     ],
     'Permanganate test',
-    'Alkene + KMnO₄ → oxidized products',
+    '3C₂H₄ + 2KMnO₄ + 4H₂O → 3C₂H₄(OH)₂ + 2MnO₂↓ + 2KOH',
     'The purple color fades and brown material appears in the simulation.',
     [
       E(
@@ -1441,7 +1441,7 @@ export const REACTIONS = [
       'kmno4'
     ],
     'Permanganate test',
-    'Alkene + KMnO₄ → oxidized products',
+    '3C₃H₆ + 2KMnO₄ + 4H₂O → 3C₃H₆(OH)₂ + 2MnO₂↓ + 2KOH',
     'The purple color fades and brown material appears.',
     [
       E(
@@ -1478,7 +1478,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Deep blue complex',
-    'Glucose + Cu(OH)₂ → blue Cu(II) complex',
+    '2C₆H₁₂O₆ + Cu(OH)₂ → (C₆H₁₁O₆)₂Cu + 2H₂O',
     'A deep blue complex forms at room temperature.',
     [
       E(
@@ -1510,7 +1510,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Brick-red precipitate',
-    'Reducing sugar + Cu(OH)₂ → Cu₂O↓',
+    'C₆H₁₂O₆ + 2Cu(OH)₂ + NaOH → C₆H₁₁O₇Na + Cu₂O↓ + 3H₂O',
     'Heating produces a brick-red copper(I) oxide precipitate.',
     [
       E(
@@ -1541,7 +1541,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Deep blue complex',
-    'Fructose + Cu(OH)₂ → blue Cu(II) complex',
+    '2C₆H₁₂O₆ + Cu(OH)₂ → (C₆H₁₁O₆)₂Cu + 2H₂O',
     'A deep blue complex forms at room temperature.',
     [
       E(
@@ -1573,7 +1573,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Brick-red precipitate',
-    'Reducing sugar + Cu(OH)₂ → Cu₂O↓',
+    'C₆H₁₂O₆ + 2Cu(OH)₂ + NaOH → C₆H₁₁O₇Na + Cu₂O↓ + 3H₂O',
     'Heating produces a brick-red copper(I) oxide precipitate.',
     [
       E(
@@ -1604,7 +1604,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Deep blue complex',
-    'Maltose + Cu(OH)₂ → blue Cu(II) complex',
+    '2C₁₂H₂₂O₁₁ + Cu(OH)₂ → (C₁₂H₂₁O₁₁)₂Cu + 2H₂O',
     'A deep blue complex forms at room temperature.',
     [
       E(
@@ -1636,7 +1636,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Brick-red precipitate',
-    'Reducing sugar + Cu(OH)₂ → Cu₂O↓',
+    'Đường khử + Cu(OH)₂ (OH⁻, t°) → Cu₂O↓ đỏ gạch',
     'Heating produces a brick-red copper(I) oxide precipitate.',
     [
       E(
@@ -1667,7 +1667,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Deep blue complex',
-    'Lactose + Cu(OH)₂ → blue Cu(II) complex',
+    '2C₁₂H₂₂O₁₁ + Cu(OH)₂ → (C₁₂H₂₁O₁₁)₂Cu + 2H₂O',
     'A deep blue complex forms at room temperature.',
     [
       E(
@@ -1699,7 +1699,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Brick-red precipitate',
-    'Reducing sugar + Cu(OH)₂ → Cu₂O↓',
+    'Đường khử + Cu(OH)₂ (OH⁻, t°) → Cu₂O↓ đỏ gạch',
     'Heating produces a brick-red copper(I) oxide precipitate.',
     [
       E(
@@ -1730,7 +1730,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Glycerol test',
-    'Glycerol + Cu(OH)₂ → blue Cu(II) complex',
+    '2C₃H₅(OH)₃ + Cu(OH)₂ → [C₃H₅(OH)₂O]₂Cu + 2H₂O',
     'A deep blue solution forms.',
     [
       E(
@@ -1759,7 +1759,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Polyol test',
-    'Ethane-1,2-diol + Cu(OH)₂ → blue Cu(II) complex',
+    '2C₂H₄(OH)₂ + Cu(OH)₂ → [C₂H₄(OH)O]₂Cu + 2H₂O',
     'A deep blue solution forms.',
     [
       E(
@@ -1788,7 +1788,7 @@ export const REACTIONS = [
       'naoh'
     ],
     'Biuret test',
-    'Protein + Cu²⁺ in alkaline medium → violet complex',
+    'Protein + Cu(OH)₂ (OH⁻) → phức chất màu tím',
     'A violet color appears.',
     [
       E(
@@ -1989,7 +1989,7 @@ export const REACTIONS = [
       'h2so4'
     ],
     'Permanganate decolorized',
-    'H₂O₂ + MnO₄⁻ + H⁺ → O₂ + Mn²⁺ + H₂O',
+    '5H₂O₂ + 2MnO₄⁻ + 6H⁺ → 5O₂↑ + 2Mn²⁺ + 8H₂O',
     'The purple permanganate color disappears and gas is produced.',
     [
       E(
@@ -2047,7 +2047,7 @@ export const REACTIONS = [
       'h2so4'
     ],
     'Redox color change',
-    'Fe²⁺ + MnO₄⁻ + H⁺ → Fe³⁺ + Mn²⁺ + H₂O',
+    '5Fe²⁺ + MnO₄⁻ + 8H⁺ → 5Fe³⁺ + Mn²⁺ + 4H₂O',
     'The purple permanganate color fades.',
     [
       E(
@@ -2303,7 +2303,7 @@ export const REACTIONS = [
       'hcl'
     ],
     'Sucrose hydrolysis',
-    'C₁₂H₂₂O₁₁ + H₂O → glucose + fructose',
+    'C₁₂H₂₂O₁₁ + H₂O → C₆H₁₂O₆ (glucose) + C₆H₁₂O₆ (fructose)',
     'Acid-catalyzed hydrolysis is simulated.',
     [
       E(
@@ -2333,7 +2333,7 @@ export const REACTIONS = [
       'hcl'
     ],
     'Maltose hydrolysis',
-    'C₁₂H₂₂O₁₁ + H₂O → 2 glucose',
+    'C₁₂H₂₂O₁₁ + H₂O → 2C₆H₁₂O₆ (glucose)',
     'Acid-catalyzed hydrolysis is simulated.',
     [
       E(

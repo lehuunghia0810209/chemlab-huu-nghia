@@ -223,6 +223,64 @@ test('90% boundary-surface level encloses ~90% of the probability on the grid', 
   assert.ok(Math.abs(inside / total - 0.9) < 0.02, `${(inside / total).toFixed(3)}`)
 })
 
+/* ---------- formulas & equations ---------- */
+
+const { parseFormula, parseSpecies } = await import('../src/chem/formula.js')
+const { balanceSpecies, checkEquation, parseEquation } = await import('../src/chem/equation.js')
+
+test('formula parser: subscripts, brackets, hydrates', () => {
+  assert.deepEqual(parseFormula('H2O'), { H: 2, O: 1 })
+  assert.deepEqual(parseFormula('H₂O'), { H: 2, O: 1 })
+  assert.deepEqual(parseFormula('Ca3(PO4)2'), { Ca: 3, P: 2, O: 8 })
+  assert.deepEqual(parseFormula('CuSO4·5H2O'), { Cu: 1, S: 1, O: 9, H: 10 })
+  assert.deepEqual(parseFormula('K4[Fe(CN)6]'), { K: 4, Fe: 1, C: 6, N: 6 })
+  assert.deepEqual(parseFormula('Cu(OH)₂↓'), { Cu: 1, O: 2, H: 2 })
+  assert.deepEqual(parseFormula('NaCl(aq)'), { Na: 1, Cl: 1 })
+})
+
+test('formula parser rejects unknown symbols and broken brackets', () => {
+  for (const bad of ['Xx2', 'Hcl', 'Ca(OH]2', '(OH', 'H2O)', 'MnO4-', '']) {
+    assert.throws(() => parseFormula(bad), undefined, bad)
+  }
+})
+
+test('species: coefficients and ion charges', () => {
+  assert.equal(parseSpecies('SO₄²⁻').charge, -2)
+  assert.equal(parseSpecies('Fe^3+').charge, 3)
+  assert.equal(parseSpecies('NH4^+').charge, 1)
+  assert.equal(parseSpecies('OH⁻').charge, -1)
+  assert.equal(parseSpecies('3H2O').coefficient, 3)
+  assert.deepEqual(parseSpecies('[Cu(NH₃)₄]²⁺').atoms, { Cu: 1, N: 4, H: 12 })
+})
+
+test('balancer finds the textbook coefficients', () => {
+  const cases = {
+    'H2 + O2 → H2O': [2, 1, 2],
+    'Fe + O2 → Fe3O4': [3, 2, 1],
+    'Al + HCl → AlCl3 + H2': [2, 6, 2, 3],
+    'C6H12O6 + O2 → CO2 + H2O': [1, 6, 6, 6],
+    'Cu + HNO3 → Cu(NO3)2 + NO + H2O': [3, 8, 3, 2, 4],
+    'KMnO4 + HCl → KCl + MnCl2 + Cl2 + H2O': [2, 16, 2, 2, 5, 8],
+    'Fe^2+ + MnO4^- + H^+ → Fe^3+ + Mn^2+ + H2O': [5, 1, 8, 5, 1, 4],
+    'Cr2O7^2- + Fe^2+ + H^+ → Cr^3+ + Fe^3+ + H2O': [1, 6, 14, 2, 6, 7]
+  }
+  for (const [equation, expected] of Object.entries(cases)) {
+    const { reactants, products } = parseEquation(equation)
+    const result = balanceSpecies(reactants, products)
+    assert.deepEqual(result?.coefficients, expected, equation)
+    assert.equal(result.unique, true, equation)
+  }
+})
+
+test('balancer: impossible and non-unique equations are reported', () => {
+  for (const equation of ['H2O → H2O2', 'Na → Cl2', 'NaCl → Na^+ + Cl2']) {
+    const { reactants, products } = parseEquation(equation)
+    assert.equal(balanceSpecies(reactants, products), null, equation)
+  }
+  const { reactants, products } = parseEquation('H2O2 + MnO4^- + H^+ → O2 + Mn^2+ + H2O')
+  assert.equal(balanceSpecies(reactants, products).unique, false)
+})
+
 /* ---------- lab data ---------- */
 
 const { REACTIONS } = await import('../src/lab/reactions.js')
@@ -231,6 +289,26 @@ const { hasTranslation } = await import('../src/lab/reactionsVi.js')
 test('every Virtual Lab reaction has Vietnamese display text', () => {
   const missing = REACTIONS.filter(reaction => !hasTranslation(reaction.id)).map(reaction => reaction.id)
   assert.deepEqual(missing, [])
+})
+
+// Word equations (colour tests, R-group notation) cannot be atom-checked.
+const QUALITATIVE_EQUATIONS = new Set([
+  'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'
+])
+
+test('every Virtual Lab equation conserves atoms and charge', () => {
+  const problems = []
+  for (const reaction of REACTIONS) {
+    let result = null
+    try { result = checkEquation(reaction.equation) }
+    catch (error) {
+      if (!QUALITATIVE_EQUATIONS.has(reaction.id)) problems.push(`${reaction.id}: ${error.message}`)
+      continue
+    }
+    if (QUALITATIVE_EQUATIONS.has(reaction.id)) problems.push(`${reaction.id} parses now — remove it from the qualitative list`)
+    else if (!result.balanced) problems.push(`${reaction.id}: ${reaction.equation}`)
+  }
+  assert.deepEqual(problems, [])
 })
 
 const failures = results.filter(result => !result.pass)
