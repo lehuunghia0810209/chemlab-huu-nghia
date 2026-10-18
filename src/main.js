@@ -155,7 +155,7 @@ app.innerHTML = `
 
     <aside class="app-sidebar" aria-label="Thanh bên ChemLab">
       <div class="app-sidebar__head">
-        <button class="app-brand" type="button" data-app-view="home" aria-label="ChemLab — về Tổng quan">
+        <button class="app-brand" type="button" data-app-view="home" aria-label="ChemLab ${APP_VERSION}, về Tổng quan">
           <span class="app-brand__mark">${brandMark()}</span>
           <span class="app-brand__text">
             <strong>ChemLab</strong>
@@ -167,7 +167,7 @@ app.innerHTML = `
         </button>
       </div>
 
-      <button id="open-command" class="app-search" type="button" aria-label="Tìm nhanh trong ChemLab (Ctrl K)">
+      <button id="open-command" class="app-search" type="button">
         ${icon('search')}
         <span class="app-search__label">Tìm nhanh…</span>
         <kbd class="ui-kbd">Ctrl K</kbd>
@@ -192,7 +192,7 @@ app.innerHTML = `
       </div>
 
       <div class="app-sidebar__foot">
-        <button class="app-ai-entry" type="button" data-chemai-open aria-label="Mở ChemAI — trợ lý Hóa học">
+        <button class="app-ai-entry" type="button" data-chemai-open>
           <span class="app-ai-entry__orb">${icon('ai')}</span>
           <span class="app-ai-entry__copy">
             <strong>ChemAI</strong>
@@ -219,7 +219,7 @@ app.innerHTML = `
 
     <div class="app-column">
       <header class="app-topbar">
-        <button class="app-topbar__brand" type="button" data-app-view="home" aria-label="ChemLab — về Tổng quan">
+        <button class="app-topbar__brand" type="button" data-app-view="home" aria-label="ChemLab ${APP_VERSION}, về Tổng quan">
           ${brandMark()}
         </button>
 

@@ -1436,7 +1436,7 @@ button.primary {
 }
 
 .cs5-molecule-load {
-  background: var(--accent);
+  background: var(--accent-fill);
   border-color: transparent;
   color: var(--text-on-accent);
 }

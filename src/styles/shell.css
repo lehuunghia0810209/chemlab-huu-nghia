@@ -364,6 +364,10 @@ html[data-theme='light'] .app-theme-icon--light {
   font-weight: var(--weight-semibold);
 }
 
+.clprod-launcher.is-docked .clprod-launch-button:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
 .clprod-launcher.is-docked .clprod-menu {
   position: absolute;
   left: 0;

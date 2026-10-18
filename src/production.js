@@ -189,7 +189,7 @@ function createProductLauncher() {
     <button
       type="button"
       class="clprod-launch-button"
-      aria-label="ChemLab — thông tin sản phẩm"
+      aria-label="HN — thông tin sản phẩm ChemLab"
       aria-expanded="false"
       data-product-toggle
     >

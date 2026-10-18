@@ -1,3 +1,4 @@
+import { holdDialogFocus } from './shell/dialogFocus.js'
 import { balanceSpecies } from './chem/equation.js'
 import { parseFormula as parseSharedFormula } from './chem/formula.js'
 import { APP_VERSION } from './appMeta.js'
@@ -980,6 +981,8 @@ export function openReactionStudio({
     .appendChild(
       overlay
     )
+
+  const releaseFocus = holdDialogFocus(overlay, { initial: '[data-rs-input]' })
 
 
   const input =
@@ -2182,6 +2185,7 @@ export function openReactionStudio({
 
 
     overlay.remove()
+    releaseFocus()
 
 
     if (

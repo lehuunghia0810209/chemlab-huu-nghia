@@ -1,3 +1,4 @@
+import { holdDialogFocus } from './shell/dialogFocus.js'
 import { findMolecule } from './chem/molecules.js'
 import { parseFormula as parseSharedFormula } from './chem/formula.js'
 import { APP_VERSION } from './appMeta.js'
@@ -666,6 +667,8 @@ export function openCompoundStudio({
   document.body.appendChild(
     overlay
   )
+
+  const releaseFocus = holdDialogFocus(overlay, { initial: '[data-cs-formula]' })
 
 
   const formulaInput =
@@ -1468,6 +1471,7 @@ export function openCompoundStudio({
 
 
     overlay.remove()
+    releaseFocus()
 
 
     if (

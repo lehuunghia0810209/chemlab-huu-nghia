@@ -627,7 +627,8 @@ html[data-theme='light'] {
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
-  color: var(--hue);
+  /* Hue tinted toward the text colour: readable on both themes (yellow on white was 2.9:1). */
+  color: color-mix(in oklab, var(--hue) 55%, var(--text-primary));
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }
@@ -1142,4 +1143,9 @@ html[data-theme='light'] {
   .ptd-tile strong {
     font-size: 2.25rem;
   }
+}
+
+/* ARIA row wrappers for the grid; they do not affect placement. */
+.pt-grid-row {
+  display: contents;
 }

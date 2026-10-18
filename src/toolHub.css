@@ -851,3 +851,9 @@
 .tool-hub-search input:focus-visible {
   box-shadow: none;
 }
+
+/* .active sets its own shadow (higher specificity than the global ring). */
+.tool-selector-card:focus-visible,
+.tool-selector-card.active:focus-visible {
+  box-shadow: var(--focus-ring);
+}

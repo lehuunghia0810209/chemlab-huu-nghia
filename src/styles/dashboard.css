@@ -416,7 +416,7 @@
 
 .dash-flow button:hover .dash-flow__index {
   border-color: transparent;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: #fff;
   transform: scale(1.06);
 }

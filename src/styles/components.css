@@ -66,8 +66,8 @@
 }
 
 .ui-btn--primary {
-  --btn-bg: var(--accent);
-  --btn-bg-hover: var(--accent-strong);
+  --btn-bg: var(--accent-fill);
+  --btn-bg-hover: var(--accent-fill-hover);
   --btn-fg: var(--text-on-accent);
   --btn-border: transparent;
   box-shadow: var(--shadow-sm);
@@ -325,6 +325,12 @@
   background: var(--surface-2);
   color: var(--text-primary);
   box-shadow: var(--shadow-sm), 0 0 0 1px var(--border-subtle);
+}
+
+.ui-segmented button:focus-visible,
+.ui-segmented button[aria-pressed='true']:focus-visible,
+.ui-segmented button.active:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 /* ---------- input ---------- */

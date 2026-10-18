@@ -489,7 +489,7 @@
 }
 
 .side-badge.reactant {
-  background: var(--accent);
+  background: var(--accent-fill);
 }
 
 .side-badge.product {

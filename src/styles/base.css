@@ -46,7 +46,9 @@ body {
   cursor: not-allowed;
 }
 
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+/* :is() (not :where) so a component's own box-shadow cannot erase the ring;
+   component focus rules with more specific selectors still win. */
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
@@ -84,7 +86,7 @@ body {
   z-index: var(--z-toast);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--text-on-accent);
   font-weight: var(--weight-semibold);
   text-decoration: none;

@@ -202,18 +202,26 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     for (let period = 1; period <= 7; period += 1) {
       pieces.push(`<span class="pt-label pt-label--period" data-label-period="${period}" style="grid-row:${period + 1};grid-column:1" aria-hidden="true">${period}</span>`)
     }
-    pieces.push(`
-      <button class="pt-series" type="button" tabindex="-1" data-series="lanthanide" data-row="7" data-col="4" style="grid-row:7;grid-column:4" aria-label="Họ Lanthanide, nguyên tố 57 đến 71">
-        <span>57–71</span><strong>La–Lu</strong>
-      </button>
-      <button class="pt-series" type="button" tabindex="-1" data-series="actinide" data-row="8" data-col="4" style="grid-row:8;grid-column:4" aria-label="Họ Actinide, nguyên tố 89 đến 103">
-        <span>89–103</span><strong>Ac–Lr</strong>
-      </button>
-      <span class="pt-f-label" style="grid-row:${F_ROW.lanthanide};grid-column:1 / span 3">Họ Lanthanide</span>
-      <span class="pt-f-label" style="grid-row:${F_ROW.actinide};grid-column:1 / span 3">Họ Actinide</span>
-      <div class="pt-preview" data-pt-preview style="grid-row:2 / span 3;grid-column:4 / span 10" aria-hidden="true"></div>
-    `)
-    for (const element of ELEMENTS) pieces.push(cellHTML(element))
+    pieces.push('<div class="pt-preview" data-pt-preview style="grid-row:2 / span 3;grid-column:4 / span 10" aria-hidden="true"></div>')
+
+    // Grid semantics need cells inside rows; rows use display: contents so the CSS grid placement is unchanged.
+    const rows = new Map()
+    const addToRow = (row, html) => rows.set(row, [...(rows.get(row) || []), html])
+    addToRow(7, `
+      <button class="pt-series" type="button" role="gridcell" tabindex="-1" data-series="lanthanide" data-row="7" data-col="4" style="grid-row:7;grid-column:4">
+        <span class="sr-only">Họ Lanthanide, nguyên tố</span><span>57–71</span><strong>La–Lu</strong>
+      </button>`)
+    addToRow(8, `
+      <button class="pt-series" type="button" role="gridcell" tabindex="-1" data-series="actinide" data-row="8" data-col="4" style="grid-row:8;grid-column:4">
+        <span class="sr-only">Họ Actinide, nguyên tố</span><span>89–103</span><strong>Ac–Lr</strong>
+      </button>`)
+    addToRow(F_ROW.lanthanide, `<span class="pt-f-label" role="rowheader" style="grid-row:${F_ROW.lanthanide};grid-column:1 / span 3">Họ Lanthanide</span>`)
+    addToRow(F_ROW.actinide, `<span class="pt-f-label" role="rowheader" style="grid-row:${F_ROW.actinide};grid-column:1 / span 3">Họ Actinide</span>`)
+    for (const element of ELEMENTS) addToRow(gridPosition(element).row, cellHTML(element))
+
+    for (const row of [...rows.keys()].sort((a, b) => a - b)) {
+      pieces.push(`<div class="pt-grid-row" role="row">${rows.get(row).join('')}</div>`)
+    }
     table.innerHTML = pieces.join('')
     syncTabStop()
   }
@@ -436,10 +444,17 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     backdrop.hidden = false
     drawer.hidden = false
     drawer.setAttribute('aria-hidden', 'false')
+    const focusClose = () => drawer.querySelector('[data-ptd-close]')?.focus({ preventScroll: true })
     requestAnimationFrame(() => {
       backdrop.classList.add('is-open')
       drawer.classList.add('open')
-      drawer.querySelector('[data-ptd-close]')?.focus({ preventScroll: true })
+      // Reduced motion forces a 1 ms visibility transition, so the drawer can still be hidden here: retry for a few frames.
+      let tries = 0
+      const tryFocus = () => {
+        focusClose()
+        if (!drawer.contains(document.activeElement) && drawer.classList.contains('open') && tries++ < 10) requestAnimationFrame(tryFocus)
+      }
+      tryFocus()
     })
 
     if (tab === 'ion' || tab === 'isotope') {

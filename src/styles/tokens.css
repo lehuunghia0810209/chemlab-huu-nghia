@@ -125,12 +125,15 @@
 
   --text-primary: #e6edf7;
   --text-secondary: #a9b6ca;
-  --text-muted: #8392a8;
+  --text-muted: #909eb3;
   --text-inverse: #0b1220;
   --text-on-accent: #ffffff;
 
   --accent: var(--blue-500);
   --accent-strong: var(--blue-600);
+  /* Filled controls with white text (≥ 4.5:1) */
+  --accent-fill: var(--blue-600);
+  --accent-fill-hover: var(--blue-700);
   --accent-text: var(--blue-300);
   --accent-soft: rgba(59, 130, 246, .14);
   --accent-2: var(--cyan-400);
@@ -184,6 +187,8 @@ html[data-theme='light'] {
 
   --accent: var(--blue-600);
   --accent-strong: var(--blue-700);
+  --accent-fill: var(--blue-600);
+  --accent-fill-hover: var(--blue-700);
   --accent-text: var(--blue-700);
   --accent-soft: rgba(37, 99, 235, .09);
   --accent-2: var(--cyan-600);
