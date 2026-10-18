@@ -102,6 +102,7 @@ export function initSolubilityTable() {
           <span><i class="soluble"></i> Tan</span>
           <span><i class="slight"></i> Ít tan</span>
           <span><i class="insoluble"></i> Không tan</span>
+          <span><i class="none"></i> — Không tồn tại trong nước</span>
         </div>
       </div>
 
@@ -154,7 +155,39 @@ export function initSolubilityTable() {
     updateResult
   )
 
+  /* Pairs that do not exist in water (SGK table: "–"); the ions
+     react instead of forming the salt. */
+  const NOT_IN_WATER = {
+    'al-co3': '2Al³⁺ + 3CO₃²⁻ + 3H₂O → 2Al(OH)₃↓ + 3CO₂↑',
+    'fe3-co3': '2Fe³⁺ + 3CO₃²⁻ + 3H₂O → 2Fe(OH)₃↓ + 3CO₂↑',
+    'al-s': '2Al³⁺ + 3S²⁻ + 6H₂O → 2Al(OH)₃↓ + 3H₂S↑',
+    'ag-oh': '2Ag⁺ + 2OH⁻ → Ag₂O↓ + H₂O',
+    'fe3-i': '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂ (oxi hóa – khử)',
+    'fe3-s': '2Fe³⁺ + 3S²⁻ → 2FeS↓ + S↓ (oxi hóa – khử)',
+    'cu-i': '2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂ (oxi hóa – khử)'
+  }
+
   function getSolubility(cation, anion) {
+    const reaction = NOT_IN_WATER[`${cation.id}-${anion.id}`]
+    if (reaction) {
+      return result(
+        'none',
+        '—',
+        'Không tồn tại trong nước',
+        `Hai ion phản ứng với nhau (hoặc với nước) thay vì tạo muối: ${reaction}`
+      )
+    }
+
+    // Exceptions to the "alkali salts dissolve" rule (Li₃PO₄ ≈ 0,04 g/100 mL).
+    if (cation.id === 'li' && anion.id === 'po4') {
+      return result(
+        'slight',
+        'Ít tan',
+        'Ít tan trong nước',
+        'Lithium phosphate là ngoại lệ trong muối kim loại kiềm: chỉ tan khoảng 0,04 g trong 100 mL nước.'
+      )
+    }
+
     if (
       cation.group === 'alkali' ||
       cation.group === 'ammonium'
@@ -227,6 +260,15 @@ export function initSolubilityTable() {
           'Ít tan',
           'Ít tan trong nước',
           'Calcium sulfate chỉ tan một lượng nhỏ trong nước.'
+        )
+      }
+
+      if (cation.id === 'ag') {
+        return result(
+          'slight',
+          'Ít tan',
+          'Ít tan trong nước',
+          'Silver sulfate chỉ tan khoảng 0,8 g trong 100 mL nước.'
         )
       }
 
@@ -507,10 +549,10 @@ export function initSolubilityTable() {
                 >
                   <button
                     class="sol-cell ${info.type}"
-                    title="${formula} — ${info.label}"
-                    aria-label="${formula} — ${info.label}"
+                    title="${formula} — ${info.type === 'none' ? info.title : info.label}"
+                    aria-label="${formula} — ${info.type === 'none' ? info.title : info.label}"
                   >
-                    ${formulaHTML(formula)}
+                    ${info.type === 'none' ? '—' : formulaHTML(formula)}
                   </button>
                 </td>
               `

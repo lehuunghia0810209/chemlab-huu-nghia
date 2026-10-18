@@ -371,6 +371,20 @@ async function toolChecks(browser, baseURL) {
   record('reaction studio warns when the balance is not unique (redox)', /Nhiều bộ hệ số/.test(reactionNote), reactionNote)
   await page.click('[data-rs-close]')
 
+  await page.click('.tool-selector [data-tool="solubility"]')
+  const solubility = async (cation, anion) => {
+    await page.selectOption('#sol-cation', cation)
+    await page.selectOption('#sol-anion', anion)
+    return (await page.textContent('#sol-status')).trim()
+  }
+  record('solubility: Ag₂SO₄ is "Ít tan"', (await solubility('ag', 'so4')) === 'Ít tan')
+  record('solubility: Li₃PO₄ is "Ít tan" (alkali exception)', (await solubility('li', 'po4')) === 'Ít tan')
+  record('solubility: BaSO₄ stays "Không tan"', (await solubility('ba', 'so4')) === 'Không tan')
+  const aluminiumCarbonate = await solubility('al', 'co3')
+  const hydrolysis = await page.textContent('#sol-description-text')
+  record('solubility: Al₂(CO₃)₃ marked as not existing in water, with the hydrolysis equation',
+    aluminiumCarbonate === '—' && /Al\(OH\)₃/.test(hydrolysis), `${aluminiumCarbonate} ${hydrolysis}`)
+
   record('console clean in chemistry tools', errors.length === 0, errors.join(' | '))
   await context.close()
 }
