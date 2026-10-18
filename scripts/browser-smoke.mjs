@@ -357,6 +357,52 @@ async function toolChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- virtual lab: pH from moles ---------- */
+async function labPHChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
+  await openView(page, baseURL, 'lab')
+  const add = async (id, volume = 25) => {
+    await page.click(`.reagent-card[data-reagent="${id}"]`)
+    await page.click(`[data-volume="${volume}"]`)
+    await page.click('#add-reagent')
+    await page.waitForTimeout(200)
+  }
+  const read = () => page.evaluate(() => ({
+    pH: document.querySelector('#ph-value').textContent.trim(),
+    mode: document.querySelector('#ph-mode').textContent.trim()
+  }))
+  const litmus = async () => {
+    await page.click('.reagent-card[data-reagent="litmusPaper"]')
+    await page.click('#add-reagent')
+    await page.waitForTimeout(200)
+    return page.textContent('#litmus-paper-label')
+  }
+
+  await add('hcl')
+  const acid = await read()
+  record('lab pH: 25 mL HCl 0.1 M → 1.0 (quantitative)', acid.pH === '1.0' && /số mol/.test(acid.mode), JSON.stringify(acid))
+  record('lab litmus: HCl → red', /đỏ/.test(await litmus()))
+  await add('naoh')
+  const neutral = await read()
+  record('lab pH: + 25 mL NaOH → 7.0', neutral.pH === '7.0', JSON.stringify(neutral))
+  record('lab litmus: equal HCl/NaOH → stays purple', /tím/.test(await litmus()))
+  await add('naoh', 10)
+  const base = await read()
+  record('lab pH: NaOH excess 1 mmol in 60 mL → 12.2', base.pH === '12.2', JSON.stringify(base))
+  record('lab litmus: excess NaOH → blue', /xanh/.test(await litmus()))
+  await page.click('#reset-lab')
+  await page.waitForTimeout(300)
+  const reset = await read()
+  record('lab pH: reset → 7.0, empty beaker', reset.pH === '7.0' && reset.mode === 'Cốc trống', JSON.stringify(reset))
+  await add('ethanoic')
+  const weak = await read()
+  record('lab pH: weak acid shown only as < 7, not as a number', weak.pH === '< 7' && /định tính/.test(weak.mode), JSON.stringify(weak))
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+  record('lab pH meter fits at 390px', overflow <= 1, overflow)
+  record('console clean in lab pH flow', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -367,7 +413,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

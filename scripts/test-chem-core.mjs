@@ -296,6 +296,37 @@ test('every Virtual Lab reaction has Vietnamese display text', () => {
   assert.deepEqual(missing, [])
 })
 
+const { computeAcidBase, solveStrongPH } = await import('../src/lab/acidBase.js')
+const { CHEMICALS } = await import('../src/lab/chemicals.js')
+const catalogue = Array.isArray(CHEMICALS) ? Object.fromEntries(CHEMICALS.map(item => [item.id, item])) : CHEMICALS
+const pHOf = mixture => computeAcidBase(mixture, catalogue)
+const near = (actual, expected, tolerance = 0.01) => assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} ≠ ${expected}`)
+
+test('lab pH: strong acid/base reference cases at 25 °C', () => {
+  near(pHOf({ hcl: 25 }).pH, 1)
+  near(pHOf({ naoh: 25 }).pH, 13)
+  near(pHOf({ water: 50 }).pH, 7)
+  near(pHOf({ hcl: 25, naoh: 25 }).pH, 7)
+  near(pHOf({ hcl: 25, water: 225 }).pH, 2) // tenfold dilution
+  near(pHOf({ hcl: 25, naoh: 10 }).pH, -Math.log10(1.5e-3 / 0.035))
+  near(pHOf({ hcl: 10, naoh: 25 }).pH, 14 + Math.log10(1.5e-3 / 0.035))
+  near(pHOf({ baoh2: 25 }).pH, 14 + Math.log10(0.2))
+  assert.equal(pHOf({}).mode, 'empty')
+  assert.equal(pHOf({ hcl: 25, naoh: 25, phenolphthalein: 1 }).mode, 'quantitative')
+})
+
+test('lab pH: H₂SO₄ second dissociation (Ka₂ = 0.010)', () => {
+  // 0.1 M: [H+] = 0.1 + x, x(0.1 + x)/(0.1 − x) = 0.01 → x ≈ 0.00844
+  near(pHOf({ h2so4: 25 }).pH, -Math.log10(0.10844), 0.005)
+  near(solveStrongPH({}), 7)
+})
+
+test('lab pH: weak acids, bases and hydrolysing salts are flagged as estimates', () => {
+  for (const id of ['ethanoic', 'nh3', 'na2co3', 'nh4cl', 'caoh2']) {
+    assert.equal(pHOf({ [id]: 25 }).mode, 'estimate', id)
+  }
+})
+
 // Word equations (colour tests, R-group notation) cannot be atom-checked.
 const QUALITATIVE_EQUATIONS = new Set([
   'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'

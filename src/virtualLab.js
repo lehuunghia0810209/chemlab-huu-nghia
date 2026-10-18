@@ -12,6 +12,7 @@ import {
 } from './lab/reactions.js'
 import { reactionTitle, reactionDescription, reactionMessage } from './lab/reactionsVi.js'
 import { createBeakerEffects } from './lab/beakerEffects.js'
+import { computeAcidBase } from './lab/acidBase.js'
 
 import {
   findAvailableReactions
@@ -196,9 +197,10 @@ export function initVirtualLab() {
             <div class="bar"><i id="temperature-bar"></i></div>
           </div>
           <div class="meter panel">
-            <span>Độ pH (ước tính)</span>
+            <span>Độ pH</span>
             <strong id="ph-value">7.0</strong>
             <div class="ph-bar"><i id="ph-marker"></i></div>
+            <small id="ph-mode">Nước tinh khiết, 25 °C</small>
           </div>
           <div class="meter panel">
             <span>Dung dịch</span>
@@ -339,6 +341,9 @@ export function initVirtualLab() {
   const phText =
     $('#ph-value')
 
+
+  const phMode =
+    $('#ph-mode')
 
   const phMarker =
     $('#ph-marker')
@@ -2031,7 +2036,7 @@ export function initVirtualLab() {
 
 
     observationText.textContent =
-      `${resultText} pH mô phỏng ≈ ${pH.toFixed(1)}.`
+      `${resultText} ${phSummary()}.`
 
 
     equationText.textContent =
@@ -2058,7 +2063,7 @@ export function initVirtualLab() {
 
 
     addLog(
-      `Giấy quỳ tím: ${result}; pH ≈ ${pH.toFixed(1)}.`
+      `Giấy quỳ tím: ${result}; ${phSummary()}.`
     )
 
 
@@ -3106,61 +3111,23 @@ export function initVirtualLab() {
      PH
   ========================================================= */
 
+  function phSummary() {
+    const { pH, mode } =
+      computeAcidBase(
+        mixture,
+        reagents
+      )
+
+    return mode === 'estimate'
+      ? 'pH chỉ ước tính định tính'
+      : `pH = ${pH.toFixed(1)}`
+  }
+
   function calculatePH() {
-
-    if (
-      !totalVolume
-    ) {
-
-      return 7
-
-    }
-
-
-    let balance =
-      0
-
-
-    Object
-      .entries(
-        mixture
-      )
-      .forEach(
-        (
-          [
-            id,
-            volume
-          ]
-        ) => {
-
-          balance +=
-            Number(
-              reagents[id]
-                ?.acidBase ||
-              0
-            ) *
-            volume
-
-        }
-      )
-
-
-    return clamp(
-
-      7 +
-      balance /
-      Math.max(
-        totalVolume,
-        1
-      ) *
-      6,
-
-      1,
-
-      13
-
-    )
-
+    return computeAcidBase(
+      mixture,
+      reagents
+    ).pH
   }
 
 
@@ -3170,14 +3137,29 @@ export function initVirtualLab() {
 
   function updateDashboard() {
 
-    const pH =
-      calculatePH()
-
-
-    phText.textContent =
-      pH.toFixed(
-        1
+    const acidBase =
+      computeAcidBase(
+        mixture,
+        reagents
       )
+
+    const pH =
+      acidBase.pH
+
+    const [modeLabel, modeTitle] = {
+      empty: ['Cốc trống', 'Chưa có dung dịch trong cốc.'],
+      quantitative: ['Từ số mol · gốc 0,1 M · 25 °C', 'pH tính từ số mol H⁺/OH⁻ của acid/base mạnh (dung dịch gốc 0,1 M), sau khi trung hòa và pha loãng; giả thiết 25 °C, bỏ qua hệ số hoạt độ.'],
+      estimate: ['Chỉ định tính (acid/base yếu, muối)', 'Có acid/base yếu hoặc muối thủy phân: ChemLab chỉ cho biết môi trường acid/base, chưa tính giá trị pH.']
+    }[acidBase.mode]
+
+    phMode.textContent = modeLabel
+    phMode.title = modeTitle
+
+    // An estimate only shows the direction; its number is not a real pH.
+    phText.textContent =
+      acidBase.mode === 'estimate'
+        ? pH < 6.5 ? '< 7' : pH > 7.5 ? '> 7' : '≈ 7'
+        : pH.toFixed(1)
 
 
     phMarker.style.left =
@@ -3261,7 +3243,11 @@ export function initVirtualLab() {
               formatNumber(
                 volume
               )
-            } mL
+            } mL${
+              acidBase.species.some(item => item.id === id)
+                ? ' · 0,1 M'
+                : ''
+            }
           </strong>
 
         `

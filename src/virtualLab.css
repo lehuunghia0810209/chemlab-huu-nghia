@@ -896,6 +896,11 @@
   white-space: nowrap;
 }
 
+#ph-mode {
+  margin-top: 6px;
+  white-space: normal;
+}
+
 .bar {
   height: 6px;
   margin-top: var(--space-3);
