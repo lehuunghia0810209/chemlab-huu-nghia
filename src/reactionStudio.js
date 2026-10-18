@@ -1,3 +1,5 @@
+import { balanceSpecies } from './chem/equation.js'
+import { parseFormula as parseSharedFormula } from './chem/formula.js'
 import { APP_VERSION } from './appMeta.js'
 
 import {
@@ -363,6 +365,37 @@ const REACTION_MAP =
 const STATE_MAP = {
 
   H2O: 'l',
+
+  /* Common gases and insoluble solids the formula heuristic
+     below would otherwise label (aq). */
+  NO: 'g',
+  N2O: 'g',
+  CO: 'g',
+  H2S: 'g',
+  O3: 'g',
+  C2H4: 'g',
+  C2H2: 'g',
+  MnO2: 's',
+  CuO: 's',
+  Cu2O: 's',
+  Fe2O3: 's',
+  Fe3O4: 's',
+  Al2O3: 's',
+  ZnO: 's',
+  MgO: 's',
+  Cu: 's',
+  Ag: 's',
+  Al: 's',
+  I2: 's',
+  AgBr: 's',
+  AgI: 's',
+  CuS: 's',
+  PbSO4: 's',
+  BaCO3: 's',
+  'Mg(OH)2': 's',
+  'Al(OH)3': 's',
+  'Fe(OH)2': 's',
+  'Zn(OH)2': 's',
 
   H2: 'g',
   O2: 'g',
@@ -1084,15 +1117,14 @@ export function openReactionStudio({
          BALANCE
       ================================================= */
 
-      const coefficients =
+      const solution =
         balanceEquation(
           parsed.reactants,
           parsed.products
         )
 
-
       if (
-        !coefficients
+        !solution
       ) {
 
         throw new Error(
@@ -1100,6 +1132,9 @@ export function openReactionStudio({
         )
 
       }
+
+      const coefficients =
+        solution.coefficients
 
 
       const reactantCoefficients =
@@ -1202,8 +1237,15 @@ export function openReactionStudio({
         currentResult
       )
 
-
-      hideMessage()
+      if (solution.unique) {
+        hideMessage()
+      }
+      else {
+        showMessage(
+          'Nhiều bộ hệ số khác nhau đều bảo toàn nguyên tố cho phương trình này; ChemLab hiển thị bộ nhỏ nhất. Với phản ứng oxi hóa – khử, hãy kiểm tra bằng thăng bằng electron trước khi dùng.',
+          'warning'
+        )
+      }
 
     }
 
@@ -2421,73 +2463,8 @@ function balanceEquation(
   reactants,
   products
 ) {
-
-  const species = [
-
-    ...reactants,
-
-    ...products
-
-  ]
-
-
-  const elements =
-    [
-      ...new Set(
-        species.flatMap(
-          item =>
-            [
-              ...item.atoms.keys()
-            ]
-        )
-      )
-    ]
-
-
-  if (
-    !elements.length
-  ) {
-    return null
-  }
-
-
-  const matrix =
-    elements.map(
-      element => {
-
-        return species.map(
-          (
-            item,
-            index
-          ) => {
-
-            const count =
-              item.atoms.get(
-                element
-              ) ||
-              0
-
-
-            return new Fraction(
-              BigInt(
-                index <
-                reactants.length
-                  ? count
-                  : -count
-              )
-            )
-
-          }
-        )
-
-      }
-    )
-
-
-  return nullspacePositiveInteger(
-    matrix
-  )
-
+  const plain = item => ({ atoms: Object.fromEntries(item.atoms) })
+  return balanceSpecies(reactants.map(plain), products.map(plain))
 }
 
 
@@ -2495,732 +2472,30 @@ function balanceEquation(
    NULL SPACE
 ========================================================= */
 
-function nullspacePositiveInteger(
-  matrix
-) {
-
-  const {
-    matrix: rref,
-    pivotColumns
-  } =
-    toRREF(
-      matrix
-    )
-
-
-  const columnCount =
-    matrix[0].length
-
-
-  const freeColumns =
-    []
-
-
-  for (
-    let column =
-      0;
-
-    column <
-      columnCount;
-
-    column++
-  ) {
-
-    if (
-      !pivotColumns.includes(
-        column
-      )
-    ) {
-
-      freeColumns.push(
-        column
-      )
-
-    }
-
-  }
-
-
-  if (
-    !freeColumns.length
-  ) {
-
-    return null
-
-  }
-
-
-  const maxTry =
-    freeColumns.length <=
-      3
-      ? 7
-      : 2
-
-
-  let answer =
-    null
-
-
-  const assignments =
-    Array(
-      freeColumns.length
-    ).fill(1)
-
-
-  function search(
-    index
-  ) {
-
-    if (answer) {
-      return
-    }
-
-
-    if (
-      index ===
-      assignments.length
-    ) {
-
-      const vector =
-        solveFromFree(
-
-          rref,
-
-          pivotColumns,
-
-          freeColumns,
-
-          assignments
-
-        )
-
-
-      const integers =
-        fractionsToIntegers(
-          vector
-        )
-
-
-      if (
-        integers &&
-        integers.every(
-          value =>
-            value >
-            0
-        )
-      ) {
-
-        answer =
-          integers
-
-      }
-
-
-      return
-
-    }
-
-
-    for (
-      let value =
-        1;
-
-      value <=
-        maxTry;
-
-      value++
-    ) {
-
-      assignments[index] =
-        value
-
-
-      search(
-        index + 1
-      )
-
-
-      if (answer) {
-        return
-      }
-
-    }
-
-  }
-
-
-  search(0)
-
-
-  return answer
-
-}
 
 
 /* =========================================================
    RREF
 ========================================================= */
 
-function toRREF(
-  source
-) {
-
-  const matrix =
-    source.map(
-      row =>
-        row.map(
-          value =>
-            value.clone()
-        )
-    )
-
-
-  const rows =
-    matrix.length
-
-
-  const columns =
-    matrix[0].length
-
-
-  const pivotColumns =
-    []
-
-
-  let pivotRow =
-    0
-
-
-  for (
-    let column =
-      0;
-
-    column <
-      columns &&
-    pivotRow <
-      rows;
-
-    column++
-  ) {
-
-    let row =
-      pivotRow
-
-
-    while (
-      row <
-        rows &&
-      matrix[row][column]
-        .isZero()
-    ) {
-
-      row++
-
-    }
-
-
-    if (
-      row ===
-      rows
-    ) {
-
-      continue
-
-    }
-
-
-    if (
-      row !==
-      pivotRow
-    ) {
-
-      [
-        matrix[row],
-        matrix[pivotRow]
-      ] = [
-        matrix[pivotRow],
-        matrix[row]
-      ]
-
-    }
-
-
-    const pivot =
-      matrix[
-        pivotRow
-      ][column]
-
-
-    for (
-      let c =
-        0;
-
-      c <
-        columns;
-
-      c++
-    ) {
-
-      matrix[pivotRow][c] =
-        matrix[pivotRow][c]
-          .div(
-            pivot
-          )
-
-    }
-
-
-    for (
-      let r =
-        0;
-
-      r <
-        rows;
-
-      r++
-    ) {
-
-      if (
-        r ===
-        pivotRow
-      ) {
-        continue
-      }
-
-
-      const factor =
-        matrix[r][column]
-
-
-      if (
-        factor.isZero()
-      ) {
-        continue
-      }
-
-
-      for (
-        let c =
-          0;
-
-        c <
-          columns;
-
-        c++
-      ) {
-
-        matrix[r][c] =
-          matrix[r][c]
-            .sub(
-
-              factor.mul(
-                matrix[
-                  pivotRow
-                ][c]
-              )
-
-            )
-
-      }
-
-    }
-
-
-    pivotColumns.push(
-      column
-    )
-
-
-    pivotRow++
-
-  }
-
-
-  return {
-    matrix,
-    pivotColumns
-  }
-
-}
 
 
 /* =========================================================
    SOLVE FREE VARIABLES
 ========================================================= */
 
-function solveFromFree(
-  rref,
-  pivotColumns,
-  freeColumns,
-  assignments
-) {
-
-  const columnCount =
-    rref[0].length
-
-
-  const vector =
-    Array.from(
-      {
-        length:
-          columnCount
-      },
-      () =>
-        new Fraction(0n)
-    )
-
-
-  freeColumns.forEach(
-    (
-      column,
-      index
-    ) => {
-
-      vector[column] =
-        new Fraction(
-          BigInt(
-            assignments[index]
-          )
-        )
-
-    }
-  )
-
-
-  for (
-    let row =
-      pivotColumns.length -
-      1;
-
-    row >=
-      0;
-
-    row--
-  ) {
-
-    const pivotColumn =
-      pivotColumns[row]
-
-
-    let sum =
-      new Fraction(0n)
-
-
-    for (
-      const freeColumn
-      of freeColumns
-    ) {
-
-      sum =
-        sum.add(
-
-          rref[row][freeColumn]
-            .mul(
-              vector[
-                freeColumn
-              ]
-            )
-
-        )
-
-    }
-
-
-    vector[pivotColumn] =
-      sum.neg()
-
-  }
-
-
-  return vector
-
-}
 
 
 /* =========================================================
    FRACTIONS -> INTEGER
 ========================================================= */
 
-function fractionsToIntegers(
-  vector
-) {
-
-  let commonDenominator =
-    1n
-
-
-  for (
-    const value
-    of vector
-  ) {
-
-    commonDenominator =
-      lcmBigInt(
-
-        commonDenominator,
-
-        value.denominator
-
-      )
-
-  }
-
-
-  let integers =
-    vector.map(
-      value =>
-        Number(
-
-          value.numerator *
-          (
-            commonDenominator /
-            value.denominator
-          )
-
-        )
-    )
-
-
-  if (
-    integers.every(
-      value =>
-        value <
-        0
-    )
-  ) {
-
-    integers =
-      integers.map(
-        value =>
-          -value
-      )
-
-  }
-
-
-  if (
-    integers.some(
-      value =>
-        !Number.isFinite(
-          value
-        ) ||
-        value ===
-        0
-    )
-  ) {
-
-    return null
-
-  }
-
-
-  let gcd =
-    Math.abs(
-      integers[0]
-    )
-
-
-  for (
-    let index =
-      1;
-
-    index <
-      integers.length;
-
-    index++
-  ) {
-
-    gcd =
-      gcdNumber(
-        gcd,
-        Math.abs(
-          integers[index]
-        )
-      )
-
-  }
-
-
-  if (
-    gcd >
-    1
-  ) {
-
-    integers =
-      integers.map(
-        value =>
-          value /
-          gcd
-      )
-
-  }
-
-
-  return integers
-
-}
 
 
 /* =========================================================
    FRACTION CLASS
 ========================================================= */
 
-class Fraction {
-
-  constructor(
-    numerator,
-    denominator = 1n
-  ) {
-
-    if (
-      denominator ===
-      0n
-    ) {
-
-      throw new Error(
-        'Division by zero'
-      )
-
-    }
-
-
-    if (
-      denominator <
-      0n
-    ) {
-
-      numerator =
-        -numerator
-
-      denominator =
-        -denominator
-
-    }
-
-
-    const gcd =
-      gcdBigInt(
-        absBigInt(
-          numerator
-        ),
-        denominator
-      )
-
-
-    this.numerator =
-      numerator /
-      gcd
-
-
-    this.denominator =
-      denominator /
-      gcd
-
-  }
-
-
-  clone() {
-
-    return new Fraction(
-      this.numerator,
-      this.denominator
-    )
-
-  }
-
-
-  add(
-    other
-  ) {
-
-    return new Fraction(
-
-      this.numerator *
-      other.denominator +
-
-      other.numerator *
-      this.denominator,
-
-      this.denominator *
-      other.denominator
-
-    )
-
-  }
-
-
-  sub(
-    other
-  ) {
-
-    return new Fraction(
-
-      this.numerator *
-      other.denominator -
-
-      other.numerator *
-      this.denominator,
-
-      this.denominator *
-      other.denominator
-
-    )
-
-  }
-
-
-  mul(
-    other
-  ) {
-
-    return new Fraction(
-
-      this.numerator *
-      other.numerator,
-
-      this.denominator *
-      other.denominator
-
-    )
-
-  }
-
-
-  div(
-    other
-  ) {
-
-    return new Fraction(
-
-      this.numerator *
-      other.denominator,
-
-      this.denominator *
-      other.numerator
-
-    )
-
-  }
-
-
-  neg() {
-
-    return new Fraction(
-      -this.numerator,
-      this.denominator
-    )
-
-  }
-
-
-  isZero() {
-
-    return this.numerator ===
-      0n
-
-  }
-
-}
 
 
 /* =========================================================
@@ -3933,94 +3208,8 @@ function ratioChip(
    PARSE FORMULA
 ========================================================= */
 
-function parseFormula(
-  formula
-) {
-
-  const parts =
-    formula.split(
-      /[·.]/g
-    )
-
-
-  const total =
-    new Map()
-
-
-  for (
-    let part
-    of parts
-  ) {
-
-    if (!part) {
-      continue
-    }
-
-
-    let multiplier =
-      1
-
-
-    const coefficient =
-      part.match(
-        /^(\d+)(?=[A-Z([{])/
-      )
-
-
-    if (
-      coefficient
-    ) {
-
-      multiplier =
-        Number(
-          coefficient[1]
-        )
-
-
-      part =
-        part.slice(
-          coefficient[1]
-            .length
-        )
-
-    }
-
-
-    const parsed =
-      parseFormulaPart(
-        part
-      )
-
-
-    parsed.forEach(
-      (
-        count,
-        symbol
-      ) => {
-
-        total.set(
-
-          symbol,
-
-          (
-            total.get(
-              symbol
-            ) ||
-            0
-          ) +
-          count *
-          multiplier
-
-        )
-
-      }
-    )
-
-  }
-
-
-  return total
-
+function parseFormula(formula) {
+  return new Map(Object.entries(parseSharedFormula(formula)))
 }
 
 
@@ -4028,306 +3217,12 @@ function parseFormula(
    FORMULA PART
 ========================================================= */
 
-function parseFormulaPart(
-  formula
-) {
-
-  const stack = [
-    new Map()
-  ]
-
-
-  const brackets =
-    []
-
-
-  let index =
-    0
-
-
-  while (
-    index <
-    formula.length
-  ) {
-
-    const char =
-      formula[index]
-
-
-    /* OPEN */
-
-    if (
-      char === '(' ||
-      char === '[' ||
-      char === '{'
-    ) {
-
-      stack.push(
-        new Map()
-      )
-
-
-      brackets.push(
-        char
-      )
-
-
-      index++
-
-      continue
-
-    }
-
-
-    /* CLOSE */
-
-    if (
-      char === ')' ||
-      char === ']' ||
-      char === '}'
-    ) {
-
-      if (
-        stack.length ===
-        1
-      ) {
-
-        throw new Error(
-          'Ngoặc trong công thức không hợp lệ.'
-        )
-
-      }
-
-
-      const open =
-        brackets.pop()
-
-
-      if (
-        !bracketsMatch(
-          open,
-          char
-        )
-      ) {
-
-        throw new Error(
-          'Ngoặc trong công thức không khớp.'
-        )
-
-      }
-
-
-      const group =
-        stack.pop()
-
-
-      index++
-
-
-      const number =
-        readNumber(
-          formula,
-          index
-        )
-
-
-      index =
-        number.next
-
-
-      const parent =
-        stack[
-          stack.length -
-          1
-        ]
-
-
-      group.forEach(
-        (
-          count,
-          symbol
-        ) => {
-
-          parent.set(
-
-            symbol,
-
-            (
-              parent.get(
-                symbol
-              ) ||
-              0
-            ) +
-            count *
-            number.value
-
-          )
-
-        }
-      )
-
-
-      continue
-
-    }
-
-
-    /* ELEMENT */
-
-    if (
-      /[A-Z]/.test(
-        char
-      )
-    ) {
-
-      let symbol =
-        char
-
-
-      index++
-
-
-      if (
-        index <
-          formula.length &&
-        /[a-z]/.test(
-          formula[index]
-        )
-      ) {
-
-        symbol +=
-          formula[index]
-
-
-        index++
-
-      }
-
-
-      if (
-        !ELEMENT_MASS.has(
-          symbol
-        )
-      ) {
-
-        throw new Error(
-          `"${symbol}" không phải ký hiệu nguyên tố hợp lệ.`
-        )
-
-      }
-
-
-      const number =
-        readNumber(
-          formula,
-          index
-        )
-
-
-      index =
-        number.next
-
-
-      const current =
-        stack[
-          stack.length -
-          1
-        ]
-
-
-      current.set(
-
-        symbol,
-
-        (
-          current.get(
-            symbol
-          ) ||
-          0
-        ) +
-        number.value
-
-      )
-
-
-      continue
-
-    }
-
-
-    throw new Error(
-      `Ký tự "${char}" không hợp lệ trong công thức.`
-    )
-
-  }
-
-
-  if (
-    stack.length !==
-    1
-  ) {
-
-    throw new Error(
-      'Công thức còn ngoặc chưa đóng.'
-    )
-
-  }
-
-
-  return stack[0]
-
-}
 
 
 /* =========================================================
    NUMBER
 ========================================================= */
 
-function readNumber(
-  formula,
-  start
-) {
-
-  let digits =
-    ''
-
-
-  let index =
-    start
-
-
-  while (
-    index <
-      formula.length &&
-    /\d/.test(
-      formula[index]
-    )
-  ) {
-
-    digits +=
-      formula[index]
-
-
-    index++
-
-  }
-
-
-  return {
-
-    value:
-      digits
-        ? Number(
-            digits
-          )
-        : 1,
-
-    next:
-      index
-
-  }
-
-}
 
 
 /* =========================================================
@@ -4396,133 +3291,18 @@ function normalizeFormulaInput(
    BRACKETS
 ========================================================= */
 
-function bracketsMatch(
-  open,
-  close
-) {
-
-  return (
-    (
-      open === '(' &&
-      close === ')'
-    ) ||
-    (
-      open === '[' &&
-      close === ']'
-    ) ||
-    (
-      open === '{' &&
-      close === '}'
-    )
-  )
-
-}
 
 
 /* =========================================================
    GCD
 ========================================================= */
 
-function gcdNumber(
-  a,
-  b
-) {
-
-  a =
-    Math.abs(
-      Math.round(a)
-    )
 
 
-  b =
-    Math.abs(
-      Math.round(b)
-    )
 
 
-  while (b) {
-
-    [
-      a,
-      b
-    ] = [
-      b,
-      a % b
-    ]
-
-  }
 
 
-  return a || 1
-
-}
-
-
-function absBigInt(
-  value
-) {
-
-  return value <
-    0n
-    ? -value
-    : value
-
-}
-
-
-function gcdBigInt(
-  a,
-  b
-) {
-
-  if (
-    a ===
-    0n
-  ) {
-
-    return b ||
-    1n
-
-  }
-
-
-  while (
-    b !==
-    0n
-  ) {
-
-    [
-      a,
-      b
-    ] = [
-      b,
-      a % b
-    ]
-
-  }
-
-
-  return a ||
-  1n
-
-}
-
-
-function lcmBigInt(
-  a,
-  b
-) {
-
-  return (
-    a /
-    gcdBigInt(
-      a,
-      b
-    )
-  ) *
-  b
-
-}
 
 
 /* =========================================================

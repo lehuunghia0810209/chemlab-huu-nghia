@@ -236,6 +236,11 @@ test('formula parser: subscripts, brackets, hydrates', () => {
   assert.deepEqual(parseFormula('K4[Fe(CN)6]'), { K: 4, Fe: 1, C: 6, N: 6 })
   assert.deepEqual(parseFormula('Cu(OH)₂↓'), { Cu: 1, O: 2, H: 2 })
   assert.deepEqual(parseFormula('NaCl(aq)'), { Na: 1, Cl: 1 })
+  // Inputs the old per-tool parsers accepted
+  assert.deepEqual(parseFormula('CuSO4.5H2O'), parseFormula('CuSO₄·5H₂O'))
+  assert.deepEqual(parseFormula('CuSO4∙5H2O'), parseFormula('CuSO₄·5H₂O'))
+  assert.deepEqual(parseFormula('Ca{OH}2'), { Ca: 1, O: 2, H: 2 })
+  assert.deepEqual(parseFormula(' H2 SO4 '), { H: 2, S: 1, O: 4 })
 })
 
 test('formula parser rejects unknown symbols and broken brackets', () => {
