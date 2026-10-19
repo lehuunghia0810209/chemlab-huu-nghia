@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **336** in 13/21 chapters; lessons with ≥ 6 questions: 48/78.
-- By type: single 89 · multiple 48 · truefalse 48 · short 48 · numeric 103.
-- By difficulty: Nhận biết 64 · Thông hiểu 119 · Vận dụng 105 · Vận dụng cao 48.
-- Verification: internal 336 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **357** in 14/21 chapters; lessons with ≥ 6 questions: 51/78.
+- By type: single 94 · multiple 51 · truefalse 51 · short 51 · numeric 110.
+- By difficulty: Nhận biết 66 · Thông hiểu 126 · Vận dụng 113 · Vận dụng cao 52.
+- Verification: internal 357 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -67,9 +67,9 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g11-l23 Hợp chất carbonyl | 7 | 1 | 1 | 1 | 1 | 3 |
 | g11-l24 Carboxylic acid | 7 | 1 | 1 | 1 | 1 | 3 |
 | g11-l25 Ôn tập chương 6 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g12-l1 Ester – Lipid | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l2 Xà phòng và chất giặt rửa | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l3 Ôn tập chương 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g12-l1 Ester – Lipid | 7 | 1 | 1 | 1 | 1 | 3 |
+| g12-l2 Xà phòng và chất giặt rửa | 7 | 2 | 1 | 1 | 1 | 2 |
+| g12-l3 Ôn tập chương 1 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l4 Giới thiệu về carbohydrate. Glucose và fructose | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l5 Saccharose và maltose | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l6 Tinh bột và cellulose | 0 | 0 | 0 | 0 | 0 | 0 |

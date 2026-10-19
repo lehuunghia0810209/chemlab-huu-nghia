@@ -758,7 +758,7 @@ async function learningLegacyData(browser, baseURL) {
   await page.waitForSelector('#lx-step-title')
   record('learning: g10-l23, missing in 6.3, now opens as a full lesson',
     await page.evaluate(() => /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status').textContent)))
-  await page.evaluate(() => { location.hash = '#learning/lesson/g12-l1' })
+  await page.evaluate(() => { location.hash = '#learning/lesson/g12-l29' })
   await page.waitForSelector('#lx-step-title')
   record('learning: a lesson still on short content is readable step by step and labelled as such',
     await page.evaluate(() => /Bản rút gọn/.test(document.querySelector('.lx-reader__status').textContent) && document.querySelectorAll('.lx-steps li').length > 2))
