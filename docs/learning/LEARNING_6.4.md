@@ -63,6 +63,7 @@ src/learning/
 | 5 | Hóa 10, Chương 6–7 (**Hóa 10 hoàn tất 23/23**) | g10-l19 … g10-l23 (g10-l23 trước đây chỉ có trong danh mục) | 35 (Bài 19–23) | check:learning PASS (182 + 267), build PASS, browser 261/261, a11y PASS. Sửa: hoàn thành thí nghiệm Lab của 6.2 vẫn được tính khi bài có nội dung đầy đủ (nhãn “Đã làm thí nghiệm”); phương trình dài xuống dòng trên điện thoại |
 | 6 | Hóa 11, Chương 1 | g11-l2, g11-l3 (+ câu hỏi cho g11-l1) | 21 (Bài 1–3) | check:learning PASS (188 + 296), build PASS, browser 261/261, a11y PASS |
 | 7 | Hóa 11, Chương 2 | g11-l4 … g11-l9 | 42 (Bài 4–9) | check:learning PASS (194 + 352), build PASS, browser 261/261, a11y PASS |
+| 8 | Hóa 11, Chương 3 | g11-l10 … g11-l14 | 35 (Bài 10–14) | check:learning PASS (199 + 399), build PASS, browser 261/261, a11y PASS. Lưu ý: Compound Studio chỉ có mô hình 3D cho 14 phân tử đơn giản (H₂…C₂H₂); hoạt động với chất hữu cơ dùng phần “Thành phần nguyên tố” |
 
 ## 5. Checkpoint — how to continue
 

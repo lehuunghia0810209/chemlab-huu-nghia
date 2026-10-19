@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **224** in 9/21 chapters; lessons with ≥ 6 questions: 32/78.
-- By type: single 61 · multiple 32 · truefalse 32 · short 32 · numeric 67.
-- By difficulty: Nhận biết 45 · Thông hiểu 79 · Vận dụng 69 · Vận dụng cao 31.
-- Verification: internal 224 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **259** in 10/21 chapters; lessons with ≥ 6 questions: 37/78.
+- By type: single 71 · multiple 37 · truefalse 37 · short 37 · numeric 77.
+- By difficulty: Nhận biết 53 · Thông hiểu 91 · Vận dụng 80 · Vận dụng cao 35.
+- Verification: internal 259 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -51,11 +51,11 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g11-l7 Sulfur và sulfur dioxide | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l8 Sulfuric acid và muối sulfate | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l9 Ôn tập chương 2 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g11-l10 Hợp chất hữu cơ và hóa học hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l11 Phương pháp tách biệt và tinh chế hợp chất hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l12 Công thức phân tử hợp chất hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l13 Cấu tạo hóa học hợp chất hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l14 Ôn tập chương 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g11-l10 Hợp chất hữu cơ và hóa học hữu cơ | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l11 Phương pháp tách biệt và tinh chế hợp chất hữu cơ | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l12 Công thức phân tử hợp chất hữu cơ | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l13 Cấu tạo hóa học hợp chất hữu cơ | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l14 Ôn tập chương 3 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l15 Alkane | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l16 Hydrocarbon không no | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l17 Arene (Hydrocarbon thơm) | 0 | 0 | 0 | 0 | 0 | 0 |
