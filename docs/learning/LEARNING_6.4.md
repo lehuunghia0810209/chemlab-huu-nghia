@@ -66,6 +66,7 @@ src/learning/
 | 8 | Hóa 11, Chương 3 | g11-l10 … g11-l14 | 35 (Bài 10–14) | check:learning PASS (199 + 399), build PASS, browser 261/261, a11y PASS. Lưu ý: Compound Studio chỉ có mô hình 3D cho 14 phân tử đơn giản (H₂…C₂H₂); hoạt động với chất hữu cơ dùng phần “Thành phần nguyên tố” |
 | 9 | Hóa 11, Chương 4 | g11-l15 … g11-l18 | 28 (Bài 15–18) | check:learning PASS (203 + 437), build PASS, browser 261/261, a11y PASS |
 | 10 | Hóa 11, Chương 5 | g11-l19 … g11-l22 | 28 (Bài 19–22) | check:learning PASS (207 + 475), build PASS, browser 261/261, a11y PASS; 4 bài mới và trang luyện tập của từng bài đã mở trong Chrome, không lỗi console |
+| 11 | Hóa 11, Chương 6 (**Hóa 11 hoàn tất 25/25**) | g11-l23 … g11-l25 | 21 (Bài 23–25) | check:learning PASS (210 + 504), build PASS, browser 261/261, a11y PASS; 3 bài mới + trang luyện tập mở trong Chrome không lỗi; ảnh 390 px bước “Tính chất hóa học” bài 23 đã xem (phương trình dài xuống dòng, không tràn ngang) |
 
 ## 5. Checkpoint — how to continue
 

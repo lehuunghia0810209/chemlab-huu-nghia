@@ -6,7 +6,7 @@ import { GRADES, findLesson } from './catalog.js'
 // Chapters whose question file exists. Add an ID with its file.
 export const QUESTION_CHAPTERS = new Set([
   'g10-c1', 'g10-c2', 'g10-c3', 'g10-c4', 'g10-c5', 'g10-c6', 'g10-c7',
-  'g11-c1', 'g11-c2', 'g11-c3', 'g11-c4', 'g11-c5'
+  'g11-c1', 'g11-c2', 'g11-c3', 'g11-c4', 'g11-c5', 'g11-c6'
 ])
 
 const DEFAULT_SOURCE = 'ChemLab — biên soạn theo Chương trình GDPT 2018 và SGK Hóa học Kết nối tri thức với cuộc sống'
