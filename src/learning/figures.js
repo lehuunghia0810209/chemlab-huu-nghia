@@ -119,7 +119,31 @@ const lewis = `
   </g>
 </svg>`
 
+const enthalpy = `
+<svg viewBox="0 0 420 220" role="img" aria-labelledby="fig-dh-t">
+  <title id="fig-dh-t">Sơ đồ biến thiên enthalpy. Phản ứng tỏa nhiệt: mức enthalpy của sản phẩm thấp hơn chất đầu, ΔrH âm. Phản ứng thu nhiệt: mức enthalpy của sản phẩm cao hơn chất đầu, ΔrH dương.</title>
+  <path class="lx-fig-axis" d="M30 20 V190 H200 M230 20 V190 H400"/>
+  <text class="lx-fig-muted" x="34" y="16">Enthalpy</text>
+  <text class="lx-fig-muted" x="234" y="16">Enthalpy</text>
+  <path class="lx-fig-level" d="M50 60 H120 M110 150 H180"/>
+  <path class="lx-fig-level" d="M250 150 H320 M310 60 H380"/>
+  <path class="lx-fig-arrow" d="M100 64 V144 M94 136 L100 144 L106 136"/>
+  <path class="lx-fig-arrow" d="M300 146 V66 M294 74 L300 66 L306 74"/>
+  <text class="lx-fig-text" x="50" y="52">Chất đầu</text>
+  <text class="lx-fig-text" x="110" y="172">Sản phẩm</text>
+  <text class="lx-fig-text" x="250" y="172">Chất đầu</text>
+  <text class="lx-fig-text" x="310" y="52">Sản phẩm</text>
+  <text class="lx-fig-muted" x="108" y="108">ΔrH &lt; 0</text>
+  <text class="lx-fig-muted" x="308" y="108">ΔrH &gt; 0</text>
+  <text class="lx-fig-text" x="115" y="210" text-anchor="middle">Tỏa nhiệt</text>
+  <text class="lx-fig-text" x="315" y="210" text-anchor="middle">Thu nhiệt</text>
+</svg>`
+
 export const FIGURES = {
+  'enthalpy-diagram': {
+    svg: enthalpy,
+    caption: 'Sơ đồ biến thiên enthalpy (định tính). Phản ứng tỏa nhiệt giải phóng năng lượng ra môi trường nên enthalpy của hệ giảm; phản ứng thu nhiệt nhận năng lượng nên enthalpy của hệ tăng.'
+  },
   'lewis-structures': {
     svg: lewis,
     caption: 'Công thức Lewis: mỗi gạch nối là một cặp electron dùng chung, mỗi cặp chấm là một cặp electron hóa trị riêng (chưa liên kết). Mọi nguyên tử O, N, C đều có 8 electron xung quanh; H có 2.'

@@ -13,7 +13,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 7 | 23 | 14 | 8 | 1 |
+| 10 | 7 | 23 | 18 | 4 | 1 |
 | 11 | 6 | 25 | 1 | 24 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
@@ -37,10 +37,10 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 10 | 3. Liên kết hóa học | 12. Liên kết cộng hóa trị | 5 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l12` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 3. Liên kết hóa học | 13. Liên kết hydrogen và tương tác Van der Waals | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l13` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 3. Liên kết hóa học | 14. Ôn tập chương 3 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l14` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 10 | 4. Phản ứng oxi hóa - khử | 15. Phản ứng oxi hóa - khử | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l15` | Nội dung cũ, chưa rà soát lại |
-| 10 | 4. Phản ứng oxi hóa - khử | 16. Ôn tập chương 4 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l16` | Nội dung cũ, chưa rà soát lại |
-| 10 | 5. Năng lượng hóa học | 17. Biến thiên enthalpy trong các phản ứng hóa học | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l17` | Nội dung cũ, chưa rà soát lại |
-| 10 | 5. Năng lượng hóa học | 18. Ôn tập chương 5 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l18` | Nội dung cũ, chưa rà soát lại |
+| 10 | 4. Phản ứng oxi hóa - khử | 15. Phản ứng oxi hóa - khử | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l15` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 4. Phản ứng oxi hóa - khử | 16. Ôn tập chương 4 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l16` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 5. Năng lượng hóa học | 17. Biến thiên enthalpy trong các phản ứng hóa học | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l17` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 5. Năng lượng hóa học | 18. Ôn tập chương 5 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l18` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 6. Tốc độ phản ứng | 19. Tốc độ phản ứng | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l19` | Nội dung cũ, chưa rà soát lại |
 | 10 | 6. Tốc độ phản ứng | 20. Ôn tập chương 6 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l20` | Nội dung cũ, chưa rà soát lại |
 | 10 | 7. Nguyên tố nhóm halogen | 21. Nhóm halogen | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l21` | Nội dung cũ, chưa rà soát lại |

@@ -190,6 +190,19 @@ check('g11-l1: KC = 54 gives x ≈ 0,393 M', near(x, 0.393, 0.0005), x.toFixed(4
 check('g11-l1: [HI] ≈ 0,786 M and [H₂] ≈ 0,107 M', near(2 * x, 0.786, 0.001) && near(0.5 - x, 0.107, 0.001))
 check('g11-l1: NH₃ synthesis Δn(gas) = 2 − 4', 2 - (1 + 3) === -2)
 
+const { FORMATION_ENTHALPY: H } = await import('../src/learning/lessons/g10-l17.js')
+const round1 = value => Math.round(value * 10) / 10
+check('g10-l17: CH₄ combustion (liquid water) = −890,3 kJ', round1(H['CO₂(g)'] + 2 * H['H₂O(l)'] - H['CH₄(g)']) === -890.3)
+check('g10-l17: CaCO₃ decomposition = +178,3 kJ', round1(H['CaO(s)'] + H['CO₂(g)'] - H['CaCO₃(s)']) === 178.3)
+check('g10-l17: H₂ + Cl₂ from bond energies = −185 kJ', 436 + 243 - 2 * 432 === -185)
+check('g10-l17: 2H₂ + O₂ → 2H₂O(l) = −571,6 kJ', round1(2 * H['H₂O(l)']) === -571.6)
+check('g10-l18: C₂H₄ combustion = −1411,0 kJ', round1(2 * H['CO₂(g)'] + 2 * H['H₂O(l)'] - H['C₂H₄(g)']) === -1411)
+check('g10-l18: CH₄ combustion (gaseous water) = −802,3 kJ', round1(H['CO₂(g)'] + 2 * H['H₂O(g)'] - H['CH₄(g)']) === -802.3)
+check('g10-l18: same from bond energies = −802 kJ', 4 * 414 + 2 * 498 - (2 * 799 + 4 * 464) === -802)
+check('g10-l18: N₂ + O₂ → 2NO = 2 × ΔfH(NO)', round1(2 * H['NO(g)']) === 180.6)
+check('g10-l18: 3,2 g CH₄ releases 178,06 kJ', Math.abs(3.2 / 16 * 890.3 - 178.06) < 1e-9)
+check('g10-l16: 5,6 g Fe → 0,1 mol NO → 2,479 L', Math.abs(5.6 / 56 * 3 / 3 * 24.79 - 2.479) < 1e-9)
+
 const potential = pair => STANDARD_POTENTIALS.find(([name]) => name === pair)[2]
 const emf = (cathode, anode) => Math.round((potential(cathode) - potential(anode)) * 100) / 100
 check('g12-l15: E°(Zn–Cu) = 1,10 V', emf('Cu²⁺/Cu', 'Zn²⁺/Zn') === 1.1)

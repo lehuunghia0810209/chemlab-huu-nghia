@@ -59,6 +59,7 @@ src/learning/
 | 1 | Hóa 10, Chương 1 | g10-l2, g10-l3, g10-l4 | 28 (Bài 1–4) | check:learning PASS, browser 261/261, a11y 72 scans PASS |
 | 2 | Hóa 10, Chương 2 | g10-l5 … g10-l9 | 35 (Bài 5–9) | check:learning PASS (157 + 131), build PASS, browser 261/261, a11y PASS; fixed inline bold in callouts and mistakes |
 | 3 | Hóa 10, Chương 3 | g10-l10 … g10-l14 (+ hình tinh thể NaCl, công thức Lewis) | 35 (Bài 10–14) | check:learning PASS (162 + 178), build PASS, browser 261/261, a11y PASS |
+| 4 | Hóa 10, Chương 4–5 | g10-l15 … g10-l18 (+ sơ đồ enthalpy) | 28 (Bài 15–18) | check:learning PASS (176 + 218), build PASS, browser 261/261, a11y PASS; bảng gọn hơn trên điện thoại |
 
 ## 5. Checkpoint — how to continue
 

@@ -749,6 +749,7 @@ html[data-theme='light'] .lx-steps .is-learned .lx-steps__mark {
 .lx-fig-bond { fill: none; stroke: var(--text-primary); stroke-width: 2; }
 .lx-fig-atom { fill: var(--text-primary); font: 600 18px var(--font-sans); }
 .lx-fig-dot { fill: var(--text-primary); }
+.lx-fig-level { fill: none; stroke: var(--text-primary); stroke-width: 3; }
 .lx-fig-cl { fill: #22a06b; }
 .lx-fig-text { fill: var(--text-primary); font: 600 13px var(--font-sans); }
 .lx-fig-muted { fill: var(--text-secondary); font: 400 12px var(--font-sans); }
@@ -1154,6 +1155,20 @@ html[data-theme='light'] .lx-quiz__verdict.is-wrong {
 
   .lx-worked {
     padding: var(--space-4);
+  }
+
+  .lx-table table {
+    font-size: var(--text-sm);
+  }
+
+  .lx-table th,
+  .lx-table td {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .lx-table tbody th,
+  .lx-table thead th {
+    white-space: normal;
   }
 
   .lx-step__nav .ui-btn {

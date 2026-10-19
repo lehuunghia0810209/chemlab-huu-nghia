@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **98** in 3/21 chapters; lessons with ≥ 6 questions: 14/78.
-- By type: single 28 · multiple 14 · truefalse 14 · short 14 · numeric 28.
-- By difficulty: Nhận biết 17 · Thông hiểu 40 · Vận dụng 29 · Vận dụng cao 12.
-- Verification: internal 98 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **126** in 5/21 chapters; lessons with ≥ 6 questions: 18/78.
+- By type: single 35 · multiple 18 · truefalse 18 · short 18 · numeric 37.
+- By difficulty: Nhận biết 22 · Thông hiểu 48 · Vận dụng 39 · Vận dụng cao 17.
+- Verification: internal 126 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -33,10 +33,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g10-l12 Liên kết cộng hóa trị | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l13 Liên kết hydrogen và tương tác Van der Waals | 7 | 3 | 1 | 1 | 1 | 1 |
 | g10-l14 Ôn tập chương 3 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g10-l15 Phản ứng oxi hóa - khử | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l16 Ôn tập chương 4 | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l17 Biến thiên enthalpy trong các phản ứng hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l18 Ôn tập chương 5 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g10-l15 Phản ứng oxi hóa - khử | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l16 Ôn tập chương 4 | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l17 Biến thiên enthalpy trong các phản ứng hóa học | 7 | 1 | 1 | 1 | 1 | 3 |
+| g10-l18 Ôn tập chương 5 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l19 Tốc độ phản ứng | 0 | 0 | 0 | 0 | 0 | 0 |
 | g10-l20 Ôn tập chương 6 | 0 | 0 | 0 | 0 | 0 | 0 |
 | g10-l21 Nhóm halogen | 0 | 0 | 0 | 0 | 0 | 0 |
