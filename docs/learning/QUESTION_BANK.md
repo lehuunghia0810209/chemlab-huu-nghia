@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **413** in 16/21 chapters; lessons with ≥ 6 questions: 59/78.
-- By type: single 105 · multiple 59 · truefalse 59 · short 56 · numeric 134.
-- By difficulty: Nhận biết 72 · Thông hiểu 149 · Vận dụng 130 · Vận dụng cao 62.
-- Verification: internal 413 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **434** in 17/21 chapters; lessons with ≥ 6 questions: 62/78.
+- By type: single 110 · multiple 62 · truefalse 62 · short 59 · numeric 141.
+- By difficulty: Nhận biết 74 · Thông hiểu 158 · Vận dụng 137 · Vận dụng cao 65.
+- Verification: internal 434 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -78,9 +78,9 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g12-l9 Amino acid và peptide | 7 | 1 | 1 | 1 | 1 | 3 |
 | g12-l10 Protein và enzyme | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l11 Ôn tập chương 3 | 7 | 2 | 1 | 1 | 0 | 3 |
-| g12-l12 Đại cương về polymer | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l13 Vật liệu polymer | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l14 Ôn tập chương 4 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g12-l12 Đại cương về polymer | 7 | 1 | 1 | 1 | 1 | 3 |
+| g12-l13 Vật liệu polymer | 7 | 2 | 1 | 1 | 1 | 2 |
+| g12-l14 Ôn tập chương 4 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l15 Thế điện cực và nguồn điện hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l16 Điện phân | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l17 Ôn tập chương 5 | 0 | 0 | 0 | 0 | 0 | 0 |

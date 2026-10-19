@@ -70,6 +70,7 @@ src/learning/
 | 12 | Hóa 12, Chương 1 | g12-l1 … g12-l3 | 21 (Bài 1–3) | check:learning PASS (213 + 533), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi. Test “bản rút gọn” trong `browser-smoke.mjs` chuyển từ g12-l1 sang g12-l29 (g12-l30 là bài thử thách quá ít bước nên không dùng được) |
 | 13 | Hóa 12, Chương 2 | g12-l4 … g12-l7 | 28 (Bài 4–7) | check:learning PASS (217 + 571), build PASS, browser 261/261, a11y PASS; 4 bài + trang luyện tập mở trong Chrome không lỗi. Ảnh 390 px bảng 5 cột bài 7: trang không tràn ngang, cột cuối cuộn ngang trong khung bảng (`.lx-table`, giống bảng 5 cột g11-l18) |
 | 14 | Hóa 12, Chương 3 | g12-l8 … g12-l11 | 28 (Bài 8–11) | check:learning PASS (221 + 609), build PASS, browser 261/261, a11y PASS; 4 bài + trang luyện tập mở trong Chrome không lỗi |
+| 15 | Hóa 12, Chương 4 | g12-l12 … g12-l14 | 21 (Bài 12–14) | check:learning PASS (224 + 639), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi. Sửa answer engine: đơn vị có chữ tiếng Việt (“tấn”, đã có trong bảng `kg`) trước đây bị regex ASCII từ chối; thêm test hồi quy |
 
 ## 5. Checkpoint — how to continue
 

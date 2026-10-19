@@ -54,7 +54,8 @@ export function parseNumber(raw) {
   else if (caretExp) exponent = Number(plainDigits(caretExp))
   else if (superExp) exponent = Number(plainDigits(superExp))
   const unit = rest.trim()
-  if (unit && !/^[A-Za-zµμ°%/·.\-\d¹²³⁻ ]+$/.test(unit)) {
+  // \p{L} admits Vietnamese unit names such as “tấn”; the unit table still decides what is accepted.
+  if (unit && !/^[\p{L}µμ°%/·.\-\d¹²³⁻ ]+$/u.test(unit)) {
     return { ok: false, error: 'Phần sau con số không phải là đơn vị hợp lệ.' }
   }
   if (/^[\d.,]/.test(unit)) {
