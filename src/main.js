@@ -58,7 +58,7 @@ const VIEW_INFO = {
     title: 'Học tập',
     nav: 'Học tập',
     icon: 'learn',
-    subtitle: 'Chương trình THPT · luyện tập · tiến độ'
+    subtitle: 'Lớp 10–12 · học từng bước · luyện tập'
   },
   lab: {
     title: 'Phòng thí nghiệm',
@@ -251,13 +251,6 @@ app.innerHTML = `
         </section>
 
         <section id="view-learning" class="app-view" hidden>
-          <header class="ui-page-head">
-            <div>
-              <span class="ui-eyebrow">Chương trình THPT</span>
-              <h1>Học tập</h1>
-              <p>Học theo chương, luyện tập và theo dõi mức độ thành thạo của bạn.</p>
-            </div>
-          </header>
           <div id="learning-host"></div>
         </section>
 
@@ -523,6 +516,11 @@ document.addEventListener('click', event => {
 
   const viewTarget = target.closest('[data-app-view]')
   if (viewTarget) {
+    const hash = viewTarget.dataset.appHash
+    if (hash && window.location.hash !== hash) {
+      window.location.hash = hash
+      return
+    }
     switchView(viewTarget.dataset.appView)
     return
   }
@@ -617,6 +615,11 @@ function parseHashRoute() {
 }
 
 function updateHash(viewName) {
+  if (viewName === 'learning') {
+    history.replaceState(null, '', window.ChemLabLearning?.route?.() || '#learning')
+    return
+  }
+
   if (viewName === 'tools') {
     const activeTool = window.ChemLabTools?.current?.()
     if (activeTool) {

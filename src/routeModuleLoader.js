@@ -263,27 +263,14 @@ export function createRouteModuleLoader({
 
   async function loadLearningRoute() {
     const {
-      initQuiz
-    } = await import('./quiz.js')
+      initLearning
+    } = await import('./learning/learningApp.js')
 
-    const learningReady = safeInit(
+    safeInit(
       'Learning',
-      initQuiz,
+      () => initLearning(hosts.learning),
       hosts.learning
     )
-
-    if (!learningReady) return
-
-    const quiz =
-      document.querySelector('#quiz')
-
-    if (
-      quiz &&
-      hosts.learning &&
-      quiz.parentElement !== hosts.learning
-    ) {
-      hosts.learning.appendChild(quiz)
-    }
   }
 
   async function loadLabRoute() {

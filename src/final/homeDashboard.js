@@ -26,7 +26,7 @@ const CATEGORY_VI = Object.freeze({
 const WORKSPACES = [
   { view: 'periodic', icon: 'table', title: 'Bảng tuần hoàn', copy: 'Tra cứu 118 nguyên tố, cấu hình electron, mô hình nguyên tử và orbital.', meta: '118 nguyên tố' },
   { view: 'tools', icon: 'tools', title: 'Công cụ', copy: 'Cân bằng phương trình, tính mol – nồng độ, tra ion và độ tan.', meta: '7 công cụ' },
-  { view: 'learning', icon: 'learn', title: 'Học tập', copy: 'Học theo chương trình lớp 10–12, luyện tập và theo dõi mức thành thạo.', meta: '21 chương · 77 bài' },
+  { view: 'learning', icon: 'learn', title: 'Học tập', copy: 'Học từng bước theo chương trình lớp 10–12, có ví dụ giải mẫu và kiểm tra nhanh.', meta: '21 chương · 78 bài' },
   { view: 'lab', icon: 'lab', title: 'Phòng thí nghiệm', copy: 'Trộn hóa chất, quan sát hiện tượng và làm thí nghiệm có hướng dẫn.', meta: '103 hóa chất · 96 phản ứng' }
 ]
 
@@ -97,6 +97,7 @@ function continueTarget(activity) {
   if (!activity) {
     return {
       view: 'learning',
+      hash: '#learning/lesson/g10-l1',
       kind: 'Bắt đầu',
       title: 'Bài 1 · Thành phần của nguyên tử',
       copy: 'Lớp 10 · Cấu tạo nguyên tử. Bắt đầu từ nền tảng: proton, neutron và electron.'
@@ -114,6 +115,7 @@ function continueTarget(activity) {
 
   return {
     view: 'learning',
+    hash: activity.lessonId ? `#learning/lesson/${encodeURIComponent(activity.lessonId)}` : '',
     kind: activity.completed ? 'Bài gần nhất' : 'Tiếp tục học',
     title: `Bài học lớp ${activity.grade || ''}`.trim(),
     copy: 'Tiếp tục bài gần nhất hoặc chọn bài mới trong Học tập.'
@@ -199,7 +201,7 @@ export function createHomeDashboard({ root, getProgressSummary, getGradeSummary 
               và kiểm chứng kiến thức trong phòng thí nghiệm ảo.
             </p>
             <div class="dash-hero__actions">
-              <button class="ui-btn ui-btn--primary ui-btn--lg" type="button" data-app-view="${target.view}">
+              <button class="ui-btn ui-btn--primary ui-btn--lg" type="button" data-app-view="${target.view}"${target.hash ? ` data-app-hash="${target.hash}"` : ''}>
                 ${icon('play')}
                 <span>${isNewLearner ? 'Bắt đầu học' : 'Tiếp tục'}</span>
               </button>
@@ -243,7 +245,7 @@ export function createHomeDashboard({ root, getProgressSummary, getGradeSummary 
             <span class="ui-eyebrow">${target.kind}</span>
             <h2 data-continue-title>${escapeHTML(target.title)}</h2>
             <p>${target.copy}</p>
-            <button class="ui-btn ui-btn--primary" type="button" data-app-view="${target.view}">
+            <button class="ui-btn ui-btn--primary" type="button" data-app-view="${target.view}"${target.hash ? ` data-app-hash="${target.hash}"` : ''}>
               ${isNewLearner ? 'Bắt đầu bài học' : 'Mở lại'}
               ${icon('arrowRight')}
             </button>

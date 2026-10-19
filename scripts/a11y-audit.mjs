@@ -29,6 +29,45 @@ const SCENARIOS = [
   { name: 'periodic', view: 'periodic' },
   { name: 'tools', view: 'tools' },
   { name: 'learning', view: 'learning' },
+  {
+    name: 'learning curriculum browser',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/grade-11' })
+      await page.waitForSelector('.lx-chapter')
+    }
+  },
+  {
+    name: 'learning reader (table, figure)',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/lesson/g12-l15' })
+      await page.waitForSelector('#lx-step-title')
+      if (await page.isVisible('.lx-steps-toggle')) await page.click('.lx-steps-toggle')
+      await page.click('.lx-steps [data-step-index="2"]')
+      await page.waitForSelector('.lx-figure')
+    }
+  },
+  {
+    name: 'learning quick check answered',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/lesson/g10-l1' })
+      await page.waitForSelector('#lx-step-title')
+      if (await page.isVisible('.lx-steps-toggle')) await page.click('.lx-steps-toggle')
+      await page.click('.lx-steps [data-step-index="7"]')
+      await page.click('[data-quiz="g10-l1-c1"] [data-quiz-option="b"]')
+      await page.click('[data-quiz="g10-l1-c2"] [data-quiz-option="a"]')
+    }
+  },
+  {
+    name: 'learning practice',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice' })
+      await page.waitForSelector('#cl-start', { timeout: 15000 })
+    }
+  },
   { name: 'lab', view: 'lab' },
   {
     name: 'lab with reaction',

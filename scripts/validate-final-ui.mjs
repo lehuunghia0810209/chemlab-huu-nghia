@@ -18,6 +18,7 @@ const [
   knowledge,
   toolHub,
   quiz,
+  learningApp,
   virtualLab,
   guidedLab,
   sw,
@@ -40,6 +41,7 @@ const [
   read('functions/api/_knowledge.js'),
   read('src/toolHub.js'),
   read('src/quiz.js'),
+  read('src/learning/learningApp.js'),
   read('src/virtualLab.js'),
   read('src/lab/experiments/guidedExperiments.js'),
   read('public/sw.js'),
@@ -100,7 +102,8 @@ expect('ChemAI displays grounding metadata', aiJs.includes('groundingLabel(meta)
 expect('ChemAI welcome exposes current context', aiJs.includes('chemai-welcome-context') && aiJs.includes('getContextLabel(lastContext)'))
 expect('context builder reads ChemLabApp', aiContext.includes('window.ChemLabApp?.context?.()'))
 expect('context builder reads selected element', aiContext.includes('function currentElement()'))
-expect('Learning exposes AI context', quiz.includes('window.ChemLabLearning = Object.freeze'))
+expect('Learning exposes AI context', learningApp.includes('window.ChemLabLearning = Object.freeze'))
+expect('Practice exposes AI context to Learning', quiz.includes('window.ChemLabPractice = Object.freeze') && learningApp.includes('window.ChemLabPractice?.context?.()'))
 expect('Virtual Lab exposes AI context', virtualLab.includes('window.ChemLabLab = Object.freeze'))
 expect('Guided Lab exposes AI context', guidedLab.includes('window.ChemLabGuidedLab = Object.freeze'))
 

@@ -225,7 +225,8 @@ async function interactionChecks(browser, baseURL) {
   record('guided experiment opens and returns to free mode',
     await page.evaluate(() => !document.querySelector('.vl-layout').hidden))
 
-  await openView(page, baseURL, 'learning')
+  await page.goto(`${baseURL}/#learning/practice`, { waitUntil: 'load' })
+  await page.waitForSelector('#cl-start', { timeout: 15000 })
   const answersBefore = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').statistics?.totalAnswers || 0)
   await page.click('#cl-start')
@@ -234,9 +235,10 @@ async function interactionChecks(browser, baseURL) {
   await page.waitForTimeout(400)
   await page.reload({ waitUntil: 'load' })
   await page.waitForFunction(() => document.querySelector('#app-shell')?.dataset.currentView === 'learning')
+  await page.waitForSelector('#cl-start', { timeout: 15000 })
   const answersAfter = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').statistics?.totalAnswers || 0)
-  record('learning: an answer is saved and survives reload', answersAfter === answersBefore + 1, `${answersBefore} → ${answersAfter}`)
+  record('learning practice: an answer is saved and the practice view survives reload', answersAfter === answersBefore + 1, `${answersBefore} → ${answersAfter}`)
 
   record('console clean during interactions', errors.length === 0, errors.join(' | '))
   await context.close()
@@ -551,6 +553,271 @@ async function lessonModelChecks(browser, baseURL) {
   record('closing the studio returns to the same lesson step', back)
   record('console clean in lesson → model flow', errors.length === 0, errors.join(' | '))
   await context.close()
+}
+
+async function openLearning(page, baseURL, hash) {
+  await page.goto(`${baseURL}/${hash}`, { waitUntil: 'load' })
+  await page.waitForFunction(() => document.querySelector('#app-shell')?.dataset.currentView === 'learning')
+  await page.waitForSelector('#learning-host .lx h1', { timeout: 15000 })
+  await page.waitForFunction(() => !document.querySelector('#chemlab-production-boot'), null, { timeout: 5000 })
+}
+
+const readerState = page => page.evaluate(() => ({
+  hash: location.hash,
+  title: document.querySelector('.lx-reader__title')?.textContent.trim() || null,
+  stepTitle: document.querySelector('#lx-step-title')?.textContent.trim() || null,
+  count: document.querySelector('.lx-stepcount')?.textContent.trim() || null,
+  focused: document.activeElement?.id || null
+}))
+
+const storedLesson = (page, grade, lessonId) => page.evaluate(([grade, lessonId]) => {
+  const progress = JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}')
+  return { record: progress.learning?.[`grade${grade}`]?.lessons?.[lessonId] || null, statistics: progress.statistics || {} }
+}, [grade, lessonId])
+
+async function learningJourneys(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
+
+  await openView(page, baseURL, 'home')
+  await page.click('.dash-continue [data-app-hash]')
+  await page.waitForSelector('#lx-step-title', { timeout: 15000 })
+  record('learning: home "start" button opens the first lesson directly', (await readerState(page)).hash === '#learning/lesson/g10-l1')
+  await page.evaluate(() => localStorage.removeItem('chemlab-v1-progress'))
+
+  // A: new learner → Learning → grade → chapter list → lesson
+  await openLearning(page, baseURL, '#learning')
+  const home = await page.evaluate(() => ({
+    resume: document.querySelector('.lx-resume__title')?.textContent.trim(),
+    grades: document.querySelectorAll('.lx-grade').length
+  }))
+  record('learning A: home offers the first lesson and three grades', /Thành phần của nguyên tử/.test(home.resume) && home.grades === 3, JSON.stringify(home))
+  await page.click('a.lx-grade[href="#learning/grade-10"]')
+  await page.waitForSelector('.lx-chapter')
+  const grade = await page.evaluate(() => ({
+    hash: location.hash,
+    title: document.querySelector('.lx-title')?.textContent.trim(),
+    chapters: document.querySelectorAll('.lx-chapter').length,
+    lessons: document.querySelectorAll('.lx-chapter .lx-row').length,
+    focused: document.activeElement?.matches('[data-lx-heading]')
+  }))
+  record('learning A: grade 10 browser lists 7 chapters and 23 lessons', grade.hash === '#learning/grade-10' && grade.title === 'Hóa học 10' && grade.chapters === 7 && grade.lessons === 23, JSON.stringify(grade))
+  record('learning A: focus moves to the page heading after navigation', grade.focused)
+  await page.click('a.lx-row[href="#learning/lesson/g10-l1"]')
+  await page.waitForSelector('#lx-step-title')
+  let state = await readerState(page)
+  record('learning A: lesson opens at step 1', state.title === 'Thành phần của nguyên tử' && state.count === 'Bước 1/9', JSON.stringify(state))
+
+  // B: step forward, back, forward
+  await page.focus('[data-step-next]')
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(() => document.querySelector('.lx-stepcount')?.textContent.includes('2/9'))
+  state = await readerState(page)
+  record('learning B: keyboard Next moves to step 2 and focuses its heading', state.focused === 'lx-step-title' && /hạt nhân và lớp vỏ/.test(state.stepTitle), JSON.stringify(state))
+  await page.click('[data-step-next]')
+  await page.click('[data-step-prev]')
+  state = await readerState(page)
+  let stored = await storedLesson(page, 10, 'g10-l1')
+  record('learning B: Back returns to step 2 and progress is saved',
+    state.count === 'Bước 2/9' && stored.record?.currentStep === 'structure' && stored.record.viewedSteps.includes('objectives') && stored.record.viewedSteps.includes('structure') && stored.record.completed !== true,
+    JSON.stringify({ state, record: stored.record }))
+
+  // C: reload restores the same lesson and step
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForSelector('#lx-step-title', { timeout: 15000 })
+  state = await readerState(page)
+  record('learning C: reload returns to the same lesson step', state.hash === '#learning/lesson/g10-l1' && state.count === 'Bước 2/9', JSON.stringify(state))
+
+  // D: quick check with feedback, kept after reload, retry clears it
+  await page.click('.lx-steps [data-step-index="7"]')
+  await page.click('[data-quiz="g10-l1-c1"] [data-quiz-option="b"]')
+  await page.click('[data-quiz="g10-l1-c2"] [data-quiz-option="a"]')
+  const feedback = await page.evaluate(() => ({
+    right: document.querySelector('[data-quiz="g10-l1-c1"] .lx-quiz__verdict')?.textContent.trim(),
+    wrong: document.querySelector('[data-quiz="g10-l1-c2"] .lx-quiz__verdict')?.textContent.trim(),
+    explanation: Boolean(document.querySelector('[data-quiz="g10-l1-c2"] .lx-quiz__feedback p + p'))
+  }))
+  record('learning D: quick check gives right/wrong feedback with explanation',
+    /Chính xác/.test(feedback.right) && /Chưa đúng.*C/.test(feedback.wrong) && feedback.explanation, JSON.stringify(feedback))
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForSelector('[data-quiz="g10-l1-c2"]', { timeout: 15000 })
+  const kept = await page.evaluate(() => document.querySelector('[data-quiz="g10-l1-c2"] [data-quiz-option="c"]')?.classList.contains('is-correct'))
+  record('learning D: answers survive reload', kept)
+  await page.click('[data-quiz="g10-l1-c2"] [data-quiz-retry]')
+  const cleared = await page.evaluate(() => !document.querySelector('[data-quiz="g10-l1-c2"] .lx-quiz__verdict'))
+  record('learning D: retry clears an answer', cleared)
+
+  // E: 3D model overlay returns to the same step; Lab round trip keeps the lesson
+  await page.click('.lx-steps [data-step-index="6"]')
+  await page.click('[data-activity="1"]')
+  await page.waitForSelector('.ax.is-open', { timeout: 15000 })
+  await page.click('[data-ax-close]')
+  await page.waitForFunction(() => !document.querySelector('.ax.is-open'), null, { timeout: 5000 })
+  state = await readerState(page)
+  record('learning E: closing Atomic Explorer returns to the same step', state.count === 'Bước 7/9', JSON.stringify(state))
+  await page.click('[data-activity="2"]')
+  await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 15000 })
+  const lab = await page.evaluate(() => ({ view: document.querySelector('#app-shell').dataset.currentView, experiment: window.ChemLabGuidedLab?.context()?.experiment?.id }))
+  record('learning E: guided activity opens the matching Lab experiment', lab.view === 'lab' && lab.experiment === 'g10-lesson-01', JSON.stringify(lab))
+  await page.click('.app-sidebar [data-nav-item][data-view="learning"]')
+  await page.waitForSelector('#lx-step-title')
+  state = await readerState(page)
+  record('learning E: returning to Learning restores lesson and step', state.hash === '#learning/lesson/g10-l1' && state.count === 'Bước 7/9', JSON.stringify(state))
+
+  // Completion: learn every step, then finish
+  await page.click('.lx-steps [data-step-index="0"]')
+  for (let index = 0; index < 8; index += 1) await page.click('[data-step-next]')
+  const before = (await storedLesson(page, 10, 'g10-l1')).statistics.completedLessons || 0
+  await page.click('[data-lesson-complete]')
+  stored = await storedLesson(page, 10, 'g10-l1')
+  const done = await page.evaluate(() => document.querySelector('.lx-finish.is-done h3')?.textContent.trim())
+  record('learning: finishing the last step completes the lesson once',
+    stored.record?.completed === true && stored.record.progress === 100 && stored.statistics.completedLessons === before + 1 && /hoàn thành/.test(done || ''),
+    JSON.stringify({ done, record: stored.record, before, after: stored.statistics.completedLessons }))
+  await page.click('.lx-finish a[href="#learning/grade-10"]')
+  await page.waitForSelector('.lx-chapter')
+  const row = await page.evaluate(() => document.querySelector('a.lx-row[href="#learning/lesson/g10-l1"] .lx-done')?.textContent.trim())
+  record('learning: completed lesson is marked in the browser', row === 'Đã học', row)
+
+  // Every catalogued lesson can be opened
+  const toVisit = []
+  for (const g of [10, 11, 12]) {
+    await page.evaluate(g => { location.hash = `#learning/grade-${g}` }, g)
+    await page.waitForFunction(g => document.querySelector('.lx-title')?.textContent === `Hóa học ${g}`, g)
+    toVisit.push(...await page.$$eval('.lx-chapter .lx-row', nodes => nodes.map(node => node.getAttribute('href').split('/').pop())))
+  }
+  const broken = []
+  for (const id of toVisit) {
+    await page.evaluate(id => { location.hash = `#learning/lesson/${id}` }, id)
+    const ok = await page.waitForFunction(() => {
+      const heading = document.querySelector('.lx-reader__title, .lx-message .lx-title')
+      return heading && !document.querySelector('.lx-message[role="alert"]') && !/Đang tải/.test(document.querySelector('.lx-lead')?.textContent || '')
+    }, null, { timeout: 8000 }).then(() => true).catch(() => false)
+    if (!ok) broken.push(id)
+  }
+  record('learning: all 78 catalogued lessons open without error', toVisit.length === 78 && broken.length === 0, `${toVisit.length} visited; broken: ${broken.join(',')}`)
+
+  // Error states
+  await page.evaluate(() => { location.hash = '#learning/lesson/khong-ton-tai' })
+  await page.waitForSelector('.lx-message[role="alert"]')
+  record('learning: unknown lesson shows a recoverable message', await page.evaluate(() => /Không tìm thấy/.test(document.querySelector('.lx-message')?.textContent) && Boolean(document.querySelector('.lx-message a[href="#learning"]'))))
+
+  // H: theme switch inside the reader keeps the step
+  await page.evaluate(() => { location.hash = '#learning/lesson/g11-l1' })
+  await page.waitForSelector('#lx-step-title')
+  await page.click('[data-step-next]')
+  await page.click('.app-sidebar [data-theme-toggle], [data-theme-toggle]')
+  state = await readerState(page)
+  const theme = await page.evaluate(() => document.documentElement.dataset.theme)
+  record('learning H: switching theme keeps the reader on the same step', theme === 'light' && state.count === 'Bước 2/9', JSON.stringify({ theme, state }))
+
+  record('console clean in learning journeys', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
+async function learningLegacyData(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 1024, height: 800, theme: 'light' })
+  // F: progress written by 6.2 (reader fields absent) must still count
+  await context.addInitScript(() => {
+    if (sessionStorage.getItem('legacy-seeded')) return
+    localStorage.setItem('chemlab-v1-progress', JSON.stringify({
+      version: 1,
+      learning: {
+        grade10: { lessons: { 'g10-l1': { grade: 10, lessonId: 'g10-l1', started: true, completed: true, progress: 100 } }, chapters: {}, completedLessons: ['g10-l1'] },
+        grade11: { lessons: {}, chapters: {}, completedLessons: [] },
+        grade12: { lessons: {}, chapters: {}, completedLessons: [] },
+        quizzes: {}, totalXP: 120, totalCorrect: 3, totalQuestions: 4
+      },
+      experiments: {
+        grade10: {
+          'g10-halide-chloride': { grade: 10, experimentId: 'g10-halide-chloride', started: true, completed: true, completedSteps: [0, 1] },
+          'g10-halide-iodide': { grade: 10, experimentId: 'g10-halide-iodide', started: true, completed: true, completedSteps: [0, 1] }
+        },
+        grade11: {}, grade12: {}, completed: [], totalCompleted: 0
+      },
+      statistics: { completedLessons: 1, completedExperiments: 2, correctAnswers: 3, totalAnswers: 4, totalLearningTimeSeconds: 300, totalExperimentTimeSeconds: 120 },
+      lastActivity: { type: 'learning', grade: 10, lessonId: 'g10-l1', completed: true }
+    }))
+    sessionStorage.setItem('legacy-seeded', '1')
+  })
+  await openLearning(page, baseURL, '#learning/grade-10')
+  const marks = await page.evaluate(() => ({
+    l1: document.querySelector('a.lx-row[href="#learning/lesson/g10-l1"] .lx-done')?.textContent.trim(),
+    l22: document.querySelector('a.lx-row[href="#learning/lesson/g10-l22"] .lx-done')?.textContent.trim()
+  }))
+  record('learning F: 6.2 lesson completion and finished Lab activities count as learned', marks.l1 === 'Đã học' && marks.l22 === 'Đã học', JSON.stringify(marks))
+  await page.click('a.lx-row[href="#learning/lesson/g10-l1"]')
+  await page.waitForSelector('#lx-step-title')
+  const reader = await page.evaluate(() => Boolean(document.querySelector('.lx-reader__status .lx-done')))
+  const stored = await storedLesson(page, 10, 'g10-l1')
+  record('learning F: opening a completed legacy lesson keeps completion and counters',
+    reader && stored.record.completed === true && stored.statistics.completedLessons === 1 && stored.statistics.totalAnswers === 4,
+    JSON.stringify(stored))
+  await page.click('.lx-crumbs a')
+  await page.click('a.lx-row[href="#learning/lesson/g10-l23"]')
+  await page.waitForSelector('.lx-message')
+  record('learning: catalogued review lesson explains missing content and links its chapter',
+    await page.evaluate(() => /chưa có nội dung/.test(document.querySelector('.lx-message').textContent) && document.querySelectorAll('.lx-message .lx-row').length === 2))
+  await page.click('.lx-crumbs a')
+  await page.click('a.lx-row[href="#learning/lesson/g10-l22"]')
+  await page.waitForSelector('#lx-step-title')
+  record('learning: legacy lesson is readable step by step and labelled as short content',
+    await page.evaluate(() => /Bản rút gọn/.test(document.querySelector('.lx-reader__status').textContent) && document.querySelectorAll('.lx-steps li').length > 2))
+  record('console clean with legacy progress', errors.length === 0, errors.join(' | '))
+  await context.close()
+
+  // Corrupt storage: page still works and the payload is backed up
+  const corrupt = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
+  await corrupt.context.addInitScript(() => {
+    if (sessionStorage.getItem('corrupt-seeded')) return
+    localStorage.setItem('chemlab-v1-progress', '{"learning": broken')
+    sessionStorage.setItem('corrupt-seeded', '1')
+  })
+  await openLearning(corrupt.page, baseURL, '#learning/lesson/g12-l15')
+  await corrupt.page.waitForSelector('#lx-step-title')
+  const backup = await corrupt.page.evaluate(() => localStorage.getItem('chemlab-v1-progress-corrupt-backup'))
+  record('learning: corrupt progress is backed up and the lesson still opens', backup === '{"learning": broken')
+  await corrupt.context.close()
+}
+
+async function learningReaderLayout(browser, baseURL) {
+  // G: phone and desktop reader layout in both themes
+  for (const theme of ['dark', 'light']) {
+    for (const width of [320, 390, 768, 1024, 1440, 1920]) {
+      const { context, page, errors } = await newPage(browser, { width, height: width < 768 ? 844 : 900, theme })
+      await openLearning(page, baseURL, '#learning/lesson/g12-l15')
+      await page.waitForSelector('#lx-step-title')
+      if (width < 1200) {
+        await page.click('.lx-steps-toggle')
+        await page.click('.lx-steps [data-step-index="3"]')
+      }
+      else {
+        await page.click('.lx-steps [data-step-index="3"]')
+      }
+      await page.waitForFunction(() => document.querySelector('.lx-stepcount')?.textContent.includes('4/'))
+      const state = await page.evaluate(() => {
+        const doc = document.documentElement
+        const small = [...document.querySelectorAll('.lx-reader button, .lx-reader a')]
+          .filter(node => node.offsetParent && !node.closest('.lx-steps:not(.is-open)'))
+          .filter(node => {
+            const r = node.getBoundingClientRect()
+            return r.height < 44 && !node.closest('.lx-crumbs, .lx-steps, .lx-meta')
+          })
+          .map(node => node.textContent.trim().slice(0, 30))
+        const body = document.querySelector('.lx-step__body p')
+        return {
+          overflow: doc.scrollWidth - innerWidth,
+          bodySize: parseFloat(getComputedStyle(body).fontSize),
+          table: Boolean(document.querySelector('.lx-table')),
+          small
+        }
+      })
+      record(`learning G reader @${width} ${theme}: no page overflow, ≥16px text, ≥44px controls`,
+        state.overflow <= 1 && state.bodySize >= 16 && state.small.length === 0 && state.table, JSON.stringify(state))
+      if (state.overflow > 1) await screenshotOnFail(page, `learning-reader-${width}-${theme}`)
+      record(`console clean in reader @${width} ${theme}`, errors.length === 0, errors.join(' | '))
+      await context.close()
+    }
+  }
 }
 
 async function labStoichChecks(browser, baseURL) {
@@ -878,7 +1145,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

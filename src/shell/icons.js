@@ -20,6 +20,7 @@ const PATHS = {
   sidebar: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/>',
   chevronRight: '<path d="m9 6 6 6-6 6"/>',
   arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  arrowLeft: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   bolt: '<path d="m13 2.5-8 11.5h6.5L10.5 21.5l8-11.5H12Z"/>',

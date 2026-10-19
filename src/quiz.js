@@ -1003,7 +1003,7 @@ const QUESTIONS = [
 
 
 
-export function initQuiz() {
+export function initQuiz(host = document.body) {
 
   document
     .querySelector(
@@ -1026,7 +1026,7 @@ export function initQuiz() {
     'chem-learning-v3'
 
 
-  document.body
+  host
     .appendChild(
       root
     )
@@ -3673,7 +3673,7 @@ export function initQuiz() {
 
 
 
-  window.ChemLabLearning = Object.freeze({
+  window.ChemLabPractice = Object.freeze({
 
     context() {
 
@@ -3764,6 +3764,8 @@ export function initQuiz() {
       )
 
   }
+
+  return root
 
 }
 
