@@ -50,12 +50,13 @@ export const STATUS = {
   catalogued: { label: 'Chưa có nội dung', description: 'Đã có trong danh mục chương trình, nội dung sẽ được bổ sung.' }
 }
 
-// Full lessons, loaded on demand so the catalog stays light.
-const CONTENT = {
-  'g10-l1': () => import('./lessons/g10-l1.js'),
-  'g11-l1': () => import('./lessons/g11-l1.js'),
-  'g12-l15': () => import('./lessons/g12-l15.js')
-}
+// Lessons with full content in ./lessons/<id>.js, loaded on demand.
+// Add an ID here when its file passes `npm run check:learning`.
+export const FULL_LESSONS = new Set([
+  'g10-l1', 'g10-l2', 'g10-l3', 'g10-l4',
+  'g11-l1',
+  'g12-l15'
+])
 
 function buildGrade(source) {
   const chapters = source.chapters.map(chapter => {
@@ -71,7 +72,7 @@ function buildGrade(source) {
           title: OFFICIAL_TITLES[lesson.id] || lesson.title,
           type: lesson.type,
           review: lesson.type === 'challenge',
-          status: CONTENT[lesson.id] ? 'published' : activities.length ? 'legacy' : 'catalogued',
+          status: FULL_LESSONS.has(lesson.id) ? 'published' : activities.length ? 'legacy' : 'catalogued',
           activityIds: activities.map(activity => activity.id),
           sourceId: 'sgk-kntt'
         }
@@ -109,12 +110,11 @@ export function allLessons() {
 }
 
 export function hasFullContent(lessonId) {
-  return Boolean(CONTENT[lessonId])
+  return FULL_LESSONS.has(lessonId)
 }
 
 export async function loadLessonContent(lessonId) {
-  const loader = CONTENT[lessonId]
-  if (!loader) return null
-  const module = await loader()
+  if (!FULL_LESSONS.has(lessonId)) return null
+  const module = await import(`./lessons/${lessonId}.js`)
   return module.default
 }

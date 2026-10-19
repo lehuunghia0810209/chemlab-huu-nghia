@@ -27,6 +27,7 @@ const { FIGURES } = await import('../src/learning/figures.js')
 const progressApi = await import('../src/learning/lessonProgress.js')
 const { PROGRESS_STORAGE_KEY, loadProgress } = await import('../src/progress/progressStorage.js')
 const { getExperimentById } = await import('../src/lab/experiments/experiments.js')
+const { equationProblem, hasArrow } = await import('./lib/equation-check.mjs')
 const { STANDARD_POTENTIALS } = await import('../src/learning/lessons/g12-l15.js')
 
 let passed = 0
@@ -67,7 +68,24 @@ check('a published lesson exists for each grade', [10, 11, 12].every(grade => pu
 /* ---------- Lesson content ---------- */
 
 const KINDS = new Set(['objectives', 'concept', 'example', 'practice', 'check', 'summary'])
-const BLOCKS = new Set(['p', 'heading', 'list', 'equation', 'table', 'callout', 'figure', 'worked', 'quiz', 'activity'])
+const BLOCKS = new Set(['p', 'heading', 'list', 'equation', 'table', 'callout', 'figure', 'worked', 'quiz', 'activity', 'mistakes'])
+const PLACEHOLDER = /(TODO|TBD|FIXME|lorem|placeholder)/i
+
+function equationIssue(text) {
+  try {
+    return equationProblem(text)
+  }
+  catch (error) {
+    return `không đọc được (${error.message}); nếu không phải phương trình hóa học, đặt check: false`
+  }
+}
+
+function blockTexts(block) {
+  return [block.text, block.note, block.title, block.problem, block.answer, block.question, block.explanation,
+    ...(block.items || []).flatMap(item => typeof item === 'string' ? [item] : [item.wrong, item.right]),
+    ...(block.steps || []), ...(block.options || []).map(option => option.text),
+    ...(block.rows || []).flat()].filter(text => typeof text === 'string')
+}
 const TOOLS = new Set(['balancer', 'calculator', 'solubility', 'ions', 'orbital', 'compound', 'reaction'])
 
 function validateAction(action) {
@@ -107,6 +125,18 @@ function validateContent(content, label, { full }) {
       if (block.type === 'table') check(`${label}: table rows match header`, block.rows.every(row => row.length === block.head.length))
       if (block.type === 'worked') check(`${label}: worked example complete`, block.problem && block.steps.length && block.answer)
       if (block.table) check(`${label}: worked table rows match header`, block.table.rows.every(row => row.length === block.table.head.length))
+      if (block.type === 'equation' && hasArrow(block.text) && block.check !== false) {
+        const issue = equationIssue(block.text)
+        check(`${label}/${step.id}: equation ${block.text} balanced`, !issue, issue)
+      }
+      for (const equation of block.equations || []) {
+        const issue = equationIssue(equation)
+        check(`${label}/${step.id}: equation ${equation} balanced`, !issue, issue)
+      }
+      if (block.type === 'mistakes') check(`${label}: mistakes have wrong/right`, block.items.length >= 2 && block.items.every(item => item.wrong && item.right))
+      if (full) {
+        for (const text of blockTexts(block)) check(`${label}/${step.id}: no placeholder text`, !PLACEHOLDER.test(text), text.slice(0, 60))
+      }
     }
   }
   check(`${label}: quiz ids unique`, new Set(quizIds).size === quizIds.length)
@@ -115,6 +145,11 @@ function validateContent(content, label, { full }) {
     check(`${label}: ends with summary`, content.steps.at(-1).kind === 'summary')
     for (const kind of ['concept', 'example', 'check']) check(`${label}: has ${kind} step`, content.steps.some(step => step.kind === kind))
     check(`${label}: has at least 3 quick-check questions`, quizIds.length >= 3)
+    check(`${label}: quick-check ids are <lessonId>-c<n>`, quizIds.every(id => new RegExp(`^${content.id}-c\\d+$`).test(id)))
+    check(`${label}: at least 6 steps`, content.steps.length >= 6, content.steps.length)
+    check(`${label}: opens with a guiding question`, content.steps[0].blocks.some(block => block.type === 'callout' && block.tone === 'question'))
+    check(`${label}: has a worked example`, content.steps.some(step => step.blocks.some(block => block.type === 'worked')))
+    check(`${label}: lists common mistakes`, content.steps.some(step => step.blocks.some(block => block.type === 'mistakes')))
     check(`${label}: requirements, prerequisites, sources`, content.requirements?.length && content.prerequisites?.length && content.sources?.length)
     check(`${label}: verification is labelled internal, not expert-approved`, content.verification?.level === 'internal' && /Chưa qua thẩm định/.test(content.verification.note))
     check(`${label}: contentVersion`, Number.isInteger(content.contentVersion) && content.contentVersion >= 1)

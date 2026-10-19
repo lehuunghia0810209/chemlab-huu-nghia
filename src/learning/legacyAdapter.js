@@ -9,7 +9,8 @@ function conceptBlocks(step) {
   const blocks = []
   if (step.text) blocks.push({ type: 'p', text: step.text })
   if (step.points?.length) blocks.push({ type: 'list', items: step.points })
-  if (step.formula) blocks.push({ type: 'equation', text: step.formula })
+  // Legacy formulas are free text (generic R, M, two half-reactions), not checked.
+  if (step.formula) blocks.push({ type: 'equation', text: step.formula, check: false })
   return blocks
 }
 

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { preview } from 'vite'
 import { chromium } from 'playwright-core'
+import { practiceJourneys } from './lib/practice-journeys.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = path.join(rootDir, 'test-results', 'browser-smoke')
@@ -225,7 +226,7 @@ async function interactionChecks(browser, baseURL) {
   record('guided experiment opens and returns to free mode',
     await page.evaluate(() => !document.querySelector('.vl-layout').hidden))
 
-  await page.goto(`${baseURL}/#learning/practice`, { waitUntil: 'load' })
+  await page.goto(`${baseURL}/#learning/practice/topics`, { waitUntil: 'load' })
   await page.waitForSelector('#cl-start', { timeout: 15000 })
   const answersBefore = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').statistics?.totalAnswers || 0)
@@ -1145,7 +1146,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

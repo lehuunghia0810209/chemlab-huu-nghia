@@ -61,10 +61,44 @@ const SCENARIOS = [
     }
   },
   {
-    name: 'learning practice',
+    name: 'practice home',
     view: 'learning',
     async setup(page) {
       await page.evaluate(() => { location.hash = '#learning/practice' })
+      await page.waitForFunction(() => /Có \d+ câu/.test(document.querySelector('[data-px-available]')?.textContent || ''), null, { timeout: 15000 })
+    }
+  },
+  {
+    name: 'practice question with feedback',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice/lesson/g10-l3' })
+      await page.waitForSelector('.px-question', { timeout: 15000 })
+      for (let index = 0; index < 7; index += 1) {
+        if (await page.$('.px-option input')) break
+        await page.click('[data-px-next]')
+      }
+      await page.check('.px-option input')
+      await page.click('.px-answer button[type="submit"]')
+      await page.waitForSelector('.px-feedback')
+    }
+  },
+  {
+    name: 'practice results',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice/lesson/g10-l1' })
+      await page.waitForSelector('.px-question', { timeout: 15000 })
+      page.once('dialog', dialog => dialog.accept())
+      await page.click('.px-head [data-px-finish]')
+      await page.waitForSelector('.px-results')
+    }
+  },
+  {
+    name: 'learning practice',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice/topics' })
       await page.waitForSelector('#cl-start', { timeout: 15000 })
     }
   },

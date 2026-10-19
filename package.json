@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "check:project": "node scripts/validate-project.mjs",
     "check:chem": "node scripts/test-chem-core.mjs",
-    "check:learning": "node scripts/test-learning.mjs",
+    "check:learning": "node scripts/test-learning.mjs && node scripts/test-questions.mjs",
     "check:ui": "node scripts/validate-final-ui.mjs",
     "check:ai": "node scripts/test-chemai-api.mjs",
     "check:browser": "node scripts/browser-smoke.mjs",

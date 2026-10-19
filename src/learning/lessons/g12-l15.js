@@ -49,6 +49,12 @@ export default {
       title: 'Bài này giúp em',
       blocks: [
         {
+          type: 'callout',
+          tone: 'question',
+          title: 'Câu hỏi mở đầu',
+          text: 'Vài quả chanh, mỗi quả cắm một thanh kẽm và một thanh đồng, nối tiếp nhau có thể làm sáng một đèn LED nhỏ. Năng lượng điện đến từ đâu, và vì sao cần hai kim loại khác nhau?'
+        },
+        {
           type: 'list',
           items: [
             'Viết được cặp oxi hóa – khử của kim loại.',
@@ -76,7 +82,7 @@ export default {
           type: 'p',
           text: 'Cation kim loại Mⁿ⁺ có thể nhận electron để trở thành nguyên tử kim loại M, và ngược lại. Dạng oxi hóa Mⁿ⁺ và dạng khử M tạo thành **cặp oxi hóa – khử**, kí hiệu **Mⁿ⁺/M**.'
         },
-        { type: 'equation', text: 'Mⁿ⁺ + ne ⇌ M' },
+        { type: 'equation', text: 'Mⁿ⁺ + ne ⇌ M', check: false },
         {
           type: 'list',
           items: [
@@ -307,6 +313,15 @@ export default {
             'Pin Galvani: anode (−) xảy ra oxi hóa, cathode (+) xảy ra khử; electron đi qua mạch ngoài từ anode sang cathode.',
             'E°pin = E°(cathode) − E°(anode); pin Zn–Cu có E° = 1,10 V.',
             'Acquy chì, pin lithium-ion, pin nhiên liệu đều chuyển hóa năng lượng của phản ứng oxi hóa – khử thành điện năng.'
+          ]
+        },
+        {
+          type: 'mistakes',
+          items: [
+            { wrong: 'Anode luôn là cực dương.', right: 'Trong pin Galvani, anode là **cực âm** (nơi xảy ra oxi hóa); cathode là cực dương.' },
+            { wrong: 'E°pin = E°(anode) − E°(cathode).', right: '**E°pin = E°(cathode) − E°(anode)**, luôn dương với pin đang hoạt động.' },
+            { wrong: 'Electron di chuyển qua cầu muối.', right: 'Electron đi qua **dây dẫn ở mạch ngoài**; cầu muối chỉ cho ion di chuyển.' },
+            { wrong: 'Nhân hệ số của bán phản ứng thì nhân cả E°.', right: 'E° **không phụ thuộc hệ số**: Ag⁺ + e → Ag và 2Ag⁺ + 2e → 2Ag có cùng E° = +0,80 V.' }
           ]
         },
         {

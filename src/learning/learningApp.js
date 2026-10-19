@@ -7,7 +7,9 @@ import { getProgressSummary, loadProgress } from '../progress/progressStorage.js
 import { GRADES, STATUS, CURRICULUM_SOURCES, getGrade, findLesson, loadLessonContent } from './catalog.js'
 import { buildLegacyLesson } from './legacyAdapter.js'
 import { parseRoute, routeHash } from './routes.js'
+import { escapeHTML, rich } from './format.js'
 import { FIGURES } from './figures.js'
+import { chapterHasQuestions, loadQuestions } from './questionBank.js'
 import {
   readLessonState,
   saveLessonState,
@@ -33,17 +35,6 @@ const ACTION_LABELS = {
   periodic: 'Mở bảng tuần hoàn'
 }
 
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[char])
-}
-
-// Lesson text is plain text with **bold** as the only markup.
-function rich(text) {
-  return escapeHTML(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-}
-
 function lessonCount(grade) {
   return grade.chapters.reduce((total, chapter) => total + chapter.lessons.length, 0)
 }
@@ -65,6 +56,7 @@ export function initLearning(host) {
   let route = parseRoute(location.hash) || { name: 'home' }
   let reader = null
   let practiceRoot = null
+  let practice = null
   let listsStale = false
   let renderToken = 0
 
@@ -130,7 +122,10 @@ export function initLearning(host) {
       void openLesson(route.lessonId, renderToken, focus)
       return
     }
-    else if (route.name === 'practice') void renderPractice()
+    else if (route.name === 'practice') {
+      void renderPracticeRoute(renderToken, focus)
+      return
+    }
     else renderHome()
 
     if (focus) {
@@ -213,8 +208,8 @@ export function initLearning(host) {
 
         <section class="lx-section lx-aside" aria-labelledby="lx-practice-title">
           <div>
-            <h2 class="lx-section__title" id="lx-practice-title">Luyện tập trắc nghiệm</h2>
-            <p class="lx-section__note">Ôn theo chủ đề với câu hỏi ngẫu nhiên; các câu làm sai được đưa vào danh sách ôn lại.</p>
+            <h2 class="lx-section__title" id="lx-practice-title">Luyện tập</h2>
+            <p class="lx-section__note">Câu hỏi theo từng bài: một đáp án, nhiều đáp án, đúng/sai, trả lời ngắn và bài tính toán, có lời giải chi tiết.</p>
           </div>
           <a class="ui-btn" href="#learning/practice">Mở luyện tập ${icon('arrowRight')}</a>
         </section>
@@ -274,10 +269,13 @@ export function initLearning(host) {
 
         ${grade.chapters.map(chapter => `
           <section class="lx-chapter" aria-labelledby="lx-${chapter.id}">
-            <h2 class="lx-chapter__title" id="lx-${chapter.id}">
-              <span class="lx-chapter__num">Chương ${chapter.number}</span>
-              ${escapeHTML(chapter.title)}
-            </h2>
+            <div class="lx-chapter__head">
+              <h2 class="lx-chapter__title" id="lx-${chapter.id}">
+                <span class="lx-chapter__num">Chương ${chapter.number}</span>
+                ${escapeHTML(chapter.title)}
+              </h2>
+              ${chapterHasQuestions(chapter.id) ? `<a class="ui-btn ui-btn--sm ui-btn--ghost" href="${routeHash({ name: 'practice', view: 'start', scope: 'chapter', id: chapter.id })}" aria-label="Luyện tập chương ${chapter.number}">Luyện tập chương</a>` : ''}
+            </div>
             <ol class="lx-list">
               ${chapter.lessons.map(lesson => lessonRow(lesson, progress)).join('')}
             </ol>
@@ -443,6 +441,7 @@ export function initLearning(host) {
               ${step.blocks.map((block, index) => renderBlock(block, index)).join('')}
             </div>
             ${step.kind === 'objectives' && content.status === 'published' ? lessonMeta(content) : ''}
+            ${step.kind === 'summary' ? '<div data-lesson-practice></div>' : ''}
             ${isLast ? finishPanel() : ''}
             <footer class="lx-step__nav">
               ${stepIndex > 0
@@ -458,8 +457,30 @@ export function initLearning(host) {
     `
 
     bindReader()
+    if (step.kind === 'summary') void fillPracticeLink(lesson.id)
     if (scroll) scrollToTop()
     if (focus) focusHeading('#lx-step-title')
+  }
+
+  async function fillPracticeLink(lessonId) {
+    let questions = []
+    try {
+      questions = await loadQuestions({ lessonId })
+    }
+    catch {
+      return
+    }
+    const slot = root.querySelector('[data-lesson-practice]')
+    if (!slot || reader?.lesson.id !== lessonId || !questions.length) return
+    slot.innerHTML = `
+      <div class="lx-activity lx-practice-link">
+        <div class="lx-activity__copy">
+          <strong>Luyện tập bài này</strong>
+          <p>${questions.length} câu hỏi nhiều dạng, có đáp án và lời giải.</p>
+        </div>
+        <a class="ui-btn" href="${routeHash({ name: 'practice', view: 'start', scope: 'lesson', id: lessonId })}">Bắt đầu luyện tập ${icon('arrowRight')}</a>
+      </div>
+    `
   }
 
   function lessonMeta(content) {
@@ -543,7 +564,7 @@ export function initLearning(host) {
       case 'equation':
         return `
           <div class="lx-equation">
-            <p class="lx-equation__text">${escapeHTML(block.text)}</p>
+            <p class="lx-equation__text">${escapeHTML(block.text)}${block.condition ? ` <span class="lx-equation__condition">(${escapeHTML(block.condition)})</span>` : ''}</p>
             ${block.note ? `<p class="lx-equation__note">${rich(block.note)}</p>` : ''}
           </div>
         `
@@ -575,6 +596,20 @@ export function initLearning(host) {
             ${block.table ? renderTable(block.table) : ''}
             <ol class="lx-worked__steps">${block.steps.map(item => `<li>${rich(item)}</li>`).join('')}</ol>
             <p class="lx-worked__answer"><strong>Kết luận:</strong> ${rich(block.answer)}</p>
+          </div>
+        `
+      case 'mistakes':
+        return `
+          <div class="lx-mistakes">
+            <p class="lx-mistakes__title">Nhầm lẫn thường gặp</p>
+            <ul>
+              ${block.items.map(item => `
+                <li>
+                  <p class="lx-mistakes__wrong"><span aria-hidden="true">✗</span><span class="sr-only">Sai:</span> ${rich(item.wrong)}</p>
+                  <p class="lx-mistakes__right"><span aria-hidden="true">✓</span><span class="sr-only">Đúng:</span> ${rich(item.right)}</p>
+                </li>
+              `).join('')}
+            </ul>
           </div>
         `
       case 'quiz':
@@ -758,18 +793,42 @@ export function initLearning(host) {
     }))
   }
 
-  /* ---------- Practice (quiz from earlier versions) ---------- */
+  /* ---------- Practice ---------- */
 
-  async function renderPractice() {
+  async function renderPracticeRoute(token, focus) {
+    try {
+      if (!practice) {
+        const { createPractice } = await import('./practiceApp.js')
+        practice = createPractice({ root, announce, scrollToTop, onLegacyTopics: () => void renderTopics() })
+      }
+    }
+    catch (error) {
+      console.error('[ChemLab Learning] Không tải được Luyện tập:', error)
+      if (token !== renderToken) return
+      renderMessage({
+        title: 'Không tải được Luyện tập',
+        text: 'Hãy kiểm tra kết nối mạng rồi thử lại.',
+        actions: '<button class="ui-btn ui-btn--primary" type="button" data-lx-retry>Thử lại</button>',
+        role: 'alert'
+      })
+      root.querySelector('[data-lx-retry]').addEventListener('click', () => render({ focus: true }))
+      return
+    }
+    if (token !== renderToken) return
+    await practice.render(route, { focus })
+  }
+
+  // Topic quiz from earlier versions, kept as its own practice mode.
+  async function renderTopics() {
     const token = renderToken
     root.innerHTML = `
       <div class="lx-page lx-page--wide lx-practice">
         <nav class="lx-crumbs" aria-label="Vị trí">
-          <a href="#learning">${icon('arrowLeft')}Học tập</a>
+          <a href="#learning/practice">${icon('arrowLeft')}Luyện tập</a>
         </nav>
         <header class="lx-head">
-          <h1 class="lx-title" data-lx-heading tabindex="-1">Luyện tập trắc nghiệm</h1>
-          <p class="lx-lead">Chọn chủ đề, độ khó và số câu. Câu làm sai được lưu để ôn lại.</p>
+          <h1 class="lx-title" data-lx-heading tabindex="-1">Luyện tập theo chủ đề</h1>
+          <p class="lx-lead">Bộ câu hỏi trắc nghiệm theo chủ đề từ phiên bản trước: chọn chủ đề, độ khó và số câu.</p>
         </header>
         <div data-practice-host><p class="lx-lead" role="status">Đang tải phần luyện tập…</p></div>
       </div>
@@ -796,12 +855,15 @@ export function initLearning(host) {
 
     if (token !== renderToken) return
     root.querySelector('[data-practice-host]').replaceChildren(practiceRoot)
+    focusHeading('[data-lx-heading]')
   }
 
   /* ---------- ChemAI context ---------- */
 
   function context() {
-    const practice = route.name === 'practice' ? window.ChemLabPractice?.context?.() || null : null
+    const practiceContext = route.name !== 'practice'
+      ? null
+      : route.view === 'topics' ? window.ChemLabPractice?.context?.() || null : practice?.context() || null
     const step = reader ? reader.content.steps[reader.stepIndex] : null
     return {
       view: route.name,
@@ -826,8 +888,8 @@ export function initLearning(host) {
         : null,
       topicName: reader
         ? `Lớp ${reader.grade.grade} · ${reader.lesson.title}`
-        : practice?.topicName || null,
-      practice,
+        : practiceContext?.topicName || null,
+      practice: practiceContext,
       summary: getProgressSummary()
     }
   }

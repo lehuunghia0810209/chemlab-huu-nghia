@@ -31,6 +31,12 @@ export default {
       title: 'Bài này giúp em',
       blocks: [
         {
+          type: 'callout',
+          tone: 'question',
+          title: 'Câu hỏi mở đầu',
+          text: 'Nếu phóng to một nguyên tử bằng cả sân vận động, hạt nhân chỉ như một hạt đậu ở giữa sân. Nguyên tử được tạo nên từ những hạt nào, và vì sao gần như toàn bộ khối lượng lại dồn vào phần nhỏ bé ấy?'
+        },
+        {
           type: 'list',
           items: [
             'Mô tả nguyên tử gồm những phần nào và mỗi phần chứa hạt gì.',
@@ -262,6 +268,15 @@ export default {
             'Proton: +1, ≈ 1 amu. Neutron: 0, ≈ 1 amu. Electron: −1, ≈ 0,00055 amu.',
             'Trong nguyên tử: số proton = số electron.',
             'Khối lượng nguyên tử ≈ số p + số n (amu); hạt nhân nhỏ hơn nguyên tử 10⁴ – 10⁵ lần.'
+          ]
+        },
+        {
+          type: 'mistakes',
+          items: [
+            { wrong: 'Nguyên tử trung hòa về điện vì số proton bằng số neutron.', right: 'Nguyên tử trung hòa vì **số proton = số electron**; số neutron có thể khác số proton.' },
+            { wrong: 'Hạt mang điện trong nguyên tử chỉ là proton.', right: 'Hạt mang điện gồm proton và electron, nên **số hạt mang điện = 2p**.' },
+            { wrong: 'Hạt nhân mang điện âm vì có electron.', right: 'Hạt nhân chỉ gồm proton và neutron nên **mang điện dương**; electron nằm ở lớp vỏ.' },
+            { wrong: 'Khối lượng nguyên tử bằng tổng số p, n và e (amu).', right: 'Electron chỉ nặng khoảng 0,00055 amu nên **m(nguyên tử) ≈ số p + số n**.' }
           ]
         },
         {

@@ -32,6 +32,12 @@ export default {
       title: 'Bài này giúp em',
       blocks: [
         {
+          type: 'callout',
+          tone: 'question',
+          title: 'Câu hỏi mở đầu',
+          text: 'Trong bình kín, H₂ và I₂ phản ứng tạo HI, nhưng dù chờ bao lâu, bình vẫn còn cả H₂, I₂ lẫn HI. Phản ứng đã dừng lại, hay vẫn đang diễn ra mà ta không nhận thấy?'
+        },
+        {
           type: 'list',
           items: [
             'Phân biệt phản ứng một chiều và phản ứng thuận nghịch.',
@@ -59,7 +65,7 @@ export default {
           type: 'p',
           text: '**Phản ứng một chiều** chỉ xảy ra theo một chiều từ chất phản ứng tạo thành sản phẩm. Phương trình dùng mũi tên một chiều:'
         },
-        { type: 'equation', text: '2KClO₃ → 2KCl + 3O₂   (t°, MnO₂)' },
+        { type: 'equation', text: '2KClO₃ → 2KCl + 3O₂', condition: 't°, MnO₂' },
         {
           type: 'p',
           text: '**Phản ứng thuận nghịch** là phản ứng xảy ra theo hai chiều ngược nhau trong cùng điều kiện. Chiều từ trái sang phải là chiều thuận, chiều từ phải sang trái là chiều nghịch:'
@@ -98,7 +104,7 @@ export default {
       title: 'Hằng số cân bằng KC',
       blocks: [
         { type: 'p', text: 'Với phản ứng thuận nghịch tổng quát ở trạng thái cân bằng:' },
-        { type: 'equation', text: 'aA + bB ⇌ cC + dD' },
+        { type: 'equation', text: 'aA + bB ⇌ cC + dD', check: false },
         {
           type: 'equation',
           text: 'KC = [C]ᶜ · [D]ᵈ / ([A]ᵃ · [B]ᵇ)',
@@ -274,6 +280,16 @@ export default {
             'Cân bằng hóa học: v thuận = v nghịch; là cân bằng động; nồng độ các chất không đổi.',
             'aA + bB ⇌ cC + dD: KC = [C]ᶜ[D]ᵈ / ([A]ᵃ[B]ᵇ); không ghi chất rắn; KC chỉ phụ thuộc nhiệt độ.',
             'Le Chatelier: cân bằng chuyển dịch theo chiều làm giảm tác động bên ngoài; chất xúc tác không làm chuyển dịch cân bằng.'
+          ]
+        },
+        {
+          type: 'mistakes',
+          items: [
+            { wrong: 'Ở trạng thái cân bằng, phản ứng dừng lại.', right: 'Phản ứng thuận và nghịch **vẫn xảy ra** với tốc độ bằng nhau (cân bằng động).' },
+            { wrong: 'Ở trạng thái cân bằng, nồng độ chất phản ứng bằng nồng độ sản phẩm.', right: 'Nồng độ các chất **không đổi theo thời gian**, nhưng thường khác nhau.' },
+            { wrong: 'Ghi cả chất rắn vào biểu thức KC.', right: 'Chất rắn **không** có mặt trong biểu thức KC.' },
+            { wrong: 'Thêm chất xúc tác làm cân bằng chuyển dịch theo chiều thuận.', right: 'Chất xúc tác chỉ giúp hệ nhanh đạt cân bằng, **không** làm chuyển dịch cân bằng và không đổi KC.' },
+            { wrong: 'Tăng áp suất luôn làm cân bằng chuyển dịch.', right: 'Áp suất chỉ ảnh hưởng khi có chất khí và **tổng số mol khí hai vế khác nhau**.' }
           ]
         },
         {

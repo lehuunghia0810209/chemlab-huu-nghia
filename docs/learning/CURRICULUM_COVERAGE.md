@@ -13,7 +13,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 7 | 23 | 1 | 21 | 1 |
+| 10 | 7 | 23 | 4 | 18 | 1 |
 | 11 | 6 | 25 | 1 | 24 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
@@ -24,9 +24,9 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | Grade | Chapter | Lesson | Requirement | Source | Content status | UI | Verification |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 10 | 1. Cấu tạo nguyên tử | 1. Thành phần của nguyên tử | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l1` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 10 | 1. Cấu tạo nguyên tử | 2. Nguyên tố hóa học | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l2` | Nội dung cũ, chưa rà soát lại |
-| 10 | 1. Cấu tạo nguyên tử | 3. Cấu trúc lớp vỏ electron nguyên tử | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l3` | Nội dung cũ, chưa rà soát lại |
-| 10 | 1. Cấu tạo nguyên tử | 4. Ôn tập chương 1 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l4` | Nội dung cũ, chưa rà soát lại |
+| 10 | 1. Cấu tạo nguyên tử | 2. Nguyên tố hóa học | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l2` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 1. Cấu tạo nguyên tử | 3. Cấu trúc lớp vỏ electron nguyên tử | 5 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l3` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 1. Cấu tạo nguyên tử | 4. Ôn tập chương 1 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l4` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 5. Cấu tạo của bảng tuần hoàn các nguyên tố hóa học | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l5` | Nội dung cũ, chưa rà soát lại |
 | 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 6. Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố trong một chu kì và trong một nhóm | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l6` | Nội dung cũ, chưa rà soát lại |
 | 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 7. Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l7` | Nội dung cũ, chưa rà soát lại |
