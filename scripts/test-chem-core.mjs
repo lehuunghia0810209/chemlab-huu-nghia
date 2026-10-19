@@ -499,7 +499,7 @@ test('lab pH: spectator salts are counted, H⁺/OH⁻-consuming salts fall back 
 })
 
 const { replayStepwise, STEPWISE_SYSTEMS } = await import('../src/lab/engine/stepwise.js')
-const { simulateLab, SHARED_REASON } = await import('../src/lab/engine/simulate.js')
+const { simulateLab, SHARED_REASON, mixtureFrom: mixtureOf } = await import('../src/lab/engine/simulate.js')
 const carbonate = STEPWISE_SYSTEMS.find(system => system.id === 'carbonate')
 const mmolOf = value => value * 1000
 const replay = additions => replayStepwise(carbonate, additions.map(([id, volume]) => ({ id, volume })), stockOf)
@@ -630,6 +630,47 @@ const { buildCoverage, COVERAGE_PATH } = await import('./reaction-coverage.mjs')
 test('reaction coverage matrix in docs is up to date (npm run report:reactions)', () => {
   assert.ok(fs.existsSync(COVERAGE_PATH), 'missing — run npm run report:reactions')
   assert.equal(fs.readFileSync(COVERAGE_PATH, 'utf8').replace(/\r\n/g, '\n'), buildCoverage())
+})
+
+const { findAvailableReactions } = await import('../src/lab/reactionEngine.js')
+const { engineDrivesGas } = await import('../src/lab/engine/simulate.js')
+
+test('guided experiments: observed gas / precipitate agree with the engine at the lesson volumes', () => {
+  const contradictions = []
+  for (const experiment of EXPERIMENTS) {
+    const additions = []
+    const history = []
+    const triggered = new Set()
+    let heating = false
+    for (const step of experiment.steps) {
+      if (step.type === 'heat') heating = true
+      if (step.type === 'add' && catalogue[step.chemical]?.indicator !== 'litmusPaper') {
+        const already = additions.filter(item => item.id === step.chemical).reduce((sum, item) => sum + item.volume, 0)
+        additions.push({ id: step.chemical, volume: Math.max(25, (step.minAmount || 0) - already) })
+        if (!history.includes(step.chemical)) history.push(step.chemical)
+      }
+      const mixture = mixtureOf(additions)
+      for (const reaction of findAvailableReactions(REACTIONS, { mixture, temperature: heating ? 90 : 25, heating, pH: 7, additionHistory: history, triggeredIds: triggered, lightOn: false })) triggered.add(reaction.id)
+      if (step.type !== 'observation') continue
+      const simulation = simulateLab({ additions, triggeredIds: triggered, reactions: REACTIONS, reagents: catalogue })
+      const text = `${step.title || ''} ${step.text || ''} ${(step.points || []).join(' ')}`
+      const gasDriven = [...triggered].some(id => engineDrivesGas(REACTIONS.find(item => item.id === id), simulation))
+      if (/khí|sủi bọt/i.test(text) && gasDriven && simulation.gasMoles <= 0) contradictions.push(`${experiment.id}: gas`)
+      const solidDriven = [...simulation.results.values()].some(result => result.status === 'quantitative' && result.products?.some(product => product.precipitate))
+      if (/kết tủa/i.test(text) && !/tan/i.test(text) && solidDriven && simulation.solidMoles <= 0) contradictions.push(`${experiment.id}: precipitate`)
+    }
+  }
+  assert.deepEqual(contradictions, [])
+})
+
+test('engine boundary cases: zero, tiny and unknown inputs', () => {
+  const sim = additions => simulateLab({ additions, triggeredIds: ['agno3-nacl'], reactions: REACTIONS, reagents: catalogue })
+  assert.equal(sim([]).solidMoles, 0)
+  assert.equal(sim([{ id: 'agno3', volume: 0 }, { id: 'nacl', volume: 25 }]).solidMoles, 0)
+  near(mmolOf(sim([{ id: 'agno3', volume: 1 }, { id: 'nacl', volume: 25 }]).solidMoles), 0.1, 1e-12) // 1 mL × 0.1 M
+  near(mmolOf(sim([{ id: 'agno3', volume: 250 }, { id: 'nacl', volume: 250 }]).solidMoles), 25, 1e-9)
+  assert.equal(replayStepwise(carbonate, [{ id: 'hcl', volume: -5 }, { id: 'na2co3', volume: NaN }], stockOf).gas, 0)
+  assert.equal(simulateLab({ additions: [{ id: 'notAChemical', volume: 25 }], triggeredIds: ['notAReaction'], reactions: REACTIONS, reagents: catalogue }).results.size, 0)
 })
 
 // Word equations (colour tests, R-group notation) cannot be atom-checked.

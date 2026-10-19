@@ -20,20 +20,25 @@
 | `b8e0427` | EV-02d — Lab định lượng: số mol, chất hạn chế, chất dư, sản phẩm (khối lượng kết tủa) cho phản ứng có nồng độ xác định |
 | `0a4b1dd` | QA — kiểm thử browser trọn bài Guided g11-l2 |
 | `49a3cd0` | EV-02e — kết tủa định lượng: 0,1 M cho 30 muối tan đã kiểm độ tan; 38 phản ứng có số mol/chất hạn chế/sản phẩm; Al(OH)₃, Zn(OH)₂ tan lại trong NaOH dư; hình kết tủa theo số mol; sửa pH khi có chất tiêu thụ OH⁻ |
+| `389fe50` | RE2.0 M2 — nhật ký thao tác + `engine/simulate.js`; hai nấc carbonate/sulfite theo thứ tự thêm; bọt khí theo lượng khí mới |
+| `99cdb4f` | RE2.0 M1/M4 — phân loại 96 phản ứng (`engine/profiles.js`), bảng kết tủa, bỏ "flash" chung, `REACTION_COVERAGE.md` |
+| `879c437` | RE2.0 M3/M6 — renderer: dung dịch không màu trong suốt, màu theo chất còn tan, cặn có kết cấu, tan dần, gợn bọt |
+| `9139aaa` | RE2.0 M5 — Guided `minAmount`, bài g11-l7 cần HCl dư |
+| (cuối) | RE2.0 M7/M8 — kiểm thử Guided↔engine, biên, thao tác dồn dập, tài liệu `docs/reaction-engine/ARCHITECTURE.md` |
 
 ## Kiểm thử gần nhất
 
-`npm run check` PASS (chem 35) · `npm run build` PASS · `npm run check:browser` 165/165 PASS · `npm run check:a11y` PASS (44 lần quét axe + kiểm tra bàn phím).
+`npm run check` PASS (chem 47) · `npm run build` PASS · `npm run check:browser` 185/185 PASS · `npm run check:a11y` PASS (44 lần quét axe + kiểm tra bàn phím).
 
 Quy trình QA đầy đủ: `npm run check` → `npm run build` → `npm run check:browser` → `npm run check:a11y`.
 
 ## Còn mở
 
 - pH cho acid/base yếu, hệ đệm: chưa có nồng độ trong catalog → vẫn định tính.
-- Định tính có lý do: Fe³⁺/SCN⁻ (cân bằng), Na₂CO₃/Na₂SO₃ + HCl (hai nấc), CuSO₄/MgCl₂ + Na₂CO₃ (carbonate base). Có thể mô hình hai nấc carbonate sau.
+- Giới hạn khoa học của engine: xem `docs/reaction-engine/ARCHITECTURE.md`; mức hỗ trợ từng phản ứng: `docs/reaction-engine/REACTION_COVERAGE.md`.
 - pH khi có muối phản ứng/thủy phân chỉ định tính.
 - Lần mở chi tiết nguyên tố đầu tiên ~280 ms (CPU 4×); các lần sau < 150 ms.
 
 ## Bước tiếp theo
 
-Người dùng review nhánh `evolution/next` (chưa push). Ứng viên tiếp: mô hình hai nấc Na₂CO₃ + HCl (khí chỉ xuất hiện sau nấc 1 — cần đồng bộ hiệu ứng bọt khí); mở rộng thư viện phân tử.
+Người dùng review nhánh `evolution/next` (chưa push). Ứng viên tiếp: nồng độ NH₃ đã xác minh (để Cu²⁺ + NH₃ qua giai đoạn Cu(OH)₂); phản ứng H₂SO₄/HNO₃ + carbonate trong catalog; hằng số cân bằng FeSCN²⁺ có nguồn.

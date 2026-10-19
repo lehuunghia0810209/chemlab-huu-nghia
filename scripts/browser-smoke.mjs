@@ -702,6 +702,34 @@ async function guidedSulfiteChecks(browser, baseURL) {
   await context.close()
 }
 
+/* ---------- lab state under rapid input and route switches ---------- */
+async function labStateChecks(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
+  await openView(page, baseURL, 'lab')
+  await page.click('.reagent-card[data-reagent="agno3"]')
+  await page.click('[data-volume="50"]')
+  for (let i = 0; i < 4; i += 1) await page.click('#add-reagent', { delay: 0 })
+  await page.click('.reagent-card[data-reagent="nacl"]')
+  for (let i = 0; i < 6; i += 1) await page.click('#add-reagent', { delay: 0 }) // overflows the 250 mL beaker
+  await page.waitForTimeout(400)
+  const state = await page.evaluate(() => ({
+    volume: document.querySelector('#volume-text, [id*="volume"]')?.textContent,
+    message: document.querySelector('#lab-message-title').textContent.trim(),
+    panel: document.querySelector('#stoich-body').innerText.replace(/\s+/g, ' ')
+  }))
+  // 200 mL AgNO₃ (20 mmol) + only 50 mL NaCl fit (5 mmol) → AgCl 5 mmol
+  record('rapid additions: beaker capped at 250 mL, amounts follow what actually went in',
+    /Cốc đã đầy/.test(state.message) && /AgCl↓ 5,00 mmol/.test(state.panel) && /Còn dư AgNO₃ 15,00 mmol/.test(state.panel), JSON.stringify(state))
+  await openView(page, baseURL, 'periodic')
+  await openView(page, baseURL, 'lab')
+  const back = await page.evaluate(() => document.querySelector('#stoich-body').innerText.replace(/\s+/g, ' '))
+  record('route switch: the lab keeps its chemistry state', back === state.panel, back)
+  for (let i = 0; i < 5; i += 1) await page.click('#reset-lab')
+  record('repeated reset leaves an empty, consistent lab', await page.evaluate(() => document.querySelector('#stoich-box').hidden && !document.querySelector('.liquid-mask').dataset.precipitateAmount))
+  record('console clean under rapid input', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 /* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
@@ -712,7 +740,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }
