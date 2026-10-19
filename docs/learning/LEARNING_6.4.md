@@ -68,6 +68,7 @@ src/learning/
 | 10 | Hóa 11, Chương 5 | g11-l19 … g11-l22 | 28 (Bài 19–22) | check:learning PASS (207 + 475), build PASS, browser 261/261, a11y PASS; 4 bài mới và trang luyện tập của từng bài đã mở trong Chrome, không lỗi console |
 | 11 | Hóa 11, Chương 6 (**Hóa 11 hoàn tất 25/25**) | g11-l23 … g11-l25 | 21 (Bài 23–25) | check:learning PASS (210 + 504), build PASS, browser 261/261, a11y PASS; 3 bài mới + trang luyện tập mở trong Chrome không lỗi; ảnh 390 px bước “Tính chất hóa học” bài 23 đã xem (phương trình dài xuống dòng, không tràn ngang) |
 | 12 | Hóa 12, Chương 1 | g12-l1 … g12-l3 | 21 (Bài 1–3) | check:learning PASS (213 + 533), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi. Test “bản rút gọn” trong `browser-smoke.mjs` chuyển từ g12-l1 sang g12-l29 (g12-l30 là bài thử thách quá ít bước nên không dùng được) |
+| 13 | Hóa 12, Chương 2 | g12-l4 … g12-l7 | 28 (Bài 4–7) | check:learning PASS (217 + 571), build PASS, browser 261/261, a11y PASS; 4 bài + trang luyện tập mở trong Chrome không lỗi. Ảnh 390 px bảng 5 cột bài 7: trang không tràn ngang, cột cuối cuộn ngang trong khung bảng (`.lx-table`, giống bảng 5 cột g11-l18) |
 
 ## 5. Checkpoint — how to continue
 

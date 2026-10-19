@@ -15,7 +15,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
 | 11 | 6 | 25 | 25 | 0 | 0 |
-| 12 | 8 | 30 | 4 | 26 | 0 |
+| 12 | 8 | 30 | 8 | 22 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
 
@@ -74,10 +74,10 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 12 | 1. Ester – Lipid | 1. Ester – Lipid | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l1` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 1. Ester – Lipid | 2. Xà phòng và chất giặt rửa | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l2` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 1. Ester – Lipid | 3. Ôn tập chương 1 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l3` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 12 | 2. Carbohydrate | 4. Giới thiệu về carbohydrate. Glucose và fructose | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l4` | Nội dung cũ, chưa rà soát lại |
-| 12 | 2. Carbohydrate | 5. Saccharose và maltose | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l5` | Nội dung cũ, chưa rà soát lại |
-| 12 | 2. Carbohydrate | 6. Tinh bột và cellulose | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l6` | Nội dung cũ, chưa rà soát lại |
-| 12 | 2. Carbohydrate | 7. Ôn tập chương 2 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l7` | Nội dung cũ, chưa rà soát lại |
+| 12 | 2. Carbohydrate | 4. Giới thiệu về carbohydrate. Glucose và fructose | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l4` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 2. Carbohydrate | 5. Saccharose và maltose | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l5` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 2. Carbohydrate | 6. Tinh bột và cellulose | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l6` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 2. Carbohydrate | 7. Ôn tập chương 2 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l7` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 3. Hợp chất chứa nitrogen | 8. Amine | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l8` | Nội dung cũ, chưa rà soát lại |
 | 12 | 3. Hợp chất chứa nitrogen | 9. Amino acid và peptide | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l9` | Nội dung cũ, chưa rà soát lại |
 | 12 | 3. Hợp chất chứa nitrogen | 10. Protein và enzyme | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l10` | Nội dung cũ, chưa rà soát lại |
