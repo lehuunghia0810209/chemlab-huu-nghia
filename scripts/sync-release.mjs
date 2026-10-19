@@ -87,8 +87,8 @@ serviceWorker = serviceWorker
     `CHEMLAB ${version}`
   )
   .replace(
-    /'chemlab-\d+\.\d+(?:\.\d+)?'/,
-    `'chemlab-${version}'`
+    /'chemlab-\d+\.\d+(?:\.\d+)?(-[^']+)?'/,
+    (match, revision = '') => `'chemlab-${version}${revision}'`
   )
 
 await fs.writeFile(

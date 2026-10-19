@@ -17,6 +17,7 @@ const MAX_BODY_BYTES = 64 * 1024
 const RATE_WINDOW_MS = 60 * 1000
 const RATE_MAX_REQUESTS = 18
 const MAX_RATE_BUCKETS = 600
+const SHARED_RATE_KEY = 'shared'
 const rateBuckets = new Map()
 
 const ALLOWED_VIEWS = Object.freeze([
@@ -92,32 +93,63 @@ function json(data, status = 200, extraHeaders = {}) {
   )
 }
 
+function clientRateKey(request) {
+  const value = request.headers.get('CF-Connecting-IP')?.trim()
+  if (!value || value.length > 45) return SHARED_RATE_KEY
+
+  const ipv4 = value.split('.')
+  if (
+    ipv4.length === 4 &&
+    ipv4.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255)
+  ) {
+    return ipv4.map(Number).join('.')
+  }
+
+  if (value.includes(':')) {
+    try {
+      const hostname = new URL(`http://[${value}]/`).hostname
+      return hostname.slice(1, -1).toLowerCase()
+    }
+    catch {
+    }
+  }
+
+  return SHARED_RATE_KEY
+}
+
 function rateLimit(request) {
-  const key =
-    request.headers.get('CF-Connecting-IP') ||
-    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
-    'anonymous'
+  let key = clientRateKey(request)
 
   const now = Date.now()
-  const current = rateBuckets.get(key)
+  let current = rateBuckets.get(key)
 
   if (!current || now >= current.resetAt) {
-    if (rateBuckets.size >= MAX_RATE_BUCKETS) {
+    if (current) rateBuckets.delete(key)
+
+    if (rateBuckets.size >= MAX_RATE_BUCKETS - 1) {
       for (const [bucketKey, bucket] of rateBuckets) {
         if (now >= bucket.resetAt) rateBuckets.delete(bucketKey)
       }
-
-      while (rateBuckets.size >= MAX_RATE_BUCKETS) {
-        rateBuckets.delete(rateBuckets.keys().next().value)
-      }
     }
 
-    rateBuckets.set(key, {
-      count: 1,
-      resetAt: now + RATE_WINDOW_MS
-    })
+    if (
+      key !== SHARED_RATE_KEY &&
+      rateBuckets.size >= MAX_RATE_BUCKETS - 1
+    ) {
+      key = SHARED_RATE_KEY
+    }
 
-    return { allowed: true, retryAfter: 0 }
+    current = rateBuckets.get(key)
+    if (!current || now >= current.resetAt) {
+      if (current) rateBuckets.delete(key)
+
+      rateBuckets.set(key, {
+        count: 1,
+        resetAt: now + RATE_WINDOW_MS
+      })
+
+      return { allowed: true, retryAfter: 0 }
+    }
   }
 
   current.count += 1

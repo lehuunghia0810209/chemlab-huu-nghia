@@ -62,37 +62,6 @@ const noKeyPayload = await noKeyResponse.json()
 assert.equal(noKeyResponse.status, 503)
 assert.equal(noKeyPayload.code, 'AI_NOT_CONFIGURED')
 
-for (let index = 0; index <= 600; index += 1) {
-  const response = await onRequestPost({
-    request: makeRequest(
-      { message: 'Kiểm tra giới hạn bucket' },
-      { 'CF-Connecting-IP': `rate-bucket-${index}` }
-    ),
-    env: {}
-  })
-  assert.equal(response.status, 503)
-}
-
-for (let index = 0; index < 18; index += 1) {
-  const response = await onRequestPost({
-    request: makeRequest(
-      { message: 'Kiểm tra bucket được loại bỏ' },
-      { 'CF-Connecting-IP': 'rate-bucket-0' }
-    ),
-    env: {}
-  })
-  assert.equal(response.status, 503)
-}
-
-const boundedRateLimit = await onRequestPost({
-  request: makeRequest(
-    { message: 'Kiểm tra rate limit' },
-    { 'CF-Connecting-IP': 'rate-bucket-0' }
-  ),
-  env: {}
-})
-assert.equal(boundedRateLimit.status, 429)
-
 const badOriginRequest = new Request(`${origin}/api/chat`, {
   method: 'POST',
   headers: {
@@ -463,5 +432,80 @@ const networkTimeout = await requestWithMock(async () => {
 assert.equal(networkTimeout.response.status, 502)
 assert.equal(networkTimeout.payload.code, 'AI_TIMEOUT')
 assert.equal(timeoutCalls, 3)
+
+async function localRateResponse(ip, extraHeaders = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Origin': origin,
+    ...extraHeaders
+  }
+  if (ip !== null) headers['CF-Connecting-IP'] = ip
+
+  return onRequestPost({
+    request: new Request(`${origin}/api/chat`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message: 'Kiểm tra giới hạn request' })
+    }),
+    env: {}
+  })
+}
+
+const activeIps = await Promise.all(
+  Array.from({ length: 32 }, (_, index) =>
+    localRateResponse(`203.0.113.${index + 100}`)
+  )
+)
+assert.ok(activeIps.every(response => response.status === 503))
+
+const limitedIp = '192.0.2.200'
+let limitedResponse
+for (let index = 0; index < 19; index += 1) {
+  limitedResponse = await localRateResponse(limitedIp)
+}
+assert.equal(limitedResponse.status, 429)
+assert.ok(Number(limitedResponse.headers.get('Retry-After')) >= 1)
+
+const concurrent = await Promise.all(
+  Array.from({ length: 20 }, () => localRateResponse('192.0.2.201'))
+)
+assert.equal(concurrent.filter(response => response.status === 503).length, 18)
+assert.equal(concurrent.filter(response => response.status === 429).length, 2)
+
+let sharedResponse
+for (let index = 0; index < 18; index += 1) {
+  sharedResponse = await localRateResponse(null)
+}
+assert.equal(sharedResponse.status, 503)
+assert.equal((await localRateResponse('not-an-ip')).status, 429)
+assert.equal((await localRateResponse(null, { 'X-Forwarded-For': '198.51.100.90' })).status, 429)
+
+const floodStatuses = []
+for (let index = 0; index < 650; index += 1) {
+  const response = await localRateResponse(
+    `198.18.${Math.floor(index / 256)}.${index % 256}`
+  )
+  floodStatuses.push(response.status)
+}
+assert.ok(floodStatuses.includes(429))
+assert.equal((await localRateResponse(limitedIp)).status, 429)
+
+const originalNow = Date.now
+let now = originalNow() + 61_000
+Date.now = () => now
+
+try {
+  const resetIp = '192.0.2.202'
+  for (let index = 0; index < 18; index += 1) {
+    assert.equal((await localRateResponse(resetIp)).status, 503)
+  }
+  assert.equal((await localRateResponse(resetIp)).status, 429)
+
+  now += 61_000
+  assert.equal((await localRateResponse(resetIp)).status, 503)
+}
+finally {
+  Date.now = originalNow
+}
 
 console.log('\nPASS — ChemAI Gemini API mock tests passed.\n')

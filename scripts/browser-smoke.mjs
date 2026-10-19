@@ -265,16 +265,124 @@ async function chemAIPhoneCheck(browser, baseURL) {
 
 async function pwaCheck(browser, baseURL) {
   const { context, page } = await newPage(browser, { width: 1280, height: 800, theme: 'dark', serviceWorkers: 'allow' })
+  const legacyProgress = {
+    version: 1,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-02T00:00:00.000Z',
+    learning: {
+      grade10: {
+        lessons: {
+          'g10-l1': {
+            grade: 10,
+            lessonId: 'g10-l1',
+            started: true,
+            completed: true,
+            progress: 100
+          }
+        },
+        chapters: {},
+        completedLessons: ['g10-l1']
+      },
+      grade11: { lessons: {}, chapters: {}, completedLessons: [] },
+      grade12: { lessons: {}, chapters: {}, completedLessons: [] },
+      quizzes: {},
+      totalXP: 120,
+      totalCorrect: 3,
+      totalQuestions: 4
+    },
+    experiments: {
+      grade10: {
+        'g10-halide-chloride': {
+          grade: 10,
+          experimentId: 'g10-halide-chloride',
+          currentStep: 2,
+          completedSteps: [0, 1],
+          score: 2,
+          answers: {},
+          started: true,
+          completed: false
+        }
+      },
+      grade11: {},
+      grade12: {},
+      completed: [],
+      totalCompleted: 0
+    },
+    statistics: {
+      completedLessons: 1,
+      completedExperiments: 0,
+      correctAnswers: 3,
+      totalAnswers: 4,
+      totalLearningTimeSeconds: 300,
+      totalExperimentTimeSeconds: 120
+    },
+    lastActivity: {
+      type: 'experiment',
+      grade: 10,
+      experimentId: 'g10-halide-chloride'
+    }
+  }
+  await context.addInitScript(progress => {
+    if (sessionStorage.getItem('chemlab-pwa-progress-seeded')) return
+    localStorage.setItem('chemlab-v1-progress', JSON.stringify(progress))
+    sessionStorage.setItem('chemlab-pwa-progress-seeded', '1')
+  }, legacyProgress)
   await page.goto(baseURL, { waitUntil: 'load' })
-  const registered = await page.evaluate(async () => {
+  const registrationState = await page.evaluate(async () => {
     if (!('serviceWorker' in navigator)) return false
     const registration = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise(resolve => setTimeout(() => resolve(null), 8000))
     ])
-    return Boolean(registration?.active)
+    return {
+      active: Boolean(registration?.active),
+      cacheNames: await caches.keys()
+    }
   })
-  record('service worker registers and activates', registered)
+  record('service worker registers the release-specific cache',
+    registrationState.active && registrationState.cacheNames.some(name => name.startsWith('chemlab-6.2.0-evolution-1-')),
+    JSON.stringify(registrationState))
+
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForFunction(() => document.querySelector('#app-shell') && !document.querySelector('#chemlab-production-boot'))
+  record('service worker controls the next navigation without claiming the old tab',
+    await page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+
+  const persisted = await page.evaluate(() => {
+    const progress = JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}')
+    const summary = window.ChemLabApp.context().progress
+    return {
+      lesson: progress.learning?.grade10?.lessons?.['g10-l1']?.completed,
+      experimentStep: progress.experiments?.grade10?.['g10-halide-chloride']?.currentStep,
+      completedLessons: summary.completedLessons,
+      totalAnswers: summary.totalAnswers
+    }
+  })
+  record('v1 learning and guided progress survives the release load',
+    persisted.lesson === true && persisted.experimentStep === 2 && persisted.completedLessons === 1 && persisted.totalAnswers === 4,
+    JSON.stringify(persisted))
+
+  await openView(page, baseURL, 'lab')
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
+    detail: { grade: 10, lessonId: 'g10-l22', experimentId: 'g10-halide-chloride' }
+  })))
+  await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
+  const guidedStep = await page.evaluate(() =>
+    Number(/Bước (\d+)\//.exec(document.querySelector('.guided-lab-shell').innerText)?.[1]) || 0)
+  record('Guided Experiment resumes the stored v1 step', guidedStep === 3, guidedStep)
+
+  await context.setOffline(true)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('#app-shell')?.dataset.currentView === 'lab', null, { timeout: 10000 })
+  const offlineState = await page.evaluate(() => ({
+    controlled: Boolean(navigator.serviceWorker.controller),
+    experimentStep: JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').experiments?.grade10?.['g10-halide-chloride']?.currentStep,
+    moduleError: Boolean(document.querySelector('.app-route-error, .app-module-error'))
+  }))
+  record('offline reload keeps the app and stored progress available',
+    offlineState.controlled && offlineState.experimentStep === 2 && !offlineState.moduleError,
+    JSON.stringify(offlineState))
+  await context.setOffline(false)
   await context.close()
 }
 

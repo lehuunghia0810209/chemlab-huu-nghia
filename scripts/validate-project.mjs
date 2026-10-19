@@ -90,8 +90,16 @@ if (!appMetaText.includes(`version: '${version}'`)) {
   fail(`src/appMeta.js chưa đồng bộ version ${version}.`)
 }
 
-if (!swText.includes(`'chemlab-${version}'`)) {
+if (!swText.includes(`'chemlab-${version}-`)) {
   fail(`public/sw.js chưa đồng bộ cache version ${version}.`)
+}
+
+if (/self\.skipWaiting\s*\(/.test(swText)) {
+  fail('public/sw.js không được kích hoạt worker mới khi tab cũ còn mở.')
+}
+
+if (/self\.clients\.claim\s*\(/.test(swText)) {
+  fail('public/sw.js không được chiếm quyền điều khiển tab đang chạy phiên bản cũ.')
 }
 
 if (!manifest.name.includes(version)) {

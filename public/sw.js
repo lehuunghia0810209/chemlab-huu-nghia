@@ -1,6 +1,6 @@
 
 const VERSION =
-  'chemlab-6.2.0'
+  'chemlab-6.2.0-evolution-1'
 
 
 const STATIC_CACHE =
@@ -40,10 +40,6 @@ self.addEventListener(
             cache.addAll(
               CORE_FILES
             )
-        )
-        .then(
-          () =>
-            self.skipWaiting()
         )
 
     )
@@ -86,10 +82,6 @@ self.addEventListener(
             )
 
           }
-        )
-        .then(
-          () =>
-            self.clients.claim()
         )
 
     )
