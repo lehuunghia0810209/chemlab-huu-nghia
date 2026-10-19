@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **434** in 17/21 chapters; lessons with ≥ 6 questions: 62/78.
-- By type: single 110 · multiple 62 · truefalse 62 · short 59 · numeric 141.
-- By difficulty: Nhận biết 74 · Thông hiểu 158 · Vận dụng 137 · Vận dụng cao 65.
-- Verification: internal 434 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **455** in 18/21 chapters; lessons with ≥ 6 questions: 65/78.
+- By type: single 115 · multiple 65 · truefalse 65 · short 62 · numeric 148.
+- By difficulty: Nhận biết 76 · Thông hiểu 165 · Vận dụng 147 · Vận dụng cao 67.
+- Verification: internal 455 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -81,9 +81,9 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g12-l12 Đại cương về polymer | 7 | 1 | 1 | 1 | 1 | 3 |
 | g12-l13 Vật liệu polymer | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l14 Ôn tập chương 4 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g12-l15 Thế điện cực và nguồn điện hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l16 Điện phân | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l17 Ôn tập chương 5 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g12-l15 Thế điện cực và nguồn điện hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
+| g12-l16 Điện phân | 7 | 2 | 1 | 1 | 1 | 2 |
+| g12-l17 Ôn tập chương 5 | 7 | 1 | 1 | 1 | 1 | 3 |
 | g12-l18 Cấu tạo và liên kết trong tinh thể kim loại | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l19 Tính chất vật lí và tính chất hóa học của kim loại | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l20 Kim loại trong tự nhiên và phương pháp tách kim loại | 0 | 0 | 0 | 0 | 0 | 0 |

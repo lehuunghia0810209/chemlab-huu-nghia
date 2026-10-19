@@ -71,6 +71,7 @@ src/learning/
 | 13 | Hóa 12, Chương 2 | g12-l4 … g12-l7 | 28 (Bài 4–7) | check:learning PASS (217 + 571), build PASS, browser 261/261, a11y PASS; 4 bài + trang luyện tập mở trong Chrome không lỗi. Ảnh 390 px bảng 5 cột bài 7: trang không tràn ngang, cột cuối cuộn ngang trong khung bảng (`.lx-table`, giống bảng 5 cột g11-l18) |
 | 14 | Hóa 12, Chương 3 | g12-l8 … g12-l11 | 28 (Bài 8–11) | check:learning PASS (221 + 609), build PASS, browser 261/261, a11y PASS; 4 bài + trang luyện tập mở trong Chrome không lỗi |
 | 15 | Hóa 12, Chương 4 | g12-l12 … g12-l14 | 21 (Bài 12–14) | check:learning PASS (224 + 639), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi. Sửa answer engine: đơn vị có chữ tiếng Việt (“tấn”, đã có trong bảng `kg`) trước đây bị regex ASCII từ chối; thêm test hồi quy |
+| 16 | Hóa 12, Chương 5 | g12-l16, g12-l17 (g12-l15 đã có từ 6.3) | 21 (Bài 15–17) | check:learning PASS (226 + 668), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi. Định luật Faraday ghi là “mở rộng”, bài tập chỉ dùng bảo toàn electron |
 
 ## 5. Checkpoint — how to continue
 
