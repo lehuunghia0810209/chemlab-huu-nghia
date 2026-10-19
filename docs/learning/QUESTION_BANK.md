@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **455** in 18/21 chapters; lessons with ≥ 6 questions: 65/78.
-- By type: single 115 · multiple 65 · truefalse 65 · short 62 · numeric 148.
-- By difficulty: Nhận biết 76 · Thông hiểu 165 · Vận dụng 147 · Vận dụng cao 67.
-- Verification: internal 455 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **491** in 19/21 chapters; lessons with ≥ 6 questions: 71/78.
+- By type: single 123 · multiple 71 · truefalse 71 · short 67 · numeric 159.
+- By difficulty: Nhận biết 81 · Thông hiểu 180 · Vận dụng 158 · Vận dụng cao 72.
+- Verification: internal 491 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -84,12 +84,12 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g12-l15 Thế điện cực và nguồn điện hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l16 Điện phân | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l17 Ôn tập chương 5 | 7 | 1 | 1 | 1 | 1 | 3 |
-| g12-l18 Cấu tạo và liên kết trong tinh thể kim loại | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l19 Tính chất vật lí và tính chất hóa học của kim loại | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l20 Kim loại trong tự nhiên và phương pháp tách kim loại | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l21 Hợp kim | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l22 Sự ăn mòn kim loại | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l23 Ôn tập chương 6 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g12-l18 Cấu tạo và liên kết trong tinh thể kim loại | 6 | 2 | 1 | 1 | 1 | 1 |
+| g12-l19 Tính chất vật lí và tính chất hóa học của kim loại | 6 | 1 | 1 | 1 | 0 | 3 |
+| g12-l20 Kim loại trong tự nhiên và phương pháp tách kim loại | 6 | 1 | 1 | 1 | 1 | 2 |
+| g12-l21 Hợp kim | 6 | 1 | 1 | 1 | 1 | 2 |
+| g12-l22 Sự ăn mòn kim loại | 6 | 2 | 1 | 1 | 1 | 1 |
+| g12-l23 Ôn tập chương 6 | 6 | 1 | 1 | 1 | 1 | 2 |
 | g12-l24 Nguyên tố nhóm IA | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l25 Nguyên tố nhóm IIA | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l26 Ôn tập chương 7 | 0 | 0 | 0 | 0 | 0 | 0 |

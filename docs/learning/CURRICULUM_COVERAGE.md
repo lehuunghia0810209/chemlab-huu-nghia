@@ -15,7 +15,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
 | 11 | 6 | 25 | 25 | 0 | 0 |
-| 12 | 8 | 30 | 17 | 13 | 0 |
+| 12 | 8 | 30 | 23 | 7 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
 
@@ -88,12 +88,12 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 12 | 5. Pin điện và điện phân | 15. Thế điện cực và nguồn điện hóa học | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l15` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 5. Pin điện và điện phân | 16. Điện phân | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l16` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 5. Pin điện và điện phân | 17. Ôn tập chương 5 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l17` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 12 | 6. Đại cương về kim loại | 18. Cấu tạo và liên kết trong tinh thể kim loại | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l18` | Nội dung cũ, chưa rà soát lại |
-| 12 | 6. Đại cương về kim loại | 19. Tính chất vật lí và tính chất hóa học của kim loại | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l19` | Nội dung cũ, chưa rà soát lại |
-| 12 | 6. Đại cương về kim loại | 20. Kim loại trong tự nhiên và phương pháp tách kim loại | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l20` | Nội dung cũ, chưa rà soát lại |
-| 12 | 6. Đại cương về kim loại | 21. Hợp kim | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l21` | Nội dung cũ, chưa rà soát lại |
-| 12 | 6. Đại cương về kim loại | 22. Sự ăn mòn kim loại | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l22` | Nội dung cũ, chưa rà soát lại |
-| 12 | 6. Đại cương về kim loại | 23. Ôn tập chương 6 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l23` | Nội dung cũ, chưa rà soát lại |
+| 12 | 6. Đại cương về kim loại | 18. Cấu tạo và liên kết trong tinh thể kim loại | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l18` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 6. Đại cương về kim loại | 19. Tính chất vật lí và tính chất hóa học của kim loại | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l19` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 6. Đại cương về kim loại | 20. Kim loại trong tự nhiên và phương pháp tách kim loại | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l20` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 6. Đại cương về kim loại | 21. Hợp kim | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l21` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 6. Đại cương về kim loại | 22. Sự ăn mòn kim loại | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l22` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 6. Đại cương về kim loại | 23. Ôn tập chương 6 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l23` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 7. Nguyên tố nhóm IA và nhóm IIA | 24. Nguyên tố nhóm IA | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l24` | Nội dung cũ, chưa rà soát lại |
 | 12 | 7. Nguyên tố nhóm IA và nhóm IIA | 25. Nguyên tố nhóm IIA | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l25` | Nội dung cũ, chưa rà soát lại |
 | 12 | 7. Nguyên tố nhóm IA và nhóm IIA | 26. Ôn tập chương 7 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l26` | Nội dung cũ, chưa rà soát lại |
