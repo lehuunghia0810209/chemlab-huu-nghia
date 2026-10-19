@@ -14,7 +14,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
-| 11 | 6 | 25 | 3 | 22 | 0 |
+| 11 | 6 | 25 | 9 | 16 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
@@ -49,12 +49,12 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 11 | 1. Cân bằng hóa học | 1. Khái niệm về cân bằng hóa học | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l1` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 1. Cân bằng hóa học | 2. Cân bằng trong dung dịch nước | 5 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l2` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 1. Cân bằng hóa học | 3. Ôn tập chương 1 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l3` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 11 | 2. Nitrogen và sulfur | 4. Nitrogen | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l4` | Nội dung cũ, chưa rà soát lại |
-| 11 | 2. Nitrogen và sulfur | 5. Ammonia. Muối ammonium | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l5` | Nội dung cũ, chưa rà soát lại |
-| 11 | 2. Nitrogen và sulfur | 6. Một số hợp chất của nitrogen với oxygen | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l6` | Nội dung cũ, chưa rà soát lại |
-| 11 | 2. Nitrogen và sulfur | 7. Sulfur và sulfur dioxide | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l7` | Nội dung cũ, chưa rà soát lại |
-| 11 | 2. Nitrogen và sulfur | 8. Sulfuric acid và muối sulfate | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l8` | Nội dung cũ, chưa rà soát lại |
-| 11 | 2. Nitrogen và sulfur | 9. Ôn tập chương 2 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l9` | Nội dung cũ, chưa rà soát lại |
+| 11 | 2. Nitrogen và sulfur | 4. Nitrogen | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l4` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 2. Nitrogen và sulfur | 5. Ammonia. Muối ammonium | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l5` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 2. Nitrogen và sulfur | 6. Một số hợp chất của nitrogen với oxygen | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l6` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 2. Nitrogen và sulfur | 7. Sulfur và sulfur dioxide | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l7` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 2. Nitrogen và sulfur | 8. Sulfuric acid và muối sulfate | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l8` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 2. Nitrogen và sulfur | 9. Ôn tập chương 2 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l9` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 3. Đại cương về hóa học hữu cơ | 10. Hợp chất hữu cơ và hóa học hữu cơ | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l10` | Nội dung cũ, chưa rà soát lại |
 | 11 | 3. Đại cương về hóa học hữu cơ | 11. Phương pháp tách biệt và tinh chế hợp chất hữu cơ | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l11` | Nội dung cũ, chưa rà soát lại |
 | 11 | 3. Đại cương về hóa học hữu cơ | 12. Công thức phân tử hợp chất hữu cơ | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l12` | Nội dung cũ, chưa rà soát lại |

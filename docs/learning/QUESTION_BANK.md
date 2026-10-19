@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **182** in 8/21 chapters; lessons with ≥ 6 questions: 26/78.
-- By type: single 49 · multiple 26 · truefalse 26 · short 26 · numeric 55.
-- By difficulty: Nhận biết 34 · Thông hiểu 65 · Vận dụng 58 · Vận dụng cao 25.
-- Verification: internal 182 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **224** in 9/21 chapters; lessons with ≥ 6 questions: 32/78.
+- By type: single 61 · multiple 32 · truefalse 32 · short 32 · numeric 67.
+- By difficulty: Nhận biết 45 · Thông hiểu 79 · Vận dụng 69 · Vận dụng cao 31.
+- Verification: internal 224 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -45,12 +45,12 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g11-l1 Khái niệm về cân bằng hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l2 Cân bằng trong dung dịch nước | 7 | 1 | 1 | 1 | 1 | 3 |
 | g11-l3 Ôn tập chương 1 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g11-l4 Nitrogen | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l5 Ammonia. Muối ammonium | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l6 Một số hợp chất của nitrogen với oxygen | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l7 Sulfur và sulfur dioxide | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l8 Sulfuric acid và muối sulfate | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l9 Ôn tập chương 2 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g11-l4 Nitrogen | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l5 Ammonia. Muối ammonium | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l6 Một số hợp chất của nitrogen với oxygen | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l7 Sulfur và sulfur dioxide | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l8 Sulfuric acid và muối sulfate | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l9 Ôn tập chương 2 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l10 Hợp chất hữu cơ và hóa học hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l11 Phương pháp tách biệt và tinh chế hợp chất hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l12 Công thức phân tử hợp chất hữu cơ | 0 | 0 | 0 | 0 | 0 | 0 |
