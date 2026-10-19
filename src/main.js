@@ -1,12 +1,4 @@
-/* =========================================================
-   CHEMLAB CORE APPLICATION
-   App shell, hash router, command palette and the public
-   window.ChemLabApp bridge. Workspaces are mounted into the
-   view hosts below; heavy ones are lazy-loaded by
-   routeModuleLoader.js.
-========================================================= */
 
-/* ---------- design system ---------- */
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/components.css'
@@ -40,9 +32,6 @@ const STORAGE_KEYS = {
 
 applySavedPreferences()
 
-/* =========================================================
-   ROUTES
-========================================================= */
 
 const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab'])
 
@@ -86,9 +75,6 @@ const QUICK_TOOLS = [
   { tool: 'compound', icon: 'compound', label: 'Compound Studio' }
 ]
 
-/* =========================================================
-   COMMANDS
-========================================================= */
 
 const COMMANDS = [
   { group: 'Điều hướng', name: 'Tổng quan', description: 'Trang chủ ChemLab', icon: 'home', view: 'home', keywords: 'trang chu home dashboard tong quan' },
@@ -108,9 +94,6 @@ const COMMANDS = [
   { group: 'Giao diện', name: 'Cài đặt', description: 'Cỡ chữ, mật độ, chuyển động, tương phản', icon: 'settings', action: 'settings', keywords: 'cai dat settings co chu tuong phan' }
 ]
 
-/* =========================================================
-   APP SHELL
-========================================================= */
 
 const app = document.querySelector('#app')
 
@@ -292,9 +275,6 @@ app.innerHTML = `
   </div>
 `
 
-/* =========================================================
-   REFERENCES
-========================================================= */
 
 const shell = document.querySelector('#app-shell')
 const main = document.querySelector('#workspace-main')
@@ -312,9 +292,6 @@ const appStatus = document.querySelector('#app-status')
 
 let currentView = null
 
-/* =========================================================
-   SAFE INITIALIZER
-========================================================= */
 
 function safeInit(name, initializer, fallbackHost = null) {
   try {
@@ -341,9 +318,6 @@ function renderModuleError(host, name) {
   host.appendChild(node)
 }
 
-/* =========================================================
-   MODULES
-========================================================= */
 
 safeInit('Bảng tuần hoàn', () => {
   initPeriodicWorkspace({ root: periodicRoot, drawer })
@@ -376,9 +350,6 @@ const routeModules = createRouteModuleLoader({
 safeInit('Accessibility', initAccessibility)
 safeInit('User Preferences', initUserPreferences)
 
-/* =========================================================
-   CHEMAI — LAZY INTEGRATION
-========================================================= */
 
 let chemAIPromise = null
 
@@ -399,9 +370,6 @@ async function ensureChemAI(initialPrompt = '') {
   return api
 }
 
-/* =========================================================
-   VIEW SWITCH
-========================================================= */
 
 function switchView(viewName, {
   updateHistory = true,
@@ -473,9 +441,6 @@ function openTool(toolId) {
   return routeModules.openToolWhenReady(toolId)
 }
 
-/* =========================================================
-   SIDEBAR & THEME
-========================================================= */
 
 function setSidebar(state) {
   shell.dataset.sidebar = state
@@ -487,7 +452,6 @@ function setSidebar(state) {
     localStorage.setItem(STORAGE_KEYS.sidebar, state)
   }
   catch {
-    /* storage unavailable — state still applies for this session */
   }
 }
 
@@ -499,9 +463,6 @@ function toggleTheme() {
   announceMessage(next === 'dark' ? 'Đã chuyển sang giao diện tối' : 'Đã chuyển sang giao diện sáng')
 }
 
-/* =========================================================
-   COMMAND PALETTE
-========================================================= */
 
 const commandPalette = createCommandPalette({
   commands: COMMANDS,
@@ -533,9 +494,6 @@ const commandPalette = createCommandPalette({
   }
 })
 
-/* =========================================================
-   CLICK DELEGATION
-========================================================= */
 
 document.addEventListener('click', event => {
   const target = event.target
@@ -589,7 +547,6 @@ document.addEventListener('click', event => {
   }
 })
 
-/* Keep #tools/<id> in sync when the user switches tools inside the Tool Hub. */
 document.addEventListener('click', event => {
   const button = event.target.closest('.tool-selector [data-tool]')
   if (button && currentView === 'tools') {
@@ -597,9 +554,6 @@ document.addEventListener('click', event => {
   }
 })
 
-/* =========================================================
-   KEYBOARD
-========================================================= */
 
 document.addEventListener('keydown', event => {
   const typing = isTyping(event.target)
@@ -639,9 +593,6 @@ document.addEventListener('keydown', event => {
   }
 })
 
-/* =========================================================
-   HASH ROUTER
-========================================================= */
 
 window.addEventListener('hashchange', () => {
   const route = parseHashRoute()
@@ -682,7 +633,6 @@ function saveLastView(view) {
     localStorage.setItem(STORAGE_KEYS.view, view)
   }
   catch {
-    /* ignore */
   }
 }
 
@@ -696,10 +646,6 @@ function loadLastView() {
   }
 }
 
-/* =========================================================
-   PUBLIC APP CONTEXT API
-   Stable bridge used by ChemAI and the workspaces.
-========================================================= */
 
 function getAppContext() {
   return {
@@ -726,9 +672,6 @@ window.ChemLabApp = Object.freeze({
   context: getAppContext
 })
 
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function announceMessage(message) {
   if (!announcer) return
@@ -747,9 +690,6 @@ function isTyping(target) {
   )
 }
 
-/* =========================================================
-   START
-========================================================= */
 
 const initialRoute = (() => {
   const hash = parseHashRoute()

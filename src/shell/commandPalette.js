@@ -1,8 +1,3 @@
-/* =========================================================
-   COMMAND PALETTE (Ctrl/⌘ K)
-   Accessible combobox-style list: arrow keys move, Enter runs,
-   Esc closes, focus returns to the element that opened it.
-========================================================= */
 
 import { icon } from './icons.js'
 
@@ -155,7 +150,6 @@ export function createCommandPalette({ commands, onRun }) {
       event.preventDefault()
       close()
     }
-    // Only the input is focusable inside the dialog; keep Tab there.
     if (event.key === 'Tab') {
       event.preventDefault()
       input.focus()

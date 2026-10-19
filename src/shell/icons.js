@@ -1,8 +1,3 @@
-/* =========================================================
-   CHEMLAB ICON SET
-   24×24 stroke icons (Lucide-compatible geometry), inherit
-   currentColor. Shared by the app shell and dashboard.
-========================================================= */
 
 const PATHS = {
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
@@ -43,9 +38,6 @@ export function icon(name, className = 'ui-icon') {
 
 let brandMarkCount = 0
 
-/* Brand mark: flask with an electron orbit, drawn on the accent gradient tile.
-   Each instance needs its own gradient id: a url(#id) pointing into a
-   display:none subtree (e.g. the hidden sidebar on phones) renders nothing. */
 export function brandMark() {
   const gradientId = `cl-brand-grad-${++brandMarkCount}`
   return `

@@ -171,7 +171,6 @@ function saveSession(messages) {
     )
   }
   catch {
-    /* session storage is optional */
   }
 }
 

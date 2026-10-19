@@ -1,9 +1,3 @@
-/* =========================================================
-   PERIODIC WORKSPACE
-   Interactive table (spatial keyboard navigation, group/period
-   highlighting, live preview), phone-friendly list view and an
-   element detail sheet. Data lives in periodicData.js.
-========================================================= */
 
 import './periodic.css'
 import {
@@ -21,7 +15,6 @@ import { icon } from '../shell/icons.js'
 
 const STORAGE_KEY = 'chemlab-v5-periodic'
 
-/* IUPAC group → the A/B notation still used in Vietnamese textbooks. */
 const GROUP_AB = Object.freeze({
   1: 'IA', 2: 'IIA', 3: 'IIIB', 4: 'IVB', 5: 'VB', 6: 'VIB', 7: 'VIIB', 8: 'VIIIB', 9: 'VIIIB',
   10: 'VIIIB', 11: 'IB', 12: 'IIB', 13: 'IIIA', 14: 'IVA', 15: 'VA', 16: 'VIA', 17: 'VIIA', 18: 'VIIIA'
@@ -50,7 +43,6 @@ const QUICK_ACTIONS = Object.freeze([
 
 const F_ROW = { lanthanide: 10, actinide: 11 }
 
-/* Ion and isotope tables load lazily; periodicApi is set once they arrive. */
 let periodicApi = null
 let periodicDataPromise = null
 
@@ -167,7 +159,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
   const search = root.querySelector('#periodic-search')
   const scrollHint = root.querySelector('.pt-scroll-hint')
 
-  /* ---------- matching ---------- */
 
   function matches() {
     const ranked = state.query ? searchElements(state.query) : ELEMENTS
@@ -175,7 +166,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     return ranked.filter(element => !state.filter || element[key] === state.filter)
   }
 
-  /* ---------- table ---------- */
 
   function cellHTML(element) {
     const { row, col } = gridPosition(element)
@@ -204,7 +194,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     }
     pieces.push('<div class="pt-preview" data-pt-preview style="grid-row:2 / span 3;grid-column:4 / span 10" aria-hidden="true"></div>')
 
-    // Grid semantics need cells inside rows; rows use display: contents so the CSS grid placement is unchanged.
     const rows = new Map()
     const addToRow = (row, html) => rows.set(row, [...(rows.get(row) || []), html])
     addToRow(7, `
@@ -243,7 +232,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     renderList(visible)
   }
 
-  /* ---------- list ---------- */
 
   function renderList(visible = matches()) {
     if (state.view !== 'list') return
@@ -263,7 +251,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
       : '<li class="ui-state"><strong>Không có nguyên tố phù hợp</strong><span>Thử từ khóa khác hoặc bỏ bộ lọc.</span></li>'
   }
 
-  /* ---------- filters & controls ---------- */
 
   function renderFilters() {
     const mode = COLOR_MODES[state.colorMode]
@@ -296,11 +283,9 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: state.layout, colorMode: state.colorMode, view: state.view }))
     }
     catch {
-      /* ignore */
     }
   }
 
-  /* ---------- preview & relations ---------- */
 
   function renderPreview(number) {
     const element = getElement(number)
@@ -339,7 +324,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     }
   }
 
-  /* ---------- keyboard: roving tabindex + spatial arrows ---------- */
 
   function navigables() {
     return [...table.querySelectorAll('.pt-cell, .pt-series')]
@@ -403,9 +387,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     })
   }
 
-  /* =========================================================
-     DETAIL SHEET
-  ========================================================= */
 
   function ensureBackdrop() {
     let backdrop = document.querySelector('#element-drawer-backdrop')
@@ -448,7 +429,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     requestAnimationFrame(() => {
       backdrop.classList.add('is-open')
       drawer.classList.add('open')
-      // Reduced motion forces a 1 ms visibility transition, so the drawer can still be hidden here: retry for a few frames.
       let tries = 0
       const tryFocus = () => {
         focusClose()
@@ -705,7 +685,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     await openAtomicExplorer(element.number, { mode })
   }
 
-  /* ---------- drawer events ---------- */
 
   drawer.addEventListener('click', event => {
     const target = event.target
@@ -767,7 +746,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     }
   })
 
-  /* ---------- workspace events ---------- */
 
   search.addEventListener('input', () => {
     state.query = search.value
@@ -867,7 +845,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
   new ResizeObserver(updateScrollHint).observe(tableWrap)
   narrow.addEventListener('change', updateScrollHint)
 
-  /* ---------- public bridge ---------- */
 
   window.ChemLabPeriodic = Object.freeze({
     openElement: number => openElement(Number(number)),
@@ -889,7 +866,6 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
     }
   })
 
-  /* ---------- first render ---------- */
 
   renderTable()
   renderPreview(1)
@@ -897,6 +873,5 @@ export function initPeriodicWorkspace({ root, drawer } = {}) {
   syncControls()
   applyFilters()
 
-  // Warm the optional ion/isotope data after the table is on screen.
   setTimeout(loadPeriodicData, 1200)
 }

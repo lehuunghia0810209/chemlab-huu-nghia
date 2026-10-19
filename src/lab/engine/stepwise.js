@@ -1,17 +1,3 @@
-/* =========================================================
-   STEPWISE PROTONATION (carbonate / sulfite + HCl)
-   Teaching model with stated assumptions:
-   - Acid added to the salt: each H⁺ first turns XO₃²⁻ into
-     HXO₃⁻ (stage 1, no gas); only then HXO₃⁻ + H⁺ → XO₂↑ + H₂O
-     (stage 2).
-   - Salt added to the acid: while acid is in excess each XO₃²⁻
-     takes 2 H⁺ at once and releases gas.
-   Reactions are taken as complete and all gas as released
-   (open beaker). Real solutions can lose a little gas earlier
-   and keep some dissolved — the UI says so.
-   Replays the additions in order, so the result depends on the
-   mixing order exactly as in the classic textbook experiment.
-========================================================= */
 
 export const STEPWISE_SYSTEMS = [
   {
@@ -44,14 +30,6 @@ export function stepwiseSystemFor(reactionId) {
   return STEPWISE_SYSTEMS.find(system => system.reactionIds.includes(reactionId)) || null
 }
 
-/**
- * @param system entry of STEPWISE_SYSTEMS
- * @param {{ id: string, volume: number }[]} additions in order (mL)
- * @param {(id: string) => number|null} concentrationOf mol/L
- * @returns amounts in mol: { acid, dibasic, monobasic, gas, stage1, stage2 }
- *   (acid/dibasic/monobasic = what is left in the beaker; gas = released in total;
- *   stage1/stage2 = how much reacted by each step)
- */
 export function replayStepwise(system, additions, concentrationOf) {
   const state = { acid: 0, dibasic: 0, monobasic: 0, gas: 0, stage1: 0, stage2: 0, direct: 0 }
 
@@ -69,7 +47,6 @@ export function replayStepwise(system, additions, concentrationOf) {
   }
 
   const saltIntoAcid = () => {
-    // Acid in excess: XO₃²⁻ + 2H⁺ → XO₂↑ directly, then any HXO₃⁻.
     const direct = Math.min(state.dibasic, state.acid / 2)
     state.dibasic -= direct
     state.acid -= 2 * direct

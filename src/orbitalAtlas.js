@@ -1,8 +1,3 @@
-/* =========================================================
-   ORBITAL ATLAS (Tool Center)
-   Browse any hydrogen-like orbital n = 1…7, l = s…f with the
-   same math and renderer as the Atomic Explorer.
-========================================================= */
 
 import './atomic/atomicExplorer.css'
 import './orbitalAtlas.css'
@@ -158,7 +153,6 @@ export function initOrbitalAtlas() {
     }, 16))
   }
 
-  // Three.js (~190 kB gzip) loads only when the atlas is first on screen.
   let renderer = null
   let loading = false
 
@@ -200,7 +194,6 @@ export function initOrbitalAtlas() {
     renderScene()
   }
 
-  // Only create a WebGL context once the atlas is actually on screen.
   const visibility = new IntersectionObserver(entries => {
     if (entries.some(entry => entry.isIntersecting)) {
       ensureHost()

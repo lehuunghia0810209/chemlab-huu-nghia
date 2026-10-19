@@ -10,18 +10,11 @@ import {
 import './reactionStudio.css'
 
 
-/* =========================================================
-   CHEMLAB
-   REACTION STUDIO
-========================================================= */
 
 let activeStudio =
   null
 
 
-/* =========================================================
-   ELEMENT MASSES
-========================================================= */
 
 const ELEMENT_MASS =
   new Map(
@@ -86,13 +79,9 @@ const ELEMENT_MASS =
   )
 
 
-/* =========================================================
-   REACTION LIBRARY
-========================================================= */
 
 const REACTION_LIBRARY = [
 
-  /* ACID BASE */
 
   reaction(
     ['HCl','NaOH'],
@@ -140,7 +129,6 @@ const REACTION_LIBRARY = [
   ),
 
 
-  /* PRECIPITATION */
 
   reaction(
     ['AgNO3','NaCl'],
@@ -188,7 +176,6 @@ const REACTION_LIBRARY = [
   ),
 
 
-  /* GAS */
 
   reaction(
     ['Na2CO3','HCl'],
@@ -211,7 +198,6 @@ const REACTION_LIBRARY = [
   ),
 
 
-  /* METAL ACID */
 
   reaction(
     ['Zn','HCl'],
@@ -244,7 +230,6 @@ const REACTION_LIBRARY = [
   ),
 
 
-  /* COMBUSTION */
 
   reaction(
     ['CH4','O2'],
@@ -284,7 +269,6 @@ const REACTION_LIBRARY = [
   ),
 
 
-  /* SYNTHESIS */
 
   reaction(
     ['H2','O2'],
@@ -314,7 +298,6 @@ const REACTION_LIBRARY = [
   ),
 
 
-  /* DECOMPOSITION */
 
   reaction(
     ['CaCO3'],
@@ -359,16 +342,11 @@ const REACTION_MAP =
   )
 
 
-/* =========================================================
-   STATES
-========================================================= */
 
 const STATE_MAP = {
 
   H2O: 'l',
 
-  /* Common gases and insoluble solids the formula heuristic
-     below would otherwise label (aq). */
   NO: 'g',
   N2O: 'g',
   CO: 'g',
@@ -435,9 +413,6 @@ const STATE_MAP = {
 }
 
 
-/* =========================================================
-   EXAMPLES
-========================================================= */
 
 const EXAMPLES = [
 
@@ -458,9 +433,6 @@ const EXAMPLES = [
 ]
 
 
-/* =========================================================
-   OPEN
-========================================================= */
 
 export function openReactionStudio({
   context = null
@@ -995,9 +967,6 @@ export function openReactionStudio({
     null
 
 
-  /* =====================================================
-     CONTEXT START
-  ===================================================== */
 
   if (
     context
@@ -1011,9 +980,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     ANALYZE
-  ===================================================== */
 
   function analyze() {
 
@@ -1051,9 +1017,6 @@ export function openReactionStudio({
         null
 
 
-      /* =================================================
-         PREDICT PRODUCTS
-      ================================================= */
 
       if (
         !parsed.products.length
@@ -1116,9 +1079,6 @@ export function openReactionStudio({
       }
 
 
-      /* =================================================
-         BALANCE
-      ================================================= */
 
       const solution =
         balanceEquation(
@@ -1274,9 +1234,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     RENDER RESULT
-  ===================================================== */
 
   function renderResult(
     result
@@ -1402,9 +1359,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     RATIO
-  ===================================================== */
 
   function renderRatio(
     result
@@ -1467,9 +1421,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     AUDIT
-  ===================================================== */
 
   function renderAudit(
     audit
@@ -1547,9 +1498,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     SPECIES
-  ===================================================== */
 
   function renderSpecies(
     result
@@ -1658,9 +1606,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     OBSERVATIONS
-  ===================================================== */
 
   function renderObservations(
     result
@@ -1715,9 +1660,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     SOURCE
-  ===================================================== */
 
   function renderSource(
     result
@@ -1766,9 +1708,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     RESET
-  ===================================================== */
 
   function resetResult() {
 
@@ -1861,9 +1800,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     METRIC
-  ===================================================== */
 
   function setMetric(
     name,
@@ -1878,9 +1814,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     SAVE
-  ===================================================== */
 
   function saveReaction() {
 
@@ -1909,9 +1842,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     RUN LAB
-  ===================================================== */
 
   async function runLab() {
 
@@ -1934,9 +1864,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     OPEN PRODUCT
-  ===================================================== */
 
   async function openProduct() {
 
@@ -1980,9 +1907,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     COPY
-  ===================================================== */
 
   async function copyEquation() {
 
@@ -2019,9 +1943,6 @@ export function openReactionStudio({
   }
 
 
-  /* =====================================================
-     EVENTS
-  ===================================================== */
 
   overlay
     .querySelector(
@@ -2172,9 +2093,6 @@ export function openReactionStudio({
   )
 
 
-  /* =====================================================
-     CLOSE
-  ===================================================== */
 
   function close() {
 
@@ -2209,9 +2127,6 @@ export function openReactionStudio({
 }
 
 
-/* =========================================================
-   PUBLIC CLOSE
-========================================================= */
 
 export function closeReactionStudio() {
 
@@ -2221,9 +2136,6 @@ export function closeReactionStudio() {
 }
 
 
-/* =========================================================
-   PARSE REACTION INPUT
-========================================================= */
 
 function parseReactionInput(
   raw
@@ -2309,9 +2221,6 @@ function parseReactionInput(
 }
 
 
-/* =========================================================
-   SPLIT
-========================================================= */
 
 function splitSpecies(
   side
@@ -2331,9 +2240,6 @@ function splitSpecies(
 }
 
 
-/* =========================================================
-   SPECIES
-========================================================= */
 
 function parseSpeciesToken(
   token
@@ -2395,9 +2301,6 @@ function parseSpeciesToken(
 }
 
 
-/* =========================================================
-   PREDICT
-========================================================= */
 
 function predictReaction(
   reactants
@@ -2420,9 +2323,6 @@ function predictReaction(
 }
 
 
-/* =========================================================
-   LIBRARY ENTRY
-========================================================= */
 
 function reaction(
   reactants,
@@ -2441,9 +2341,6 @@ function reaction(
 }
 
 
-/* =========================================================
-   KEY
-========================================================= */
 
 function reactantKey(
   reactants
@@ -2459,9 +2356,6 @@ function reactantKey(
 }
 
 
-/* =========================================================
-   BALANCE EQUATION
-========================================================= */
 
 function balanceEquation(
   reactants,
@@ -2472,39 +2366,21 @@ function balanceEquation(
 }
 
 
-/* =========================================================
-   NULL SPACE
-========================================================= */
 
 
 
-/* =========================================================
-   RREF
-========================================================= */
 
 
 
-/* =========================================================
-   SOLVE FREE VARIABLES
-========================================================= */
 
 
 
-/* =========================================================
-   FRACTIONS -> INTEGER
-========================================================= */
 
 
 
-/* =========================================================
-   FRACTION CLASS
-========================================================= */
 
 
 
-/* =========================================================
-   ENRICH
-========================================================= */
 
 function enrichSpecies(
   species,
@@ -2533,9 +2409,6 @@ function enrichSpecies(
 }
 
 
-/* =========================================================
-   STATE INFERENCE
-========================================================= */
 
 function inferState(
   formula
@@ -2554,7 +2427,6 @@ function inferState(
   }
 
 
-  /* NITRATES */
 
   if (
     formula.includes(
@@ -2567,7 +2439,6 @@ function inferState(
   }
 
 
-  /* COMMON ACIDS */
 
   if (
     [
@@ -2585,7 +2456,6 @@ function inferState(
   }
 
 
-  /* ALKALI COMPOUNDS */
 
   if (
     /^(Li|Na|K|Rb|Cs)/.test(
@@ -2598,7 +2468,6 @@ function inferState(
   }
 
 
-  /* COMMON HYDROXIDES */
 
   if (
     [
@@ -2616,7 +2485,6 @@ function inferState(
   }
 
 
-  /* DEFAULT FOR COMMON REACTION SOLUTIONS */
 
   if (
     /^[A-Z][a-z]?[A-Z(]/.test(
@@ -2634,9 +2502,6 @@ function inferState(
 }
 
 
-/* =========================================================
-   MOLAR MASS
-========================================================= */
 
 function calculateMolarMass(
   atoms
@@ -2685,9 +2550,6 @@ function calculateMolarMass(
 }
 
 
-/* =========================================================
-   ATOM AUDIT
-========================================================= */
 
 function createAtomAudit(
   reactants,
@@ -2754,9 +2616,6 @@ function createAtomAudit(
 }
 
 
-/* =========================================================
-   ATOM TOTAL
-========================================================= */
 
 function atomTotal(
   species,
@@ -2785,9 +2644,6 @@ function atomTotal(
 }
 
 
-/* =========================================================
-   DETECT TYPE
-========================================================= */
 
 function detectReactionType(
   reactants,
@@ -2906,9 +2762,6 @@ function detectReactionType(
 }
 
 
-/* =========================================================
-   OBSERVATIONS
-========================================================= */
 
 function detectObservations(
   products
@@ -3034,9 +2887,6 @@ function detectObservations(
 }
 
 
-/* =========================================================
-   EQUATION TEXT
-========================================================= */
 
 function equationText(
   reactants,
@@ -3069,9 +2919,6 @@ function equationText(
 }
 
 
-/* =========================================================
-   PLAIN SPECIES
-========================================================= */
 
 function plainSpecies(
   species
@@ -3089,9 +2936,6 @@ function plainSpecies(
 }
 
 
-/* =========================================================
-   RENDER EQUATION
-========================================================= */
 
 function renderBalancedEquation(
   reactants,
@@ -3143,9 +2987,6 @@ function renderBalancedEquation(
 }
 
 
-/* =========================================================
-   SPECIES EQUATION
-========================================================= */
 
 function renderSpeciesEquation(
   species
@@ -3181,9 +3022,6 @@ function renderSpeciesEquation(
 }
 
 
-/* =========================================================
-   RATIO CHIP
-========================================================= */
 
 function ratioChip(
   species
@@ -3208,30 +3046,18 @@ function ratioChip(
 }
 
 
-/* =========================================================
-   PARSE FORMULA
-========================================================= */
 
 function parseFormula(formula) {
   return new Map(Object.entries(parseSharedFormula(formula)))
 }
 
 
-/* =========================================================
-   FORMULA PART
-========================================================= */
 
 
 
-/* =========================================================
-   NUMBER
-========================================================= */
 
 
 
-/* =========================================================
-   NORMALIZATION
-========================================================= */
 
 function normalizeReactionString(
   value
@@ -3291,15 +3117,6 @@ function normalizeFormulaInput(
 }
 
 
-/* =========================================================
-   BRACKETS
-========================================================= */
-
-
-
-/* =========================================================
-   GCD
-========================================================= */
 
 
 
@@ -3309,9 +3126,9 @@ function normalizeFormulaInput(
 
 
 
-/* =========================================================
-   MASS
-========================================================= */
+
+
+
 
 function parseMass(
   value
@@ -3339,9 +3156,6 @@ function parseMass(
 }
 
 
-/* =========================================================
-   UI
-========================================================= */
 
 function metric(
   label,
@@ -3368,9 +3182,6 @@ function metric(
 }
 
 
-/* =========================================================
-   CONTEXT
-========================================================= */
 
 function renderContext(
   context
@@ -3437,9 +3248,6 @@ function renderContext(
 }
 
 
-/* =========================================================
-   FORMULA HTML
-========================================================= */
 
 function renderFormula(
   formula
@@ -3456,9 +3264,6 @@ function renderFormula(
 }
 
 
-/* =========================================================
-   RAW EQUATION HTML
-========================================================= */
 
 function renderRawEquation(
   equation
@@ -3479,9 +3284,6 @@ function renderRawEquation(
 }
 
 
-/* =========================================================
-   FORMAT
-========================================================= */
 
 function formatNumber(
   value,
@@ -3502,9 +3304,6 @@ function formatNumber(
 }
 
 
-/* =========================================================
-   MESSAGE
-========================================================= */
 
 function showMessage(
   message,
@@ -3556,9 +3355,6 @@ function hideMessage() {
 }
 
 
-/* =========================================================
-   TOAST
-========================================================= */
 
 function studioToast(
   message
@@ -3619,9 +3415,6 @@ function studioToast(
 }
 
 
-/* =========================================================
-   ESCAPE
-========================================================= */
 
 function escapeHTML(
   value

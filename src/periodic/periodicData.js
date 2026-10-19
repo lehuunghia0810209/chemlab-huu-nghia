@@ -1,9 +1,3 @@
-/* =========================================================
-   PERIODIC TABLE DATA
-   Normalised element records (position, block, category,
-   state, electron configuration) built from data/elements.js.
-   No DOM here.
-========================================================= */
 
 import { elements } from '../data/elements.js'
 import { getElectronConfiguration } from '../chem/electronConfiguration.js'
@@ -35,8 +29,6 @@ export const STATES = Object.freeze({
   unknown: { label: 'Chưa xác định' }
 })
 
-/* Physical state at 25 °C, 1 bar. Elements from Fm (Z = 100) on have
-   never been made in bulk, so their state is not known experimentally. */
 const GASES = new Set([1, 2, 7, 8, 9, 10, 17, 18, 36, 54, 86])
 const LIQUIDS = new Set([35, 80])
 const FIRST_UNKNOWN_STATE = 100
@@ -47,7 +39,6 @@ function sequentialRow(start, end, column = 1) {
   return row
 }
 
-/* Column (group) of each main-table element, keyed by period. */
 const PERIOD_ROWS = {
   1: { 1: 1, 2: 18 },
   2: { 3: 1, 4: 2, 5: 13, 6: 14, 7: 15, 8: 16, 9: 17, 10: 18 },
@@ -120,7 +111,6 @@ export const ELEMENTS = Object.freeze(elements.map(raw => {
     category: categoryOf(raw.number, raw.category),
     state: stateOf(raw.number),
     ...where,
-    /* Properties of Z ≥ 104 are largely theoretical predictions. */
     predicted: raw.number >= 104,
     electron: getElectronConfiguration(raw.number)
   })
@@ -132,8 +122,6 @@ export function getElement(number) {
   return ELEMENT_MAP.get(Number(number)) || null
 }
 
-/* Standard atomic weight for display; integers mean "mass number of the
-   longest-lived isotope" and are shown in brackets by convention. */
 export function formatMass(mass) {
   const value = Number(mass)
   if (!Number.isFinite(value)) return '—'
@@ -150,7 +138,6 @@ export function normalizeSearch(value) {
     .trim()
 }
 
-/* Search ranks exact symbol / atomic number above partial name matches. */
 export function searchElements(query) {
   const text = normalizeSearch(query)
   if (!text) return ELEMENTS

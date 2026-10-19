@@ -1,10 +1,3 @@
-/* =========================================================
-   VIRTUAL LAB — CHEMISTRY STATE FROM THE ACTION LOG
-   One deterministic function from (ordered additions, triggered
-   reactions) to the chemical state the UI and the renderer
-   show. Nothing here mutates the lab; undo/reset only change
-   the log, so no amount is ever consumed twice.
-========================================================= */
 
 import { stockConcentration } from '../concentrations.js'
 import { computeStoichiometry } from '../stoichiometry.js'
@@ -18,26 +11,16 @@ export function mixtureFrom(additions) {
   return mixture
 }
 
-/* Reagents a reaction (or its stepwise system) draws on. */
 function reagentsOf(reaction) {
   const system = stepwiseSystemFor(reaction.id)
   return system ? [system.acid, system.dibasic, system.monobasic].filter(Boolean) : reaction.reactants
 }
 
-/**
- * @param {{ additions: {id: string, volume: number}[], triggeredIds: Iterable<string>,
- *           reactions: object[], reagents: Record<string, object>,
- *           concentrationOf?: (id: string) => number|null }} input
- * @returns {{ mixture, results: Map<string, object>, solidMoles: number, gasMoles: number }}
- *   results: reaction id → stoichiometry result, stepwise result
- *   ({ status: 'quantitative', kind: 'stepwise', system, state }) or a qualitative result.
- */
 export function simulateLab({ additions, triggeredIds, reactions, reagents, concentrationOf = stockConcentration }) {
   const mixture = mixtureFrom(additions)
   const triggered = [...triggeredIds].map(id => reactions.find(item => item.id === id)).filter(Boolean)
   const results = new Map()
 
-  // Reactions that compete for a reagent cannot be computed independently.
   const groupOf = reaction => stepwiseSystemFor(reaction.id)?.id || reaction.id
   const users = new Map()
   for (const reaction of triggered) {
@@ -86,15 +69,12 @@ export function simulateLab({ additions, triggeredIds, reactions, reagents, conc
   return { mixture, results, solidMoles, gasMoles }
 }
 
-/* Does the engine (rather than the trigger) decide when this reaction's gas appears? */
 export function engineDrivesGas(reaction, simulation) {
   return simulation.results.get(reaction.id)?.status === 'quantitative' &&
     (simulation.results.get(reaction.id).kind === 'stepwise' ||
       simulation.results.get(reaction.id).products?.some(product => product.gas))
 }
 
-/* Fraction of each added reagent still dissolved, for reagents consumed by
-   quantitative (non-stepwise) reactions; others are absent (= 1). */
 export function remainingFractions(simulation) {
   const fractions = {}
   for (const result of simulation.results.values()) {

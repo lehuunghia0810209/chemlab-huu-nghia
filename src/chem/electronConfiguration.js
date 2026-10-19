@@ -1,43 +1,32 @@
-/* =========================================================
-   GROUND-STATE ELECTRON CONFIGURATIONS
-   Madelung (Aufbau) filling order plus the experimentally
-   established exceptions (NIST Atomic Spectra Database ground
-   states). Configurations for Z ≥ 104 are theoretical
-   predictions and are flagged as such.
-
-   Pure data/logic — no DOM. Tested by scripts/test-chem-core.mjs.
-========================================================= */
 
 const L_LETTERS = ['s', 'p', 'd', 'f']
 
-/* Madelung order: increasing n + l, then increasing n. */
 export const AUFBAU_ORDER = Object.freeze([
   '1s', '2s', '2p', '3s', '3p', '4s', '3d', '4p', '5s', '4d', '5p',
   '6s', '4f', '5d', '6p', '7s', '5f', '6d', '7p'
 ])
 
-/* Subshell occupancies that differ from the Aufbau prediction. */
 const EXCEPTIONS = Object.freeze({
-  24: { '3d': 5, '4s': 1 },              // Cr  [Ar] 3d5 4s1
-  29: { '3d': 10, '4s': 1 },             // Cu  [Ar] 3d10 4s1
-  41: { '4d': 4, '5s': 1 },              // Nb  [Kr] 4d4 5s1
-  42: { '4d': 5, '5s': 1 },              // Mo  [Kr] 4d5 5s1
-  44: { '4d': 7, '5s': 1 },              // Ru  [Kr] 4d7 5s1
-  45: { '4d': 8, '5s': 1 },              // Rh  [Kr] 4d8 5s1
-  46: { '4d': 10, '5s': 0 },             // Pd  [Kr] 4d10
-  47: { '4d': 10, '5s': 1 },             // Ag  [Kr] 4d10 5s1
-  57: { '4f': 0, '5d': 1 },              // La  [Xe] 5d1 6s2
-  58: { '4f': 1, '5d': 1 },              // Ce  [Xe] 4f1 5d1 6s2
-  64: { '4f': 7, '5d': 1 },              // Gd  [Xe] 4f7 5d1 6s2
-  78: { '5d': 9, '6s': 1 },              // Pt  [Xe] 4f14 5d9 6s1
-  79: { '5d': 10, '6s': 1 },             // Au  [Xe] 4f14 5d10 6s1
-  89: { '5f': 0, '6d': 1 },              // Ac  [Rn] 6d1 7s2
-  90: { '5f': 0, '6d': 2 },              // Th  [Rn] 6d2 7s2
-  91: { '5f': 2, '6d': 1 },              // Pa  [Rn] 5f2 6d1 7s2
-  92: { '5f': 3, '6d': 1 },              // U   [Rn] 5f3 6d1 7s2
-  93: { '5f': 4, '6d': 1 },              // Np  [Rn] 5f4 6d1 7s2
-  96: { '5f': 7, '6d': 1 },              // Cm  [Rn] 5f7 6d1 7s2
-  103: { '6d': 0, '7p': 1 }              // Lr  [Rn] 5f14 7s2 7p1
+  24: { '3d': 5, '4s': 1 },
+  29: { '3d': 10, '4s': 1 },
+  41: { '4d': 4, '5s': 1 },
+  42: { '4d': 5, '5s': 1 },
+  44: { '4d': 7, '5s': 1 },
+  45: { '4d': 8, '5s': 1 },
+  46: { '4d': 10, '5s': 0 },
+  47: { '4d': 10, '5s': 1 },
+  57: { '4f': 0, '5d': 1 },
+  58: { '4f': 1, '5d': 1 },
+  64: { '4f': 7, '5d': 1 },
+  78: { '5d': 9, '6s': 1 },
+  79: { '5d': 10, '6s': 1 },
+  89: { '5f': 0, '6d': 1 },
+  90: { '5f': 0, '6d': 2 },
+  91: { '5f': 2, '6d': 1 },
+  92: { '5f': 3, '6d': 1 },
+  93: { '5f': 4, '6d': 1 },
+  96: { '5f': 7, '6d': 1 },
+  103: { '6d': 0, '7p': 1 }
 })
 
 const EXCEPTION_NOTES = Object.freeze({
@@ -72,7 +61,6 @@ export function parseSubshell(label) {
   return { n, l, label, capacity: 2 * (2 * l + 1), orbitals: 2 * l + 1 }
 }
 
-/* Unpaired electrons in one subshell by Hund's rule. */
 export function unpairedIn(electrons, orbitals) {
   return electrons <= orbitals ? electrons : 2 * orbitals - electrons
 }
@@ -107,10 +95,6 @@ function format(subshells) {
   return subshells.map(item => `${item.label}${toSuperscript(item.electrons)}`).join(' ')
 }
 
-/**
- * @param {number} atomicNumber 1–118
- * @returns configuration descriptor, or null for invalid input
- */
 export function getElectronConfiguration(atomicNumber) {
   const Z = Number(atomicNumber)
   if (!Number.isInteger(Z) || Z < 1 || Z > 118) return null
@@ -159,7 +143,6 @@ export function getElectronConfiguration(atomicNumber) {
   })
 }
 
-/* Electron count per (n,l) slot in the order an orbital-box diagram is drawn. */
 export function orbitalBoxes(subshell) {
   const boxes = Array.from({ length: subshell.orbitals }, () => 0)
   for (let index = 0; index < subshell.electrons; index += 1) {

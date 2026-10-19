@@ -1,10 +1,3 @@
-/* =========================================================
-   ORBITAL SCENE
-   Renders one hydrogen-like orbital two ways:
-   - probability cloud: points sampled from |ψ|²
-   - boundary surface: |ψ| isosurface enclosing 90 % probability
-   Colour encodes the sign (phase) of ψ, not charge.
-========================================================= */
 
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js'
 import { radialExtent, sampleDensity, sampleGrid } from '../chem/orbitalMath.js'
@@ -26,7 +19,7 @@ function cloudMaterial(THREE, pixelRatio) {
       uSize: { value: 26 * pixelRatio },
       uOpacity: { value: 0.75 }
     },
-    vertexShader: /* glsl */ `
+    vertexShader:   `
       attribute vec3 color;
       varying vec3 vColor;
       uniform float uSize;
@@ -37,7 +30,7 @@ function cloudMaterial(THREE, pixelRatio) {
         gl_Position = projectionMatrix * mv;
       }
     `,
-    fragmentShader: /* glsl */ `
+    fragmentShader:   `
       varying vec3 vColor;
       uniform float uOpacity;
       void main() {
@@ -104,9 +97,6 @@ function createAxes(THREE) {
   return group
 }
 
-/**
- * @param {ReturnType<import('../three/sceneHost.js').createSceneHost>} host
- */
 export function createOrbitalScene(host) {
   const { THREE, scene } = host
   const root = new THREE.Group()
@@ -203,7 +193,6 @@ export function createOrbitalScene(host) {
       return current
     },
 
-    /* Heavy work (sampling + marching cubes) — callers should show a busy state first. */
     show(n, l, key) {
       clear()
       current = { n, l, key }

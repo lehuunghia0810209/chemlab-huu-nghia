@@ -1,9 +1,5 @@
 
 
-/* =========================================================
-   CHEMLAB 4.4.4
-   ACCESSIBILITY
-========================================================= */
 
 export function initAccessibility() {
 
@@ -24,9 +20,6 @@ export function initAccessibility() {
   }
 
 
-  /* =====================================================
-     BASIC LABELS
-  ===================================================== */
 
   setLabel(
     '#balance-reactants',
@@ -46,9 +39,6 @@ export function initAccessibility() {
   )
 
 
-  /* =====================================================
-     ALERT
-  ===================================================== */
 
   document
     .querySelectorAll(
@@ -66,9 +56,6 @@ export function initAccessibility() {
     )
 
 
-  /* =====================================================
-     LIVE REGIONS
-  ===================================================== */
 
   document
     .querySelectorAll(
@@ -103,9 +90,6 @@ export function initAccessibility() {
 
 
 
-  /* =====================================================
-     HELPER
-  ===================================================== */
 
   function setLabel(
     selector,
@@ -124,9 +108,6 @@ export function initAccessibility() {
   }
 
 
-  /* =====================================================
-     CALCULATOR TABS
-  ===================================================== */
 
   function bindCalculatorTabs() {
 
@@ -346,9 +327,6 @@ export function initAccessibility() {
   }
 
 
-  /* =====================================================
-     PRESSED STATES
-  ===================================================== */
 
   function bindPressedStates() {
 

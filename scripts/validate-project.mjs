@@ -102,9 +102,6 @@ if (!indexHtml.includes(`ChemLab ${version}`)) {
   fail(`index.html chưa chứa version ${version}.`)
 }
 
-/* =========================================================
-   SOURCE INTEGRITY
-========================================================= */
 
 const srcDir = path.join(rootDir, 'src')
 const functionsDir = path.join(rootDir, 'functions')

@@ -1,12 +1,3 @@
-/* =========================================================
-   SCENE HOST — one lifecycle for every Three.js view
-   - WebGL capability check with an accessible fallback
-   - device-pixel-ratio cap per quality tier
-   - render on demand; continuous loop only while something moves
-   - pauses when the tab is hidden or the canvas leaves the viewport
-   - context-loss handling, full GPU resource disposal
-   - smooth camera presets, reduced-motion aware
-========================================================= */
 
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -26,14 +17,12 @@ export function webglAvailable() {
   }
 }
 
-/* Pick a sensible default: phones and low-memory devices start on "low". */
 export function defaultQuality() {
   try {
     const saved = localStorage.getItem(QUALITY_KEY)
     if (QUALITY[saved]) return saved
   }
   catch {
-    /* ignore */
   }
   const memory = navigator.deviceMemory || 8
   const cores = navigator.hardwareConcurrency || 8
@@ -48,7 +37,6 @@ export function saveQuality(quality) {
     localStorage.setItem(QUALITY_KEY, quality)
   }
   catch {
-    /* ignore */
   }
 }
 
@@ -75,16 +63,6 @@ function renderFallback(container, message) {
   `
 }
 
-/**
- * @param {object} options
- * @param {HTMLElement} options.container
- * @param {string} [options.quality]
- * @param {number} [options.fov]
- * @param {{x:number,y:number,z:number}} [options.cameraPosition]
- * @param {(time:number, delta:number) => boolean|void} [options.onFrame] return true while animating
- * @param {string} [options.label] accessible name for the canvas
- * @returns host API or null when WebGL is unavailable
- */
 export function createSceneHost({
   container,
   quality = defaultQuality(),
@@ -123,7 +101,6 @@ export function createSceneHost({
   canvas.setAttribute('role', 'img')
   canvas.setAttribute('aria-label', label)
   canvas.tabIndex = 0
-  // Dragging on the canvas rotates the model instead of scrolling the page.
   canvas.style.touchAction = 'none'
   container.appendChild(canvas)
 
@@ -306,7 +283,6 @@ export function createSceneHost({
       api.flyTo(home.position, home.target)
     },
 
-    /* Look along an axis from the current distance. */
     viewAxis(axis) {
       const distance = camera.position.distanceTo(controls.target)
       const direction = {

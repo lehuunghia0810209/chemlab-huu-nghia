@@ -16,6 +16,7 @@ const MAX_CONTEXT_TEXT = 3200
 const MAX_BODY_BYTES = 64 * 1024
 const RATE_WINDOW_MS = 60 * 1000
 const RATE_MAX_REQUESTS = 18
+const MAX_RATE_BUCKETS = 600
 const rateBuckets = new Map()
 
 const ALLOWED_VIEWS = Object.freeze([
@@ -101,16 +102,20 @@ function rateLimit(request) {
   const current = rateBuckets.get(key)
 
   if (!current || now >= current.resetAt) {
+    if (rateBuckets.size >= MAX_RATE_BUCKETS) {
+      for (const [bucketKey, bucket] of rateBuckets) {
+        if (now >= bucket.resetAt) rateBuckets.delete(bucketKey)
+      }
+
+      while (rateBuckets.size >= MAX_RATE_BUCKETS) {
+        rateBuckets.delete(rateBuckets.keys().next().value)
+      }
+    }
+
     rateBuckets.set(key, {
       count: 1,
       resetAt: now + RATE_WINDOW_MS
     })
-
-    if (rateBuckets.size > 600) {
-      for (const [bucketKey, bucket] of rateBuckets) {
-        if (now >= bucket.resetAt) rateBuckets.delete(bucketKey)
-      }
-    }
 
     return { allowed: true, retryAfter: 0 }
   }
@@ -535,8 +540,6 @@ async function requestGeminiResilient({
       return lastResult
     }
 
-    // 429 thường là quota/rate limit theo project; chỉ retry một lần trên model chính
-    // để tránh tự đốt thêm quota bằng chuỗi fallback không cần thiết.
     if (result.upstream.status === 429 && index >= 1) {
       return lastResult
     }

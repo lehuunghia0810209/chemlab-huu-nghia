@@ -1,7 +1,3 @@
-/* =========================================================
-   CHEMLAB
-   GUIDED LEARNING MASTER REGISTRY
-========================================================= */
 
 import {
   GRADE10_EXPERIMENTS
@@ -18,9 +14,6 @@ import {
 } from './grade12.js'
 
 
-/* =========================================================
-   MASTER ARRAY
-========================================================= */
 
 export const EXPERIMENTS = [
 
@@ -33,9 +26,6 @@ export const EXPERIMENTS = [
 ]
 
 
-/* =========================================================
-   ID MAP
-========================================================= */
 
 export const EXPERIMENT_MAP =
   Object.fromEntries(
@@ -53,9 +43,6 @@ export const EXPERIMENT_MAP =
   )
 
 
-/* =========================================================
-   GET BY ID
-========================================================= */
 
 export function getExperimentById(
   id
@@ -74,9 +61,6 @@ export function getExperimentById(
 }
 
 
-/* =========================================================
-   GET BY LESSON
-========================================================= */
 
 export function getExperimentsForLesson(
   lessonId
@@ -96,9 +80,6 @@ export function getExperimentsForLesson(
 }
 
 
-/* =========================================================
-   GET BY GRADE
-========================================================= */
 
 export function getExperimentsForGrade(
   grade
@@ -119,9 +100,6 @@ export function getExperimentsForGrade(
 }
 
 
-/* =========================================================
-   GET BY CHAPTER
-========================================================= */
 
 export function getExperimentsForChapter(
   chapterId
@@ -141,9 +119,6 @@ export function getExperimentsForChapter(
 }
 
 
-/* =========================================================
-   VALIDATION
-========================================================= */
 
 export function validateExperiments() {
 

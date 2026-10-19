@@ -91,9 +91,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     SHELL
-  ===================================================== */
 
   const shell =
     document.createElement(
@@ -196,9 +193,6 @@ export function initGuidedExperiments() {
   )
 
 
-  /* =====================================================
-     REFERENCES
-  ===================================================== */
 
   const panel =
     shell.querySelector(
@@ -215,9 +209,6 @@ export function initGuidedExperiments() {
   ]
 
 
-  /* =====================================================
-     STATE
-  ===================================================== */
 
   let mode =
     'free'
@@ -289,9 +280,6 @@ export function initGuidedExperiments() {
     'all'
 
 
-  /* =====================================================
-     LAB VISIBILITY
-  ===================================================== */
 
   function setLabVisible(
     visible
@@ -314,9 +302,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     LAB STEP HELPERS
-  ===================================================== */
 
   function stepNeedsLab(
     step
@@ -363,9 +348,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     DESTROY ENGINE
-  ===================================================== */
 
   function destroyEngine() {
 
@@ -377,9 +359,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     MODE
-  ===================================================== */
 
   function setMode(
     nextMode
@@ -573,9 +552,6 @@ export function initGuidedExperiments() {
   )
 
 
-  /* =====================================================
-     GRADE HOME
-  ===================================================== */
 
   function renderGradeHome() {
 
@@ -842,9 +818,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     GRADE
-  ===================================================== */
 
   function renderGrade(
     grade
@@ -1585,9 +1558,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     GRADE SEARCH / FILTER
-  ===================================================== */
 
   function applyGradeFilters() {
 
@@ -1733,9 +1703,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     LESSON
-  ===================================================== */
 
   function renderLesson(
     grade,
@@ -2110,9 +2077,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     OVERVIEW
-  ===================================================== */
 
   function renderExperimentOverview(
     experiment
@@ -2415,9 +2379,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     START EXPERIMENT
-  ===================================================== */
 
   function startExperiment(
     experiment,
@@ -2455,10 +2416,6 @@ export function initGuidedExperiments() {
     )
 
 
-    /*
-      renderCoach sẽ quyết định
-      Lab có cần hiện ở từng bước hay không.
-    */
 
     setLabVisible(
       false
@@ -2531,9 +2488,6 @@ export function initGuidedExperiments() {
       }
 
 
-      /*
-        Khôi phục trạng thái cốc cũ.
-      */
 
       if (
         requiresLab &&
@@ -2647,9 +2601,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     COACH
-  ===================================================== */
 
   function renderCoach(
     state
@@ -2685,10 +2636,6 @@ export function initGuidedExperiments() {
       )
 
 
-    /*
-      Không để Lab chiếm màn hình
-      trong bước lý thuyết hoặc quiz.
-    */
 
     setLabVisible(
 
@@ -3033,7 +2980,6 @@ export function initGuidedExperiments() {
       )
 
 
-    // Opens over the lesson, so closing the studio returns to the same step.
     panel
       .querySelectorAll('[data-open-molecule]')
       .forEach(button => {
@@ -3103,9 +3049,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     STEP CONTENT
-  ===================================================== */
 
   function renderStepContent(
     step
@@ -3124,9 +3067,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       INFO / THEORY / NOTE / OBSERVATION
-    =================================================== */
 
     if (
 
@@ -3293,9 +3233,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       PREDICTION / QUIZ
-    =================================================== */
 
     if (
 
@@ -3379,9 +3316,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       ADD
-    =================================================== */
 
     if (
       step.type ===
@@ -3434,9 +3368,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       HEAT
-    =================================================== */
 
     if (
       step.type ===
@@ -3479,9 +3410,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       TEMPERATURE
-    =================================================== */
 
     if (
       step.type ===
@@ -3543,9 +3471,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       INDICATOR / PURPLE LITMUS PAPER
-    =================================================== */
 
     if (
       step.type ===
@@ -3604,9 +3529,6 @@ export function initGuidedExperiments() {
     }
 
 
-    /* ===================================================
-       REACTION
-    =================================================== */
 
     if (
       step.type ===
@@ -3664,9 +3586,6 @@ export function initGuidedExperiments() {
   }
 
 
-  /* =====================================================
-     PROGRESS CHANGED
-  ===================================================== */
 
   window.addEventListener(
 
@@ -3741,9 +3660,6 @@ export function initGuidedExperiments() {
   )
 
 
-  /* =====================================================
-     START
-  ===================================================== */
 
   setMode(
     'free'
@@ -3752,9 +3668,6 @@ export function initGuidedExperiments() {
 }
 
 
-/* =========================================================
-   LESSON TYPE LABEL
-========================================================= */
 
 function getTypeLabel(
   type
@@ -3791,9 +3704,6 @@ function getTypeLabel(
 }
 
 
-/* =========================================================
-   SEARCH NORMALIZER
-========================================================= */
 
 function normalizeSearch(
   value
@@ -3820,9 +3730,6 @@ function normalizeSearch(
 }
 
 
-/* =========================================================
-   REDUCED MOTION
-========================================================= */
 
 function prefersReducedMotion() {
 
@@ -3835,9 +3742,6 @@ function prefersReducedMotion() {
 }
 
 
-/* =========================================================
-   ESCAPE
-========================================================= */
 
 function escapeHTML(
   value

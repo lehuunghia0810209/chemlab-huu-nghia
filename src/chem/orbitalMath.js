@@ -1,18 +1,6 @@
-/* =========================================================
-   HYDROGEN-LIKE ORBITALS
-   ψ(r,θ,φ) = R_nl(r) · Y_lm(θ,φ) in atomic units (a₀ = 1), Z = 1.
-   Real spherical harmonics are used so every orbital is a real
-   function with a sign (phase) that can be coloured.
-
-   Multi-electron atoms only have approximate one-electron
-   orbitals; the shapes here are the standard hydrogen-like
-   teaching representation. Pure math — tested by
-   scripts/test-chem-core.mjs.
-========================================================= */
 
 const PI = Math.PI
 
-/* Real spherical harmonics, written in Cartesian form on the unit vector. */
 const HARMONICS = {
   0: [
     { m: 0, key: 's', label: 's', fn: () => 0.5 * Math.sqrt(1 / PI) }
@@ -56,7 +44,6 @@ function factorial(n) {
   return result
 }
 
-/* Generalised Laguerre polynomial L_k^α(x) by recurrence. */
 export function laguerre(k, alpha, x) {
   if (k === 0) return 1
   let previous = 1
@@ -80,10 +67,6 @@ export function radialFunction(n, l) {
   }
 }
 
-/**
- * Build ψ(x, y, z) for one orbital.
- * @returns {{ psi: (x:number,y:number,z:number)=>number, R: (r:number)=>number, Y: Function }}
- */
 export function createOrbital(n, l, key) {
   const R = radialFunction(n, l)
   const Y = harmonic(l, key)
@@ -105,7 +88,6 @@ export function nodeCounts(n, l) {
   return { radial: n - l - 1, angular: l, total: n - 1 }
 }
 
-/* Radius (a₀) inside which the radial probability reaches `fraction`. */
 export function radialExtent(n, l, fraction = 0.995) {
   const R = radialFunction(n, l)
   const limit = 6 * n * n + 10
@@ -125,7 +107,6 @@ export function radialExtent(n, l, fraction = 0.995) {
   return limit
 }
 
-/* Deterministic PRNG so the same orbital always looks the same (and tests are stable). */
 export function mulberry32(seed) {
   let a = seed >>> 0
   return () => {
@@ -137,11 +118,6 @@ export function mulberry32(seed) {
   }
 }
 
-/**
- * Sample electron positions with probability density |ψ|².
- * Radius from the inverse CDF of r²R², direction by rejection on |Y|².
- * @returns {{ positions: Float32Array, phases: Int8Array, extent: number }}
- */
 export function sampleDensity(n, l, key, count, seed = 1) {
   const R = radialFunction(n, l)
   const Y = harmonic(l, key)
@@ -201,11 +177,6 @@ function randomDirection(random) {
   return [s * Math.cos(t), s * Math.sin(t), z]
 }
 
-/**
- * Evaluate ψ on a cubic grid spanning [−extent, extent]³ and find the
- * |ψ| level whose enclosed region holds `fraction` of the probability.
- * Grid index order matches three.js MarchingCubes: x + y·N + z·N².
- */
 export function sampleGrid(n, l, key, resolution, fraction = 0.9) {
   const { psi } = createOrbital(n, l, key)
   const extent = radialExtent(n, l, 0.99)

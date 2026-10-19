@@ -12,9 +12,6 @@ import {
 } from './curriculum.js'
 
 
-/* =========================================================
-   ACTIVITY
-========================================================= */
 
 export function getActivityStatus(
   activity
@@ -98,9 +95,6 @@ export function getActivityStatus(
 }
 
 
-/* =========================================================
-   LESSON
-========================================================= */
 
 export function getLessonProgress(
   grade,
@@ -203,9 +197,6 @@ export function getLessonProgress(
 }
 
 
-/* =========================================================
-   CHAPTER
-========================================================= */
 
 export function getChapterProgress(
   grade,
@@ -287,9 +278,6 @@ export function getChapterProgress(
 }
 
 
-/* =========================================================
-   GRADE
-========================================================= */
 
 export function getGradeProgress(
   grade
@@ -401,12 +389,6 @@ export function getGradeProgress(
 }
 
 
-/* =========================================================
-   FIND CURRENT LESSON
-
-   Không phụ thuộc timestamp trong progressStorage.
-   Tìm bài đang làm dở đầu tiên theo đúng chương trình.
-========================================================= */
 
 export function findCurrentLesson(
   grade
@@ -464,9 +446,6 @@ export function findCurrentLesson(
 }
 
 
-/* =========================================================
-   FIRST UNFINISHED LESSON
-========================================================= */
 
 export function findNextLesson(
   grade

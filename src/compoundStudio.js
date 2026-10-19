@@ -10,10 +10,6 @@ import {
 import './compoundStudio.css'
 
 
-/* =========================================================
-   CHEMLAB
-   COMPOUND STUDIO
-========================================================= */
 
 const AVOGADRO =
   6.02214076e23
@@ -27,9 +23,6 @@ let currentStudio =
   null
 
 
-/* =========================================================
-   ELEMENT DATABASE
-========================================================= */
 
 const ELEMENT_DATABASE =
   elements
@@ -63,9 +56,6 @@ const ELEMENT_MAP =
   )
 
 
-/* =========================================================
-   COMMON GROUPS
-========================================================= */
 
 const COMMON_GROUPS = [
 
@@ -146,9 +136,6 @@ const PRESETS = [
 ]
 
 
-/* =========================================================
-   OPEN
-========================================================= */
 
 export function openCompoundStudio({
   context = null,
@@ -687,9 +674,6 @@ export function openCompoundStudio({
     null
 
 
-  /* =====================================================
-     ANALYZE
-  ===================================================== */
 
   function analyze() {
 
@@ -760,9 +744,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     RENDER
-  ===================================================== */
 
   function renderAnalysis(
     analysis
@@ -823,9 +804,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     COMPOSITION
-  ===================================================== */
 
   function renderComposition(
     analysis
@@ -907,9 +885,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     GROUPS
-  ===================================================== */
 
   function renderGroups(
     analysis
@@ -962,9 +937,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     CONVERTER
-  ===================================================== */
 
   function updateConverter() {
 
@@ -1047,9 +1019,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     HISTORY
-  ===================================================== */
 
   function renderHistory() {
 
@@ -1102,9 +1071,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     SAVE FLOW
-  ===================================================== */
 
   function saveToFlow() {
 
@@ -1141,9 +1107,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     FLOW ACTION
-  ===================================================== */
 
   async function sendTo(
     destination
@@ -1168,9 +1131,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     EVENTS
-  ===================================================== */
 
   overlay
     .querySelector(
@@ -1350,14 +1310,8 @@ export function openCompoundStudio({
   )
 
 
-  /* =====================================================
-     CLOSE
-  ===================================================== */
 
 
-  /* =====================================================
-     MOLECULE 3D (lazy: Three.js loads on request)
-  ===================================================== */
 
   let molecule = null
   let moleculeHost = null
@@ -1411,7 +1365,6 @@ export function openCompoundStudio({
         import('./three/sceneHost.js'),
         import('./atomic/moleculeScene.js')
       ])
-      // The studio may have closed or switched formula while loading.
       if (!overlay.isConnected || molecule !== target) return
 
       stage.innerHTML = ''
@@ -1423,7 +1376,6 @@ export function openCompoundStudio({
       if (!moleculeHost) return
 
       moleculeView = createMoleculeScene(moleculeHost, molecule)
-      // Seen from above and to the side so no atom hides behind the central one.
       const distance = Math.max(3.4, moleculeView.radius * 2.6 + 2.4)
       const home = new moleculeHost.THREE.Vector3(0.35, 0.9, 1).setLength(distance)
       moleculeHost.camera.position.copy(home)
@@ -1487,9 +1439,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     ERROR
-  ===================================================== */
 
   function showError(
     message
@@ -1521,9 +1470,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     METRIC
-  ===================================================== */
 
   function setMetric(
     id,
@@ -1538,9 +1484,6 @@ export function openCompoundStudio({
   }
 
 
-  /* =====================================================
-     START
-  ===================================================== */
 
   currentStudio = {
     overlay,
@@ -1559,9 +1502,6 @@ export function openCompoundStudio({
 }
 
 
-/* =========================================================
-   CLOSE PUBLIC
-========================================================= */
 
 export function closeCompoundStudio() {
 
@@ -1571,9 +1511,6 @@ export function closeCompoundStudio() {
 }
 
 
-/* =========================================================
-   ANALYZE COMPOUND
-========================================================= */
 
 function analyzeCompound(
   formula,
@@ -1715,30 +1652,18 @@ function analyzeCompound(
 }
 
 
-/* =========================================================
-   FORMULA PARSER
-========================================================= */
 
 function parseFormula(formula) {
   return new Map(Object.entries(parseSharedFormula(formula)))
 }
 
 
-/* =========================================================
-   PARSE ONE PART
-========================================================= */
 
 
 
-/* =========================================================
-   READ NUMBER
-========================================================= */
 
 
 
-/* =========================================================
-   GROUP DETECTION
-========================================================= */
 
 function detectGroups(
   formula
@@ -1765,9 +1690,6 @@ function detectGroups(
 }
 
 
-/* =========================================================
-   CLASSIFICATION
-========================================================= */
 
 function classifyCompound(
   counts
@@ -1808,9 +1730,6 @@ function classifyCompound(
 }
 
 
-/* =========================================================
-   ELEMENT NORMALIZATION
-========================================================= */
 
 function normalizeElement(
   raw,
@@ -1871,9 +1790,6 @@ function normalizeElement(
 }
 
 
-/* =========================================================
-   MASS
-========================================================= */
 
 function parseMass(
   value
@@ -1905,9 +1821,6 @@ function parseMass(
 }
 
 
-/* =========================================================
-   FORMULA NORMALIZATION
-========================================================= */
 
 function normalizeFormulaInput(
   value
@@ -1965,15 +1878,9 @@ function normalizeFormulaInput(
 }
 
 
-/* =========================================================
-   BRACKETS
-========================================================= */
 
 
 
-/* =========================================================
-   UI HELPERS
-========================================================= */
 
 function metricCard(
   title,
@@ -2005,9 +1912,6 @@ function metricCard(
 }
 
 
-/* =========================================================
-   FORMAT FORMULA
-========================================================= */
 
 function formatFormula(
   formula
@@ -2027,9 +1931,6 @@ function formatFormula(
 }
 
 
-/* =========================================================
-   NUMBERS
-========================================================= */
 
 function formatNumber(
   value,
@@ -2093,9 +1994,6 @@ function formatScientific(
 }
 
 
-/* =========================================================
-   HISTORY
-========================================================= */
 
 function saveFormulaHistory(
   formula
@@ -2135,7 +2033,6 @@ function saveFormulaHistory(
 
   catch {
 
-    /* ignore */
 
   }
 
@@ -2170,9 +2067,6 @@ function loadFormulaHistory() {
 }
 
 
-/* =========================================================
-   ESCAPE
-========================================================= */
 
 function escapeHTML(
   value

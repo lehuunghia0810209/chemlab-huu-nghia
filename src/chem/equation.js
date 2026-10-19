@@ -1,8 +1,3 @@
-/* =========================================================
-   CHEMICAL EQUATION BALANCING
-   Element and charge conservation solved exactly over the
-   rationals (null space of the composition matrix).
-========================================================= */
 
 import { normalizeChargeNotation, parseSpecies } from './formula.js'
 
@@ -21,14 +16,12 @@ export function parseSide(text) {
   return species.map(parseSpecies)
 }
 
-/* "A + B → C" → { reactants, products } (coefficients kept). */
 export function parseEquation(text) {
   const sides = String(text ?? '').split(ARROW)
   if (sides.length !== 2) throw new Error('Phương trình cần đúng một mũi tên giữa hai vế.')
   return { reactants: parseSide(sides[0]), products: parseSide(sides[1]) }
 }
 
-/* Element totals plus net charge for one side. */
 export function sideTotals(species, coefficients = species.map(item => item.coefficient ?? 1)) {
   const atoms = {}
   let charge = 0
@@ -42,7 +35,6 @@ export function sideTotals(species, coefficients = species.map(item => item.coef
   return { atoms, charge }
 }
 
-/* Per-element comparison used for the "before/after" table. */
 export function compareSides(reactants, products, leftCoefficients, rightCoefficients) {
   const left = sideTotals(reactants, leftCoefficients)
   const right = sideTotals(products, rightCoefficients)
@@ -103,11 +95,6 @@ function rref(matrix) {
   return pivots
 }
 
-/* { coefficients, unique } with the smallest positive integer
-   coefficients, or null when no positive balance exists.
-   unique is false when atoms and charge alone allow several
-   independent balances (typical for redox: the electron
-   balance then decides, e.g. H2O2 + MnO4^- + H^+). */
 export function balanceSpecies(reactants, products) {
   const compounds = [...reactants, ...products]
   const symbols = [...new Set(compounds.flatMap(item => Object.keys(item.atoms)))]
@@ -123,7 +110,6 @@ export function balanceSpecies(reactants, products) {
 
   let best = null
   const assignment = Array(free.length).fill(1)
-  // Try free coefficients 1..5 (shortcut: enough for school-level equations with ≤ 2 free columns).
   for (;;) {
     const vector = Array(compounds.length).fill(null)
     free.forEach((column, index) => { vector[column] = new Fraction(assignment[index]) })
@@ -153,7 +139,6 @@ export function balanceSpecies(reactants, products) {
   return best ? { coefficients: best.coefficients, unique: free.length === 1 } : null
 }
 
-/* Does the equation, with the coefficients written in it, conserve atoms and charge? */
 export function checkEquation(text) {
   const { reactants, products } = parseEquation(text)
   return compareSides(reactants, products)

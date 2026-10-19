@@ -1,26 +1,5 @@
-/* =========================================================
-   CHEMLAB PROGRESS STORAGE
-   Version 1.0
-
-   Lưu tiến độ Learning + Guided Lab bằng localStorage.
-
-   Dữ liệu vẫn còn khi:
-   - F5
-   - đóng tab
-   - đóng trình duyệt
-   - tắt điện thoại
-   - quay lại sau nhiều ngày / nhiều tháng
-
-   Dữ liệu chỉ mất nếu:
-   - người dùng xóa dữ liệu website
-   - dùng chế độ ẩn danh rồi đóng trình duyệt
-   - đổi thiết bị / đổi trình duyệt
-========================================================= */
 
 
-/* =========================================================
-   CONFIG
-========================================================= */
 
 export const PROGRESS_STORAGE_KEY =
   'chemlab-v1-progress'
@@ -30,9 +9,6 @@ export const PROGRESS_SCHEMA_VERSION =
   1
 
 
-/* =========================================================
-   DEFAULT DATA
-========================================================= */
 
 function createDefaultProgress() {
 
@@ -52,9 +28,6 @@ function createDefaultProgress() {
         .toISOString(),
 
 
-    /* =====================================================
-       LEARNING
-    ===================================================== */
 
     learning: {
 
@@ -96,9 +69,6 @@ function createDefaultProgress() {
     },
 
 
-    /* =====================================================
-       GUIDED LAB
-    ===================================================== */
 
     experiments: {
 
@@ -118,9 +88,6 @@ function createDefaultProgress() {
     },
 
 
-    /* =====================================================
-       GLOBAL STATS
-    ===================================================== */
 
     statistics: {
 
@@ -150,9 +117,6 @@ function createDefaultProgress() {
     },
 
 
-    /* =====================================================
-       LAST ACTIVITY
-    ===================================================== */
 
     lastActivity:
       null
@@ -162,9 +126,6 @@ function createDefaultProgress() {
 }
 
 
-/* =========================================================
-   STORAGE SUPPORT
-========================================================= */
 
 function storageAvailable() {
 
@@ -198,9 +159,6 @@ function storageAvailable() {
 }
 
 
-/* =========================================================
-   SAFE PARSE
-========================================================= */
 
 function safeParse(
   value
@@ -223,9 +181,6 @@ function safeParse(
 }
 
 
-/* =========================================================
-   OBJECT CHECK
-========================================================= */
 
 function isObject(
   value
@@ -246,12 +201,6 @@ function isObject(
 }
 
 
-/* =========================================================
-   DEEP MERGE
-
-   Dùng để dữ liệu cũ vẫn hoạt động
-   khi sau này ta thêm field mới.
-========================================================= */
 
 function deepMerge(
   defaults,
@@ -347,9 +296,6 @@ function deepMerge(
 }
 
 
-/* =========================================================
-   LOAD
-========================================================= */
 
 export function loadProgress() {
 
@@ -421,9 +367,6 @@ export function loadProgress() {
 }
 
 
-/* =========================================================
-   SAVE
-========================================================= */
 
 export function saveProgress(
   data
@@ -491,9 +434,6 @@ export function saveProgress(
 }
 
 
-/* =========================================================
-   UPDATE HELPER
-========================================================= */
 
 export function updateProgress(
   updater
@@ -524,9 +464,6 @@ export function updateProgress(
 }
 
 
-/* =========================================================
-   GRADE KEY
-========================================================= */
 
 function gradeKey(
   grade
@@ -573,9 +510,6 @@ function gradeKey(
 }
 
 
-/* =========================================================
-   UNIQUE PUSH
-========================================================= */
 
 function uniquePush(
   array,
@@ -608,14 +542,8 @@ function uniquePush(
 }
 
 
-/* =========================================================
-   LEARNING
-========================================================= */
 
 
-/* =========================================================
-   GET LESSON
-========================================================= */
 
 export function getLessonProgress(
   grade,
@@ -652,9 +580,6 @@ export function getLessonProgress(
 }
 
 
-/* =========================================================
-   SAVE LESSON STATE
-========================================================= */
 
 export function saveLessonProgress(
   grade,
@@ -743,9 +668,6 @@ export function saveLessonProgress(
 }
 
 
-/* =========================================================
-   MARK LESSON COMPLETE
-========================================================= */
 
 export function markLessonCompleted(
   grade,
@@ -877,9 +799,6 @@ export function markLessonCompleted(
 }
 
 
-/* =========================================================
-   CHAPTER PROGRESS
-========================================================= */
 
 export function saveChapterProgress(
   grade,
@@ -942,9 +861,6 @@ export function saveChapterProgress(
 }
 
 
-/* =========================================================
-   QUIZ PROGRESS
-========================================================= */
 
 export function saveQuizProgress(
   quizId,
@@ -1006,9 +922,6 @@ export function saveQuizProgress(
 }
 
 
-/* =========================================================
-   RECORD ANSWER
-========================================================= */
 
 export function recordLearningAnswer({
   quizId = null,
@@ -1114,14 +1027,8 @@ export function recordLearningAnswer({
 }
 
 
-/* =========================================================
-   EXPERIMENTS
-========================================================= */
 
 
-/* =========================================================
-   GET EXPERIMENT
-========================================================= */
 
 export function getExperimentProgress(
   grade,
@@ -1157,9 +1064,6 @@ export function getExperimentProgress(
 }
 
 
-/* =========================================================
-   SAVE EXPERIMENT PROGRESS
-========================================================= */
 
 export function saveExperimentProgress(
   grade,
@@ -1246,9 +1150,6 @@ export function saveExperimentProgress(
 }
 
 
-/* =========================================================
-   SAVE EXPERIMENT STEP
-========================================================= */
 
 export function saveExperimentStep(
   grade,
@@ -1319,9 +1220,6 @@ export function saveExperimentStep(
 }
 
 
-/* =========================================================
-   MARK EXPERIMENT COMPLETED
-========================================================= */
 
 export function markExperimentCompleted(
   grade,
@@ -1456,9 +1354,6 @@ export function markExperimentCompleted(
 }
 
 
-/* =========================================================
-   RESET ONE EXPERIMENT
-========================================================= */
 
 export function resetExperimentProgress(
   grade,
@@ -1532,9 +1427,6 @@ export function resetExperimentProgress(
 }
 
 
-/* =========================================================
-   TIME TRACKING
-========================================================= */
 
 export function addLearningTime(
   seconds
@@ -1598,9 +1490,6 @@ export function addExperimentTime(
 }
 
 
-/* =========================================================
-   LAST ACTIVITY
-========================================================= */
 
 function saveLastActivityToObject(
   progress,
@@ -1649,9 +1538,6 @@ export function getLastActivity() {
 }
 
 
-/* =========================================================
-   GET GRADE SUMMARY
-========================================================= */
 
 export function getGradeSummary(
   grade
@@ -1729,9 +1615,6 @@ export function getGradeSummary(
 }
 
 
-/* =========================================================
-   OVERALL SUMMARY
-========================================================= */
 
 export function getProgressSummary() {
 
@@ -1792,9 +1675,6 @@ export function getProgressSummary() {
 }
 
 
-/* =========================================================
-   EXPORT BACKUP
-========================================================= */
 
 export function exportProgressJSON() {
 
@@ -1815,9 +1695,6 @@ export function exportProgressJSON() {
 }
 
 
-/* =========================================================
-   IMPORT BACKUP
-========================================================= */
 
 export function importProgressJSON(
   json
@@ -1866,9 +1743,6 @@ export function importProgressJSON(
 }
 
 
-/* =========================================================
-   RESET EVERYTHING
-========================================================= */
 
 export function resetAllProgress() {
 
@@ -1906,9 +1780,6 @@ export function resetAllProgress() {
 }
 
 
-/* =========================================================
-   DELETE STORAGE
-========================================================= */
 
 export function deleteProgressStorage() {
 
@@ -1936,16 +1807,6 @@ export function deleteProgressStorage() {
 }
 
 
-/* =========================================================
-   EVENTS
-
-   UI khác có thể listen:
-
-   window.addEventListener(
-     'chemlab:progress-changed',
-     event => ...
-   )
-========================================================= */
 
 function dispatchProgressChanged(
   progress
@@ -1969,9 +1830,6 @@ function dispatchProgressChanged(
 }
 
 
-/* =========================================================
-   INITIALIZE
-========================================================= */
 
 export function initProgressStorage() {
 

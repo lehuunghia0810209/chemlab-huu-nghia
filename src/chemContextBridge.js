@@ -1,10 +1,6 @@
 import './chemFlow.css'
 
 
-/* =========================================================
-   CHEMLAB 5.2
-   CHEM FLOW ENGINE
-========================================================= */
 
 const SESSION_KEY =
   'chemlab-v52-context'
@@ -79,9 +75,6 @@ let currentContext =
   loadSession()
 
 
-/* =========================================================
-   OPEN FROM PERIODIC TABLE
-========================================================= */
 
 export async function openElementDestination(
   destination,
@@ -172,9 +165,6 @@ export async function openElementDestination(
 }
 
 
-/* =========================================================
-   SET CONTEXT
-========================================================= */
 
 export function setChemContext(
   patch = {}
@@ -205,9 +195,6 @@ export function setChemContext(
 }
 
 
-/* =========================================================
-   CAPTURE COMPOUND
-========================================================= */
 
 export function captureCompound(
   compound
@@ -279,9 +266,6 @@ export function captureCompound(
 }
 
 
-/* =========================================================
-   CAPTURE REACTION
-========================================================= */
 
 export function captureReaction(
   reaction
@@ -356,9 +340,6 @@ export function captureReaction(
 }
 
 
-/* =========================================================
-   GET
-========================================================= */
 
 export function getChemContext() {
 
@@ -367,9 +348,6 @@ export function getChemContext() {
 }
 
 
-/* =========================================================
-   CLEAR
-========================================================= */
 
 export function clearChemContext() {
 
@@ -387,7 +365,6 @@ export function clearChemContext() {
 
   catch {
 
-    /* ignore */
 
   }
 
@@ -408,9 +385,6 @@ export function clearChemContext() {
 }
 
 
-/* =========================================================
-   GO
-========================================================= */
 
 export async function go(
   destination
@@ -427,9 +401,6 @@ export async function go(
   }
 
 
-  /* =====================================================
-     COMPOUND STUDIO
-  ===================================================== */
 
   if (
     destination ===
@@ -475,9 +446,6 @@ export async function go(
   }
 
 
-  /* =====================================================
-     REACTION STUDIO
-  ===================================================== */
 
   if (
     destination ===
@@ -523,9 +491,6 @@ export async function go(
   }
 
 
-  /* =====================================================
-     NORMAL VIEWS
-  ===================================================== */
 
   navigateView(
     info.view
@@ -573,9 +538,6 @@ export async function go(
 }
 
 
-/* =========================================================
-   DESTINATION
-========================================================= */
 
 function setDestination(
   destination
@@ -605,9 +567,6 @@ function setDestination(
 }
 
 
-/* =========================================================
-   MAIN VIEW
-========================================================= */
 
 function navigateView(
   view
@@ -662,9 +621,6 @@ function navigateView(
 }
 
 
-/* =========================================================
-   TOOL NAVIGATION
-========================================================= */
 
 function openTool(
   destination
@@ -716,7 +672,6 @@ function openTool(
 
       catch {
 
-        /* try fallback */
 
       }
 
@@ -767,9 +722,6 @@ function openTool(
 }
 
 
-/* =========================================================
-   APPLY CONTEXT
-========================================================= */
 
 function applyContext(
   destination,
@@ -846,9 +798,6 @@ function applyContext(
 }
 
 
-/* =========================================================
-   ION PREFILL
-========================================================= */
 
 function prefillIon(
   context
@@ -888,9 +837,6 @@ function prefillIon(
 }
 
 
-/* =========================================================
-   MOLAR PREFILL
-========================================================= */
 
 function prefillMolar(
   context
@@ -985,9 +931,6 @@ function prefillMolar(
 }
 
 
-/* =========================================================
-   SOLUBILITY
-========================================================= */
 
 function prefillSolubility(
   context
@@ -1006,9 +949,6 @@ function prefillSolubility(
 }
 
 
-/* =========================================================
-   LAB
-========================================================= */
 
 function prefillLab(
   context
@@ -1094,9 +1034,6 @@ function prefillLab(
 }
 
 
-/* =========================================================
-   FLOW DOCK
-========================================================= */
 
 function renderFlowDock() {
 
@@ -1279,9 +1216,6 @@ function renderFlowDock() {
 }
 
 
-/* =========================================================
-   FLOW BUTTON
-========================================================= */
 
 function flowButton(
   destination,
@@ -1316,9 +1250,6 @@ function flowButton(
 }
 
 
-/* =========================================================
-   DISPLAY
-========================================================= */
 
 function getDisplay() {
 
@@ -1410,9 +1341,6 @@ function getDisplay() {
 }
 
 
-/* =========================================================
-   COMMIT
-========================================================= */
 
 function commitContext(
   context
@@ -1441,9 +1369,6 @@ function commitContext(
 }
 
 
-/* =========================================================
-   STORAGE
-========================================================= */
 
 function saveSession(
   context
@@ -1462,7 +1387,6 @@ function saveSession(
 
   catch {
 
-    /* ignore */
 
   }
 
@@ -1496,9 +1420,6 @@ function loadSession() {
 }
 
 
-/* =========================================================
-   HISTORY
-========================================================= */
 
 function saveHistory(
   context
@@ -1569,16 +1490,12 @@ function saveHistory(
 
   catch {
 
-    /* ignore */
 
   }
 
 }
 
 
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function firstExisting(
   selectors
@@ -1756,9 +1673,6 @@ function escapeHTML(
 }
 
 
-/* =========================================================
-   TOAST
-========================================================= */
 
 function showToast(
   message
@@ -1834,9 +1748,6 @@ function showToast(
 }
 
 
-/* =========================================================
-   RESTORE
-========================================================= */
 
 if (
   currentContext
@@ -1873,9 +1784,6 @@ if (
 }
 
 
-/* =========================================================
-   GLOBAL API
-========================================================= */
 
 window.ChemLabContext = {
 

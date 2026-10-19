@@ -1,13 +1,3 @@
-/* =========================================================
-   CHEMLAB — REAL BROWSER SMOKE TEST
-   Builds nothing: run `npm run build` first. Serves dist/ with
-   `vite preview`, drives the system Chrome (or Edge) through
-   Playwright and checks every route at phone → desktop widths
-   in both themes.
-
-   npm run check:browser
-   CHEMLAB_BROWSER_CHANNEL=msedge npm run check:browser
-========================================================= */
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -22,7 +12,6 @@ const WIDTHS = [320, 360, 390, 430, 768, 1024, 1440, 1920]
 const THEMES = ['dark', 'light']
 const PREFS_KEY = 'chemlab-v5-user-preferences'
 
-/* Errors that only exist because `vite preview` has no Pages Functions. */
 const IGNORED_ERRORS = [/\/api\/chat/, /Failed to load resource: the server responded with a status of 404/]
 
 const results = []
@@ -38,7 +27,6 @@ async function launchBrowser() {
       return await chromium.launch({ channel })
     }
     catch {
-      /* try next channel */
     }
   }
   throw new Error(`Không tìm thấy trình duyệt (${channels.join(', ')}). Cài Chrome/Edge hoặc đặt CHEMLAB_BROWSER_CHANNEL.`)
@@ -80,7 +68,6 @@ async function screenshotOnFail(page, name) {
   await page.screenshot({ path: path.join(outDir, `${name}.png`) }).catch(() => {})
 }
 
-/* ---------- layout sweep: every view × width × theme ---------- */
 async function layoutSweep(browser, baseURL) {
   for (const theme of THEMES) {
     for (const width of WIDTHS) {
@@ -131,7 +118,6 @@ async function layoutSweep(browser, baseURL) {
   }
 }
 
-/* ---------- interactions ---------- */
 async function interactionChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
   await openView(page, baseURL, 'home')
@@ -174,7 +160,6 @@ async function interactionChecks(browser, baseURL) {
   }))
   record('dashboard element card opens the element drawer', drawer.view === 'periodic' && drawer.open, JSON.stringify(drawer))
 
-  /* periodic: detail sheet, keyboard navigation, correct exception data */
   await openView(page, baseURL, 'periodic')
   await page.focus('.pt-cell[data-number="24"]')
   await page.keyboard.press('ArrowRight')
@@ -198,7 +183,6 @@ async function interactionChecks(browser, baseURL) {
   await page.waitForTimeout(400)
   record('Esc closes the sheet', !(await page.evaluate(() => document.querySelector('#element-drawer').classList.contains('open'))))
 
-  /* atomic explorer: renders, switches mode, disposes its WebGL canvas */
   await page.evaluate(() => window.ChemLabPeriodic.openElement(26))
   await page.click('[data-ptd-atom]')
   await page.waitForSelector('.ax.is-open canvas', { timeout: 10000 })
@@ -210,7 +194,6 @@ async function interactionChecks(browser, baseURL) {
   await page.waitForTimeout(300)
   record('atomic explorer closes and removes its canvas', await page.evaluate(() => !document.querySelector('.ax canvas')))
 
-  /* orbital atlas */
   await page.goto(`${baseURL}/#tools/orbital`, { waitUntil: 'load' })
   await page.waitForSelector('#orbital-atlas')
   await page.evaluate(() => document.querySelector('#orbital-atlas').scrollIntoView())
@@ -219,7 +202,6 @@ async function interactionChecks(browser, baseURL) {
   await page.waitForFunction(() => document.querySelector('[data-oa-busy]')?.hidden === true, null, { timeout: 15000 })
   record('orbital atlas renders and switches family', Boolean(await page.$('#orbital-atlas [data-variant="dz2"][aria-pressed="true"]')))
 
-  /* virtual lab: a data-driven precipitation and a guided experiment */
   await openView(page, baseURL, 'lab')
   for (const id of ['agno3', 'nacl']) {
     await page.click(`.reagent-card[data-reagent="${id}"]`)
@@ -243,7 +225,6 @@ async function interactionChecks(browser, baseURL) {
   record('guided experiment opens and returns to free mode',
     await page.evaluate(() => !document.querySelector('.vl-layout').hidden))
 
-  /* learning: answer one question, reload, progress must persist */
   await openView(page, baseURL, 'learning')
   const answersBefore = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('chemlab-v1-progress') || '{}').statistics?.totalAnswers || 0)
@@ -261,7 +242,6 @@ async function interactionChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- ChemAI on a phone ---------- */
 async function chemAIPhoneCheck(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
   await openView(page, baseURL, 'home')
@@ -283,7 +263,6 @@ async function chemAIPhoneCheck(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- PWA ---------- */
 async function pwaCheck(browser, baseURL) {
   const { context, page } = await newPage(browser, { width: 1280, height: 800, theme: 'dark', serviceWorkers: 'allow' })
   await page.goto(baseURL, { waitUntil: 'load' })
@@ -299,11 +278,9 @@ async function pwaCheck(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- chemistry tools: real input → result ---------- */
 async function toolChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
   await openView(page, baseURL, 'tools')
-  // Balancer: typed coefficients count in the live check; ions and redox are balanced with charge.
   await page.click('.tool-selector [data-tool="balancer"]')
   await page.fill('#balance-reactants', '2H₂ + O₂')
   await page.fill('#balance-products', '2H₂O')
@@ -389,7 +366,6 @@ async function toolChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- virtual lab: pH from moles ---------- */
 async function labPHChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
   await openView(page, baseURL, 'lab')
@@ -446,7 +422,6 @@ async function labPHChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- lesson → 3D molecule → back to the lesson ---------- */
 async function lessonModelChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
   await openView(page, baseURL, 'lab')
@@ -470,7 +445,6 @@ async function lessonModelChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- virtual lab: amounts of substance ---------- */
 async function labStoichChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
   await openView(page, baseURL, 'lab')
@@ -542,7 +516,7 @@ async function labStoichChecks(browser, baseURL) {
   await add('naoh', 50)
   const alumina = await drawn()
   await add('naoh', 50)
-  await page.waitForTimeout(1200) // the dissolving solid fades out over ~0.9 s
+  await page.waitForTimeout(1200)
   const dissolved = await drawn()
   const dissolvedText = (await panel()).text
   record('lab amounts: Al(OH)₃↓ forms, then dissolves completely in excess NaOH (10 mmol OH⁻ per 2,5 mmol Al³⁺)',
@@ -592,11 +566,9 @@ async function labStoichChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- guided lesson g11-l2 end to end on the mole-based pH ---------- */
 async function guidedPHChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'light' })
   await openView(page, baseURL, 'lab')
-  // Mirrors the step list of g11-lesson-02 in src/lab/experiments/grade11.js.
   const plan = ['info', 'quiz:a', 'add:hcl', 'litmus:acid', 'observation', 'add:naoh', 'litmus:neutral', 'observation', 'add:naoh', 'litmus:base', 'observation', 'quiz:b']
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
     detail: { grade: 11, lessonId: 'g11-l2', experimentId: 'g11-lesson-02' }
@@ -632,7 +604,6 @@ async function guidedPHChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- observations come from the verified reaction data ---------- */
 async function observationChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
   await openView(page, baseURL, 'lab')
@@ -669,7 +640,6 @@ async function observationChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- guided g11-l7: sulfite needs excess HCl before SO₂ appears ---------- */
 async function guidedSulfiteChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
   await openView(page, baseURL, 'lab')
@@ -702,7 +672,6 @@ async function guidedSulfiteChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- lab state under rapid input and route switches ---------- */
 async function labStateChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
   await openView(page, baseURL, 'lab')
@@ -710,14 +679,13 @@ async function labStateChecks(browser, baseURL) {
   await page.click('[data-volume="50"]')
   for (let i = 0; i < 4; i += 1) await page.click('#add-reagent', { delay: 0 })
   await page.click('.reagent-card[data-reagent="nacl"]')
-  for (let i = 0; i < 6; i += 1) await page.click('#add-reagent', { delay: 0 }) // overflows the 250 mL beaker
+  for (let i = 0; i < 6; i += 1) await page.click('#add-reagent', { delay: 0 })
   await page.waitForTimeout(400)
   const state = await page.evaluate(() => ({
     volume: document.querySelector('#volume-text, [id*="volume"]')?.textContent,
     message: document.querySelector('#lab-message-title').textContent.trim(),
     panel: document.querySelector('#stoich-body').innerText.replace(/\s+/g, ' ')
   }))
-  // 200 mL AgNO₃ (20 mmol) + only 50 mL NaCl fit (5 mmol) → AgCl 5 mmol
   record('rapid additions: beaker capped at 250 mL, amounts follow what actually went in',
     /Cốc đã đầy/.test(state.message) && /AgCl↓ 5,00 mmol/.test(state.panel) && /Còn dư AgNO₃ 15,00 mmol/.test(state.panel), JSON.stringify(state))
   await openView(page, baseURL, 'periodic')
@@ -730,7 +698,6 @@ async function labStateChecks(browser, baseURL) {
   await context.close()
 }
 
-/* ---------- run ---------- */
 const server = await preview({
   root: rootDir,
   logLevel: 'silent',

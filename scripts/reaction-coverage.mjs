@@ -1,9 +1,3 @@
-/* =========================================================
-   CHEMLAB — REACTION COVERAGE MATRIX
-   Generates docs/reaction-engine/REACTION_COVERAGE.md from the
-   live catalogue and src/lab/engine/profiles.js.
-   npm run report:reactions   (check:chem fails if it is stale)
-========================================================= */
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,7 +11,6 @@ export const COVERAGE_PATH = path.join(rootDir, 'docs', 'reaction-engine', 'REAC
 
 const catalogue = Array.isArray(CHEMICALS) ? Object.fromEntries(CHEMICALS.map(item => [item.id, item])) : CHEMICALS
 
-/* Reaction ids named in a scenario test (beyond the catalogue-wide checks every reaction gets). */
 function scenarioTested() {
   const sources = ['test-chem-core.mjs', 'browser-smoke.mjs'].map(file => fs.readFileSync(path.join(rootDir, 'scripts', file), 'utf8')).join('\n')
   return new Set(REACTIONS.map(reaction => reaction.id).filter(id => sources.includes(`'${id}'`) || sources.includes(`"${id}"`)))

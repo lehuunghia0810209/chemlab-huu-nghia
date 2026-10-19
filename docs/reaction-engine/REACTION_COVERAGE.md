@@ -45,9 +45,9 @@ Mọi phản ứng đều qua kiểm định toàn catalog trong `npm run check:
 | `bano3-na2so4` | Ba(NO₃)₂ + Na₂SO₄ → BaSO₄↓ + 2NaNO₃ | precipitation | kết tủa BaSO4 | — | VERIFIED_QUANTITATIVE | — |  |
 | `pbno3-na2so4` | Pb(NO₃)₂ + Na₂SO₄ → PbSO₄↓ + 2NaNO₃ | precipitation | kết tủa PbSO4 | — | VERIFIED_QUANTITATIVE | — |  |
 | `cacl2-na2co3` | CaCl₂ + Na₂CO₃ → CaCO₃↓ + 2NaCl | precipitation | kết tủa CaCO3 | — | VERIFIED_QUANTITATIVE | — |  |
-| `mgcl2-na2co3` | MgCl₂ + Na₂CO₃ → MgCO₃↓ + 2NaCl | precipitation | kết tủa MgCO3 | — | VERIFIED_QUALITATIVE | Kết tủa thực tế là magnesium carbonate base, không đúng công thức MgCO₃, nên ChemLab không tính khối lượng. Kết tủa thực tế là magnesium carbonate base, không đúng công thức MgCO₃, nên ChemLab không tính khối lượng. |  |
+| `mgcl2-na2co3` | MgCl₂ + Na₂CO₃ → MgCO₃↓ + 2NaCl | precipitation | kết tủa MgCO3 | — | VERIFIED_QUALITATIVE | Kết tủa thực tế là magnesium carbonate base, không đúng công thức MgCO₃, nên ChemLab không tính khối lượng. |  |
 | `bacl2-na2co3` | BaCl₂ + Na₂CO₃ → BaCO₃↓ + 2NaCl | precipitation | kết tủa BaCO3 | — | VERIFIED_QUANTITATIVE | — |  |
-| `cuso4-na2co3` | CuSO₄ + Na₂CO₃ → CuCO₃↓ + Na₂SO₄ | precipitation | kết tủa CuCO3 | — | VERIFIED_QUALITATIVE | Kết tủa thực tế là copper(II) carbonate base, không đúng công thức CuCO₃, nên ChemLab không tính khối lượng. Kết tủa thực tế là copper(II) carbonate base, không đúng công thức CuCO₃, nên ChemLab không tính khối lượng. | ✓ |
+| `cuso4-na2co3` | CuSO₄ + Na₂CO₃ → CuCO₃↓ + Na₂SO₄ | precipitation | kết tủa CuCO3 | — | VERIFIED_QUALITATIVE | Kết tủa thực tế là copper(II) carbonate base, không đúng công thức CuCO₃, nên ChemLab không tính khối lượng. | ✓ |
 | `agno3-na2co3` | 2AgNO₃ + Na₂CO₃ → Ag₂CO₃↓ + 2NaNO₃ | precipitation | kết tủa Ag2CO3 | — | VERIFIED_QUANTITATIVE | — |  |
 | `cacl2-na3po4` | 3CaCl₂ + 2Na₃PO₄ → Ca₃(PO₄)₂↓ + 6NaCl | precipitation | kết tủa Ca3(PO4)2 | — | VERIFIED_QUANTITATIVE | — |  |
 | `fecl3-na3po4` | FeCl₃ + Na₃PO₄ → FePO₄↓ + 3NaCl | precipitation | kết tủa FePO4 | — | VERIFIED_QUANTITATIVE | — |  |

@@ -1,10 +1,3 @@
-/* =========================================================
-   CHEMLAB 6.2 — CHEMAI FINAL INTERFACE
-   Context-aware AI assistant
-   Visual language inspired by modern open UI patterns:
-   glass surfaces, soft gradient borders, motion feedback.
-========================================================= */
-
 :root {
   --chemai-width: 430px;
   --chemai-panel-bg: color-mix(in srgb, var(--surface-2) 94%, transparent);
@@ -474,8 +467,6 @@ html[data-contrast="high"] .chemai-welcome { border-width:2px; }
   .chemai-launcher-orb::before,
   .chemai-thinking-dots i { animation:none; }
 }
-
-/* Keyboard clarity */
 .chemai-launcher:focus-visible,
 .chemai-icon-button:focus-visible,
 .chemai-message-tools button:focus-visible,
@@ -493,11 +484,6 @@ html[data-contrast="high"] .chemai-welcome { border-width:2px; }
     overscroll-behavior: none;
   }
 }
-
-
-/* =========================================================
-   CHEMLAB 6.2 — FINAL AI POLISH
-========================================================= */
 
 .chemai-backdrop {
   background: rgba(2,4,10,.19);
@@ -631,11 +617,6 @@ html[data-contrast="high"] .chemai-welcome { border-width:2px; }
   }
 }
 
-/* =========================================================
-   CHEMLAB 6.2 — MOBILE COMPOSER + OVERLAY HOTFIX
-   Keeps the send control above the product launcher/browser UI.
-========================================================= */
-
 html.chemai-open .clprod-launcher {
   opacity: 0;
   visibility: hidden;
@@ -716,14 +697,10 @@ html.chemai-open .clprod-launcher {
     padding-inline: 15px;
   }
 }
-
-/* The input shell shows focus; the bare textarea must not draw a second ring. */
 .chemai-input-shell textarea:focus-visible {
   outline: none;
   box-shadow: none;
 }
-
-/* Lock the single grid column to the panel width; the nowrap suggestion row scrolls instead of widening the panel. */
 .chemai-panel {
   grid-template-columns: minmax(0, 1fr);
 }

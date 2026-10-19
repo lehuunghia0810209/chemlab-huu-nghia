@@ -227,9 +227,6 @@ export function initEquationBalancer() {
   const leftAtomTotal = tools.querySelector('#left-atom-total')
   const rightAtomTotal = tools.querySelector('#right-atom-total')
 
-  /* =====================================================
-     SMOOTH SPRING
-  ===================================================== */
 
   let currentAngle = 0
   let targetAngle = 0
@@ -247,12 +244,10 @@ export function initEquationBalancer() {
     function animate() {
       const difference = targetAngle - currentAngle
 
-      // Chậm và mềm hơn bản trước
       const springForce = difference * 0.032
 
       velocity += springForce
 
-      // Quán tính
       velocity *= 0.84
 
       currentAngle += velocity
@@ -297,9 +292,6 @@ export function initEquationBalancer() {
       requestAnimationFrame(animate)
   }
 
-  /* =====================================================
-     EVENTS
-  ===================================================== */
 
   balanceButton.addEventListener(
     'click',
@@ -358,9 +350,6 @@ export function initEquationBalancer() {
       )
     })
 
-  /* =====================================================
-     LIVE PREVIEW
-  ===================================================== */
 
   function previewEquation() {
     hideError()
@@ -580,9 +569,6 @@ export function initEquationBalancer() {
     }
   }
 
-  /* =====================================================
-     LIVE ANGLE
-  ===================================================== */
 
   function calculateLiveAngle(
     left,
@@ -636,9 +622,6 @@ export function initEquationBalancer() {
     )
   }
 
-  /* =====================================================
-     BALANCE
-  ===================================================== */
 
   function balanceCurrentEquation() {
     const leftText =
@@ -816,14 +799,10 @@ export function initEquationBalancer() {
         balanceButton.classList.remove('working')
       },
 
-      // Chậm hơn bản trước
       500
     )
   }
 
-  /* =====================================================
-     ANALYSIS
-  ===================================================== */
 
   function renderAnalysis(
     comparison,
@@ -897,9 +876,6 @@ export function initEquationBalancer() {
       )
   }
 
-  /* =====================================================
-     PAN
-  ===================================================== */
 
   function renderPan(
     container,
@@ -939,9 +915,6 @@ export function initEquationBalancer() {
       )
   }
 
-  /* =====================================================
-     STATUS
-  ===================================================== */
 
   function setStatus(
     state,
@@ -951,9 +924,6 @@ export function initEquationBalancer() {
     statusDot.className = state
   }
 
-  /* =====================================================
-     RESET
-  ===================================================== */
 
   function clearEquation() {
     reactantsInput.value = ''
@@ -993,9 +963,6 @@ export function initEquationBalancer() {
     reactantsInput.focus()
   }
 
-  /* =====================================================
-     ERRORS
-  ===================================================== */
 
   function showError(message, tone = 'error') {
     errorBox.classList.toggle('is-note', tone === 'note')
@@ -1012,9 +979,6 @@ export function initEquationBalancer() {
     )
   }
 
-  /* =====================================================
-     FORMAT
-  ===================================================== */
 
   function createBalancedEquationHTML(
     reactants,
@@ -1106,16 +1070,12 @@ export function initEquationBalancer() {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      // Subscript counts only, not a leading coefficient (2MnO4 → 2MnO₄)
       .replace(
         /(?<=[A-Za-z)\]])(\d+)/g,
         '<sub>$1</sub>'
       )
   }
 
-  /* =====================================================
-     MATH
-  ===================================================== */
 
   function clamp(
     value,

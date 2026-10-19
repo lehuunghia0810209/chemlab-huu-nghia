@@ -1,9 +1,3 @@
-/* =========================================================
-   CHEMLAB — CHEMISTRY CORE TESTS
-   Electron configurations against NIST ground states and the
-   hydrogen-like orbital math against analytic results.
-   npm run check:chem
-========================================================= */
 
 import assert from 'node:assert/strict'
 import {
@@ -34,7 +28,6 @@ function test(name, fn) {
 
 const config = Z => getElectronConfiguration(Z)
 
-/* ---------- electron configuration ---------- */
 
 test('every element 1–118 has exactly Z electrons within capacity', () => {
   for (let Z = 1; Z <= 118; Z += 1) {
@@ -122,7 +115,6 @@ test('exceptions are flagged with an explanation; superheavy configs marked pred
   assert.ok(config(104).predicted && !config(103).predicted)
 })
 
-/* ---------- orbital math ---------- */
 
 function sphereIntegral(fn, steps = 160) {
   let sum = 0
@@ -223,7 +215,6 @@ test('90% boundary-surface level encloses ~90% of the probability on the grid', 
   assert.ok(Math.abs(inside / total - 0.9) < 0.02, `${(inside / total).toFixed(3)}`)
 })
 
-/* ---------- formulas & equations ---------- */
 
 const { parseFormula, parseSpecies } = await import('../src/chem/formula.js')
 const { balanceSpecies, checkEquation, parseEquation } = await import('../src/chem/equation.js')
@@ -236,7 +227,6 @@ test('formula parser: subscripts, brackets, hydrates', () => {
   assert.deepEqual(parseFormula('K4[Fe(CN)6]'), { K: 4, Fe: 1, C: 6, N: 6 })
   assert.deepEqual(parseFormula('Cu(OH)₂↓'), { Cu: 1, O: 2, H: 2 })
   assert.deepEqual(parseFormula('NaCl(aq)'), { Na: 1, Cl: 1 })
-  // Inputs the old per-tool parsers accepted
   assert.deepEqual(parseFormula('CuSO4.5H2O'), parseFormula('CuSO₄·5H₂O'))
   assert.deepEqual(parseFormula('CuSO4∙5H2O'), parseFormula('CuSO₄·5H₂O'))
   assert.deepEqual(parseFormula('Ca{OH}2'), { Ca: 1, O: 2, H: 2 })
@@ -286,7 +276,6 @@ test('balancer: impossible and non-unique equations are reported', () => {
   assert.equal(balanceSpecies(reactants, products).unique, false)
 })
 
-/* ---------- molecule geometry ---------- */
 
 const { MOLECULES, findMolecule, countAtoms } = await import('../src/chem/molecules.js')
 const { EXPERIMENTS } = await import('../src/lab/experiments/experiments.js')
@@ -346,7 +335,6 @@ test('every lesson 3D model link points at a molecule in the library', () => {
   assert.deepEqual(missing, [])
 })
 
-/* ---------- lab data ---------- */
 
 const { REACTIONS } = await import('../src/lab/reactions.js')
 const { hasTranslation } = await import('../src/lab/reactionsVi.js')
@@ -367,7 +355,7 @@ test('lab pH: strong acid/base reference cases at 25 °C', () => {
   near(pHOf({ naoh: 25 }).pH, 13)
   near(pHOf({ water: 50 }).pH, 7)
   near(pHOf({ hcl: 25, naoh: 25 }).pH, 7)
-  near(pHOf({ hcl: 25, water: 225 }).pH, 2) // tenfold dilution
+  near(pHOf({ hcl: 25, water: 225 }).pH, 2)
   near(pHOf({ hcl: 25, naoh: 10 }).pH, -Math.log10(1.5e-3 / 0.035))
   near(pHOf({ hcl: 10, naoh: 25 }).pH, 14 + Math.log10(1.5e-3 / 0.035))
   near(pHOf({ baoh2: 25 }).pH, 14 + Math.log10(0.2))
@@ -376,7 +364,6 @@ test('lab pH: strong acid/base reference cases at 25 °C', () => {
 })
 
 test('lab pH: H₂SO₄ second dissociation (Ka₂ = 0.010)', () => {
-  // 0.1 M: [H+] = 0.1 + x, x(0.1 + x)/(0.1 − x) = 0.01 → x ≈ 0.00844
   near(pHOf({ h2so4: 25 }).pH, -Math.log10(0.10844), 0.005)
   near(solveStrongPH({}), 7)
 })
@@ -402,7 +389,6 @@ test('lab stoichiometry: limiting reactant, excess and products', () => {
   near(salt.moles * 1000, 1, 1e-9)
   near(salt.mass, 0.001 * (22.990 + 35.45), 1e-6)
 
-  // H₂SO₄ + 2NaOH: 2.5 mmol acid needs 5 mmol base; 2.5 mmol NaOH → extent 1.25 mmol
   const b = stoich('h2so4-naoh', { h2so4: 25, naoh: 25 })
   assert.deepEqual(b.limiting, ['naoh'])
   near(b.excess[0].moles * 1000, 1.25, 1e-9)
@@ -425,7 +411,7 @@ test('lab stoichiometry: every reaction with known concentrations maps to its eq
     .filter(([, result]) => result?.status !== 'quantitative' && !result?.reason)
     .map(([id]) => id)
   assert.deepEqual(unmapped, [])
-  for (const item of REACTIONS) computeStoichiometry(item, {}, catalogue, stockOf) // must not throw
+  for (const item of REACTIONS) computeStoichiometry(item, {}, catalogue, stockOf)
 })
 
 test('lab stoichiometry: precipitation with excess, deficit and exact amounts', () => {
@@ -441,13 +427,11 @@ test('lab stoichiometry: precipitation with excess, deficit and exact amounts', 
   assert.equal(barium.excess.length, 0)
   near(barium.products.find(item => item.formula === 'BaSO4').moles * 1000, 2.5, 1e-9)
 
-  // CuSO₄ + 2NaOH: 2.5 mmol NaOH precipitates 1.25 mmol Cu(OH)₂, 1.25 mmol CuSO₄ left
   const copper = stoich('cuso4-naoh', { cuso4: 25, naoh: 25 })
   assert.deepEqual(copper.limiting, ['naoh'])
   near(copper.products.find(item => item.formula === 'Cu(OH)2').moles * 1000, 1.25, 1e-9)
   near(copper.excess[0].moles * 1000, 1.25, 1e-9)
 
-  // Water dilutes but does not change the amounts; several additions add up.
   assert.deepEqual(stoich('agno3-nacl', { agno3: 25, nacl: 10, water: 100 }).products, silver.products)
   assert.deepEqual(stoich('agno3-nacl', { agno3: 10 + 15, nacl: 10 }).products, silver.products)
 })
@@ -455,18 +439,17 @@ test('lab stoichiometry: precipitation with excess, deficit and exact amounts', 
 test('lab stoichiometry: amphoteric Al(OH)₃ / Zn(OH)₂ redissolve only in excess NaOH', () => {
   const al = naoh => stoich('alcl3-naoh', { alcl3: 25, naoh })
   const solid = result => result.products.find(item => item.formula === 'Al(OH)3').moles * 1000
-  near(solid(al(25)), 2.5 / 3, 1e-9) // OH⁻ < 3 Al³⁺: no dissolution
+  near(solid(al(25)), 2.5 / 3, 1e-9)
   assert.equal(al(25).dissolved, null)
-  near(solid(al(75)), 2.5, 1e-9) // exactly 3:1
-  near(solid(al(80)), 2.0, 1e-9) // 0.5 mmol OH⁻ excess dissolves 0.5 mmol
-  assert.equal(solid(al(100)), 0) // 4:1 dissolves all
+  near(solid(al(75)), 2.5, 1e-9)
+  near(solid(al(80)), 2.0, 1e-9)
+  assert.equal(solid(al(100)), 0)
   assert.equal(al(100).dissolved.complete, true)
   near(al(125).excess.find(item => item.id === 'naoh').moles * 1000, 2.5, 1e-9)
 
-  const zn = stoich('znso4-naoh', { znso4: 25, naoh: 75 }) // 7.5 mmol OH⁻: 5 precipitate, 2.5 dissolve 1.25 mmol
+  const zn = stoich('znso4-naoh', { znso4: 25, naoh: 75 })
   near(zn.products.find(item => item.formula === 'Zn(OH)2').moles * 1000, 1.25, 1e-9)
 
-  // Cu(OH)₂ is not treated as amphoteric.
   assert.equal(stoich('cuso4-naoh', { cuso4: 25, naoh: 100 }).dissolved, null)
 })
 
@@ -484,7 +467,6 @@ test('lab concentrations: 0.1 M only for catalogue solutions well below saturati
     const reagent = catalogue[id]
     assert.ok(reagent, `${id} missing from catalogue`)
     assert.equal(reagent.state, 'solution', id)
-    // g/100 g water → rough mol/L; must be at least 3 × the 0.1 M stock.
     const saturation = solubility * 10 / molarMassOf(reagent.formula)
     assert.ok(saturation >= 0.3, `${id}: ~${saturation.toFixed(2)} M`)
   }
@@ -494,7 +476,7 @@ test('lab concentrations: 0.1 M only for catalogue solutions well below saturati
 test('lab pH: spectator salts are counted, H⁺/OH⁻-consuming salts fall back to estimate', () => {
   near(pHOf({ hcl: 25, nacl: 25 }).pH, -Math.log10(2.5 / 50))
   assert.equal(pHOf({ na2so4: 25 }).mode, 'quantitative')
-  assert.equal(pHOf({ mgcl2: 25, naoh: 10 }).mode, 'estimate') // Mg(OH)₂↓ consumes OH⁻
+  assert.equal(pHOf({ mgcl2: 25, naoh: 10 }).mode, 'estimate')
   assert.equal(pHOf({ glucose: 25, hcl: 25 }).mode, 'estimate')
 })
 
@@ -511,7 +493,7 @@ test('stepwise CO₃²⁻ + HCl: acid added to carbonate gives HCO₃⁻ first, 
   near(mmolOf(first.dibasic), 1.5, 1e-9)
   const more = replay([['na2co3', 25], ['hcl', 10], ['hcl', 25]])
   near(mmolOf(more.dibasic), 0, 1e-12)
-  near(mmolOf(more.gas), 1, 1e-9) // 3.5 mmol H⁺: 2.5 to HCO₃⁻, 1.0 to CO₂
+  near(mmolOf(more.gas), 1, 1e-9)
   near(mmolOf(more.monobasic), 1.5, 1e-9)
   const all = replay([['na2co3', 25], ['hcl', 50]])
   near(mmolOf(all.gas), 2.5, 1e-9)
@@ -523,11 +505,10 @@ test('stepwise CO₃²⁻ + HCl: carbonate added to acid releases gas at once (o
   near(mmolOf(excessAcid.gas), 1, 1e-9)
   near(mmolOf(excessAcid.acid), 0.5, 1e-9)
   const littleAcid = replay([['hcl', 10], ['na2co3', 25]])
-  near(mmolOf(littleAcid.gas), 0.5, 1e-9) // n(CO₂) = n(HCl) / 2
+  near(mmolOf(littleAcid.gas), 0.5, 1e-9)
   near(mmolOf(littleAcid.dibasic), 2, 1e-9)
-  // Same totals, other order: 1 mmol HCl onto 2.5 mmol CO₃²⁻ gives no gas.
   near(mmolOf(replay([['na2co3', 25], ['hcl', 10]]).gas), 0, 1e-12)
-  near(mmolOf(replay([['nahco3', 25], ['hcl', 10]]).gas), 1, 1e-9) // HCO₃⁻ + H⁺ is one step
+  near(mmolOf(replay([['nahco3', 25], ['hcl', 10]]).gas), 1, 1e-9)
 })
 
 test('stepwise replay conserves carbon and H⁺ for random addition sequences', () => {
@@ -552,7 +533,7 @@ test('simulateLab: competing reactions are not computed independently', () => {
   assert.equal(competing.results.get('na2co3-hcl').reason, SHARED_REASON)
   assert.equal(competing.gasMoles, 0)
   const twoCarbonates = sim([['na2co3', 25], ['nahco3', 25], ['hcl', 50]], ['na2co3-hcl', 'nahco3-hcl'])
-  assert.equal(twoCarbonates.results.get('na2co3-hcl').kind, 'stepwise') // one system, not a competition
+  assert.equal(twoCarbonates.results.get('na2co3-hcl').kind, 'stepwise')
   near(mmolOf(twoCarbonates.gasMoles), 2.5, 1e-9)
 })
 
@@ -567,6 +548,7 @@ test('reaction catalogue: unique ids, every reaction valid and classified', () =
   for (const profile of profiles) {
     assert.ok(Object.values(SUPPORT).includes(profile.support), profile.id)
     assert.ok(profile.categories.length, profile.id)
+    assert.equal(new Set(profile.limitations).size, profile.limitations.length, profile.id)
   }
 })
 
@@ -600,7 +582,7 @@ test('reaction catalogue: equilibria are never quantitative; quantitative ones c
     for (const volumes of [[25, 10], [10, 25], [25, 25], [1, 50]]) {
       const mixture = Object.fromEntries(reaction.reactants.map((id, index) => [id, volumes[index % 2]]))
       const result = computeStoichiometry(reaction, mixture, catalogue, stockOf)
-      if (!result || result.status !== 'quantitative') continue // stepwise systems are checked by replay tests
+      if (!result || result.status !== 'quantitative') continue
       const atoms = {}
       const add = (formula, moles, sign) => {
         for (const [symbol, count] of Object.entries(parseFormula(formula))) atoms[symbol] = (atoms[symbol] || 0) + sign * count * moles
@@ -616,7 +598,6 @@ test('reaction catalogue: equilibria are never quantitative; quantitative ones c
 test('precipitate table: textbook colour names for the reference solids', () => {
   const expected = { AgCl: 'trắng', BaSO4: 'trắng', 'Cu(OH)2': 'xanh lam', 'Fe(OH)3': 'nâu đỏ', PbI2: 'vàng', Ag2S: 'đen', AgI: 'vàng', CuS: 'đen', 'Fe(OH)2': 'trắng xanh', Cu2O: 'đỏ gạch' }
   for (const [formula, label] of Object.entries(expected)) assert.equal(PRECIPITATES[formula].label, label, formula)
-  // Colours must look like their name: white is light and grey-free, black is dark.
   const lightness = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255); return (Math.max(r, g, b) + Math.min(r, g, b)) / 2 }
   for (const [formula, entry] of Object.entries(PRECIPITATES)) {
     if (entry.label === 'trắng' || entry.label === 'keo trắng') assert.ok(lightness(entry.color) > 0.9, formula)
@@ -667,13 +648,12 @@ test('engine boundary cases: zero, tiny and unknown inputs', () => {
   const sim = additions => simulateLab({ additions, triggeredIds: ['agno3-nacl'], reactions: REACTIONS, reagents: catalogue })
   assert.equal(sim([]).solidMoles, 0)
   assert.equal(sim([{ id: 'agno3', volume: 0 }, { id: 'nacl', volume: 25 }]).solidMoles, 0)
-  near(mmolOf(sim([{ id: 'agno3', volume: 1 }, { id: 'nacl', volume: 25 }]).solidMoles), 0.1, 1e-12) // 1 mL × 0.1 M
+  near(mmolOf(sim([{ id: 'agno3', volume: 1 }, { id: 'nacl', volume: 25 }]).solidMoles), 0.1, 1e-12)
   near(mmolOf(sim([{ id: 'agno3', volume: 250 }, { id: 'nacl', volume: 250 }]).solidMoles), 25, 1e-9)
   assert.equal(replayStepwise(carbonate, [{ id: 'hcl', volume: -5 }, { id: 'na2co3', volume: NaN }], stockOf).gas, 0)
   assert.equal(simulateLab({ additions: [{ id: 'notAChemical', volume: 25 }], triggeredIds: ['notAReaction'], reactions: REACTIONS, reagents: catalogue }).results.size, 0)
 })
 
-// Word equations (colour tests, R-group notation) cannot be atom-checked.
 const QUALITATIVE_EQUATIONS = new Set([
   'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'
 ])

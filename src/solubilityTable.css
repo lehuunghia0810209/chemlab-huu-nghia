@@ -386,7 +386,6 @@
     margin-right:16px;
   }
 }
-/* Salt does not exist in water (SGK "–") */
 .sol-legend i.none{background:var(--text-muted)}
 
 .sol-cell.none{

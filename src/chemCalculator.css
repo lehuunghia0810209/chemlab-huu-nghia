@@ -1,8 +1,3 @@
-/* =========================================================
-   CHEMLAB 4.1
-   CHEMISTRY CALCULATOR
-========================================================= */
-
 .chem-calc-v4 {
   width: min(1320px, 100%);
   margin: 28px auto 80px;
@@ -21,9 +16,6 @@
   box-shadow:
     var(--shadow-md);
 }
-
-
-/* HEADER */
 
 .cc-header {
   min-height: 125px;
@@ -102,9 +94,6 @@
   box-shadow:
     var(--glow-accent);
 }
-
-
-/* TABS */
 
 .cc-tabs {
   padding: 12px;
@@ -225,9 +214,6 @@
   font-size: var(--text-xs);
 }
 
-
-/* PANELS */
-
 .cc-workspace {
   padding: 28px;
 }
@@ -291,9 +277,6 @@
 .cc-panel-head p strong {
   color: var(--accent-text);
 }
-
-
-/* FORMULA INPUT */
 
 .cc-formula-box {
   padding: 20px;
@@ -373,9 +356,6 @@
     var(--glow-accent);
 }
 
-
-/* PRIMARY */
-
 .cc-primary {
   min-height: 52px;
 
@@ -413,9 +393,6 @@
 
   min-width: 180px;
 }
-
-
-/* EXAMPLES */
 
 .cc-examples {
   margin-top: 13px;
@@ -463,9 +440,6 @@
 
   color: var(--text-primary);
 }
-
-
-/* EMPTY */
 
 .cc-empty-state {
   min-height: 230px;
@@ -528,9 +502,6 @@
 
   line-height: 1.6;
 }
-
-
-/* MOLAR RESULT */
 
 .cc-result {
   margin-top: 16px;
@@ -607,9 +578,6 @@
 
   font-size: var(--text-sm);
 }
-
-
-/* BREAKDOWN */
 
 .cc-breakdown-head {
   margin: 24px 0 11px;
@@ -775,9 +743,6 @@
   font-size: var(--text-xs);
 }
 
-
-/* CALCULATOR GRID */
-
 .cc-calc-grid {
   display: grid;
 
@@ -842,9 +807,6 @@
 
   cursor: pointer;
 }
-
-
-/* ANSWER */
 
 .cc-answer {
   margin-top: 17px;
@@ -925,9 +887,6 @@
   font-size: var(--text-sm);
 }
 
-
-/* NOTE */
-
 .cc-note {
   margin-top: 12px;
 
@@ -937,9 +896,6 @@
 
   line-height: 1.5;
 }
-
-
-/* ERROR */
 
 .cc-error {
   margin-top: 13px;
@@ -960,15 +916,9 @@
   font-size: var(--text-sm);
 }
 
-
-/* UTILITY */
-
 .chem-calc-v4 .hidden {
   display: none !important;
 }
-
-
-/* RESPONSIVE */
 
 @media (max-width: 850px) {
 

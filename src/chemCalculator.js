@@ -455,9 +455,6 @@ export function initChemCalculator() {
     </section>
   `)
 
-  /* =====================================================
-     TABS
-  ===================================================== */
 
   const tabButtons =
     tools.querySelectorAll('[data-calc-tab]')
@@ -486,9 +483,6 @@ export function initChemCalculator() {
     })
   })
 
-  /* =====================================================
-     MOLAR MASS
-  ===================================================== */
 
   const formulaInput =
     tools.querySelector('#cc-formula')
@@ -692,9 +686,6 @@ export function initChemCalculator() {
       })
   }
 
-  /* =====================================================
-     MOLES
-  ===================================================== */
 
   tools
     .querySelector('#cc-calc-moles')
@@ -794,9 +785,6 @@ export function initChemCalculator() {
       }
     )
 
-  /* =====================================================
-     CONCENTRATION
-  ===================================================== */
 
   tools
     .querySelector(
@@ -904,9 +892,6 @@ export function initChemCalculator() {
       }
     )
 
-  /* =====================================================
-     GAS
-  ===================================================== */
 
   tools
     .querySelector('#cc-calc-gas')
@@ -975,9 +960,6 @@ export function initChemCalculator() {
       }
     )
 
-  /* =====================================================
-     MASS
-  ===================================================== */
 
   function calculateMolarMass(
     composition
@@ -1042,9 +1024,6 @@ export function initChemCalculator() {
       : null
   }
 
-  /* =====================================================
-     UI HELPERS
-  ===================================================== */
 
   function formatFormulaHTML(
     formula

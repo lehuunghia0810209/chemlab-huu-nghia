@@ -1,11 +1,3 @@
-/* =========================================================
-   SHELL (BOHR) DIAGRAM SCENE
-   A teaching simplification: electrons per shell are drawn on
-   circles. Electrons do not move on fixed circular orbits — the
-   UI says so and links to the orbital view. Shell counts come
-   from the ground-state configuration (exceptions included).
-   The nucleus is drawn enormously enlarged.
-========================================================= */
 
 import { SHELL_LETTERS } from '../chem/electronConfiguration.js'
 
@@ -14,8 +6,6 @@ const NEUTRON = '#94a3b8'
 const ELECTRON = '#67e8f9'
 const VALENCE = '#facc15'
 
-/* Compact, deterministic ball packing: concentric layers, each filled
-   with points on a Fibonacci sphere, from the centre outwards. */
 function nucleonPositions(count, diameter) {
   const positions = [[0, 0, 0]]
   const golden = Math.PI * (3 - Math.sqrt(5))
@@ -51,10 +41,6 @@ function label(THREE, text) {
   return sprite
 }
 
-/**
- * @param host scene host
- * @param {{ shells: number[], protons: number, neutrons: number }} atom
- */
 export function createShellScene(host, atom) {
   const { THREE, scene } = host
   const root = new THREE.Group()
@@ -66,7 +52,6 @@ export function createShellScene(host, atom) {
   light.position.set(4, 6, 8)
   scene.add(light)
 
-  /* ---------- nucleus ---------- */
   const total = atom.protons + atom.neutrons
   const nucleonRadius = 0.16
   const segments = host.quality === 'low' ? 8 : 14
@@ -78,7 +63,6 @@ export function createShellScene(host, atom) {
   const neutrons = new THREE.InstancedMesh(sphere, new THREE.MeshStandardMaterial({ color: NEUTRON, roughness: 0.5, metalness: 0.05 }), Math.max(1, atom.neutrons))
   neutrons.count = atom.neutrons
 
-  // Interleave so protons are spread through the nucleus, not clustered.
   const matrix = new THREE.Matrix4()
   let p = 0
   let n = 0
@@ -94,7 +78,6 @@ export function createShellScene(host, atom) {
   nucleus.add(protons, neutrons)
   root.add(nucleus)
 
-  /* ---------- shells ---------- */
   const shellGroups = []
   const electronGeometry = new THREE.SphereGeometry(0.11, 14, 10)
   const firstRadius = Math.max(1.3, ballRadius + 0.8)
@@ -139,7 +122,6 @@ export function createShellScene(host, atom) {
 
   return {
     outerRadius,
-    /* Gentle rotation of the shells for depth; returns true while animating. */
     animate(time, delta, enabled) {
       if (!enabled) return false
       for (const { group, speed } of shellGroups) group.rotation.z += speed * delta

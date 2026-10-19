@@ -1,12 +1,5 @@
-/* =========================================================
-   CHEMLAB 5.0
-   PERIODIC DATA ENGINE
-========================================================= */
 
 
-/* =========================================================
-   CURATED COMMON MONATOMIC IONS
-========================================================= */
 
 const COMMON_IONS = {
 
@@ -192,11 +185,6 @@ const COMMON_IONS = {
     ['Sb⁵⁺', '+5', 'Cation']
   ],
 
-  /*
-    Tellurium:
-    telluride Te²⁻ là ion đơn nguyên tử
-    phổ biến cần bổ sung.
-  */
 
   52: [
     ['Te²⁻', '−2', 'Anion']
@@ -405,9 +393,6 @@ const COMMON_IONS = {
 }
 
 
-/* =========================================================
-   VERIFIED / CURATED ISOTOPE EXAMPLES
-========================================================= */
 
 const ISOTOPES = {
 
@@ -475,9 +460,6 @@ const ISOTOPES = {
     iso(81, '⁸¹Br', '≈ 49,31%', 'natural')
   ],
 
-  /*
-    Tellurium - dữ liệu natural abundance.
-  */
 
   52: [
     iso(120, '¹²⁰Te', '≈ 0,09%', 'natural'),
@@ -521,9 +503,6 @@ const ISOTOPES = {
 }
 
 
-/* =========================================================
-   PUBLIC API
-========================================================= */
 
 export function getCommonIons(
   element
@@ -560,10 +539,6 @@ export function getCommonIons(
   }
 
 
-  /*
-    Generic high-school fallback.
-    Only applied when chemically sensible.
-  */
 
   if (
     element.categoryKey ===
@@ -666,9 +641,6 @@ export function getCommonIons(
 }
 
 
-/* =========================================================
-   ISOTOPE DATA
-========================================================= */
 
 export function getIsotopes(
   element
@@ -689,15 +661,6 @@ export function getIsotopes(
   }
 
 
-  /*
-    Không để UI trống.
-
-    Nếu chưa có bảng abundance curated,
-    ChemLab chỉ hiển thị một isotope reference
-    dựa vào giá trị mass-number của dữ liệu gốc.
-
-    Không tuyên bố abundance.
-  */
 
   const massNumber =
     getReferenceMassNumber(
@@ -751,9 +714,6 @@ export function getIsotopes(
 }
 
 
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function iso(
   mass,

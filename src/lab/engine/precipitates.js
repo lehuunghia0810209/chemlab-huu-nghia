@@ -1,10 +1,3 @@
-/* =========================================================
-   PRECIPITATES — one table for identity, colour and label
-   Colours are drawing colours chosen to match the colour named
-   in Vietnamese school textbooks (label). Reaction data must use
-   the same colour for the same solid (test-checked), and the
-   observation text uses the label, never a guess from the hex.
-========================================================= */
 
 export const PRECIPITATES = {
   'AgCl': { color: '#f5f5f5', label: 'trắng' },
@@ -39,8 +32,6 @@ export const PRECIPITATES = {
 const SUBSCRIPT = '₀₁₂₃₄₅₆₇₈₉'
 const plain = text => text.replace(/[₀-₉]/g, char => String(SUBSCRIPT.indexOf(char)))
 
-/* Solids marked with ↓ in a reaction's equation, with their table entry
-   (entry is null for a solid missing from the table). */
 export function solidsOf(reaction) {
   const products = String(reaction?.equation || '').split(/→|⇌/)[1] || ''
   return [...products.matchAll(/(?:^|[\s+])(?:\d+)?([A-Za-z0-9₀-₉()[\]]+)↓/g)].map(match => {

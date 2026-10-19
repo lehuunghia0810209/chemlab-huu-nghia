@@ -1,11 +1,3 @@
-/* =========================================================
-   BEAKER EFFECTS — Canvas 2D particles inside the liquid
-   Gas bubbles rise with a wobble and pop at the surface;
-   precipitate particles cloud the liquid, settle under drag
-   and build a sediment layer. Only effects requested by the
-   reaction data are ever drawn. The loop runs only while
-   something moves and pauses when the tab is hidden.
-========================================================= */
 
 function reducedMotion() {
   return (
@@ -80,7 +72,6 @@ export function createBeakerEffects(host) {
       bubble.x = bubble.x0 + Math.sin(bubble.age * bubble.freq + bubble.phase) * bubble.amp
       bubble.r = Math.min(bubble.rMax, bubble.r + 0.6 * dt)
       if (bubble.y - bubble.r > top + 1) return true
-      // Bursting at the surface leaves a short ripple.
       rings.push({ x: bubble.x, r: bubble.r, age: 0 })
       return false
     })
@@ -129,7 +120,6 @@ export function createBeakerEffects(host) {
       const [r, g, b] = sediment.rgb
       const fade = sediment.fade
       const falling = particles.filter(p => !p.settled && !p.fading && p.delay <= 0).length
-      // Turbidity fades as particles leave the bulk liquid.
       const turbidity = sediment.total ? (falling / sediment.total) * 0.38 * fade : 0
       if (turbidity > 0.01) {
         context.fillStyle = `rgba(${r},${g},${b},${turbidity})`
@@ -154,8 +144,6 @@ export function createBeakerEffects(host) {
         context.lineWidth = 1
         context.stroke()
 
-        // Granular texture: slightly darker grains of the same colour, so a
-        // white solid stays visible without being drawn grey.
         context.save()
         context.clip()
         for (const grain of sediment.grains) {
@@ -168,7 +156,6 @@ export function createBeakerEffects(host) {
         context.restore()
       }
 
-      // A thin dark rim keeps particles visible against a liquid of similar colour.
       context.lineWidth = 0.8
       for (const particle of particles) {
         if (particle.delay > 0 || (particle.settled && !particle.fading)) continue
@@ -244,7 +231,6 @@ export function createBeakerEffects(host) {
       particles = kept.slice(0, total)
     }
     else {
-      // Less solid (partial redissolution): the surplus fades out instead of vanishing.
       kept.slice(total).forEach(particle => { particle.fading = true })
     }
     sediment.amount = value
@@ -274,7 +260,6 @@ export function createBeakerEffects(host) {
 
     bubbles(count = 12) {
       if (level <= 0) return
-      // Counter for tests: every burst of gas the chemistry asked for.
       host.dataset.gasBursts = String(Number(host.dataset.gasBursts || 0) + 1)
       const limit = window.matchMedia('(max-width: 767px)').matches ? 40 : 80
       const add = Math.min(Math.max(0, Math.round(count)), limit - bubbles.length)
@@ -312,8 +297,6 @@ export function createBeakerEffects(host) {
       draw()
     },
 
-    /* amount: relative quantity (1 ≈ 2.5 mmol of solid). The drawing is
-       proportional to it but is an illustration, not a measured volume. */
     precipitate(color, amount = 1) {
       sediment = { rgb: hexToRgb(color), total: 0, settled: 0, depth: 0, depthTarget: 0, amount: 0, fade: 1, fading: false, grains: makeGrains() }
       particles = []
@@ -324,7 +307,6 @@ export function createBeakerEffects(host) {
       if (sediment && !sediment.fading) setAmount(amount)
     },
 
-    /* All solid redissolved: turbidity, particles and sediment fade out. */
     dissolvePrecipitate() {
       if (!sediment) return
       if (reducedMotion()) {

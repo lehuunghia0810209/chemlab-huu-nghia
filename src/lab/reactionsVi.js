@@ -1,9 +1,3 @@
-/* =========================================================
-   VIETNAMESE TEXT FOR THE REACTION DATABASE
-   Display-only translations of reactions.js titles,
-   descriptions and message effects. Equations, reactants and
-   effects stay in reactions.js and are not changed here.
-========================================================= */
 
 const NEUTRALIZATION = 'Phản ứng trung hòa'
 

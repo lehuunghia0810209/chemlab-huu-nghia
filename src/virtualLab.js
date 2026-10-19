@@ -56,9 +56,6 @@ export function initVirtualLab() {
     CHEMICAL_ORDER
 
 
-  /* =========================================================
-     UI
-  ========================================================= */
 
   const section =
     document.createElement(
@@ -257,9 +254,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     REFERENCES
-  ========================================================= */
 
   const $ =
     selector =>
@@ -432,7 +426,6 @@ export function initVirtualLab() {
   const undoButton =
     $('#undo-button')
 
-  /* Snapshots taken before each user change (free mode only). */
   const undoStack = []
 
   const resetButton =
@@ -444,9 +437,6 @@ export function initVirtualLab() {
     )
 
 
-  /* =========================================================
-     STATE
-  ========================================================= */
 
   let selectedReagent =
     null
@@ -475,12 +465,9 @@ export function initVirtualLab() {
   let additionHistory =
     []
 
-  /* Ordered log of every addition: the single source the chemistry
-     state is recomputed from (see lab/engine/simulate.js). */
   let additions =
     []
 
-  // Gas already accounted for, so bubbles appear only for new gas.
   let gasBaseline = 0
 
 
@@ -514,9 +501,6 @@ export function initVirtualLab() {
     )
 
 
-  /* =========================================================
-     GUIDED LAB BRIDGE
-  ========================================================= */
 
   function createLabSnapshot() {
 
@@ -637,7 +621,6 @@ export function initVirtualLab() {
             mixture
           )
 
-    // Older snapshots have no log: rebuild one addition per substance in the recorded order.
     additions = Array.isArray(snapshot.additions)
       ? snapshot.additions.map(item => ({ id: item.id, volume: Number(item.volume) || 0 }))
       : [...new Set([...additionHistory, ...Object.keys(mixture)])]
@@ -883,9 +866,6 @@ export function initVirtualLab() {
     0
 
 
-  /* =========================================================
-     FAMILY LABELS
-  ========================================================= */
 
   const FAMILY_LABELS = {
 
@@ -999,9 +979,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     RENDER CHEMICALS
-  ========================================================= */
 
   function renderChemicalCards() {
 
@@ -1186,9 +1163,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     FAMILY OPTIONS
-  ========================================================= */
 
   function syncFamilyOptions(
     resetValue =
@@ -1318,9 +1292,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     FILTER
-  ========================================================= */
 
   function applyReagentFilter() {
 
@@ -1437,9 +1408,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     SELECT CHEMICAL
-  ========================================================= */
 
   const HAZARD_LABELS = Object.freeze({
     corrosive: 'Ăn mòn',
@@ -1537,9 +1505,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     VOLUME
-  ========================================================= */
 
   section
     .querySelectorAll(
@@ -1598,9 +1563,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     ADD / DROP
-  ========================================================= */
 
   addButton.addEventListener(
     'click',
@@ -1697,9 +1659,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     ADD REAGENT
-  ========================================================= */
 
   function addReagent(
     id,
@@ -1883,9 +1842,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     PURPLE LITMUS PAPER TEST
-  ========================================================= */
 
   function renderLitmusPaperResult(
     result
@@ -2137,9 +2093,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     DROP ANIMATION
-  ========================================================= */
 
   function animateDrop(
     color
@@ -2212,12 +2165,7 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     LIQUID
-  ========================================================= */
 
-  /* Colourless (near-white, low-chroma) and not a suspension: draw it see-through,
-     so "không màu" does not look like milk and white solids stay visible. */
   function isClearColourless(color) {
     if (Object.keys(mixture).some(id => mixture[id] > 0 && reagents[id]?.state === 'suspension')) return false
     const rgb = hexToRgb(color)
@@ -2291,9 +2239,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     INDICATORS
-  ========================================================= */
 
   function getDisplayedColor() {
 
@@ -2451,9 +2396,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     REACTION ENGINE
-  ========================================================= */
 
   function checkReactions() {
 
@@ -2498,11 +2440,6 @@ export function initVirtualLab() {
     }
 
 
-    /*
-      Reaction engine sắp priority cao trước.
-      Chạy ngược để phản ứng quan trọng nhất
-      được hiển thị cuối cùng.
-    */
 
     ;[
       ...available
@@ -2589,9 +2526,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     REACTION EFFECT
-  ========================================================= */
 
   function applyReactionEffect(
     effect
@@ -2665,13 +2599,6 @@ export function initVirtualLab() {
           updateLiquid()
 
         }
-
-        break
-
-
-      case 'flash':
-
-        flashReaction()
 
         break
 
@@ -2982,7 +2909,6 @@ export function initVirtualLab() {
 
     const effects = reaction.effects || []
     const precipitateEffect = effects.find(effect => effect.type === 'precipitate')
-    // Names come from the verified precipitate table, not from the drawing colour.
     const solids = solidsOf(reaction)
     const solidNames = solids.map(solid => `${solid.label || precipitateColorLabel(solid.color || precipitateEffect?.color)} (${solid.display})`)
     const hasGas = effects.some(effect => effect.type === 'gas')
@@ -3018,9 +2944,6 @@ export function initVirtualLab() {
     beakerEffects.clearBubbles()
   }
 
-  /* =========================================================
-     BUBBLES
-  ========================================================= */
 
   function createBubbles(count = 12) {
     beakerEffects.bubbles(Number(count) || 0)
@@ -3036,38 +2959,8 @@ export function initVirtualLab() {
     beakerEffects.precipitate(color)
   }
 
-  /* =========================================================
-     FLASH
-  ========================================================= */
-
-  function flashReaction() {
-
-    beakerWrap
-      .classList
-      .remove(
-        'flash'
-      )
 
 
-    void beakerWrap.offsetWidth
-
-
-    beakerWrap
-      .classList
-      .add(
-        'flash'
-      )
-
-  }
-
-
-  /* =========================================================
-     PH
-  ========================================================= */
-
-  /* ---------- stoichiometry of the latest reaction ---------- */
-
-  // 1 on the drawing scale ≈ 2.5 mmol of solid (25 mL of a 0.1 M stock).
   const PRECIPITATE_REFERENCE_MOLES = 2.5e-3
   const AMPHOTERIC_REAGENT = Object.fromEntries(Object.entries(AMPHOTERIC).map(([id, item]) => [id, item.reagent]))
   const subscript = formula => String(formula).replace(/(?<=[A-Za-z)\]])\d+/g, digits => [...digits].map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join(''))
@@ -3078,7 +2971,6 @@ export function initVirtualLab() {
     return simulateLab({ additions, triggeredIds: triggeredReactions, reactions, reagents })
   }
 
-  // After undo/restore/reset the gas already made is history, not new bubbles.
   function syncGasBaseline() {
     gasBaseline = currentSimulation().gasMoles
   }
@@ -3102,7 +2994,6 @@ export function initVirtualLab() {
       <p class="stoich-note">Mô hình hai nấc lý tưởng, theo đúng thứ tự bạn thêm hóa chất: nhỏ acid vào muối thì nấc 1 xong mới có khí; cho muối vào acid dư thì có khí ngay. Thực tế có thể thoát ít khí sớm hơn và một phần khí còn hòa tan.</p>
     `
 
-    // Observation follows the computed stage, not the trigger.
     if (state.gas > 0) {
       observationTitle.textContent = `Có khí ${system.labels.gas} thoát ra`
       observationText.textContent = system.id === 'sulfite'
@@ -3117,10 +3008,6 @@ export function initVirtualLab() {
     }
   }
 
-  /* When every triggered reaction is quantitative and none has its own colour
-     data, the solution colour comes from what is still dissolved: consumed
-     coloured ions no longer tint it (dissolved products here are colourless
-     Na⁺/K⁺/NH₄⁺ salts). Otherwise the reaction data decides the colour. */
   function syncSolutionColor(simulation) {
     const results = [...simulation.results.values()]
     if (!results.length || results.some(result => result.status !== 'quantitative')) return
@@ -3151,7 +3038,6 @@ export function initVirtualLab() {
     const simulation = currentSimulation()
     syncSolutionColor(simulation)
 
-    // Bubbles only for gas produced since the last state (open beaker: released gas stays in the history).
     const newGas = simulation.gasMoles - gasBaseline
     gasBaseline = simulation.gasMoles
     if (newGas > 1e-9) {
@@ -3177,7 +3063,6 @@ export function initVirtualLab() {
       return
     }
 
-    // The drawn precipitate follows the computed amount of solid (one source: the action log).
     const solidMoles = simulation.solidMoles
     const solidColor = reaction.effects?.find(effect => effect.type === 'precipitate')?.color
     if (solidColor && solidMoles <= 0 && precipitate) {
@@ -3230,9 +3115,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     DASHBOARD
-  ========================================================= */
 
   function updateDashboard() {
 
@@ -3256,7 +3138,6 @@ export function initVirtualLab() {
     phMode.textContent = modeLabel
     phMode.title = modeTitle
 
-    // An estimate only shows the direction; its number is not a real pH.
     phText.textContent =
       acidBase.mode === 'estimate'
         ? pH < 6.5 ? '< 7' : pH > 7.5 ? '> 7' : '≈ 7'
@@ -3369,9 +3250,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     LOG
-  ========================================================= */
 
   function addLog(
     text
@@ -3450,9 +3328,6 @@ export function initVirtualLab() {
     )
 
 
-  /* =========================================================
-     STIR
-  ========================================================= */
 
   stirButton.addEventListener(
     'click',
@@ -3532,7 +3407,6 @@ export function initVirtualLab() {
       }
 
 
-      // Stirring only releases bubbles when a gas-forming reaction has happened.
       const simulation = currentSimulation()
       const releasesGas =
         reactions.some(
@@ -3562,9 +3436,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     HEAT
-  ========================================================= */
 
   heatButton.addEventListener(
     'click',
@@ -3643,9 +3514,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     EMPTY / RESET
-  ========================================================= */
 
   emptyButton.addEventListener(
     'click',
@@ -3677,7 +3545,6 @@ export function initVirtualLab() {
   }
 
   function undoLastAction() {
-    // Guided steps count actions already done; rolling the beaker back would desync them.
     if (isGuidedActive()) {
       messageTitle.textContent = 'Không hoàn tác trong thí nghiệm có hướng dẫn'
       message.textContent = 'Các bước đã hoàn thành được tính theo thao tác; hãy dùng “Đặt lại” nếu muốn làm lại.'
@@ -3913,9 +3780,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     TEMPERATURE ENGINE
-  ========================================================= */
 
   const temperatureTimer =
     window.setInterval(
@@ -4091,9 +3955,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     TILT
-  ========================================================= */
 
   beakerWrap.addEventListener(
     'pointerdown',
@@ -4236,9 +4097,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     ANIMATION LOOP
-  ========================================================= */
 
   const animationStage =
     section.querySelector(
@@ -4368,7 +4226,6 @@ export function initVirtualLab() {
     )
 
 
-    // Keep animating only while the beaker is held or still settling back.
     if (dragging || tiltCurrent !== 0 || liquidTilt !== 0) {
       scheduleAnimationLoop()
     }
@@ -4376,9 +4233,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     COLORS
-  ========================================================= */
 
   function mixColors(
     a,
@@ -4553,9 +4407,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     HELPERS
-  ========================================================= */
 
   function clamp(
     value,
@@ -4664,9 +4515,6 @@ export function initVirtualLab() {
   }
 
 
-  /* =========================================================
-     START
-  ========================================================= */
 
   renderChemicalCards()
 
@@ -4797,9 +4645,6 @@ export function initVirtualLab() {
   )
 
 
-  /* =========================================================
-     CHEMAI LAB CONTEXT
-  ========================================================= */
 
   window.ChemLabLab = Object.freeze({
 

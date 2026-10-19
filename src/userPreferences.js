@@ -1,8 +1,3 @@
-/* =========================================================
-   USER PREFERENCES
-   Storage key and value format are unchanged from ChemLab 5
-   so existing users keep their settings.
-========================================================= */
 
 import { icon } from './shell/icons.js'
 
@@ -49,7 +44,6 @@ function savePreferences() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
   }
   catch {
-    /* private mode / quota — preferences still apply for this session */
   }
 }
 
@@ -105,9 +99,6 @@ systemLight.addEventListener('change', () => {
   if (prefs.theme === 'system') applyPreferences()
 })
 
-/* =========================================================
-   SETTINGS DIALOG
-========================================================= */
 
 let dialog = null
 let scrim = null

@@ -63,7 +63,6 @@ function resetIonBuilder(button) {
   button.disabled = true
   button.classList.add('loading')
 
-  /* Xóa tìm kiếm */
 
   const search =
     engine.querySelector('#ion-search')
@@ -79,7 +78,6 @@ function resetIonBuilder(button) {
     )
   }
 
-  /* Chuyển về Tất cả */
 
   const allFilter =
     engine.querySelector(
@@ -89,7 +87,6 @@ function resetIonBuilder(button) {
   allFilter?.click()
 
   requestAnimationFrame(() => {
-    /* Chọn Na+ */
 
     engine
       .querySelector(
@@ -98,7 +95,6 @@ function resetIonBuilder(button) {
       ?.click()
 
     requestAnimationFrame(() => {
-      /* Chọn Cl- */
 
       engine
         .querySelector(

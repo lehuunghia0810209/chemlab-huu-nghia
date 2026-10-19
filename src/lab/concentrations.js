@@ -1,15 +1,3 @@
-/* =========================================================
-   VIRTUAL LAB — STOCK SOLUTION CONCENTRATIONS
-   The catalogue declares no concentrations. These defaults
-   (approved for the lab) apply only to:
-   - the strong acids/bases modelled in acidBase.js, and
-   - soluble salts listed below with their solubility in water
-     at 20 °C (g per 100 g H₂O, CRC Handbook, rounded). A 0.1 M
-     stock is far below saturation for each (test-checked).
-   Not included on purpose: suspensions/solids, Ca(OH)₂ (lime
-   water, set by saturation), weak acids and bases, oxidisers,
-   Fe₂(SO₄)₃ (solubility not verified here).
-========================================================= */
 
 import { STOCK_CONCENTRATION, STRONG } from './acidBase.js'
 
@@ -46,7 +34,6 @@ export const SALT_SOLUBILITY = {
   nh4no3: 192
 }
 
-/* mol/L of the stock solution, or null when the lab has no verified value. */
 export function stockConcentration(id) {
   if (STRONG[id] || SALT_SOLUBILITY[id] !== undefined) return STOCK_CONCENTRATION
   return null

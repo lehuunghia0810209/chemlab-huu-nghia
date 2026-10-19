@@ -1,11 +1,3 @@
-/* =========================================================
-   VIRTUAL LAB — REACTION STOICHIOMETRY
-   Moles of each reactant from volume × stock concentration,
-   limiting reactant, excess and products from the balanced
-   equation. Only for reactions whose every reactant has a
-   known concentration; otherwise the result says which ones
-   are missing instead of guessing.
-========================================================= */
 
 import { splitSpecies } from '../chem/equation.js'
 import { parseFormula, parseSpecies } from '../chem/formula.js'
@@ -13,7 +5,6 @@ import { elements } from '../data/elements.js'
 
 const MASS = new Map(elements.map(element => [element.symbol, element.mass]))
 
-/* Reactions that must not be computed as a single complete reaction. */
 export const NOT_SINGLE_STEP = {
   'na2co3-hcl': 'Phản ứng xảy ra theo hai nấc: HCl thiếu chỉ tạo HCO₃⁻ (chưa có khí CO₂), nên ChemLab chưa tính lượng chất.',
   'na2so3-hcl': 'Phản ứng xảy ra theo hai nấc: HCl thiếu chỉ tạo HSO₃⁻ (chưa có khí SO₂), nên ChemLab chưa tính lượng chất.',
@@ -21,8 +12,6 @@ export const NOT_SINGLE_STEP = {
   'mgcl2-na2co3': 'Kết tủa thực tế là magnesium carbonate base, không đúng công thức MgCO₃, nên ChemLab không tính khối lượng.'
 }
 
-/* Amphoteric hydroxides redissolve in excess hydroxide:
-   Al(OH)₃ + NaOH → Na[Al(OH)₄]; Zn(OH)₂ + 2NaOH → Na₂[Zn(OH)₄]. */
 export const AMPHOTERIC = {
   'alcl3-naoh': { reagent: 'naoh', solid: 'Al(OH)3', perSolid: 1, complex: 'Na[Al(OH)4]' },
   'znso4-naoh': { reagent: 'naoh', solid: 'Zn(OH)2', perSolid: 2, complex: 'Na2[Zn(OH)4]' }
@@ -39,16 +28,6 @@ function sameAtoms(a, b) {
   return [...keys].every(key => (a[key] || 0) === (b[key] || 0))
 }
 
-/**
- * @param reaction entry of REACTIONS
- * @param {Record<string, number>} mixture reagent id → volume (mL)
- * @param reagents reagent id → catalogue entry
- * @param {(id: string) => number|null} concentrationOf mol/L or null when unknown
- * @returns null when the equation cannot be matched to the reagents;
- *   { status: 'qualitative', missing | reason } when a concentration is unknown
- *   or the reaction is not one complete step;
- *   { status: 'quantitative', reactants, limiting, excess, products } otherwise (amounts in mol)
- */
 export function computeStoichiometry(reaction, mixture, reagents, concentrationOf) {
   if (NOT_SINGLE_STEP[reaction.id]) return { status: 'qualitative', reason: NOT_SINGLE_STEP[reaction.id] }
   if (String(reaction.equation).includes('⇌')) {
@@ -101,7 +80,6 @@ export function computeStoichiometry(reaction, mixture, reagents, concentrationO
     dissolved: null
   }
 
-  // Second step for amphoteric hydroxides: the excess base dissolves part or all of the solid.
   const amphoteric = AMPHOTERIC[reaction.id]
   const leftover = amphoteric && result.excess.find(item => item.id === amphoteric.reagent)
   const solid = amphoteric && result.products.find(item => item.formula === amphoteric.solid)

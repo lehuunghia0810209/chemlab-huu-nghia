@@ -1,9 +1,3 @@
-/* =========================================================
-   CHEMLAB 5.2.2 — ROUTE MODULE LOADER
-
-   Heavy routes are lazy-loaded so the Periodic landing view
-   does not pull Tools, Learning, Lab or Three.js up front.
-========================================================= */
 
 export function createRouteModuleLoader({
   version,
@@ -257,7 +251,6 @@ export function createRouteModuleLoader({
       })
     }
 
-    /* Tool Center must run after the tool modules exist. */
     initialize(false)
     initialize(true)
 

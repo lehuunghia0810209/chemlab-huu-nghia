@@ -1,10 +1,3 @@
-/* =========================================================
-   APP SHELL
-   ≥1024  sidebar (expanded 248px / collapsible rail 76px)
-   768–1023 rail sidebar
-   <768   compact top app bar + bottom navigation
-========================================================= */
-
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
@@ -15,8 +8,6 @@
 .app-shell[data-sidebar='collapsed'] {
   grid-template-columns: var(--sidebar-rail-w) minmax(0, 1fr);
 }
-
-/* ---------- route progress ---------- */
 .app-route-progress {
   position: fixed;
   inset: 0 0 auto;
@@ -47,10 +38,6 @@
 @keyframes app-progress {
   to { transform: translateX(260%); }
 }
-
-/* =========================================================
-   SIDEBAR
-========================================================= */
 
 .app-sidebar {
   position: sticky;
@@ -115,8 +102,6 @@
   font-weight: var(--weight-medium);
   font-variant-numeric: tabular-nums;
 }
-
-/* ---------- search trigger ---------- */
 .app-search {
   display: flex;
   align-items: center;
@@ -147,8 +132,6 @@
   flex: 1;
   white-space: nowrap;
 }
-
-/* ---------- nav ---------- */
 .app-nav {
   display: grid;
   gap: 2px;
@@ -226,8 +209,6 @@
   font-weight: var(--weight-medium);
   white-space: nowrap;
 }
-
-/* ---------- sidebar foot ---------- */
 .app-sidebar__foot {
   display: grid;
   gap: var(--space-3);
@@ -325,8 +306,6 @@
 @keyframes app-pulse {
   to { opacity: .3; }
 }
-
-/* theme toggle shows the icon of the theme you will switch to */
 html[data-theme='dark'] .app-theme-icon--dark,
 html[data-theme='light'] .app-theme-icon--light {
   display: none;
@@ -335,8 +314,6 @@ html[data-theme='light'] .app-theme-icon--light {
 .app-theme-icon {
   display: grid;
 }
-
-/* ---------- product menu (production.js) docked in sidebar ---------- */
 .app-product-slot {
   flex: none;
 }
@@ -375,8 +352,6 @@ html[data-theme='light'] .app-theme-icon--light {
   bottom: calc(100% + var(--space-2));
   z-index: var(--z-dialog);
 }
-
-/* ---------- collapsed rail ---------- */
 .app-shell[data-sidebar='collapsed'] .app-sidebar {
   align-items: center;
   padding-inline: var(--space-2);
@@ -433,10 +408,6 @@ html[data-theme='light'] .app-theme-icon--light {
   padding: var(--space-2) 0;
 }
 
-/* =========================================================
-   MAIN COLUMN
-========================================================= */
-
 .app-column {
   position: relative;
   display: flex;
@@ -444,8 +415,6 @@ html[data-theme='light'] .app-theme-icon--light {
   min-width: 0;
   isolation: isolate;
 }
-
-/* scientific grid that fades out below the top bar */
 .app-column::before {
   content: '';
   position: absolute;
@@ -533,8 +502,6 @@ html[data-theme='light'] .app-theme-icon--light {
   align-items: center;
   gap: var(--space-1);
 }
-
-/* On desktop the sidebar owns these actions */
 @media (min-width: 768px) {
   .app-topbar__actions > * {
     display: none;
@@ -560,8 +527,6 @@ html[data-theme='light'] .app-theme-icon--light {
     transform: translateY(6px);
   }
 }
-
-/* ---------- loaders & module errors ---------- */
 .app-view-loader {
   display: grid;
   gap: var(--space-3);
@@ -591,17 +556,9 @@ html[data-theme='light'] .app-theme-icon--light {
   background: var(--surface-1);
 }
 
-/* =========================================================
-   BOTTOM NAV (phones)
-========================================================= */
-
 .app-bottom-nav {
   display: none;
 }
-
-/* =========================================================
-   COMMAND PALETTE
-========================================================= */
 
 .app-command {
   position: fixed;
@@ -776,10 +733,6 @@ html[data-theme='light'] .app-theme-icon--light {
   gap: var(--space-1);
 }
 
-/* =========================================================
-   SETTINGS DIALOG EXTRAS
-========================================================= */
-
 .ui-setting__actions {
   display: flex;
   flex-wrap: wrap;
@@ -790,10 +743,6 @@ html[data-theme='light'] .app-theme-icon--light {
   width: 1rem;
   height: 1rem;
 }
-
-/* =========================================================
-   TABLET — forced rail
-========================================================= */
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .app-shell,
@@ -854,10 +803,6 @@ html[data-theme='light'] .app-theme-icon--light {
     padding-inline: var(--space-5);
   }
 }
-
-/* =========================================================
-   PHONE
-========================================================= */
 
 @media (max-width: 767px) {
   .app-shell,
@@ -962,8 +907,6 @@ html[data-theme='light'] .app-theme-icon--light {
     display: none;
   }
 }
-
-/* The sidebar clips overflow, so the open product menu is placed in the viewport. */
 .clprod-launcher.is-docked .clprod-menu {
   position: fixed;
   left: var(--space-3);

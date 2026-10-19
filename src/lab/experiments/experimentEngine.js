@@ -11,9 +11,6 @@ import {
 } from '../../progress/progressStorage.js'
 
 
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function clamp(
   value,
@@ -68,9 +65,6 @@ function createEmptyState() {
 }
 
 
-/* =========================================================
-   LOAD SAVED STATE
-========================================================= */
 
 function normalizeSavedState(
   experiment
@@ -179,9 +173,6 @@ function normalizeSavedState(
 }
 
 
-/* =========================================================
-   LAB ACTION MATCHING
-========================================================= */
 
 function actionMatchesStep(
   action,
@@ -211,7 +202,6 @@ function actionMatchesStep(
       action.chemical ===
         step.chemical &&
 
-      // minAmount (mL, total added so far) for steps that need an excess, e.g. two-stage reactions.
       (
         !step.minAmount ||
         Number(action.snapshot?.mixture?.[step.chemical] ?? action.amount ?? 0) >= step.minAmount
@@ -347,9 +337,6 @@ function actionMatchesStep(
 }
 
 
-/* =========================================================
-   CREATE ENGINE
-========================================================= */
 
 export function createExperimentEngine({
 
@@ -398,9 +385,6 @@ export function createExperimentEngine({
     false
 
 
-  /* =====================================================
-     CURRENT STEP
-  ===================================================== */
 
   function getCurrentStep() {
 
@@ -426,9 +410,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     PUBLIC SNAPSHOT
-  ===================================================== */
 
   function snapshot() {
 
@@ -527,9 +508,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     SAVE
-  ===================================================== */
 
   function persist() {
 
@@ -591,9 +569,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     COMPLETE ACTIVITY
-  ===================================================== */
 
   function finishExperiment() {
 
@@ -675,9 +650,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     COMPLETE CURRENT STEP
-  ===================================================== */
 
   function completeCurrentStep(
     result = null
@@ -739,12 +711,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     MANUAL CONTINUE
-
-     Dùng cho:
-     info / theory / note / observation
-  ===================================================== */
 
   function continueStep() {
 
@@ -817,9 +783,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     LAB ACTION
-  ===================================================== */
 
   function handleLabAction(
     event
@@ -840,10 +803,6 @@ export function createExperimentEngine({
       event
 
 
-    /*
-      Lưu trạng thái thật của cốc sau mọi thao tác.
-      Nhờ vậy có thể F5 / đóng trình duyệt / quay lại sau.
-    */
 
     if (
       action?.snapshot
@@ -960,12 +919,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     CONFIRM LAB RESULT
-
-     Reaction/indicator steps are intentionally held here
-     so learners can inspect the result before advancing.
-  ===================================================== */
 
   function confirmLabStep() {
 
@@ -1023,9 +976,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     ANSWER PREDICTION / QUIZ
-  ===================================================== */
 
   function answerPrediction(
     optionId
@@ -1161,9 +1111,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     START / RESUME / PAUSE
-  ===================================================== */
 
   function start() {
 
@@ -1267,9 +1214,6 @@ export function createExperimentEngine({
   }
 
 
-  /* =====================================================
-     PUBLIC API
-  ===================================================== */
 
   return {
 

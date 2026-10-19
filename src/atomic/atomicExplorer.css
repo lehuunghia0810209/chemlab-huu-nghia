@@ -1,7 +1,3 @@
-/* =========================================================
-   ATOMIC EXPLORER — workspace mode overlay
-========================================================= */
-
 html.ax-open {
   overflow: hidden;
 }
@@ -23,8 +19,6 @@ html.ax-open {
   opacity: 1;
   transform: none;
 }
-
-/* ---------- head ---------- */
 .ax-head {
   display: flex;
   align-items: center;
@@ -88,8 +82,6 @@ html.ax-open {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* ---------- body ---------- */
 .ax-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;
@@ -213,8 +205,6 @@ html.ax-open {
 @keyframes ax-spin {
   to { transform: rotate(360deg); }
 }
-
-/* ---------- toolbar ---------- */
 .ax-toolbar {
   position: absolute;
   left: 50%;
@@ -288,8 +278,6 @@ html.ax-open {
   color: #e2e8f0;
   font-size: var(--text-sm);
 }
-
-/* ---------- panel ---------- */
 .ax-panel {
   min-height: 0;
   overflow-y: auto;
@@ -426,8 +414,6 @@ html.ax-open {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-
-/* ---------- orbital box diagram ---------- */
 .ax-subs {
   display: flex;
   flex-wrap: wrap;
@@ -515,14 +501,10 @@ html.ax-open {
 .ax-toggle span {
   order: -1;
 }
-
-/* ---------- fullscreen stage ---------- */
 .ax-stage:fullscreen {
   width: 100vw;
   height: 100vh;
 }
-
-/* ---------- responsive ---------- */
 @media (max-width: 1023px) {
   .ax-body {
     grid-template-columns: minmax(0, 1fr) 340px;

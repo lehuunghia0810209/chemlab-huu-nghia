@@ -665,6 +665,5 @@ function saveActiveTool(
     )
   }
   catch {
-    /* ignore */
   }
 }

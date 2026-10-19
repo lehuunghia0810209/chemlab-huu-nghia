@@ -1,9 +1,3 @@
-/* =========================================================
-   ATOMIC EXPLORER — dedicated workspace for one element
-   Two views of the same atom:
-   - "Vỏ electron": shell diagram (teaching simplification)
-   - "Orbital": hydrogen-like orbital of any occupied subshell
-========================================================= */
 
 import './atomicExplorer.css'
 import { getElement, formatMass, CATEGORIES } from '../periodic/periodicData.js'
@@ -30,7 +24,6 @@ function parseAbundance(text) {
   return match ? Number(match[1]) : null
 }
 
-/* Most abundant natural isotope; otherwise the reference mass number. */
 async function nucleusFor(element) {
   try {
     const { getIsotopes } = await import('../periodicDataV5.js')
@@ -51,7 +44,6 @@ async function nucleusFor(element) {
     }
   }
   catch {
-    /* fall through to rounding */
   }
   const massNumber = Math.round(Number(element.mass)) || element.number * 2
   return { massNumber, name: `${massNumber}${element.symbol}`, note: 'số khối làm tròn từ nguyên tử khối' }
@@ -209,7 +201,6 @@ export async function openAtomicExplorer(number, { mode = 'shell', subshell = nu
     if (!variants.some(item => item.key === state.variant)) state.variant = PREFERRED_VARIANT[sub.l]
 
     busy.hidden = false
-    // Let the busy indicator paint before the synchronous sampling work.
     requestAnimationFrame(() => setTimeout(() => {
       if (!host) return
       orbital = createOrbitalScene(host)

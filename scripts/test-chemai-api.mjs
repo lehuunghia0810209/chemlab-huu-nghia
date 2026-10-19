@@ -62,6 +62,37 @@ const noKeyPayload = await noKeyResponse.json()
 assert.equal(noKeyResponse.status, 503)
 assert.equal(noKeyPayload.code, 'AI_NOT_CONFIGURED')
 
+for (let index = 0; index <= 600; index += 1) {
+  const response = await onRequestPost({
+    request: makeRequest(
+      { message: 'Kiểm tra giới hạn bucket' },
+      { 'CF-Connecting-IP': `rate-bucket-${index}` }
+    ),
+    env: {}
+  })
+  assert.equal(response.status, 503)
+}
+
+for (let index = 0; index < 18; index += 1) {
+  const response = await onRequestPost({
+    request: makeRequest(
+      { message: 'Kiểm tra bucket được loại bỏ' },
+      { 'CF-Connecting-IP': 'rate-bucket-0' }
+    ),
+    env: {}
+  })
+  assert.equal(response.status, 503)
+}
+
+const boundedRateLimit = await onRequestPost({
+  request: makeRequest(
+    { message: 'Kiểm tra rate limit' },
+    { 'CF-Connecting-IP': 'rate-bucket-0' }
+  ),
+  env: {}
+})
+assert.equal(boundedRateLimit.status, 429)
+
 const badOriginRequest = new Request(`${origin}/api/chat`, {
   method: 'POST',
   headers: {

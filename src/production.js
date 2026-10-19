@@ -5,10 +5,6 @@ import {
 } from './appMeta.js'
 
 
-/* =========================================================
-   CHEMLAB
-   PRODUCTION RELEASE
-========================================================= */
 
 const PRODUCT = APP_META
 
@@ -25,18 +21,12 @@ let errorCooldown =
   false
 
 
-/* =========================================================
-   START
-========================================================= */
 
 initProduction()
 
 
 function initProduction() {
 
-  /* -----------------------------------------------
-     PRODUCT IDENTITY
-  ----------------------------------------------- */
 
   document.title =
     `${PRODUCT.name} ${PRODUCT.version} | ${PRODUCT.author}`
@@ -56,9 +46,6 @@ function initProduction() {
     )
 
 
-  /* -----------------------------------------------
-     GLOBAL PRODUCT API
-  ----------------------------------------------- */
 
   window.ChemLabProduct = {
 
@@ -85,9 +72,6 @@ function initProduction() {
   }
 
 
-  /* -----------------------------------------------
-     UI
-  ----------------------------------------------- */
 
   createProductLauncher()
 
@@ -106,9 +90,6 @@ function initProduction() {
 }
 
 
-/* =========================================================
-   BOOT
-========================================================= */
 
 function finishBoot() {
 
@@ -123,10 +104,6 @@ function finishBoot() {
   }
 
 
-  /*
-    Không giữ splash quá lâu.
-    Chỉ tạo cảm giác sản phẩm hoàn chỉnh.
-  */
 
   requestAnimationFrame(
     () => {
@@ -162,9 +139,6 @@ function finishBoot() {
 }
 
 
-/* =========================================================
-   PRODUCT LAUNCHER
-========================================================= */
 
 function createProductLauncher() {
 
@@ -374,7 +348,6 @@ function createProductLauncher() {
   `
 
 
-  // The app shell provides a slot in the sidebar; fall back to body when absent.
   const slot =
     document.querySelector(
       '#app-product-slot'
@@ -468,9 +441,6 @@ function createProductLauncher() {
 }
 
 
-/* =========================================================
-   MENU
-========================================================= */
 
 function toggleMenu() {
 
@@ -609,9 +579,6 @@ function closeMenu() {
 }
 
 
-/* =========================================================
-   ABOUT
-========================================================= */
 
 function openAbout() {
 
@@ -867,9 +834,6 @@ function openAbout() {
 }
 
 
-/* =========================================================
-   ABOUT FEATURE
-========================================================= */
 
 function aboutFeature(
   icon,
@@ -902,9 +866,6 @@ function aboutFeature(
 }
 
 
-/* =========================================================
-   NETWORK
-========================================================= */
 
 function setupNetworkStatus() {
 
@@ -1005,9 +966,6 @@ function updateNetworkStatus() {
 }
 
 
-/* =========================================================
-   PWA INSTALL
-========================================================= */
 
 function setupInstallPrompt() {
 
@@ -1070,9 +1028,6 @@ function updateInstallButton() {
 }
 
 
-/* =========================================================
-   INSTALL
-========================================================= */
 
 async function installApplication() {
 
@@ -1122,9 +1077,6 @@ async function installApplication() {
 }
 
 
-/* =========================================================
-   SERVICE WORKER
-========================================================= */
 
 function setupServiceWorker() {
 
@@ -1140,14 +1092,6 @@ function setupServiceWorker() {
   }
 
 
-  /*
-    Không bật Service Worker ở npm run dev.
-
-    Điều này rất quan trọng:
-    tránh cache localhost và gây ra
-    các lỗi "sửa code nhưng trình duyệt
-    vẫn chạy code cũ".
-  */
 
   if (
     !import.meta.env.PROD
@@ -1202,9 +1146,6 @@ function setupServiceWorker() {
 }
 
 
-/* =========================================================
-   DEV SERVICE WORKER CLEANUP
-========================================================= */
 
 async function cleanupDevelopmentWorkers() {
 
@@ -1248,16 +1189,12 @@ async function cleanupDevelopmentWorkers() {
 
   catch {
 
-    /* ignore */
 
   }
 
 }
 
 
-/* =========================================================
-   KEYBOARD
-========================================================= */
 
 function setupKeyboard() {
 
@@ -1265,10 +1202,6 @@ function setupKeyboard() {
     'keydown',
     event => {
 
-      /*
-        Alt + I
-        Product information
-      */
 
       if (
         event.altKey &&
@@ -1289,9 +1222,6 @@ function setupKeyboard() {
 }
 
 
-/* =========================================================
-   ERROR RECOVERY
-========================================================= */
 
 function setupErrorRecovery() {
 
@@ -1332,10 +1262,6 @@ function handleProductionError(
   )
 
 
-  /*
-    Trong dev đã có Console của Vite.
-    Không cần làm phiền người dùng.
-  */
 
   if (
     !import.meta.env.PROD
@@ -1346,10 +1272,6 @@ function handleProductionError(
   }
 
 
-  /*
-    Không spam toast nếu một module
-    phát sinh nhiều lỗi liên tiếp.
-  */
 
   if (
     errorCooldown
@@ -1383,9 +1305,6 @@ function handleProductionError(
 }
 
 
-/* =========================================================
-   TOAST
-========================================================= */
 
 function showProductToast(
   message,
@@ -1471,9 +1390,6 @@ function showProductToast(
 }
 
 
-/* =========================================================
-   ESCAPE
-========================================================= */
 
 function escapeHTML(
   value

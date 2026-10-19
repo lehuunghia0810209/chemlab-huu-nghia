@@ -1,10 +1,3 @@
-/* =========================================================
-   MOLECULE SCENE
-   Ball-and-stick or space-filling model of one entry from
-   src/chem/molecules.js. 1 scene unit = 1 Å.
-   Ball-and-stick sizes are scaled for visibility; the
-   space-filling model uses van der Waals radii.
-========================================================= */
 
 import { ATOM_STYLE } from '../chem/molecules.js'
 
@@ -18,11 +11,6 @@ function bondOffsets(order) {
   return [0]
 }
 
-/**
- * @param host scene host from three/sceneHost.js
- * @param molecule entry of MOLECULES
- * @returns {{ radius: number, setStyle(style: "ball"|"space"): void }}
- */
 export function createMoleculeScene(host, molecule) {
   const { THREE, scene } = host
   const root = new THREE.Group()
@@ -56,7 +44,6 @@ export function createMoleculeScene(host, molecule) {
     return { mesh, style: ATOM_STYLE[symbol] || { covalent: 0.7, vdw: 1.7 } }
   })
 
-  // Multiple bonds are drawn side by side, offset in the molecule's plane where it has one.
   const bonds = new THREE.Group()
   const up = new THREE.Vector3(0, 1, 0)
   for (const [i, j, order] of molecule.bonds) {

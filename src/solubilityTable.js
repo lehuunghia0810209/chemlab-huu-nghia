@@ -155,8 +155,6 @@ export function initSolubilityTable() {
     updateResult
   )
 
-  /* Pairs that do not exist in water (SGK table: "–"); the ions
-     react instead of forming the salt. */
   const NOT_IN_WATER = {
     'al-co3': '2Al³⁺ + 3CO₃²⁻ + 3H₂O → 2Al(OH)₃↓ + 3CO₂↑',
     'fe3-co3': '2Fe³⁺ + 3CO₃²⁻ + 3H₂O → 2Fe(OH)₃↓ + 3CO₂↑',
@@ -178,7 +176,6 @@ export function initSolubilityTable() {
       )
     }
 
-    // Exceptions to the "alkali salts dissolve" rule (Li₃PO₄ ≈ 0,04 g/100 mL).
     if (cation.id === 'li' && anion.id === 'po4') {
       return result(
         'slight',

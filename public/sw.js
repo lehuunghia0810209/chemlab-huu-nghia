@@ -1,7 +1,3 @@
-/* =========================================================
-   CHEMLAB 6.2.0
-   PRODUCTION SERVICE WORKER
-========================================================= */
 
 const VERSION =
   'chemlab-6.2.0'
@@ -28,9 +24,6 @@ const CORE_FILES = [
 ]
 
 
-/* =========================================================
-   INSTALL
-========================================================= */
 
 self.addEventListener(
   'install',
@@ -59,9 +52,6 @@ self.addEventListener(
 )
 
 
-/* =========================================================
-   ACTIVATE
-========================================================= */
 
 self.addEventListener(
   'activate',
@@ -108,9 +98,6 @@ self.addEventListener(
 )
 
 
-/* =========================================================
-   FETCH
-========================================================= */
 
 self.addEventListener(
   'fetch',
@@ -136,9 +123,6 @@ self.addEventListener(
       )
 
 
-    /*
-      Không cache tài nguyên bên ngoài.
-    */
 
     if (
       url.origin !==
@@ -150,10 +134,6 @@ self.addEventListener(
     }
 
 
-    /*
-      API luôn đi thẳng tới network.
-      Không cache trạng thái hoặc câu trả lời ChemAI.
-    */
 
     if (
       url.pathname.startsWith(
@@ -166,12 +146,6 @@ self.addEventListener(
     }
 
 
-    /* =====================================================
-       PAGE NAVIGATION
-
-       Network first.
-       Nếu mất mạng -> dùng cached index.html.
-    ===================================================== */
 
     if (
       request.mode ===
@@ -232,11 +206,6 @@ self.addEventListener(
     }
 
 
-    /* =====================================================
-       HASHED VITE ASSETS
-
-       Cache first vì tên file thay đổi khi build mới.
-    ===================================================== */
 
     if (
       url.pathname.startsWith(
@@ -312,9 +281,6 @@ self.addEventListener(
     }
 
 
-    /* =====================================================
-       OTHER SAME-ORIGIN FILES
-    ===================================================== */
 
     event.respondWith(
 

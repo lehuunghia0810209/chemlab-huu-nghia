@@ -65,7 +65,6 @@ const tokensCssIndex = main.indexOf("import './styles/tokens.css'")
 const aiCssIndex = main.indexOf("import './ai/chemAI.css'")
 const activeAIText = [aiJs, aiContext, api, knowledge, devVars].join('\n')
 
-/* Core regression */
 expect('release is ChemLab 6.2 Final', pkg.version === '6.2.0')
 expect('design tokens load before ChemAI CSS', tokensCssIndex >= 0 && aiCssIndex > tokensCssIndex)
 expect('no legacy global stylesheet is imported', !/import '\.\/(style|workspace|chemlab-v4|design-system|chemlab5|zperiodLight|experience|userPreferences)\.css'|final-6\.css|responsive\//.test(main))
@@ -84,7 +83,6 @@ expect('design tokens define dark and light themes', tokensCss.includes('--bg-ap
 expect('design tokens honour reduced motion', tokensCss.includes('prefers-reduced-motion'))
 expect('product launcher docks into the shell instead of floating', production.includes('#app-product-slot') && main.includes('id="app-product-slot"'))
 
-/* ChemAI integration */
 expect('ChemAI is lazy-loaded', main.includes("import('./ai/chemAI.js')"))
 expect('ChemAI topbar trigger exists', main.includes('data-chemai-open'))
 expect('ChemAI entry exists in sidebar and mobile top bar', main.includes('app-ai-entry') && main.includes('app-topbar__ai'))
@@ -106,7 +104,6 @@ expect('Learning exposes AI context', quiz.includes('window.ChemLabLearning = Ob
 expect('Virtual Lab exposes AI context', virtualLab.includes('window.ChemLabLab = Object.freeze'))
 expect('Guided Lab exposes AI context', guidedLab.includes('window.ChemLabGuidedLab = Object.freeze'))
 
-/* Responsive / accessibility */
 expect('ChemAI has desktop panel styling', aiCss.includes('.chemai-panel'))
 expect('ChemAI has mobile bottom-sheet layout', aiCss.includes('@media (max-width: 767px)') && aiCss.includes('88dvh'))
 expect('ChemAI respects safe-area on mobile', aiCss.includes('env(safe-area-inset-bottom'))
@@ -123,7 +120,6 @@ expect('ChemAI distinguishes Gemini auth errors', aiJs.includes('GEMINI_AUTH_FAI
 expect('ChemAI keeps upstream overloads reachable', aiJs.includes("'GEMINI_OVERLOADED'") && api.includes("code = 'GEMINI_OVERLOADED'"))
 expect('desktop backdrop remains subtle', aiCss.includes('background: rgba(2,4,10,.19)'))
 
-/* Gemini backend / security */
 expect('Cloudflare Function uses server-side Gemini secret', api.includes('env.GEMINI_API_KEY'))
 expect('Gemini generateContent API is used', api.includes('generativelanguage.googleapis.com/v1beta/models') && api.includes(':generateContent'))
 expect('Gemini current Flash model is default', api.includes("DEFAULT_MODEL = 'gemini-3.8-flash'"))

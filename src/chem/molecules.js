@@ -1,14 +1,4 @@
-/* =========================================================
-   MOLECULE GEOMETRY LIBRARY
-   Small molecules from the THPT programme with experimental
-   gas-phase bond lengths (Å) and angles, rounded (NIST CCCBDB /
-   CRC Handbook values). Coordinates are built from those values,
-   never guessed from the formula, and only molecules listed here
-   get a 3D model.
-========================================================= */
 
-/* CPK-style colours; covalent radii (Cordero 2008) for ball size,
-   van der Waals radii (Bondi; B from Mantina) for space filling. */
 export const ATOM_STYLE = {
   H: { color: '#f1f5f9', covalent: 0.31, vdw: 1.2 },
   B: { color: '#f9a8a8', covalent: 0.84, vdw: 1.92 },
@@ -48,8 +38,6 @@ function bent(center, ligand, length, angle) {
   }
 }
 
-/* Three ligands on a cone below the centre; cos²α = (2cosθ + 1) / 3
-   gives the ligand–centre–ligand angle θ. */
 function pyramidal(center, ligand, length, angle) {
   const cosAlpha = Math.sqrt((2 * Math.cos(angle * RAD) + 1) / 3)
   const sinAlpha = Math.sqrt(1 - cosAlpha * cosAlpha)
@@ -70,7 +58,6 @@ function trigonalPlanar(center, ligand, length) {
   return { atoms, bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]] }
 }
 
-/* One ligand straight up, three on the cone below: same view as NH₃. */
 function tetrahedral(center, ligand, length) {
   const base = pyramidal(center, ligand, length, Math.acos(-1 / 3) / RAD)
   return {
@@ -87,7 +74,6 @@ function octahedral(center, ligand, length) {
   }
 }
 
-/* Planar ethene: C=C along x, H–C–H angle in the xy plane. */
 function ethene(cc, ch, hch) {
   const half = (hch * RAD) / 2
   const dx = ch * Math.cos(half)
@@ -107,8 +93,6 @@ function ethyne(cc, ch) {
   }
 }
 
-/* shape: VSEPR shape name; angle/length: the values shown to the
-   student (and checked against the built coordinates in tests). */
 export const MOLECULES = [
   { formula: 'H2', name: 'Hydrogen', shape: 'Thẳng', length: ['H–H', 0.741], ...diatomic('H', 'H', 0.741, 1) },
   { formula: 'N2', name: 'Nitrogen', shape: 'Thẳng', length: ['N≡N', 1.098], ...diatomic('N', 'N', 1.098, 3) },
@@ -137,7 +121,6 @@ export function countAtoms(molecule) {
   return counts
 }
 
-/* atoms: element counts from the formula parser. */
 export function findMolecule(atoms) {
   return MOLECULES.find(molecule => sameAtoms(countAtoms(molecule), atoms)) || null
 }

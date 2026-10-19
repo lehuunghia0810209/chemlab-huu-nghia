@@ -1,14 +1,3 @@
-/* =========================================================
-   CHEMLAB — ACCESSIBILITY AUDIT (axe-core)
-   Serves dist/ (run `npm run build` first), opens every main
-   area and the main dialogs in Chrome at phone and desktop
-   widths in both themes, and runs axe with the WCAG 2.x A/AA
-   rules, then checks keyboard focus (visible ring, dialogs take
-   focus, Esc closes, focus returns). Fails on any finding.
-
-   npm run check:a11y
-   CHEMLAB_A11Y_VERBOSE=1 npm run check:a11y   (print every node)
-========================================================= */
 
 import path from 'node:path'
 import { createRequire } from 'node:module'
@@ -35,8 +24,6 @@ async function openView(page, baseURL, view) {
   await page.waitForTimeout(400)
 }
 
-/* Each scenario puts the page in a state; `scope` limits axe to the
-   part under test (dialogs) so page issues are not counted twice. */
 const SCENARIOS = [
   { name: 'home', view: 'home' },
   { name: 'periodic', view: 'periodic' },
@@ -120,7 +107,6 @@ for (const channel of channels) {
     break
   }
   catch {
-    /* try next channel */
   }
 }
 if (!browser) {
@@ -138,9 +124,6 @@ function keyboardFinding(id, help, where, node = '') {
   findings.set(id, entry)
 }
 
-/* Keyboard and focus behaviour axe cannot see: Tab order reaches
-   visible elements with a visible focus indicator; dialogs take
-   focus, close with Esc and give focus back. */
 async function keyboardChecks() {
   for (const theme of THEMES) {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block', reducedMotion: 'reduce' })
@@ -152,8 +135,6 @@ async function keyboardChecks() {
       await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0) })
       for (let step = 0; step < 25; step += 1) {
         await page.keyboard.press('Tab')
-        // The ring may sit on the element or on a wrapper (:focus-within): compare focused vs blurred,
-        // after transitions settle.
         const look = () => page.evaluate(() => {
           const element = window.__a11yFocus || document.activeElement
           const chain = [element, element.parentElement, element.parentElement?.parentElement].filter(Boolean)

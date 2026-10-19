@@ -1,13 +1,3 @@
-/* =========================================================
-   REACTION PROFILES — classification of every reaction
-   Derives, for each reaction in the catalogue: categories,
-   phenomena, conditions, support level and limitations. The
-   support level comes from what the engine can actually do,
-   and data checks (balance, ↓/↑ vs effects, precipitate
-   colours) mark a reaction INVALID instead of letting it run
-   silently. Used by the catalogue tests and by
-   scripts/reaction-coverage.mjs (docs/reaction-engine).
-========================================================= */
 
 import { checkEquation } from '../../chem/equation.js'
 import { stockConcentration } from '../concentrations.js'
@@ -24,9 +14,8 @@ export const SUPPORT = Object.freeze({
   INVALID: 'INVALID'
 })
 
-export const EFFECT_TYPES = new Set(['precipitate', 'removePrecipitate', 'gas', 'foam', 'solutionColor', 'message', 'flash'])
+export const EFFECT_TYPES = new Set(['precipitate', 'removePrecipitate', 'gas', 'foam', 'solutionColor', 'message'])
 
-/* Word equations (colour tests, R-group notation) cannot be atom-checked. */
 export const WORD_EQUATIONS = new Set([
   'phenol-fecl3', 'starch-iodine', 'maltose-cu-hot', 'lactose-cu-hot', 'albumin-biuret', 'triglycerideOil-naoh'
 ])
@@ -49,7 +38,6 @@ const HYDROLYSIS = new Set([
 
 const ADDITION_SUBSTITUTION = new Set(['ethene-bromine', 'propene-bromine', 'ethyne-bromine', 'phenol-bromine'])
 
-/* Verified conditions the trigger cannot express, and known simplifications. */
 export const NOTES = {
   'cuso4-nh3': 'Cần NH₃ dư: ít NH₃ chỉ tạo Cu(OH)₂ xanh lam, NH₃ dư mới hòa tan thành phức [Cu(NH₃)₄]²⁺ xanh thẫm. Catalog chưa có nồng độ NH₃ nên mô phỏng hiện màu phức ngay.',
   'cucl2-nh3': 'Cần NH₃ dư: ít NH₃ chỉ tạo Cu(OH)₂ xanh lam, NH₃ dư mới hòa tan thành phức [Cu(NH₃)₄]²⁺ xanh thẫm. Catalog chưa có nồng độ NH₃ nên mô phỏng hiện màu phức ngay.',
@@ -82,13 +70,10 @@ function conditionText(reaction) {
   ].filter(Boolean)
 }
 
-/* Problems that make a reaction definition wrong as data. */
 export function validateReaction(reaction, reagents) {
   const problems = []
   for (const id of reaction.reactants) if (!reagents[id]) problems.push(`unknown reagent ${id}`)
   for (const effect of reaction.effects || []) if (!EFFECT_TYPES.has(effect.type)) problems.push(`unknown effect ${effect.type}`)
-  if ((reaction.effects || []).some(effect => effect.type === 'flash')) problems.push('generic flash effect')
-
   if (!WORD_EQUATIONS.has(reaction.id)) {
     try {
       if (!checkEquation(reaction.equation).balanced) problems.push('equation not balanced')
@@ -176,7 +161,7 @@ export function profileReaction(reaction, reagents) {
     conditions,
     support,
     quantitative: result?.status === 'quantitative',
-    limitations,
+    limitations: [...new Set(limitations)],
     problems
   }
 }

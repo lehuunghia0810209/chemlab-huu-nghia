@@ -1,13 +1,3 @@
-/* =========================================================
-   CHEMICAL FORMULA PARSER
-   Shared by the Equation Balancer, the Chemistry Calculator
-   and the reaction-data tests. Accepts ASCII or Unicode
-   subscripts (H2O / H₂O), hydrates (CuSO4·5H2O), nested
-   brackets, state labels (↓ ↑ (aq) (s) (l) (g)) and ion
-   charges written as superscripts (SO₄²⁻) or with a caret
-   (SO4^2-). Element symbols are checked against the
-   periodic table.
-========================================================= */
 
 import { elements } from '../data/elements.js'
 
@@ -23,8 +13,6 @@ function toSuperscript(digits, sign) {
   return [...digits].map(digit => SUPERSCRIPTS[digit]).join('') + (sign === '+' ? '⁺' : '⁻')
 }
 
-/* Caret charges become superscripts so a plain '+' can always
-   separate species: Fe^3+ + SCN^- → Fe³⁺ + SCN⁻ */
 export function normalizeChargeNotation(text) {
   return String(text ?? '').replace(/\^(\d*)([+-])/g, (_, digits, sign) => toSuperscript(digits, sign))
 }
@@ -86,7 +74,6 @@ function parseGroup(text) {
       let symbol = char
       if (/[a-z]/.test(text[index + 1] || '')) symbol += text[index + 1]
       if (!SYMBOLS.has(symbol)) {
-        // "Co" vs "CO": only fall back to the single letter when it is an element.
         if (symbol.length === 2 && SYMBOLS.has(char)) {
           throw new Error(`Không tìm thấy nguyên tố "${symbol}". Viết hoa đúng ký hiệu (ví dụ CO là carbon monoxide, Co là cobalt).`)
         }
@@ -109,15 +96,12 @@ function parseGroup(text) {
   return stack[0]
 }
 
-/* Returns { formula, coefficient, atoms, charge }. A leading
-   number is read as the stoichiometric coefficient. */
 export function parseSpecies(raw) {
   let text = normalizeChargeNotation(raw)
     .replace(/\s+/g, '')
     .replace(/[₀-₉]/g, char => String(SUBSCRIPTS.indexOf(char)))
     .replace(/[∙•⋅*]/g, '·')
     .replace(/[↓↑]/g, '')
-    // State labels and name notes: (aq) (s) (glucose)
     .replace(/\([a-z]+\)$/, '')
 
   if (!text) throw new Error('Công thức đang trống.')
@@ -145,7 +129,6 @@ export function parseSpecies(raw) {
   return { formula: text, coefficient, atoms, charge }
 }
 
-/* Atom counts of one formula unit (coefficient ignored). */
 export function parseFormula(raw) {
   return parseSpecies(raw).atoms
 }

@@ -1,14 +1,7 @@
-/* =========================================================
-   HOME DASHBOARD
-   Answers "what can I explore or learn right now?" with real
-   progress data, the next lesson, an element of the day and
-   direct entries into every workspace.
-========================================================= */
 
 import { elements } from '../data/elements.js'
 import { icon } from '../shell/icons.js'
 
-/* Curriculum totals (verified by scripts/validate-project.mjs). */
 const TOTALS = Object.freeze({
   10: { lessons: 22, experiments: 23 },
   11: { lessons: 25, experiments: 25 },
@@ -87,7 +80,6 @@ function greeting(date = new Date()) {
   return 'Chào buổi tối'
 }
 
-/* Same element for everyone on a given local day. */
 function elementOfTheDay(date = new Date()) {
   const dayIndex = Math.floor(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
@@ -128,7 +120,6 @@ function continueTarget(activity) {
   }
 }
 
-/* Lesson / experiment titles live in lazily-loaded data modules. */
 async function resolveActivityTitle(activity) {
   if (!activity) return null
 
@@ -145,7 +136,6 @@ async function resolveActivityTitle(activity) {
     }
   }
   catch {
-    /* keep the generic title */
   }
 
   return null

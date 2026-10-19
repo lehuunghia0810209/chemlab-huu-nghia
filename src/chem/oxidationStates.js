@@ -1,12 +1,3 @@
-/* =========================================================
-   COMMON OXIDATION STATES
-   Curated for the elements met in the Vietnamese upper-secondary
-   chemistry curriculum. Values are the commonly occurring states
-   (IUPAC Red Book / Greenwood & Earnshaw); 0 (free element) is
-   implied for every element and listed only for noble gases.
-   Elements not listed have no curated entry — the UI says so
-   instead of guessing.
-========================================================= */
 
 const COMMON = Object.freeze({
   1: [-1, 1],
@@ -28,7 +19,6 @@ const COMMON = Object.freeze({
 export function getCommonOxidationStates(number) {
   const Z = Number(number)
   if (COMMON[Z]) return [...COMMON[Z]]
-  // Every lanthanide shows +3 as its characteristic state.
   if (Z >= 57 && Z <= 71) return [3]
   return null
 }

@@ -1,9 +1,3 @@
-/* =========================================================
-   CHEMLAB UI COMPONENTS
-   Prefix ui-*. Built only on semantic tokens.
-========================================================= */
-
-/* ---------- icon ---------- */
 .ui-icon {
   width: 1.25rem;
   height: 1.25rem;
@@ -16,8 +10,6 @@
   height: 100%;
   stroke-width: inherit;
 }
-
-/* ---------- button ---------- */
 .ui-btn {
   --btn-bg: var(--surface-2);
   --btn-fg: var(--text-primary);
@@ -111,8 +103,6 @@
 .ui-btn--block {
   width: 100%;
 }
-
-/* ---------- icon button ---------- */
 .ui-icon-btn {
   position: relative;
   display: inline-grid;
@@ -156,8 +146,6 @@
   top: 9px;
   right: 9px;
 }
-
-/* ---------- card ---------- */
 .ui-card {
   position: relative;
   border: 1px solid var(--border-subtle);
@@ -183,8 +171,6 @@
 .ui-card--interactive:active {
   transform: translateY(0);
 }
-
-/* ---------- eyebrow / section head ---------- */
 .ui-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -217,8 +203,6 @@
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
-
-/* ---------- chip / badge / kbd / dot ---------- */
 .ui-chip {
   display: inline-flex;
   align-items: center;
@@ -291,8 +275,6 @@
   border-radius: 50%;
   background: var(--status-success);
 }
-
-/* ---------- segmented control ---------- */
 .ui-segmented {
   display: inline-flex;
   gap: 2px;
@@ -332,8 +314,6 @@
 .ui-segmented button.active:focus-visible {
   box-shadow: var(--focus-ring);
 }
-
-/* ---------- input ---------- */
 .ui-input {
   width: 100%;
   min-height: var(--touch-min);
@@ -357,9 +337,6 @@
 .ui-input:focus-visible {
   border-color: var(--accent);
 }
-
-/* Zero-specificity defaults for form fields inside module workspaces;
-   module stylesheets still win where they style their own fields. */
 :where(.chem-tools-section, #learning-host) :where(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select) {
   min-height: var(--touch-min);
   padding: 0 var(--space-3);
@@ -373,8 +350,6 @@
 :where(.chem-tools-section, #learning-host) :where(textarea) {
   padding-block: var(--space-2);
 }
-
-/* ---------- progress ---------- */
 .ui-progress {
   position: relative;
   height: 6px;
@@ -391,8 +366,6 @@
   background: var(--accent-gradient);
   transition: width var(--dur-slow) var(--ease-out);
 }
-
-/* ---------- skeleton ---------- */
 .ui-skeleton {
   border-radius: var(--radius-sm);
   background:
@@ -404,8 +377,6 @@
 @keyframes ui-shimmer {
   to { background-position: -200% 0, 0 0; }
 }
-
-/* ---------- empty / error state ---------- */
 .ui-state {
   display: grid;
   justify-items: center;
@@ -424,8 +395,6 @@
 .ui-state--error strong {
   color: var(--status-danger);
 }
-
-/* ---------- overlay surfaces: dialog & sheet ---------- */
 .ui-scrim {
   position: fixed;
   inset: 0;
@@ -502,7 +471,6 @@
 }
 
 @media (max-width: 767px) {
-  /* Dialogs become bottom sheets on phones */
   .ui-dialog {
     top: auto;
     bottom: 0;
@@ -528,8 +496,6 @@
     background: var(--border-strong);
   }
 }
-
-/* ---------- setting row ---------- */
 .ui-setting {
   display: flex;
   align-items: center;
@@ -561,8 +527,6 @@
     align-items: stretch;
   }
 }
-
-/* ---------- switch ---------- */
 .ui-switch {
   position: relative;
   width: 44px;
@@ -596,8 +560,6 @@
 .ui-switch:checked::after {
   transform: translateX(18px);
 }
-
-/* ---------- toast ---------- */
 .ui-toast-region {
   position: fixed;
   z-index: var(--z-toast);
@@ -628,8 +590,6 @@
 @keyframes ui-toast-in {
   from { opacity: 0; transform: translateY(8px) scale(.98); }
 }
-
-/* ---------- page head (used by workspaces) ---------- */
 .ui-page-head {
   display: flex;
   flex-wrap: wrap;

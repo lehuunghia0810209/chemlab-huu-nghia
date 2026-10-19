@@ -1,12 +1,5 @@
-/* =========================================================
-   CHEMLAB VIRTUAL LAB 3
-   REACTION ENGINE
-========================================================= */
 
 
-/* =========================================================
-   HAS CHEMICAL
-========================================================= */
 
 function hasChemical(
   mixture,
@@ -22,9 +15,6 @@ function hasChemical(
 }
 
 
-/* =========================================================
-   REACTANTS CHECK
-========================================================= */
 
 function hasReactants(
   reaction,
@@ -44,9 +34,6 @@ function hasReactants(
 }
 
 
-/* =========================================================
-   FORBIDDEN CHEMICALS
-========================================================= */
 
 function hasForbiddenChemical(
   reaction,
@@ -75,9 +62,6 @@ function hasForbiddenChemical(
 }
 
 
-/* =========================================================
-   CONDITION CHECK
-========================================================= */
 
 function conditionsMatch(
   reaction,
@@ -199,17 +183,6 @@ function conditionsMatch(
 }
 
 
-/* =========================================================
-   ORDER CHECK
-
-   Ví dụ:
-
-   order: [
-     'cuso4',
-     'naoh',
-     'glucose'
-   ]
-========================================================= */
 
 function additionOrderMatches(
   reaction,
@@ -263,9 +236,6 @@ function additionOrderMatches(
 }
 
 
-/* =========================================================
-   CAN REACT
-========================================================= */
 
 export function canReactionRun(
   reaction,
@@ -338,9 +308,6 @@ export function canReactionRun(
 }
 
 
-/* =========================================================
-   FIND REACTIONS
-========================================================= */
 
 export function findAvailableReactions(
   reactions,
