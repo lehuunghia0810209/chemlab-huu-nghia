@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **28** in 1/21 chapters; lessons with ≥ 6 questions: 4/78.
-- By type: single 6 · multiple 4 · truefalse 4 · short 4 · numeric 10.
-- By difficulty: Nhận biết 6 · Thông hiểu 12 · Vận dụng 6 · Vận dụng cao 4.
-- Verification: internal 28 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **63** in 2/21 chapters; lessons with ≥ 6 questions: 9/78.
+- By type: single 17 · multiple 9 · truefalse 9 · short 9 · numeric 19.
+- By difficulty: Nhận biết 12 · Thông hiểu 25 · Vận dụng 17 · Vận dụng cao 9.
+- Verification: internal 63 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -23,11 +23,11 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g10-l2 Nguyên tố hóa học | 7 | 1 | 1 | 1 | 1 | 3 |
 | g10-l3 Cấu trúc lớp vỏ electron nguyên tử | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l4 Ôn tập chương 1 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g10-l5 Cấu tạo của bảng tuần hoàn các nguyên tố hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l6 Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố trong một chu kì và trong một nhóm | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l7 Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l8 Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l9 Ôn tập chương 2 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g10-l5 Cấu tạo của bảng tuần hoàn các nguyên tố hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l6 Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố trong một chu kì và trong một nhóm | 7 | 3 | 1 | 1 | 1 | 1 |
+| g10-l7 Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l8 Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l9 Ôn tập chương 2 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l10 Quy tắc octet | 0 | 0 | 0 | 0 | 0 | 0 |
 | g10-l11 Liên kết ion | 0 | 0 | 0 | 0 | 0 | 0 |
 | g10-l12 Liên kết cộng hóa trị | 0 | 0 | 0 | 0 | 0 | 0 |

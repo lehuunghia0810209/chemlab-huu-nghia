@@ -57,7 +57,7 @@ src/learning/
 | --- | --- | --- | --- | --- |
 | 0 | Infrastructure, 3 sample lessons extended (opening question, common mistakes) | — | — | learning PASS |
 | 1 | Hóa 10, Chương 1 | g10-l2, g10-l3, g10-l4 | 28 (Bài 1–4) | check:learning PASS, browser 261/261, a11y 72 scans PASS |
-| 2 | Hóa 10, Chương 2 — **đang làm** | nháp g10-l5, g10-l6 (chưa đăng ký, chưa kiểm thử) | — | — (xem `CHECKPOINT_6.4.md`) |
+| 2 | Hóa 10, Chương 2 | g10-l5 … g10-l9 | 35 (Bài 5–9) | check:learning PASS (157 + 131), build PASS, browser 261/261, a11y PASS; fixed inline bold in callouts and mistakes |
 
 ## 5. Checkpoint — how to continue
 

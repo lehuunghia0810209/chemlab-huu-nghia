@@ -693,7 +693,7 @@ html[data-theme='light'] .lx-steps .is-learned .lx-steps__mark {
   background: var(--accent-soft);
 }
 
-.lx-callout strong {
+.lx-callout > strong {
   display: block;
   margin-bottom: var(--space-1);
 }
@@ -1196,8 +1196,14 @@ html[data-theme='light'] .lx-quiz__verdict.is-wrong {
 }
 
 .lx-mistakes li p {
-  display: flex;
-  gap: var(--space-2);
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+}
+
+.lx-mistakes li p > span:first-child {
+  display: inline-block;
+  width: 1.5em;
+  text-indent: 0;
 }
 
 .lx-mistakes__wrong {
@@ -1242,4 +1248,8 @@ html[data-theme='light'] .lx-mistakes__right span:first-child { color: #047857; 
   content: '›';
   margin-right: var(--space-1);
   color: var(--text-muted);
+}
+
+.lx-finish__missing .lx-link {
+  vertical-align: top;
 }

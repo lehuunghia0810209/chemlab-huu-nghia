@@ -54,6 +54,7 @@ export const STATUS = {
 // Add an ID here when its file passes `npm run check:learning`.
 export const FULL_LESSONS = new Set([
   'g10-l1', 'g10-l2', 'g10-l3', 'g10-l4',
+  'g10-l5', 'g10-l6', 'g10-l7', 'g10-l8', 'g10-l9',
   'g11-l1',
   'g12-l15'
 ])

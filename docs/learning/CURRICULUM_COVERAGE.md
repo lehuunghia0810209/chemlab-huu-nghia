@@ -13,7 +13,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 7 | 23 | 4 | 18 | 1 |
+| 10 | 7 | 23 | 9 | 13 | 1 |
 | 11 | 6 | 25 | 1 | 24 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
@@ -27,11 +27,11 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 10 | 1. Cấu tạo nguyên tử | 2. Nguyên tố hóa học | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l2` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 1. Cấu tạo nguyên tử | 3. Cấu trúc lớp vỏ electron nguyên tử | 5 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l3` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 1. Cấu tạo nguyên tử | 4. Ôn tập chương 1 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l4` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 5. Cấu tạo của bảng tuần hoàn các nguyên tố hóa học | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l5` | Nội dung cũ, chưa rà soát lại |
-| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 6. Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố trong một chu kì và trong một nhóm | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l6` | Nội dung cũ, chưa rà soát lại |
-| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 7. Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l7` | Nội dung cũ, chưa rà soát lại |
-| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 8. Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hóa học | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l8` | Nội dung cũ, chưa rà soát lại |
-| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 9. Ôn tập chương 2 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l9` | Nội dung cũ, chưa rà soát lại |
+| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 5. Cấu tạo của bảng tuần hoàn các nguyên tố hóa học | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l5` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 6. Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố trong một chu kì và trong một nhóm | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l6` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 7. Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l7` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 8. Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hóa học | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l8` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 9. Ôn tập chương 2 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l9` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 3. Liên kết hóa học | 10. Quy tắc octet | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l10` | Nội dung cũ, chưa rà soát lại |
 | 10 | 3. Liên kết hóa học | 11. Liên kết ion | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l11` | Nội dung cũ, chưa rà soát lại |
 | 10 | 3. Liên kết hóa học | 12. Liên kết cộng hóa trị | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l12` | Nội dung cũ, chưa rà soát lại |
