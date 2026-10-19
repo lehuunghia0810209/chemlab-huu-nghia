@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **287** in 11/21 chapters; lessons with ≥ 6 questions: 41/78.
-- By type: single 79 · multiple 41 · truefalse 41 · short 41 · numeric 85.
-- By difficulty: Nhận biết 59 · Thông hiểu 101 · Vận dụng 88 · Vận dụng cao 39.
-- Verification: internal 287 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **315** in 12/21 chapters; lessons with ≥ 6 questions: 45/78.
+- By type: single 85 · multiple 45 · truefalse 45 · short 45 · numeric 95.
+- By difficulty: Nhận biết 62 · Thông hiểu 112 · Vận dụng 97 · Vận dụng cao 44.
+- Verification: internal 315 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -60,10 +60,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g11-l16 Hydrocarbon không no | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l17 Arene (Hydrocarbon thơm) | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l18 Ôn tập chương 4 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g11-l19 Dẫn xuất halogen | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l20 Alcohol | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l21 Phenol | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l22 Ôn tập chương 5 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g11-l19 Dẫn xuất halogen | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l20 Alcohol | 7 | 1 | 1 | 1 | 1 | 3 |
+| g11-l21 Phenol | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l22 Ôn tập chương 5 | 7 | 1 | 1 | 1 | 1 | 3 |
 | g11-l23 Hợp chất carbonyl | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l24 Carboxylic acid | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l25 Ôn tập chương 6 | 0 | 0 | 0 | 0 | 0 | 0 |
