@@ -32,3 +32,11 @@ These need a teacher's review before content is labelled `teacher-reviewed`:
 | g10-l19 | Ví dụ Br₂ + HCOOH và biểu thức v = k·C_Aᵃ·C_Bᵇ chỉ cho phản ứng đơn giản — xác nhận cách trình bày của SGK. |
 | g10-l21 | Màu F₂ ghi “vàng nhạt” (một số tài liệu tiếng Việt ghi “lục nhạt”). |
 | g10-l10 | Cách giải thích ngoại lệ octet (PCl₅) đã tránh mô hình lai hóa d. |
+| g11-l20, g11-l21 | Tách nước của ethanol (140 °C tạo ether, 170 °C tạo alkene) và nhận biết phenol bằng FeCl₃ — đối chiếu điều kiện ghi trong SGK. |
+| g11-l23 | HCHO tạo tối đa 4 Ag; phản ứng iodoform và cộng HCN — xác nhận SGK KNTT có yêu cầu ở mức này. |
+| g12-l9 | Định nghĩa peptide “2 – 50 gốc α-amino acid” và ví dụ điện di ở pH = 6. |
+| g12-l16, g12-l17 | Định luật Faraday chỉ ghi là “mở rộng”, bài tập dùng bảo toàn electron; xác nhận SGK có hay không có công thức n(e) = It/F. |
+| g12-l18 | Bảng kiểu mạng tinh thể (lập phương tâm khối, tâm mặt, lục phương) có thể vượt mức yêu cầu của SGK. |
+| g12-l25 | Công thức thạch cao nung ghi CaSO₄·H₂O (hoặc CaSO₄·0,5H₂O); màu ngọn lửa Ca, Sr, Ba. |
+| g12-l27 | Phạm vi “dãy thứ nhất” ghi Sc → Cu (một số tài liệu tính đến Zn). |
+| g12-l28 | Hình học [CuCl₄]²⁻ (tứ diện, thực tế bị biến dạng) và [Cu(NH₃)₄]²⁺ (vuông phẳng) — đối chiếu cách SGK trình bày. |

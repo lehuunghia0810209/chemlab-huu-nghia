@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **512** in 20/21 chapters; lessons with ≥ 6 questions: 74/78.
-- By type: single 127 · multiple 74 · truefalse 74 · short 70 · numeric 167.
-- By difficulty: Nhận biết 83 · Thông hiểu 188 · Vận dụng 167 · Vận dụng cao 74.
-- Verification: internal 512 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **537** in 21/21 chapters; lessons with ≥ 6 questions: 78/78.
+- By type: single 132 · multiple 78 · truefalse 78 · short 74 · numeric 175.
+- By difficulty: Nhận biết 86 · Thông hiểu 196 · Vận dụng 177 · Vận dụng cao 78.
+- Verification: internal 537 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -93,7 +93,7 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g12-l24 Nguyên tố nhóm IA | 7 | 1 | 1 | 1 | 1 | 3 |
 | g12-l25 Nguyên tố nhóm IIA | 7 | 2 | 1 | 1 | 1 | 2 |
 | g12-l26 Ôn tập chương 7 | 7 | 1 | 1 | 1 | 1 | 3 |
-| g12-l27 Đại cương về kim loại chuyển tiếp dãy thứ nhất | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l28 Sơ lược về phức chất | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l29 Một số tính chất và ứng dụng của phức chất | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l30 Ôn tập chương 8 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g12-l27 Đại cương về kim loại chuyển tiếp dãy thứ nhất | 6 | 1 | 1 | 1 | 1 | 2 |
+| g12-l28 Sơ lược về phức chất | 7 | 2 | 1 | 1 | 1 | 2 |
+| g12-l29 Một số tính chất và ứng dụng của phức chất | 6 | 1 | 1 | 1 | 1 | 2 |
+| g12-l30 Ôn tập chương 8 | 6 | 1 | 1 | 1 | 1 | 2 |

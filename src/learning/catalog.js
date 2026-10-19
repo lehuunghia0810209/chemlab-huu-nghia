@@ -67,7 +67,7 @@ export const FULL_LESSONS = new Set([
   'g12-l8', 'g12-l9', 'g12-l10', 'g12-l11', 'g12-l12', 'g12-l13', 'g12-l14',
   'g12-l15', 'g12-l16', 'g12-l17',
   'g12-l18', 'g12-l19', 'g12-l20', 'g12-l21', 'g12-l22', 'g12-l23',
-  'g12-l24', 'g12-l25', 'g12-l26'
+  'g12-l24', 'g12-l25', 'g12-l26', 'g12-l27', 'g12-l28', 'g12-l29', 'g12-l30'
 ])
 
 function buildGrade(source) {

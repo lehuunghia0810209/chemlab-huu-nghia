@@ -74,6 +74,7 @@ src/learning/
 | 16 | Hóa 12, Chương 5 | g12-l16, g12-l17 (g12-l15 đã có từ 6.3) | 21 (Bài 15–17) | check:learning PASS (226 + 668), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi. Định luật Faraday ghi là “mở rộng”, bài tập chỉ dùng bảo toàn electron |
 | 17 | Hóa 12, Chương 6 | g12-l18 … g12-l23 | 36 (Bài 18–23, 6 câu/bài) | check:learning PASS (232 + 718), build PASS, browser 261/261, a11y PASS; 6 bài + trang luyện tập mở trong Chrome không lỗi |
 | 18 | Hóa 12, Chương 7 | g12-l24 … g12-l26 | 21 (Bài 24–26) | check:learning PASS (235 + 747), build PASS, browser 261/261, a11y PASS; 3 bài + trang luyện tập mở trong Chrome không lỗi |
+| 19 | Hóa 12, Chương 8 (**78/78 bài đầy đủ, 21/21 chương có câu hỏi**) | g12-l27 … g12-l30 | 25 (Bài 27–30) | check:learning PASS (239 + 782; 537 câu), build PASS, browser 261/261, a11y PASS; 4 bài + trang luyện tập mở trong Chrome không lỗi; ảnh 390 px bài 29 (phương trình phức chất) đã xem. `browser-smoke.mjs`: check “bản rút gọn” đổi thành kiểm tra g12-l29 mở dạng đầy đủ vì không còn bài rút gọn. Thêm các mục cần chuyên gia đối chiếu vào `CONTENT_VERIFICATION.md` |
 
 ## 5. Checkpoint — how to continue
 

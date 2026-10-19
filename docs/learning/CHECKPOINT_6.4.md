@@ -1,27 +1,27 @@
 # Checkpoint ChemLab 6.4
 
-Cập nhật sau mỗi batch. Trạng thái: **PARTIAL**. Không push, không merge, không deploy.
+Cập nhật sau mỗi batch. Trạng thái nội dung: **78/78 bài, 21/21 chương có câu hỏi — kiểm thử tự động PASS**; nội dung mới ở mức kiểm tra nội bộ, chưa qua thẩm định giáo viên/chuyên gia (xem `CONTENT_VERIFICATION.md`). Không push, không merge, không deploy.
 
 ## Tiến độ
 
-- Bài đầy đủ (`FULL_LESSONS`): **74/78** — toàn bộ Hóa 10 (g10-l1 … g10-l23), toàn bộ Hóa 11 (g11-l1 … g11-l25), Hóa 12 g12-l1 … g12-l26.
-- Câu hỏi: **512** trong 20/21 chương (`g10-c1` … `g10-c7`, `g11-c1` … `g11-c6`, `g12-c1` … `g12-c7`); mỗi bài của các chương này có ≥ 6 câu, ≥ 3 dạng.
+- Bài đầy đủ (`FULL_LESSONS`): **78/78** — toàn bộ Hóa 10, 11, 12.
+- Câu hỏi: **537** trong 21/21 chương; mỗi bài của các chương này có ≥ 6 câu, ≥ 3 dạng.
 - Hạ tầng (answer engine, ngân hàng câu hỏi, Practice Workspace, kiểm tra cân bằng phương trình, báo cáo coverage) hoàn thành ở Batch 1 — xem `LEARNING_6.4.md` §2–3.
 - Batch log: `LEARNING_6.4.md` §4.
 
-## Kiểm thử gần nhất (Batch 18)
+## Kiểm thử gần nhất (Batch 19)
 
-`npm run check:learning` PASS (learning 235, question 747), `npm run build` PASS, `npm run check:browser` 261/261, `npm run check:a11y` PASS. Bài g12-l24 … g12-l26 và trang luyện tập từng bài (7 câu) mở trong Chrome không lỗi console.
+`npm run check:learning` PASS (learning 239, question 782), `npm run build` PASS, `npm run check:browser` 261/261, `npm run check:a11y` PASS. Bài g12-l27 … g12-l30 và trang luyện tập từng bài mở trong Chrome không lỗi console; ảnh 390 px bài 29 đã xem.
 
-Lưu ý cho test: `browser-smoke.mjs` dùng **g12-l29** làm bài “bản rút gọn” (bài thử thách như g12-l30 có quá ít bước). Khi viết g12-l29, đổi sang một bài thường còn rút gọn; khi không còn bài rút gọn thì bỏ check này.
+Lưu ý cho test: không còn bài “bản rút gọn”; `browser-smoke.mjs` kiểm tra g12-l29 (bài rút gọn cuối cùng trước đây) mở dạng đầy đủ. `legacyAdapter.js` vẫn giữ nhưng hiện không còn bài nào dùng.
 
 ## Git
 
-- Commit 6.4: `e107bbe` (Batch 1), `c5c21a6` (checkpoint giữa Batch 2), `097b5ee` (Batch 2), `bd6ced1` (Batch 3), `9bd666b` (Batch 4), `a7b1700` (Batch 5), `0091c50` (Batch 6), `81a226b` (Batch 7), `3f38030` (Batch 8), `10f78b9` (Batch 9), `7574054` (Batch 10), `ce7e295` (Batch 11), `5d7bb3d` (Batch 12), `094b64f` (Batch 13), `d3e804f` (Batch 14), `8df82f9` (Batch 15), `6302baf` (Batch 16), `17893bb` (Batch 17), commit "ChemLab 6.4 batch 18" (Hóa 12 chương 7).
+- Commit 6.4: `e107bbe` (Batch 1), `c5c21a6` (checkpoint giữa Batch 2), `097b5ee` (Batch 2), `bd6ced1` (Batch 3), `9bd666b` (Batch 4), `a7b1700` (Batch 5), `0091c50` (Batch 6), `81a226b` (Batch 7), `3f38030` (Batch 8), `10f78b9` (Batch 9), `7574054` (Batch 10), `ce7e295` (Batch 11), `5d7bb3d` (Batch 12), `094b64f` (Batch 13), `d3e804f` (Batch 14), `8df82f9` (Batch 15), `6302baf` (Batch 16), `17893bb` (Batch 17), `83892c1` (Batch 18), commit "ChemLab 6.4 batch 19" (Hóa 12 chương 8).
 - Không đưa vào commit: `AGENTS.md` (staged), `.gitignore` (modified), `.claude/` của người dùng.
 
 ## Bước tiếp theo
 
-1. Hóa 12 **Chương 8 — Kim loại chuyển tiếp dãy thứ nhất và phức chất** (chương cuối): g12-l27, g12-l28 (Lab g12-lesson-28 CuSO₄ + NH₃), g12-l29 (Lab g12-lesson-29 FeCl₃ + KSCN), g12-l30 ôn tập; câu hỏi `questions/g12-c8.js`. Khi viết g12-l29, test “bản rút gọn” trong `browser-smoke.mjs` không còn bài thường nào để dùng → đổi thành kiểm tra không còn bài rút gọn.
-2. Mỗi chương: viết bài → thêm vào `FULL_LESSONS` → viết câu hỏi → thêm vào `QUESTION_CHAPTERS` → `node scripts/test-learning.mjs --write && node scripts/test-questions.mjs --write` → `npm run check`, `npm run build`, `npm run check:browser`, `npm run check:a11y` → xem ảnh chụp → cập nhật batch log và file này → commit với pathspec tường minh.
-3. Hóa 12 tiếp theo theo chương (g12-l15 đã có nội dung, chỉ cần câu hỏi).
+1. Nội dung đã đủ 78 bài. Việc còn lại: giáo viên/chuyên gia đối chiếu các mục trong `CONTENT_VERIFICATION.md` với SGK in; cân nhắc precache bài học cho chế độ offline khi phát hành (xem `LEARNING_6.4.md` §6).
+2. Khi sửa nội dung bài hoặc câu hỏi: `node scripts/test-learning.mjs --write && node scripts/test-questions.mjs --write` → `npm run check`, `npm run build`, `npm run check:browser`, `npm run check:a11y` → xem ảnh chụp → cập nhật batch log và file này → commit với pathspec tường minh.
+3. Khi phát hành: bump version + `npm run release:sync` (chưa làm, theo yêu cầu không bump version).

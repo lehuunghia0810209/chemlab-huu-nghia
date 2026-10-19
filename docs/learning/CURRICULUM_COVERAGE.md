@@ -15,7 +15,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
 | 11 | 6 | 25 | 25 | 0 | 0 |
-| 12 | 8 | 30 | 26 | 4 | 0 |
+| 12 | 8 | 30 | 30 | 0 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
 
@@ -97,7 +97,7 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 12 | 7. Nguyên tố nhóm IA và nhóm IIA | 24. Nguyên tố nhóm IA | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l24` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 7. Nguyên tố nhóm IA và nhóm IIA | 25. Nguyên tố nhóm IIA | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l25` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 7. Nguyên tố nhóm IA và nhóm IIA | 26. Ôn tập chương 7 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l26` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 27. Đại cương về kim loại chuyển tiếp dãy thứ nhất | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l27` | Nội dung cũ, chưa rà soát lại |
-| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 28. Sơ lược về phức chất | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l28` | Nội dung cũ, chưa rà soát lại |
-| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 29. Một số tính chất và ứng dụng của phức chất | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l29` | Nội dung cũ, chưa rà soát lại |
-| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 30. Ôn tập chương 8 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l30` | Nội dung cũ, chưa rà soát lại |
+| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 27. Đại cương về kim loại chuyển tiếp dãy thứ nhất | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l27` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 28. Sơ lược về phức chất | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l28` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 29. Một số tính chất và ứng dụng của phức chất | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l29` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất | 30. Ôn tập chương 8 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l30` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |

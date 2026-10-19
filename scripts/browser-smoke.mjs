@@ -760,8 +760,9 @@ async function learningLegacyData(browser, baseURL) {
     await page.evaluate(() => /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status').textContent)))
   await page.evaluate(() => { location.hash = '#learning/lesson/g12-l29' })
   await page.waitForSelector('#lx-step-title')
-  record('learning: a lesson still on short content is readable step by step and labelled as such',
-    await page.evaluate(() => /Bản rút gọn/.test(document.querySelector('.lx-reader__status').textContent) && document.querySelectorAll('.lx-steps li').length > 2))
+  // 6.4 published all 78 lessons, so the last short-content sample (g12-l29) now opens in full.
+  record('learning: g12-l29, the last short-content lesson, now opens as a full lesson',
+    await page.evaluate(() => /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status').textContent) && document.querySelectorAll('.lx-steps li').length > 2))
   record('console clean with legacy progress', errors.length === 0, errors.join(' | '))
   await context.close()
 
