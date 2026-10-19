@@ -13,7 +13,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
-| 10 | 7 | 23 | 9 | 13 | 1 |
+| 10 | 7 | 23 | 14 | 8 | 1 |
 | 11 | 6 | 25 | 1 | 24 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
@@ -32,11 +32,11 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 7. Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l7` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 8. Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hóa học | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l8` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 2. Bảng tuần hoàn các nguyên tố hóa học và định luật tuần hoàn | 9. Ôn tập chương 2 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l9` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 10 | 3. Liên kết hóa học | 10. Quy tắc octet | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l10` | Nội dung cũ, chưa rà soát lại |
-| 10 | 3. Liên kết hóa học | 11. Liên kết ion | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l11` | Nội dung cũ, chưa rà soát lại |
-| 10 | 3. Liên kết hóa học | 12. Liên kết cộng hóa trị | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l12` | Nội dung cũ, chưa rà soát lại |
-| 10 | 3. Liên kết hóa học | 13. Liên kết hydrogen và tương tác Van der Waals | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l13` | Nội dung cũ, chưa rà soát lại |
-| 10 | 3. Liên kết hóa học | 14. Ôn tập chương 3 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l14` | Nội dung cũ, chưa rà soát lại |
+| 10 | 3. Liên kết hóa học | 10. Quy tắc octet | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l10` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 3. Liên kết hóa học | 11. Liên kết ion | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l11` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 3. Liên kết hóa học | 12. Liên kết cộng hóa trị | 5 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l12` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 3. Liên kết hóa học | 13. Liên kết hydrogen và tương tác Van der Waals | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l13` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 10 | 3. Liên kết hóa học | 14. Ôn tập chương 3 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l14` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 4. Phản ứng oxi hóa - khử | 15. Phản ứng oxi hóa - khử | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l15` | Nội dung cũ, chưa rà soát lại |
 | 10 | 4. Phản ứng oxi hóa - khử | 16. Ôn tập chương 4 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l16` | Nội dung cũ, chưa rà soát lại |
 | 10 | 5. Năng lượng hóa học | 17. Biến thiên enthalpy trong các phản ứng hóa học | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g10-l17` | Nội dung cũ, chưa rà soát lại |

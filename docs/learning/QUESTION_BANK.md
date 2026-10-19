@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **63** in 2/21 chapters; lessons with ≥ 6 questions: 9/78.
-- By type: single 17 · multiple 9 · truefalse 9 · short 9 · numeric 19.
-- By difficulty: Nhận biết 12 · Thông hiểu 25 · Vận dụng 17 · Vận dụng cao 9.
-- Verification: internal 63 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **98** in 3/21 chapters; lessons with ≥ 6 questions: 14/78.
+- By type: single 28 · multiple 14 · truefalse 14 · short 14 · numeric 28.
+- By difficulty: Nhận biết 17 · Thông hiểu 40 · Vận dụng 29 · Vận dụng cao 12.
+- Verification: internal 98 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -28,11 +28,11 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g10-l7 Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l8 Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l9 Ôn tập chương 2 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g10-l10 Quy tắc octet | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l11 Liên kết ion | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l12 Liên kết cộng hóa trị | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l13 Liên kết hydrogen và tương tác Van der Waals | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l14 Ôn tập chương 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g10-l10 Quy tắc octet | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l11 Liên kết ion | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l12 Liên kết cộng hóa trị | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l13 Liên kết hydrogen và tương tác Van der Waals | 7 | 3 | 1 | 1 | 1 | 1 |
+| g10-l14 Ôn tập chương 3 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l15 Phản ứng oxi hóa - khử | 0 | 0 | 0 | 0 | 0 | 0 |
 | g10-l16 Ôn tập chương 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | g10-l17 Biến thiên enthalpy trong các phản ứng hóa học | 0 | 0 | 0 | 0 | 0 | 0 |

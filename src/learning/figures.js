@@ -68,7 +68,66 @@ const galvanicCell = `
   <text class="lx-fig-muted" x="306" y="252">CuSO₄</text>
 </svg>`
 
+// Cross-section of the rock-salt lattice: ions alternate in every direction.
+const naclCells = []
+for (let row = 0; row < 4; row += 1) {
+  for (let column = 0; column < 5; column += 1) {
+    const x = 40 + column * 52
+    const y = 36 + row * 52
+    naclCells.push((row + column) % 2
+      ? `<circle class="lx-fig-na" cx="${x}" cy="${y}" r="11"/>`
+      : `<circle class="lx-fig-cl" cx="${x}" cy="${y}" r="21"/>`)
+  }
+}
+const naclLattice = `
+<svg viewBox="0 0 400 220" role="img" aria-labelledby="fig-nacl-t">
+  <title id="fig-nacl-t">Mặt cắt tinh thể sodium chloride: các ion Na⁺ nhỏ và Cl⁻ lớn xếp xen kẽ nhau theo hàng ngang và hàng dọc</title>
+  <path class="lx-fig-line" d="M40 36 H248 M40 88 H248 M40 140 H248 M40 192 H248 M40 36 V192 M92 36 V192 M144 36 V192 M196 36 V192 M248 36 V192"/>
+  ${naclCells.join('')}
+  <circle class="lx-fig-cl" cx="296" cy="70" r="14"/><text class="lx-fig-muted" x="318" y="75">Cl⁻ (lớn)</text>
+  <circle class="lx-fig-na" cx="296" cy="112" r="8"/><text class="lx-fig-muted" x="318" y="117">Na⁺ (nhỏ)</text>
+  <text class="lx-fig-text" x="282" y="160">Mỗi ion được bao</text>
+  <text class="lx-fig-text" x="282" y="178">quanh bởi 6 ion</text>
+  <text class="lx-fig-text" x="282" y="196">trái dấu (3 chiều)</text>
+</svg>`
+
+const lewis = `
+<svg viewBox="0 0 430 140" role="img" aria-labelledby="fig-lewis-t">
+  <title id="fig-lewis-t">Công thức Lewis: H₂O có O liên kết đơn với hai H và còn hai cặp electron riêng; NH₃ có N liên kết đơn với ba H và một cặp electron riêng; CO₂ có C liên kết đôi với mỗi O, mỗi O còn hai cặp electron riêng; N₂ có liên kết ba, mỗi N còn một cặp electron riêng</title>
+  <g class="lx-fig-bond">
+    <path d="M30 60 H44 M66 60 H80"/>
+    <path d="M136 55 H149 M171 55 H184 M160 66 V81"/>
+    <path d="M236 56 H259 M236 64 H259 M281 56 H304 M281 64 H304"/>
+    <path d="M371 54 H389 M371 60 H389 M371 66 H389"/>
+  </g>
+  <g class="lx-fig-atom">
+    <text x="20" y="66" text-anchor="middle">H</text><text x="55" y="66" text-anchor="middle">O</text><text x="90" y="66" text-anchor="middle">H</text>
+    <text x="125" y="61" text-anchor="middle">H</text><text x="160" y="61" text-anchor="middle">N</text><text x="195" y="61" text-anchor="middle">H</text><text x="160" y="98" text-anchor="middle">H</text>
+    <text x="225" y="66" text-anchor="middle">O</text><text x="270" y="66" text-anchor="middle">C</text><text x="315" y="66" text-anchor="middle">O</text>
+    <text x="360" y="66" text-anchor="middle">N</text><text x="400" y="66" text-anchor="middle">N</text>
+  </g>
+  <g class="lx-fig-dot">
+    <circle cx="51" cy="44" r="2.5"/><circle cx="59" cy="44" r="2.5"/><circle cx="51" cy="76" r="2.5"/><circle cx="59" cy="76" r="2.5"/>
+    <circle cx="156" cy="39" r="2.5"/><circle cx="164" cy="39" r="2.5"/>
+    <circle cx="221" cy="44" r="2.5"/><circle cx="229" cy="44" r="2.5"/><circle cx="221" cy="76" r="2.5"/><circle cx="229" cy="76" r="2.5"/>
+    <circle cx="311" cy="44" r="2.5"/><circle cx="319" cy="44" r="2.5"/><circle cx="311" cy="76" r="2.5"/><circle cx="319" cy="76" r="2.5"/>
+    <circle cx="346" cy="56" r="2.5"/><circle cx="346" cy="64" r="2.5"/><circle cx="414" cy="56" r="2.5"/><circle cx="414" cy="64" r="2.5"/>
+  </g>
+  <g class="lx-fig-muted">
+    <text x="55" y="128" text-anchor="middle">H₂O</text><text x="160" y="128" text-anchor="middle">NH₃</text>
+    <text x="270" y="128" text-anchor="middle">CO₂</text><text x="380" y="128" text-anchor="middle">N₂</text>
+  </g>
+</svg>`
+
 export const FIGURES = {
+  'lewis-structures': {
+    svg: lewis,
+    caption: 'Công thức Lewis: mỗi gạch nối là một cặp electron dùng chung, mỗi cặp chấm là một cặp electron hóa trị riêng (chưa liên kết). Mọi nguyên tử O, N, C đều có 8 electron xung quanh; H có 2.'
+  },
+  'nacl-lattice': {
+    svg: naclLattice,
+    caption: 'Mặt cắt một lớp của tinh thể NaCl. Trong không gian ba chiều, các ion xếp thành mạng lập phương; mỗi Na⁺ được bao quanh bởi 6 Cl⁻ và ngược lại. Kích thước tương đối giữa hai ion được vẽ gần đúng.'
+  },
   'atom-structure': {
     svg: atom,
     caption: 'Mô hình minh họa nguyên tử lithium (3 proton, 4 neutron, 3 electron). Hình không theo tỉ lệ: thực tế hạt nhân nhỏ hơn nguyên tử khoảng 10 000 – 100 000 lần, và electron không chuyển động trên quỹ đạo tròn cố định.'

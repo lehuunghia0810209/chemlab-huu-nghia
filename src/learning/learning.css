@@ -745,6 +745,11 @@ html[data-theme='light'] .lx-steps .is-learned .lx-steps__mark {
 .lx-fig-p { fill: #e5484d; }
 .lx-fig-n { fill: #8b95a5; }
 .lx-fig-e { fill: var(--accent); }
+.lx-fig-na { fill: #8b5cf6; }
+.lx-fig-bond { fill: none; stroke: var(--text-primary); stroke-width: 2; }
+.lx-fig-atom { fill: var(--text-primary); font: 600 18px var(--font-sans); }
+.lx-fig-dot { fill: var(--text-primary); }
+.lx-fig-cl { fill: #22a06b; }
 .lx-fig-text { fill: var(--text-primary); font: 600 13px var(--font-sans); }
 .lx-fig-muted { fill: var(--text-secondary); font: 400 12px var(--font-sans); }
 .lx-fig-axis { stroke: var(--text-muted); stroke-width: 1.5; }
