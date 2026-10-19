@@ -4,24 +4,24 @@ Cập nhật sau mỗi batch. Trạng thái: **PARTIAL**. Không push, không me
 
 ## Tiến độ
 
-- Bài đầy đủ (`FULL_LESSONS`): **56/78** — toàn bộ Hóa 10 (g10-l1 … g10-l23), toàn bộ Hóa 11 (g11-l1 … g11-l25), Hóa 12 g12-l1 … g12-l7, g12-l15.
-- Câu hỏi: **385** trong 15/21 chương (`g10-c1` … `g10-c7`, `g11-c1` … `g11-c6`, `g12-c1`, `g12-c2`); mỗi bài của các chương này có ≥ 6 câu, ≥ 3 dạng.
+- Bài đầy đủ (`FULL_LESSONS`): **60/78** — toàn bộ Hóa 10 (g10-l1 … g10-l23), toàn bộ Hóa 11 (g11-l1 … g11-l25), Hóa 12 g12-l1 … g12-l11, g12-l15.
+- Câu hỏi: **413** trong 16/21 chương (`g10-c1` … `g10-c7`, `g11-c1` … `g11-c6`, `g12-c1` … `g12-c3`); mỗi bài của các chương này có ≥ 6 câu, ≥ 3 dạng.
 - Hạ tầng (answer engine, ngân hàng câu hỏi, Practice Workspace, kiểm tra cân bằng phương trình, báo cáo coverage) hoàn thành ở Batch 1 — xem `LEARNING_6.4.md` §2–3.
 - Batch log: `LEARNING_6.4.md` §4.
 
-## Kiểm thử gần nhất (Batch 13)
+## Kiểm thử gần nhất (Batch 14)
 
-`npm run check:learning` PASS (learning 217, question 571), `npm run build` PASS, `npm run check:browser` 261/261, `npm run check:a11y` PASS. Bài g12-l4 … g12-l7 và trang luyện tập từng bài (7 câu) mở trong Chrome không lỗi console; ảnh 390 px bài 7 đã xem.
+`npm run check:learning` PASS (learning 221, question 609), `npm run build` PASS, `npm run check:browser` 261/261, `npm run check:a11y` PASS. Bài g12-l8 … g12-l11 và trang luyện tập từng bài (7 câu) mở trong Chrome không lỗi console.
 
 Lưu ý cho test: `browser-smoke.mjs` dùng **g12-l29** làm bài “bản rút gọn” (bài thử thách như g12-l30 có quá ít bước). Khi viết g12-l29, đổi sang một bài thường còn rút gọn; khi không còn bài rút gọn thì bỏ check này.
 
 ## Git
 
-- Commit 6.4: `e107bbe` (Batch 1), `c5c21a6` (checkpoint giữa Batch 2), `097b5ee` (Batch 2), `bd6ced1` (Batch 3), `9bd666b` (Batch 4), `a7b1700` (Batch 5), `0091c50` (Batch 6), `81a226b` (Batch 7), `3f38030` (Batch 8), `10f78b9` (Batch 9), `7574054` (Batch 10), `ce7e295` (Batch 11), `5d7bb3d` (Batch 12), commit "ChemLab 6.4 batch 13" (Hóa 12 chương 2).
+- Commit 6.4: `e107bbe` (Batch 1), `c5c21a6` (checkpoint giữa Batch 2), `097b5ee` (Batch 2), `bd6ced1` (Batch 3), `9bd666b` (Batch 4), `a7b1700` (Batch 5), `0091c50` (Batch 6), `81a226b` (Batch 7), `3f38030` (Batch 8), `10f78b9` (Batch 9), `7574054` (Batch 10), `ce7e295` (Batch 11), `5d7bb3d` (Batch 12), `094b64f` (Batch 13), commit "ChemLab 6.4 batch 14" (Hóa 12 chương 3).
 - Không đưa vào commit: `AGENTS.md` (staged), `.gitignore` (modified), `.claude/` của người dùng.
 
 ## Bước tiếp theo
 
-1. Hóa 12 **Chương 3 — Hợp chất chứa nitrogen**: g12-l8 Amine, g12-l9 Amino acid và peptide, g12-l10 Protein và enzyme (Lab `g12-protein-biuret`), g12-l11 ôn tập; câu hỏi `questions/g12-c3.js`. Mã Lab Hóa 12: thí nghiệm có hóa chất là g12-lesson-01, -02, g12-glucose-copper, g12-starch-iodine, g12-protein-biuret, g12-lesson-28 (CuSO₄ + NH₃), g12-lesson-29 (FeCl₃ + KSCN).
+1. Hóa 12 **Chương 4 — Polymer**: g12-l12 Đại cương về polymer, g12-l13 Vật liệu polymer, g12-l14 ôn tập (không có thí nghiệm Lab có hóa chất); câu hỏi `questions/g12-c4.js`. Mã Lab Hóa 12: thí nghiệm có hóa chất là g12-lesson-01, -02, g12-glucose-copper, g12-starch-iodine, g12-protein-biuret, g12-lesson-28 (CuSO₄ + NH₃), g12-lesson-29 (FeCl₃ + KSCN).
 2. Mỗi chương: viết bài → thêm vào `FULL_LESSONS` → viết câu hỏi → thêm vào `QUESTION_CHAPTERS` → `node scripts/test-learning.mjs --write && node scripts/test-questions.mjs --write` → `npm run check`, `npm run build`, `npm run check:browser`, `npm run check:a11y` → xem ảnh chụp → cập nhật batch log và file này → commit với pathspec tường minh.
 3. Hóa 12 tiếp theo theo chương (g12-l15 đã có nội dung, chỉ cần câu hỏi).

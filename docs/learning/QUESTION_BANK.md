@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **385** in 15/21 chapters; lessons with ≥ 6 questions: 55/78.
-- By type: single 99 · multiple 55 · truefalse 55 · short 53 · numeric 123.
-- By difficulty: Nhận biết 69 · Thông hiểu 138 · Vận dụng 121 · Vận dụng cao 57.
-- Verification: internal 385 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **413** in 16/21 chapters; lessons with ≥ 6 questions: 59/78.
+- By type: single 105 · multiple 59 · truefalse 59 · short 56 · numeric 134.
+- By difficulty: Nhận biết 72 · Thông hiểu 149 · Vận dụng 130 · Vận dụng cao 62.
+- Verification: internal 413 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -74,10 +74,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g12-l5 Saccharose và maltose | 7 | 1 | 1 | 1 | 1 | 3 |
 | g12-l6 Tinh bột và cellulose | 7 | 2 | 1 | 1 | 0 | 3 |
 | g12-l7 Ôn tập chương 2 | 7 | 1 | 1 | 1 | 0 | 4 |
-| g12-l8 Amine | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l9 Amino acid và peptide | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l10 Protein và enzyme | 0 | 0 | 0 | 0 | 0 | 0 |
-| g12-l11 Ôn tập chương 3 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g12-l8 Amine | 7 | 1 | 1 | 1 | 1 | 3 |
+| g12-l9 Amino acid và peptide | 7 | 1 | 1 | 1 | 1 | 3 |
+| g12-l10 Protein và enzyme | 7 | 2 | 1 | 1 | 1 | 2 |
+| g12-l11 Ôn tập chương 3 | 7 | 2 | 1 | 1 | 0 | 3 |
 | g12-l12 Đại cương về polymer | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l13 Vật liệu polymer | 0 | 0 | 0 | 0 | 0 | 0 |
 | g12-l14 Ôn tập chương 4 | 0 | 0 | 0 | 0 | 0 | 0 |

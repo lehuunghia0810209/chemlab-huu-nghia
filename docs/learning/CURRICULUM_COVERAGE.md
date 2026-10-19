@@ -15,7 +15,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
 | 11 | 6 | 25 | 25 | 0 | 0 |
-| 12 | 8 | 30 | 8 | 22 | 0 |
+| 12 | 8 | 30 | 12 | 18 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
 
@@ -78,10 +78,10 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 12 | 2. Carbohydrate | 5. Saccharose và maltose | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l5` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 2. Carbohydrate | 6. Tinh bột và cellulose | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l6` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 2. Carbohydrate | 7. Ôn tập chương 2 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l7` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 12 | 3. Hợp chất chứa nitrogen | 8. Amine | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l8` | Nội dung cũ, chưa rà soát lại |
-| 12 | 3. Hợp chất chứa nitrogen | 9. Amino acid và peptide | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l9` | Nội dung cũ, chưa rà soát lại |
-| 12 | 3. Hợp chất chứa nitrogen | 10. Protein và enzyme | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l10` | Nội dung cũ, chưa rà soát lại |
-| 12 | 3. Hợp chất chứa nitrogen | 11. Ôn tập chương 3 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l11` | Nội dung cũ, chưa rà soát lại |
+| 12 | 3. Hợp chất chứa nitrogen | 8. Amine | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l8` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 3. Hợp chất chứa nitrogen | 9. Amino acid và peptide | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l9` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 3. Hợp chất chứa nitrogen | 10. Protein và enzyme | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l10` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 12 | 3. Hợp chất chứa nitrogen | 11. Ôn tập chương 3 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g12-l11` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 12 | 4. Polymer | 12. Đại cương về polymer | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l12` | Nội dung cũ, chưa rà soát lại |
 | 12 | 4. Polymer | 13. Vật liệu polymer | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l13` | Nội dung cũ, chưa rà soát lại |
 | 12 | 4. Polymer | 14. Ôn tập chương 4 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g12-l14` | Nội dung cũ, chưa rà soát lại |
