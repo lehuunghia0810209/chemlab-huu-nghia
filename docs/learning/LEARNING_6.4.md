@@ -61,6 +61,7 @@ src/learning/
 | 3 | Hóa 10, Chương 3 | g10-l10 … g10-l14 (+ hình tinh thể NaCl, công thức Lewis) | 35 (Bài 10–14) | check:learning PASS (162 + 178), build PASS, browser 261/261, a11y PASS |
 | 4 | Hóa 10, Chương 4–5 | g10-l15 … g10-l18 (+ sơ đồ enthalpy) | 28 (Bài 15–18) | check:learning PASS (176 + 218), build PASS, browser 261/261, a11y PASS; bảng gọn hơn trên điện thoại |
 | 5 | Hóa 10, Chương 6–7 (**Hóa 10 hoàn tất 23/23**) | g10-l19 … g10-l23 (g10-l23 trước đây chỉ có trong danh mục) | 35 (Bài 19–23) | check:learning PASS (182 + 267), build PASS, browser 261/261, a11y PASS. Sửa: hoàn thành thí nghiệm Lab của 6.2 vẫn được tính khi bài có nội dung đầy đủ (nhãn “Đã làm thí nghiệm”); phương trình dài xuống dòng trên điện thoại |
+| 6 | Hóa 11, Chương 1 | g11-l2, g11-l3 (+ câu hỏi cho g11-l1) | 21 (Bài 1–3) | check:learning PASS (188 + 296), build PASS, browser 261/261, a11y PASS |
 
 ## 5. Checkpoint — how to continue
 

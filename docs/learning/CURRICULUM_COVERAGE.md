@@ -14,7 +14,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
-| 11 | 6 | 25 | 1 | 24 | 0 |
+| 11 | 6 | 25 | 3 | 22 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
@@ -47,8 +47,8 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 10 | 7. Nguyên tố nhóm halogen | 22. Hydrogen halide. Muối halide | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l22` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 10 | 7. Nguyên tố nhóm halogen | 23. Ôn tập chương 7 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g10-l23` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 1. Cân bằng hóa học | 1. Khái niệm về cân bằng hóa học | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l1` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 11 | 1. Cân bằng hóa học | 2. Cân bằng trong dung dịch nước | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l2` | Nội dung cũ, chưa rà soát lại |
-| 11 | 1. Cân bằng hóa học | 3. Ôn tập chương 1 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l3` | Nội dung cũ, chưa rà soát lại |
+| 11 | 1. Cân bằng hóa học | 2. Cân bằng trong dung dịch nước | 5 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l2` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 1. Cân bằng hóa học | 3. Ôn tập chương 1 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l3` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 2. Nitrogen và sulfur | 4. Nitrogen | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l4` | Nội dung cũ, chưa rà soát lại |
 | 11 | 2. Nitrogen và sulfur | 5. Ammonia. Muối ammonium | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l5` | Nội dung cũ, chưa rà soát lại |
 | 11 | 2. Nitrogen và sulfur | 6. Một số hợp chất của nitrogen với oxygen | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l6` | Nội dung cũ, chưa rà soát lại |

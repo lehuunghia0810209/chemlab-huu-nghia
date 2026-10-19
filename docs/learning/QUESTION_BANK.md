@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **161** in 7/21 chapters; lessons with ≥ 6 questions: 23/78.
-- By type: single 44 · multiple 23 · truefalse 23 · short 23 · numeric 48.
-- By difficulty: Nhận biết 29 · Thông hiểu 59 · Vận dụng 52 · Vận dụng cao 21.
-- Verification: internal 161 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **182** in 8/21 chapters; lessons with ≥ 6 questions: 26/78.
+- By type: single 49 · multiple 26 · truefalse 26 · short 26 · numeric 55.
+- By difficulty: Nhận biết 34 · Thông hiểu 65 · Vận dụng 58 · Vận dụng cao 25.
+- Verification: internal 182 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -42,9 +42,9 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g10-l21 Nhóm halogen | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l22 Hydrogen halide. Muối halide | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l23 Ôn tập chương 7 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g11-l1 Khái niệm về cân bằng hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l2 Cân bằng trong dung dịch nước | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l3 Ôn tập chương 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g11-l1 Khái niệm về cân bằng hóa học | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l2 Cân bằng trong dung dịch nước | 7 | 1 | 1 | 1 | 1 | 3 |
+| g11-l3 Ôn tập chương 1 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l4 Nitrogen | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l5 Ammonia. Muối ammonium | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l6 Một số hợp chất của nitrogen với oxygen | 0 | 0 | 0 | 0 | 0 | 0 |

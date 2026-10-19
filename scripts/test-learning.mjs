@@ -202,6 +202,12 @@ check('g10-l18: same from bond energies = −802 kJ', 4 * 414 + 2 * 498 - (2 * 7
 check('g10-l18: N₂ + O₂ → 2NO = 2 × ΔfH(NO)', round1(2 * H['NO(g)']) === 180.6)
 check('g10-l18: 3,2 g CH₄ releases 178,06 kJ', Math.abs(3.2 / 16 * 890.3 - 178.06) < 1e-9)
 check('g10-l16: 5,6 g Fe → 0,1 mol NO → 2,479 L', Math.abs(5.6 / 56 * 3 / 3 * 24.79 - 2.479) < 1e-9)
+const pH = h => -Math.log10(h)
+check('g11-l2: pH of HCl 0,01 M = 2; NaOH 0,001 M = 11; Ba(OH)₂ 0,005 M = 12',
+  near(pH(0.01), 2, 1e-9) && near(pH(1e-14 / 0.001), 11, 1e-9) && near(pH(1e-14 / (2 * 0.005)), 12, 1e-9))
+check('g11-l2: titration 12,5 mL × 0,100 M / 10,0 mL = 0,125 M', near(0.0125 * 0.1 / 0.01, 0.125, 1e-12))
+check('g11-l3: KC = 0,40² / (0,20² × 0,10) = 40', near(0.4 ** 2 / (0.2 ** 2 * 0.1), 40, 1e-9))
+check('g11-l3: HCl 0,010 mol − NaOH 0,008 mol in 0,2 L ⇒ pH 2', near(pH((0.01 - 0.008) / 0.2), 2, 1e-9))
 
 const potential = pair => STANDARD_POTENTIALS.find(([name]) => name === pair)[2]
 const emf = (cathode, anode) => Math.round((potential(cathode) - potential(anode)) * 100) / 100
