@@ -36,23 +36,7 @@ export function icon(name, className = 'ui-icon') {
   return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${PATHS[name] || PATHS.lab}</svg>`
 }
 
-let brandMarkCount = 0
-
+/* Official ChemLab symbol (flask + atomic orbits), see public/brand. */
 export function brandMark() {
-  const gradientId = `cl-brand-grad-${++brandMarkCount}`
-  return `
-    <svg class="app-brand__svg" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="${gradientId}" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#2563eb"/>
-          <stop offset="1" stop-color="#06b6d4"/>
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="9" fill="url(#${gradientId})"/>
-      <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M13 8.5h6M14 8.5v5.2l-4.6 7.6A1.6 1.6 0 0 0 10.8 23.7h10.4a1.6 1.6 0 0 0 1.4-2.4L18 13.7V8.5"/>
-      </g>
-      <ellipse cx="16" cy="19.4" rx="9.4" ry="3.2" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1" transform="rotate(-18 16 19.4)"/>
-      <circle cx="24.4" cy="16.4" r="1.6" fill="#a5f3fc"/>
-    </svg>`
+  return '<img class="app-brand__svg" src="/brand/chemlab-mark.webp" width="32" height="32" alt="" decoding="async">'
 }

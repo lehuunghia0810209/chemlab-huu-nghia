@@ -1281,3 +1281,24 @@ article small {
   }
 
 }
+
+/* Official ChemLab logo (public/brand) */
+.clprod-menu-logo img {
+  width: 32px;
+  height: 32px;
+}
+
+/* The full logo was designed on white: show it on a white card in both themes. */
+.clprod-about-logo {
+  width: min(240px, 70%);
+  height: auto;
+  padding: 12px 16px;
+  border-color: var(--border-subtle);
+  background: #ffffff;
+}
+
+.clprod-about-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}

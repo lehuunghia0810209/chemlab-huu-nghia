@@ -1,6 +1,6 @@
 
 const VERSION =
-  'chemlab-6.2.0-evolution-1'
+  'chemlab-6.2.0-brand-1'
 
 
 const STATIC_CACHE =
@@ -19,7 +19,9 @@ const CORE_FILES = [
 
   '/manifest.webmanifest',
 
-  '/favicon.svg'
+  '/brand/favicon-32.png',
+
+  '/brand/chemlab-mark.webp'
 
 ]
 

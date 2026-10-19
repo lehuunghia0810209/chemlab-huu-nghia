@@ -189,7 +189,7 @@ function createProductLauncher() {
       <header>
 
         <div class="clprod-menu-logo">
-          ⚗
+          <img src="/brand/chemlab-mark.webp" width="32" height="32" alt="" decoding="async">
         </div>
 
 
@@ -620,7 +620,7 @@ function openAbout() {
       <div class="clprod-about-hero">
 
         <div class="clprod-about-logo">
-          ⚗
+          <img src="/brand/chemlab-logo.webp" width="640" height="559" alt="ChemLab — Chemistry Laboratory" decoding="async">
         </div>
 
 
@@ -629,7 +629,7 @@ function openAbout() {
         </span>
 
 
-        <h2>
+        <h2 class="sr-only">
           ChemLab
         </h2>
 

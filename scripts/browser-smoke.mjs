@@ -340,7 +340,7 @@ async function pwaCheck(browser, baseURL) {
     }
   })
   record('service worker registers the release-specific cache',
-    registrationState.active && registrationState.cacheNames.some(name => name.startsWith('chemlab-6.2.0-evolution-1-')),
+    registrationState.active && registrationState.cacheNames.some(name => name.startsWith('chemlab-6.2.0-brand-1-')),
     JSON.stringify(registrationState))
 
   await page.reload({ waitUntil: 'load' })
@@ -806,6 +806,69 @@ async function labStateChecks(browser, baseURL) {
   await context.close()
 }
 
+async function brandChecks(browser, baseURL) {
+  for (const [width, theme] of [[1440, 'dark'], [390, 'light']]) {
+    const { context, page, errors } = await newPage(browser, { width, height: width < 768 ? 844 : 900, theme })
+    await openView(page, baseURL, 'home')
+    const head = await page.evaluate(async () => {
+      const links = [...document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')].map(link => link.href)
+      const manifest = await (await fetch(document.querySelector('link[rel="manifest"]').href)).json()
+      const icons = [...manifest.icons, ...manifest.shortcuts.flatMap(item => item.icons)]
+      const measure = src => new Promise(resolve => {
+        const image = new Image()
+        image.onload = () => resolve(`${image.naturalWidth}x${image.naturalHeight}`)
+        image.onerror = () => resolve('error')
+        image.src = src
+      })
+      return {
+        links: await Promise.all(links.map(async href => [href.split('/').pop(), await measure(href)])),
+        icons: await Promise.all(icons.map(async icon => [icon.src, icon.sizes, icon.purpose || 'any', await measure(icon.src)])),
+        purposes: manifest.icons.map(icon => icon.purpose)
+      }
+    })
+    const expected = { 'favicon-32.png': '32x32', 'favicon-48.png': '48x48', 'apple-touch-icon.png': '180x180' }
+    record(`brand @${width} ${theme}: favicons and apple-touch icon load at their declared sizes`,
+      head.links.length === 3 && head.links.every(([name, size]) => size === expected[name]), JSON.stringify(head.links))
+    record(`brand @${width} ${theme}: every manifest icon (any + maskable, shortcuts) matches its declared size`,
+      head.icons.every(([, sizes, , size]) => sizes === size) && head.purposes.includes('maskable') && head.purposes.includes('any'), JSON.stringify(head.icons))
+
+    const marks = await page.evaluate(() => [...document.querySelectorAll('img.app-brand__svg')]
+      .filter(image => image.getClientRects().length)
+      .map(image => ({ src: image.getAttribute('src'), loaded: image.complete && image.naturalWidth > 0, box: Math.round(image.getBoundingClientRect().width) })))
+    record(`brand @${width} ${theme}: the visible app mark is the new logo symbol`,
+      marks.length >= 1 && marks.every(mark => mark.loaded && /chemlab-mark/.test(mark.src) && mark.box === 32), JSON.stringify(marks))
+
+    // On phones the launcher lives in the collapsed sidebar: open it through the product API there.
+    if (await page.isVisible('[data-product-toggle]')) await page.click('[data-product-toggle]')
+    else await page.evaluate(() => window.ChemLabProduct.openMenu())
+    await page.waitForTimeout(200)
+    const menu = await page.evaluate(() => {
+      const image = document.querySelector('.clprod-menu-logo img')
+      return Boolean(image?.complete && image.naturalWidth > 0)
+    })
+    record(`brand @${width} ${theme}: product menu shows the logo symbol`, menu)
+
+    if (await page.isVisible('[data-product-about]')) await page.click('[data-product-about]')
+    else await page.evaluate(() => window.ChemLabProduct.openAbout())
+    await page.waitForTimeout(400)
+    const about = await page.evaluate(() => {
+      const image = document.querySelector('.clprod-about-logo img')
+      const box = image?.getBoundingClientRect()
+      return {
+        loaded: Boolean(image?.complete && image.naturalWidth > 0),
+        alt: image?.alt,
+        ratio: box ? +(box.width / box.height).toFixed(2) : 0,
+        card: image ? getComputedStyle(image.parentElement).backgroundColor : ''
+      }
+    })
+    // 640×559 source: an undistorted logo keeps ≈ 1.14 : 1, on a white card in both themes.
+    record(`brand @${width} ${theme}: About shows the full logo, undistorted, on a white card`,
+      about.loaded && /Chemistry Laboratory/.test(about.alt) && Math.abs(about.ratio - 640 / 559) < 0.02 && about.card === 'rgb(255, 255, 255)', JSON.stringify(about))
+    record(`console clean in brand checks @${width} ${theme}`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+}
+
 const server = await preview({
   root: rootDir,
   logLevel: 'silent',
@@ -815,7 +878,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }
