@@ -80,15 +80,18 @@ export function completeLesson(lesson, content, state) {
   })
 }
 
-// Summary used by lists: reader progress, plus — for lessons still on legacy
-// content — completion of their guided Lab activities, so earlier progress counts.
+// Summary used by lists: reader progress, plus completion of the lesson's
+// guided Lab activities (the only lesson progress 6.2 recorded), so earlier
+// progress keeps counting after a lesson gets full content. `viaLab` keeps the
+// two kinds of completion distinguishable.
 export function lessonSummary(lesson, progress = loadProgress()) {
   const record = progress.learning?.[`grade${lesson.grade}`]?.lessons?.[lesson.id]
   const saved = isObject(record) ? record : {}
-  let completed = saved.completed === true
+  const readerCompleted = saved.completed === true
+  let completed = readerCompleted
   let started = completed || saved.started === true
 
-  if (!completed && lesson.status === 'legacy' && lesson.activityIds.length) {
+  if (!completed && lesson.activityIds.length) {
     try {
       const activities = getActivityLessonProgress(lesson.grade, lesson.id)
       completed = activities.completed
@@ -102,6 +105,7 @@ export function lessonSummary(lesson, progress = loadProgress()) {
   return {
     started,
     completed,
+    viaLab: completed && !readerCompleted,
     progress: completed ? 100 : Number.isFinite(progressValue) ? Math.max(0, Math.min(100, progressValue)) : 0,
     lastOpened: typeof saved.lastOpened === 'string' ? saved.lastOpened : null,
     currentStep: typeof saved.currentStep === 'string' ? saved.currentStep : null

@@ -745,7 +745,7 @@ async function learningLegacyData(browser, baseURL) {
     l1: document.querySelector('a.lx-row[href="#learning/lesson/g10-l1"] .lx-done')?.textContent.trim(),
     l22: document.querySelector('a.lx-row[href="#learning/lesson/g10-l22"] .lx-done')?.textContent.trim()
   }))
-  record('learning F: 6.2 lesson completion and finished Lab activities count as learned', marks.l1 === 'Đã học' && marks.l22 === 'Đã học', JSON.stringify(marks))
+  record('learning F: 6.2 lesson completion counts as learned; finished Lab activities stay visible as such', marks.l1 === 'Đã học' && marks.l22 === 'Đã làm thí nghiệm', JSON.stringify(marks))
   await page.click('a.lx-row[href="#learning/lesson/g10-l1"]')
   await page.waitForSelector('#lx-step-title')
   const reader = await page.evaluate(() => Boolean(document.querySelector('.lx-reader__status .lx-done')))
@@ -755,13 +755,12 @@ async function learningLegacyData(browser, baseURL) {
     JSON.stringify(stored))
   await page.click('.lx-crumbs a')
   await page.click('a.lx-row[href="#learning/lesson/g10-l23"]')
-  await page.waitForSelector('.lx-message')
-  record('learning: catalogued review lesson explains missing content and links its chapter',
-    await page.evaluate(() => /chưa có nội dung/.test(document.querySelector('.lx-message').textContent) && document.querySelectorAll('.lx-message .lx-row').length === 2))
-  await page.click('.lx-crumbs a')
-  await page.click('a.lx-row[href="#learning/lesson/g10-l22"]')
   await page.waitForSelector('#lx-step-title')
-  record('learning: legacy lesson is readable step by step and labelled as short content',
+  record('learning: g10-l23, missing in 6.3, now opens as a full lesson',
+    await page.evaluate(() => /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status').textContent)))
+  await page.evaluate(() => { location.hash = '#learning/lesson/g12-l1' })
+  await page.waitForSelector('#lx-step-title')
+  record('learning: a lesson still on short content is readable step by step and labelled as such',
     await page.evaluate(() => /Bản rút gọn/.test(document.querySelector('.lx-reader__status').textContent) && document.querySelectorAll('.lx-steps li').length > 2))
   record('console clean with legacy progress', errors.length === 0, errors.join(' | '))
   await context.close()

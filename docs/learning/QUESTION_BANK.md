@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **126** in 5/21 chapters; lessons with ≥ 6 questions: 18/78.
-- By type: single 35 · multiple 18 · truefalse 18 · short 18 · numeric 37.
-- By difficulty: Nhận biết 22 · Thông hiểu 48 · Vận dụng 39 · Vận dụng cao 17.
-- Verification: internal 126 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **161** in 7/21 chapters; lessons with ≥ 6 questions: 23/78.
+- By type: single 44 · multiple 23 · truefalse 23 · short 23 · numeric 48.
+- By difficulty: Nhận biết 29 · Thông hiểu 59 · Vận dụng 52 · Vận dụng cao 21.
+- Verification: internal 161 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -37,11 +37,11 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g10-l16 Ôn tập chương 4 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g10-l17 Biến thiên enthalpy trong các phản ứng hóa học | 7 | 1 | 1 | 1 | 1 | 3 |
 | g10-l18 Ôn tập chương 5 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g10-l19 Tốc độ phản ứng | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l20 Ôn tập chương 6 | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l21 Nhóm halogen | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l22 Hydrogen halide. Muối halide | 0 | 0 | 0 | 0 | 0 | 0 |
-| g10-l23 Ôn tập chương 7 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g10-l19 Tốc độ phản ứng | 7 | 1 | 1 | 1 | 1 | 3 |
+| g10-l20 Ôn tập chương 6 | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l21 Nhóm halogen | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l22 Hydrogen halide. Muối halide | 7 | 2 | 1 | 1 | 1 | 2 |
+| g10-l23 Ôn tập chương 7 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l1 Khái niệm về cân bằng hóa học | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l2 Cân bằng trong dung dịch nước | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l3 Ôn tập chương 1 | 0 | 0 | 0 | 0 | 0 | 0 |

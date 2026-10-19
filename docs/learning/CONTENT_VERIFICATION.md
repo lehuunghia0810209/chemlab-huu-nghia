@@ -27,3 +27,8 @@ These need a teacher's review before content is labelled `teacher-reviewed`:
 | g10-l2 | Requirement wording on average atomic mass from mass spectra. |
 | g10-l3 | Opening examples use Z ≤ 20 only, as the programme states; confirm textbook does not expect Cr/Cu exceptions in this lesson. |
 | g10-l3-q3, g10-l4-q5 | Accepted short answers (formats of electron configurations; sodium/natri naming). |
+| g10-l16, g10-l21 … g10-l23 và câu hỏi chương 4, 7 | Thể tích mol khí 24,79 L/mol ở 25 °C, 1 bar — xác nhận đúng quy ước của SGK KNTT. |
+| g10-l17, g10-l18 | Bảng ΔfH°298 lấy từ NIST/CRC; SGK có thể làm tròn khác (ví dụ CH₄ −74,87). Năng lượng liên kết trung bình (C=O trong CO₂ 799 kJ/mol) cần đối chiếu bảng của SGK. |
+| g10-l19 | Ví dụ Br₂ + HCOOH và biểu thức v = k·C_Aᵃ·C_Bᵇ chỉ cho phản ứng đơn giản — xác nhận cách trình bày của SGK. |
+| g10-l21 | Màu F₂ ghi “vàng nhạt” (một số tài liệu tiếng Việt ghi “lục nhạt”). |
+| g10-l10 | Cách giải thích ngoại lệ octet (PCl₅) đã tránh mô hình lai hóa d. |

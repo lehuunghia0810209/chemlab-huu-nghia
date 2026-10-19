@@ -169,6 +169,7 @@ for (const question of bank) {
       need(Math.abs(recomputed - answer.value) <= tolerance, `verify() gives ${recomputed}, answer ${answer.value}`)
     }
     need(Array.isArray(question.solution) && question.solution.length >= 2, 'numeric needs solution steps')
+    need(!answer.display || !answer.unit || !answer.display.includes(answer.unit), 'display must not repeat the unit (it is appended)')
   }
   for (const equation of question.equations || []) {
     let problem

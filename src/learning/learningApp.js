@@ -221,7 +221,7 @@ export function initLearning(host) {
     const summary = lessonSummary(lesson, progress)
     const entry = findLesson(lesson.id)
     const state = summary.completed
-      ? `<span class="lx-done">${icon('check')}Đã học</span>`
+      ? `<span class="lx-done">${icon('check')}${summary.viaLab ? 'Đã làm thí nghiệm' : 'Đã học'}</span>`
       : summary.started
         ? `<span class="lx-started">Đang học${summary.progress ? ` · ${summary.progress}%` : ''}</span>`
         : ''

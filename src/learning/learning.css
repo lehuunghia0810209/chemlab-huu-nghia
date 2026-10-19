@@ -1157,6 +1157,12 @@ html[data-theme='light'] .lx-quiz__verdict.is-wrong {
     padding: var(--space-4);
   }
 
+  .lx-equation__text {
+    font-size: var(--text-md);
+    white-space: normal;
+    text-wrap: balance;
+  }
+
   .lx-table table {
     font-size: var(--text-sm);
   }

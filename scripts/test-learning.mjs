@@ -294,7 +294,8 @@ const legacyLesson = findLesson('g10-l22').lesson
 store.set(PROGRESS_STORAGE_KEY, JSON.stringify({
   experiments: { grade10: Object.fromEntries(legacyLesson.activityIds.map(id => [id, { completed: true, started: true }])) }
 }))
-check('summary: legacy lesson completed through its Lab activities', progressApi.lessonSummary(legacyLesson).completed === true)
+const labSummary = progressApi.lessonSummary(legacyLesson)
+check('summary: finished Lab activities still count after the lesson gets full content, marked viaLab', labSummary.completed === true && labSummary.viaLab === true)
 
 // Corrupt storage is backed up, not silently lost.
 store.clear()
