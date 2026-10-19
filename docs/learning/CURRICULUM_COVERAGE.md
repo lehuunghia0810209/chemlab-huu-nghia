@@ -14,7 +14,7 @@ Scope: core Hóa học 10–12 programme (no chuyên đề), lesson list of SGK 
 | Grade | Chapters | Lessons | Full lessons | Short (legacy) | Catalogued only |
 | --- | --- | --- | --- | --- | --- |
 | 10 | 7 | 23 | 23 | 0 | 0 |
-| 11 | 6 | 25 | 14 | 11 | 0 |
+| 11 | 6 | 25 | 18 | 7 | 0 |
 | 12 | 8 | 30 | 1 | 29 | 0 |
 
 Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:browser`).
@@ -60,10 +60,10 @@ Every lesson is reachable at `#learning/lesson/<id>` (checked by `npm run check:
 | 11 | 3. Đại cương về hóa học hữu cơ | 12. Công thức phân tử hợp chất hữu cơ | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l12` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 3. Đại cương về hóa học hữu cơ | 13. Cấu tạo hóa học hợp chất hữu cơ | 3 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l13` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 3. Đại cương về hóa học hữu cơ | 14. Ôn tập chương 3 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l14` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
-| 11 | 4. Hydrocarbon | 15. Alkane | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l15` | Nội dung cũ, chưa rà soát lại |
-| 11 | 4. Hydrocarbon | 16. Hydrocarbon không no | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l16` | Nội dung cũ, chưa rà soát lại |
-| 11 | 4. Hydrocarbon | 17. Arene (Hydrocarbon thơm) | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l17` | Nội dung cũ, chưa rà soát lại |
-| 11 | 4. Hydrocarbon | 18. Ôn tập chương 4 | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l18` | Nội dung cũ, chưa rà soát lại |
+| 11 | 4. Hydrocarbon | 15. Alkane | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l15` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 4. Hydrocarbon | 16. Hydrocarbon không no | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l16` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 4. Hydrocarbon | 17. Arene (Hydrocarbon thơm) | 4 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l17` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
+| 11 | 4. Hydrocarbon | 18. Ôn tập chương 4 | 2 yêu cầu cần đạt (diễn đạt lại) | SGK KNTT | Bài học đầy đủ | `#learning/lesson/g11-l18` | Kiểm tra nội bộ: phép tính tự động, đối chiếu nguồn; chưa thẩm định độc lập |
 | 11 | 5. Dẫn xuất halogen – Alcohol – Phenol | 19. Dẫn xuất halogen | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l19` | Nội dung cũ, chưa rà soát lại |
 | 11 | 5. Dẫn xuất halogen – Alcohol – Phenol | 20. Alcohol | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l20` | Nội dung cũ, chưa rà soát lại |
 | 11 | 5. Dẫn xuất halogen – Alcohol – Phenol | 21. Phenol | Chưa trích | SGK KNTT | Bản rút gọn | `#learning/lesson/g11-l21` | Nội dung cũ, chưa rà soát lại |

@@ -10,10 +10,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 
 ## Totals
 
-- Questions: **259** in 10/21 chapters; lessons with ≥ 6 questions: 37/78.
-- By type: single 71 · multiple 37 · truefalse 37 · short 37 · numeric 77.
-- By difficulty: Nhận biết 53 · Thông hiểu 91 · Vận dụng 80 · Vận dụng cao 35.
-- Verification: internal 259 · ai-draft 0 · teacher-reviewed 0.
+- Questions: **287** in 11/21 chapters; lessons with ≥ 6 questions: 41/78.
+- By type: single 79 · multiple 41 · truefalse 41 · short 41 · numeric 85.
+- By difficulty: Nhận biết 59 · Thông hiểu 101 · Vận dụng 88 · Vận dụng cao 39.
+- Verification: internal 287 · ai-draft 0 · teacher-reviewed 0.
 
 ## Per lesson
 
@@ -56,10 +56,10 @@ Types: `single`, `multiple`, `truefalse`, `short`, `numeric`. Difficulty: `recog
 | g11-l12 Công thức phân tử hợp chất hữu cơ | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l13 Cấu tạo hóa học hợp chất hữu cơ | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l14 Ôn tập chương 3 | 7 | 2 | 1 | 1 | 1 | 2 |
-| g11-l15 Alkane | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l16 Hydrocarbon không no | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l17 Arene (Hydrocarbon thơm) | 0 | 0 | 0 | 0 | 0 | 0 |
-| g11-l18 Ôn tập chương 4 | 0 | 0 | 0 | 0 | 0 | 0 |
+| g11-l15 Alkane | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l16 Hydrocarbon không no | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l17 Arene (Hydrocarbon thơm) | 7 | 2 | 1 | 1 | 1 | 2 |
+| g11-l18 Ôn tập chương 4 | 7 | 2 | 1 | 1 | 1 | 2 |
 | g11-l19 Dẫn xuất halogen | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l20 Alcohol | 0 | 0 | 0 | 0 | 0 | 0 |
 | g11-l21 Phenol | 0 | 0 | 0 | 0 | 0 | 0 |
