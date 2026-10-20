@@ -44,6 +44,18 @@ const OFFICIAL_KEYS = {
     I: 'ACACDBBDDCDACCBDCB',
     II: ['ĐSSS', 'ĐĐSS', 'SĐĐS', 'SSĐĐ'],
     III: ['62,5', '4', '2', '3', '20,5', '-354']
+  },
+  'tot-nghiep-2025-hoa': {
+    page: 'đáp án chính thức 2025 của Bộ (03.Hoahoc_2018.pdf), cột mã 0338',
+    I: 'BDDDBABCADBABDDDBB',
+    II: ['ĐSSS', 'SĐĐS', 'SSĐĐ', 'ĐSSĐ'],
+    III: ['4', '4', '92,3', '1,68', '1,45', '12,9']
+  },
+  'tot-nghiep-2026-hoa': {
+    page: 'đáp án chính thức 2026 của Bộ (4. Đáp án Hóa học.pdf), cột mã 0330',
+    I: 'ABAAABACADCDADCACA',
+    II: ['SSĐĐ', 'SSSĐ', 'ĐSĐĐ', 'ĐĐSS'],
+    III: ['3412', '0,64', '1256', '4,95', '42,9', '17,2']
   }
 }
 
@@ -81,6 +93,39 @@ const RECOMPUTE = {
     'dn2-iii5': () => round(100 * 120 / molarMass('NaCl') / 2 / (10 * 0.5e-3) / 1000, 1),
     // C₃H₅N₃O₉ → 3/2 N₂ + 3 CO₂ + 5/2 H₂O(l) + 1/4 O₂
     'dn2-iii6': () => round(3 * -393.5 + 2.5 * -285.8 - -1541.4, 0)
+  },
+  'tot-nghiep-2025-hoa': {
+    'tn25-iii3': () => round(6 * 12 / molarMass('C6H6') * 100, 1),
+    'tn25-iii4': () => {
+      const qE = -(2 * -393.5 + 3 * -285.8 - -277.6) / molarMass('C2H6O')
+      const propane = -(3 * -393.5 + 4 * -285.8 - -105.0)
+      const butane = -(4 * -393.5 + 5 * -285.8 - -129.0)
+      const qG = (propane + 2 * butane) / (molarMass('C3H8') + 2 * molarMass('C4H10'))
+      return round(qG / qE, 2)
+    },
+    'tn25-iii5': () => {
+      const carbon = 45 * 0.046
+      const iron = 45 - carbon
+      const each = (2.88 / 32) / 1.5 // n(CO) = n(CO₂); O₂ = n/2 + n
+      const left = carbon - 2 * each * 12
+      return round(left / (iron + left) * 100, 2)
+    },
+    'tn25-iii6': () => round((25 - 2 / 18 * 80) / 125 * 100, 1)
+  },
+  'tot-nghiep-2026-hoa': {
+    'tn26-iii2': () => round(-0.126 - -0.763, 2),
+    'tn26-iii4': () => {
+      const vapour = 2970 * 0.0128 / (1 - 0.0128)
+      const left = 9 - (vapour - 30)
+      return round(left / (991 + left) * 100 * 100, 2)
+    },
+    'tn26-iii5': () => round(3 / 7 * 100, 1), // 3·2(1 − x) = x + 3
+    'tn26-iii6': () => {
+      const cao = 67.76 / 56 - 1.60 / 80 - 4 * 2.40 / 160 - 3 * (5.61 / 102 - 2.40 / 160)
+      const sio2 = 22.20 / 60
+      const c2s = 3 * sio2 - cao // a + b = SiO₂, 3a + 2b = CaO
+      return round(c2s * (2 * 56 + 60), 1)
+    }
   }
 }
 const asNumber = text => Number(String(text).replace(',', '.'))

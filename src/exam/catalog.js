@@ -92,35 +92,39 @@ export const EXAMS = Object.freeze([
   }),
   Object.freeze({
     id: 'tot-nghiep-2025-hoa',
-    title: 'Đề thi tốt nghiệp THPT năm 2025 — Hóa học',
+    title: 'Đề thi tốt nghiệp THPT năm 2025 — Hóa học (mã đề 0338)',
     kind: 'official-exam',
     blueprint: 'thpt-2025-hoa',
     year: 2025,
     timeLimitMinutes: 50,
     source: {
-      authority: 'Bộ GD&ĐT — Cục Quản lý chất lượng (công bố đáp án)',
+      authority: 'Bộ GD&ĐT — Kỳ thi tốt nghiệp THPT năm 2025',
       url: 'https://vqa.moet.gov.vn/vi/news/tin-tuc-su-kien/cong-bo-dap-an-cac-mon-thi-cua-ky-thi-tot-nghiep-thpt-2025-208.html',
-      publishedAt: '2025-07'
+      publishedAt: '2025-06'
     },
     rights: OWNER,
-    states: Object.freeze(['OWNER_ATTESTED']),
-    note: 'Chưa số hóa: chưa có bản đề gốc kèm mã đề khớp với đáp án chính thức.'
+    answerKey: 'official',
+    states: Object.freeze(['SOURCE_VERIFIED', 'OWNER_ATTESTED', 'CONTENT_TRANSCRIBED', 'ANSWER_KEY_VERIFIED', 'SCORING_VERIFIED', 'UI_TESTED']),
+    note: 'Đề mã 0338 từ tệp do chủ dự án cung cấp; đáp án đối chiếu đủ 28/28 với đáp án chính thức của Bộ cho mã 0338. Lời giải tham khảo do ChemLab biên soạn.',
+    load: () => import('./papers/tot-nghiep-2025-hoa.js')
   }),
   Object.freeze({
     id: 'tot-nghiep-2026-hoa',
-    title: 'Đề thi tốt nghiệp THPT năm 2026 — Hóa học',
+    title: 'Đề thi tốt nghiệp THPT năm 2026 — Hóa học (mã đề 0330)',
     kind: 'official-exam',
     blueprint: 'thpt-2025-hoa',
     year: 2026,
     timeLimitMinutes: 50,
     source: {
-      authority: 'Bản đăng lại trên chinhphu.vn (ảnh của Báo Giáo dục và Thời đại)',
-      url: 'https://xaydungchinhsach.chinhphu.vn/thi-tot-nghiep-thpt-2026-de-thi-mon-hoa-hoc-goi-y-dap-an-11926061210550049.htm',
+      authority: 'Bộ GD&ĐT — Kỳ thi tốt nghiệp THPT năm 2026',
+      url: 'https://moet.gov.vn/tin-tuc/tin-tong-hop2/cong-bo-dap-an-cac-mon-thi-cua-ky-thi-tot-nghiep-thpt-2026.html',
       publishedAt: '2026-06'
     },
     rights: OWNER,
-    states: Object.freeze(['OWNER_ATTESTED']),
-    note: 'Chưa số hóa: nguồn hiện có là bản đăng lại, chưa đối chiếu được với bản gốc của Bộ.'
+    answerKey: 'official',
+    states: Object.freeze(['SOURCE_VERIFIED', 'OWNER_ATTESTED', 'CONTENT_TRANSCRIBED', 'ANSWER_KEY_VERIFIED', 'SCORING_VERIFIED', 'UI_TESTED']),
+    note: 'Đề mã 0330 từ tệp do chủ dự án cung cấp; đáp án đối chiếu đủ 28/28 với đáp án chính thức của Bộ công bố ngày 19/6/2026. Lời giải tham khảo do ChemLab biên soạn.',
+    load: () => import('./papers/tot-nghiep-2026-hoa.js')
   }),
   Object.freeze({
     id: 'fixture-kiem-thu',

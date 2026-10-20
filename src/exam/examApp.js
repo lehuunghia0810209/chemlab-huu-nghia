@@ -53,8 +53,9 @@ function equationHTML(block) {
   const text = examText(block.text)
   if (!block.condition) return `<p class="ex-eq">${text}</p>`
   // The reaction condition sits above the arrow, as in the printed paper.
-  const arrow = `<span class="ex-arrow"><span class="ex-arrow__cond">${examText(block.condition)}</span><span aria-hidden="true">⟶</span><span class="sr-only"> (điều kiện: ${escapeHTML(block.condition)}) </span></span>`
-  return `<p class="ex-eq">${text.replace('→', arrow)}</p>`
+  const symbol = text.includes('⇌') ? '⇌' : '→'
+  const arrow = `<span class="ex-arrow"><span class="ex-arrow__cond">${examText(block.condition)}</span><span aria-hidden="true">${symbol === '⇌' ? '⇌' : '⟶'}</span><span class="sr-only"> (${symbol === '⇌' ? 'thuận nghịch, ' : ''}điều kiện: ${escapeHTML(block.condition)}) </span></span>`
+  return `<p class="ex-eq">${text.replace(symbol, arrow)}</p>`
 }
 
 export function renderContent(content) {
