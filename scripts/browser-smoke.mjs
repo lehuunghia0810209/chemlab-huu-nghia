@@ -8,6 +8,9 @@ import { practiceJourneys } from './lib/practice-journeys.mjs'
 import { examJourneys } from './lib/exam-journeys.mjs'
 import { writtenJourneys } from './lib/written-journeys.mjs'
 
+// Cache namespace written into public/sw.js by release:sync.
+const SW_CACHE_VERSION = (await fs.readFile(new URL('../public/sw.js', import.meta.url), 'utf8')).match(/'(chemlab-[^']+)'/)[1]
+
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = path.join(rootDir, 'test-results', 'browser-smoke')
 const VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
@@ -345,7 +348,7 @@ async function pwaCheck(browser, baseURL) {
     }
   })
   record('service worker registers the release-specific cache',
-    registrationState.active && registrationState.cacheNames.some(name => name.startsWith('chemlab-6.2.0-brand-1-')),
+    registrationState.active && registrationState.cacheNames.some(name => name.startsWith(`${SW_CACHE_VERSION}-`)),
     JSON.stringify(registrationState))
 
   await page.reload({ waitUntil: 'load' })

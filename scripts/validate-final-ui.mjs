@@ -1,3 +1,4 @@
+import { APP_VERSION } from '../src/appMeta.js'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -67,7 +68,8 @@ const tokensCssIndex = main.indexOf("import './styles/tokens.css'")
 const aiCssIndex = main.indexOf("import './ai/chemAI.css'")
 const activeAIText = [aiJs, aiContext, api, knowledge, devVars].join('\n')
 
-expect('release is ChemLab 6.2 Final', pkg.version === '6.2.0')
+// Release identity follows package.json (bumped only at release time, then synced by release:sync).
+expect('release version is semver and synced into src/appMeta.js', /^\d+\.\d+\.\d+$/.test(pkg.version) && APP_VERSION === pkg.version)
 expect('design tokens load before ChemAI CSS', tokensCssIndex >= 0 && aiCssIndex > tokensCssIndex)
 expect('no legacy global stylesheet is imported', !/import '\.\/(style|workspace|chemlab-v4|design-system|chemlab5|zperiodLight|experience|userPreferences)\.css'|final-6\.css|responsive\//.test(main))
 expect('home dashboard module is imported', main.includes("from './final/homeDashboard.js'"))

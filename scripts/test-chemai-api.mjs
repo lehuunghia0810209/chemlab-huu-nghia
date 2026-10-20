@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { APP_VERSION } from '../src/appMeta.js'
 
 import {
   onRequestGet,
@@ -52,7 +53,7 @@ const statusPayload = await statusResponse.json()
 assert.equal(statusResponse.status, 200)
 assert.equal(statusPayload.configured, false)
 assert.equal(statusPayload.provider, 'Gemini')
-assert.equal(statusPayload.release, '6.2.0')
+assert.equal(statusPayload.release, APP_VERSION)
 
 const noKeyResponse = await onRequestPost({
   request: makeRequest({ message: 'Giải thích H2O' }),
