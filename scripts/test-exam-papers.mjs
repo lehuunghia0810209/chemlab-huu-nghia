@@ -56,6 +56,19 @@ const OFFICIAL_KEYS = {
     I: 'ABAAABACADCDADCACA',
     II: ['SSĐĐ', 'SSSĐ', 'ĐSĐĐ', 'ĐĐSS'],
     III: ['3412', '0,64', '1256', '4,95', '42,9', '17,2']
+  },
+  // Teacher practice papers: the author's key (highlighted/underlined answers and worked solutions in the PDF).
+  'dtt-2026-de-5': {
+    page: 'đáp án của tác giả, DE 5 ON TN.THPT 2026 - DTT.pdf trang 7–15',
+    I: 'ADDACDACBDDAAABDAC',
+    II: ['ĐĐĐS', 'ĐĐĐS', 'SĐĐS', 'ĐSĐS'],
+    III: ['3609', '306', '3214', '4', '1,83', '0,78']
+  },
+  'dtt-2026-de-6': {
+    page: 'đáp án của tác giả, DE 6 ON TN.THPT 2026 - DTT.pdf trang 5–13',
+    I: 'CABDDCBBACCDCCABBA',
+    II: ['ĐĐĐS', 'SSĐĐ', 'SĐĐĐ', 'ĐSĐĐ'],
+    III: ['20', '4', '4,5', '19', '2125', '12,9']
   }
 }
 
@@ -126,6 +139,26 @@ const RECOMPUTE = {
       const c2s = 3 * sio2 - cao // a + b = SiO₂, 3a + 2b = CaO
       return round(c2s * (2 * 56 + 60), 1)
     }
+  },
+  'dtt-2026-de-5': {
+    'dtt5-iii1': () => round(20 * 0.8 * 112 / 160 * 0.99 / 0.96 * 1000 / 3.2, 0),
+    'dtt5-iii2': () => molarMass('C18H35O2Na'),
+    'dtt5-iii5': () => {
+      const released = -(4 * 90.3 + 6 * -241.8 - 4 * -45.9)
+      const needed = 2 / 18 * (-241.8 - -285.8) / 0.20
+      return round(needed * 4 / released * molarMass('NH3'), 2)
+    },
+    'dtt5-iii6': () => round(15.60e-3 * 0.0200 * 5 / 2 * 10 / 10.00e-3, 2)
+  },
+  'dtt-2026-de-6': {
+    'dtt6-iii1': () => 6 + 8 + 6,
+    'dtt6-iii3': () => round(36 / 8, 1),
+    'dtt6-iii4': () => {
+      const gas = 890 / (0.4 * 2220 + 0.6 * 2850) * (0.4 * 3 + 0.6 * 4)
+      return round((gas - 1) / gas * 100, 0)
+    },
+    'dtt6-iii5': () => round(1e6 * 0.8 / molarMass('Cu2S') * 2 * molarMass('CuSO4H10O5') * 0.85 / 1000, 0),
+    'dtt6-iii6': () => round((50 - 4 / 18 * 80) / 250 * 100, 1)
   }
 }
 const asNumber = text => Number(String(text).replace(',', '.'))
