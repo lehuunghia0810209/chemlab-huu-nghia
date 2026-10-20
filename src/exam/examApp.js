@@ -309,6 +309,7 @@ export function createExam({ root, announce, scrollToTop }) {
       <dl class="ex-source">
         <div><dt>Nguồn</dt><dd>${escapeHTML(entry.source.authority)}${date}${origin}</dd></div>
         ${paper.variant ? `<div><dt>Mã đề</dt><dd>${escapeHTML(paper.variant)}</dd></div>` : ''}
+        ${paper.editorialNote ? `<div><dt>Ghi chú biên tập</dt><dd>${escapeHTML(paper.editorialNote)}</dd></div>` : ''}
         <div><dt>Đáp án</dt><dd>${KEY_TEXT[paper.answerKey] || KEY_TEXT.chemlab} Lời giải từng câu là lời giải tham khảo do ChemLab biên soạn.</dd></div>
         <div><dt>Quyền sử dụng</dt><dd>Chủ dự án ChemLab xác nhận được phép sử dụng đề này.</dd></div>
       </dl>

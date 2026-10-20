@@ -55,6 +55,7 @@ export function validatePaper(paper, { chapterIds = null } = {}) {
   if (paper.kind !== 'fixture' && (!nonEmpty(paper.source?.authority) || !(nonEmpty(paper.source?.url) || SHA256.test(paper.source?.file?.sha256 || '')))) fail('paper needs a source authority and a url or a source file hash')
   if (paper.kind !== 'fixture' && !ANSWER_KEYS.includes(paper.answerKey)) fail('paper must say whether its answer key is official, from the author or ChemLab-written')
   if (paper.kind === 'teacher-practice' && paper.answerKey === 'official') fail('a teacher practice paper has no official answer key')
+  if (paper.editorialNote !== undefined && !nonEmpty(paper.editorialNote)) fail('editorialNote must be a non-empty string')
   if (paper.variant !== undefined && !/^\d{3,4}$/.test(paper.variant)) fail('variant (mã đề) must be 3–4 digits')
   if (!Number.isFinite(paper.timeLimitMinutes) || paper.timeLimitMinutes <= 0) fail('timeLimitMinutes must be positive')
   if (paper.kind !== 'fixture' && paper.timeLimitMinutes !== blueprint.timeLimitMinutes) fail('time limit differs from blueprint')

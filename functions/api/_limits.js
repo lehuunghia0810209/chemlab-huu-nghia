@@ -26,7 +26,6 @@ export function dailyLimit(env, scope, fallback) {
 
 export async function checkShared(env, { key, scope, limit, now = new Date() }) {
   const controls = sharedControls(env)
-  const day = now.toISOString().slice(0, 10)
   if (controls.limiter) {
     try {
       const outcome = await env.CHEMAI_LIMITER.limit({ key: `${scope}:${key}` })
@@ -36,6 +35,14 @@ export async function checkShared(env, { key, scope, limit, now = new Date() }) 
       return { allowed: false, code: 'LIMITER_UNAVAILABLE' }
     }
   }
+  return consumeBudget(env, { scope, limit, now })
+}
+
+// One budget unit = one upstream Gemini call. Endpoints that retry call this
+// again before every extra attempt, so retries cannot exceed the daily budget.
+export async function consumeBudget(env, { scope, limit, now = new Date() }) {
+  const controls = sharedControls(env)
+  const day = now.toISOString().slice(0, 10)
   if (controls.strictBudget) {
     try {
       const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(`budget:${scope}`))

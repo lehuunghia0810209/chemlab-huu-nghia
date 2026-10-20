@@ -169,7 +169,7 @@ try {
 
   assert.match(upstreamUrl, /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-3\.8-flash:generateContent/)
   assert.equal(upstreamHeaders['x-goog-api-key'], 'test-only-key')
-  assert.match(upstreamHeaders['x-goog-api-client'], /chemlab\/6\.2\.0/)
+  assert.equal(upstreamHeaders['x-goog-api-client'], `chemlab/${APP_VERSION}`)
   assert.equal(upstreamBody.generationConfig.responseMimeType, 'application/json')
   assert.equal(upstreamBody.generationConfig.thinkingConfig.thinkingLevel, 'low')
   assert.equal(upstreamBody.generationConfig.maxOutputTokens, 1800)

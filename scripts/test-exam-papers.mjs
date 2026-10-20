@@ -172,6 +172,7 @@ for (const entry of EXAMS.filter(item => item.kind !== 'fixture' && isTakeable(i
   const errors = validatePaper(paper, { chapterIds })
   check(`${name}: paper validates (strict blueprint counts)`, errors.length === 0, errors.join('; '))
   check(`${name}: catalog and paper agree`, paper.id === entry.id && paper.blueprint === entry.blueprint && paper.timeLimitMinutes === blueprint.timeLimitMinutes && paper.answerKey === entry.answerKey)
+  if (entry.kind === 'official-exam' && paper.source.file) check(`${name}: a Ministry paper digitised from an owner-supplied copy says so in an editorial note`, /bản đánh máy lại|bản in gốc/.test(paper.editorialNote || ''))
   check(`${name}: owner attestation recorded, licence document not claimed`, paper.license === 'owner-attested' && entry.rights.documentSeenByAgent === false)
 
   const sections = Object.fromEntries(paper.sections.map(section => [section.part, section.questions]))

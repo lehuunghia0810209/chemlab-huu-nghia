@@ -38,6 +38,7 @@ export default {
     publishedAt: '2026-06'
   },
   answerKey: 'official',
+  editorialNote: 'Đề được số hóa từ bản đánh máy lại mã đề 0330 do chủ dự án cung cấp (Bộ GD&ĐT chỉ công bố đáp án, không công bố văn bản đề); đáp án đối chiếu với đáp án chính thức của Bộ. Chưa đối chiếu được với bản in gốc.',
   preamble: 'Cho biết nguyên tử khối: H = 1; C = 12; N = 14; O = 16; Na = 23; Al = 27; Si = 28; S = 32; Cl = 35,5; Ca = 40; Fe = 56. Các kí hiệu và chữ viết tắt: s: rắn; l: lỏng; g: khí; aq: dung dịch nước; xt: xúc tác; p: áp suất.',
   sections: [
     {

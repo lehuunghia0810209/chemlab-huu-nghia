@@ -1,5 +1,5 @@
 import { retrieveChemKnowledge } from './_knowledge.js'
-import { checkShared, dailyLimit } from './_limits.js'
+import { checkShared, consumeBudget, dailyLimit } from './_limits.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
@@ -505,7 +505,8 @@ async function requestGeminiResilient({
   fallbackModelList,
   apiKey,
   body,
-  signal
+  signal,
+  beforeRetry = null
 }) {
   const attemptPlan = [
     primaryModel,
@@ -514,11 +515,18 @@ async function requestGeminiResilient({
   ].slice(0, MAX_UPSTREAM_ATTEMPTS)
 
   let lastResult = null
+  let lastError = null
   let attemptCount = 0
 
   for (let index = 0; index < attemptPlan.length; index += 1) {
     const model = attemptPlan[index]
     let result
+
+    // Every extra upstream call must fit the shared budget too.
+    if (index > 0 && beforeRetry && !(await beforeRetry())) {
+      if (lastResult) return lastResult
+      throw lastError
+    }
 
     attemptCount += 1
 
@@ -532,6 +540,7 @@ async function requestGeminiResilient({
     }
     catch (error) {
       if (signal?.aborted || index >= attemptPlan.length - 1) throw error
+      lastError = error
 
       console.warn(
         '[ChemAI] Gemini network error, retrying',
@@ -770,7 +779,8 @@ export async function onRequestPost(context) {
       fallbackModelList,
       apiKey: env.GEMINI_API_KEY,
       body: requestBody,
-      signal: controller.signal
+      signal: controller.signal,
+      beforeRetry: async () => (await consumeBudget(env, { scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })).allowed
     })
 
     if (!result) {

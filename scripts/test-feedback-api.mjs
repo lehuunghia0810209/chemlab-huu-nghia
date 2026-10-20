@@ -269,5 +269,17 @@ await test('per-isolate concurrency cap (4 in flight) → 503 BUSY for the 5th',
   assert.equal(fetchCalls, 4)
 })
 
+await test('chat: every upstream retry is charged to the shared budget and stops when it is spent', async () => {
+  mockGemini({}, 503) // transient upstream errors would normally trigger retries and model fallbacks
+  const budget = durableBudget()
+  const response = await chatPost({
+    request: new Request(`${origin}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': '203.0.113.98' }, body: JSON.stringify({ message: 'Giải thích H2O' }) }),
+    env: { GEMINI_API_KEY: 'k', CHEMAI_BUDGET: budget, CHEMAI_DAILY_LIMIT_CHAT: '2' }
+  })
+  assert.notEqual(response.status, 200)
+  assert.equal(fetchCalls, 2, 'two Gemini calls fit a budget of two')
+  assert.equal(budget.calls, 3, 'the third attempt was refused by the budget')
+})
+
 globalThis.fetch = originalFetch
 console.log(`PASS — ${passed} ChemAI feedback/limit checks passed.`)

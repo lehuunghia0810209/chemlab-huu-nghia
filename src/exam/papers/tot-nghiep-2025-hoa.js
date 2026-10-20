@@ -36,6 +36,7 @@ export default {
     publishedAt: '2025-06'
   },
   answerKey: 'official',
+  editorialNote: 'Đề được số hóa từ bản đánh máy lại mã đề 0338 do chủ dự án cung cấp (Bộ GD&ĐT chỉ công bố đáp án, không công bố văn bản đề). ChemLab sửa hai lỗi đánh máy của bản này: đơn vị khối lượng riêng ở Phần II câu 4 (g mL⁻¹) và công thức butane trong bảng ở Phần III câu 4. Chưa đối chiếu được với bản in gốc.',
   preamble: 'Cho biết nguyên tử khối: H = 1; C = 12; O = 16; Al = 27; S = 32; K = 39; Mn = 55; Fe = 56. Các kí hiệu và chữ viết tắt: s: rắn; l: lỏng; g: khí; aq: dung dịch nước.',
   sections: [
     {
