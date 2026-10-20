@@ -141,6 +141,15 @@ const broken5 = syntheticPaper()
 broken5.timeLimitMinutes = 45
 check('validator: official paper must follow blueprint time', validatePaper(broken5).some(e => e.includes('time limit')))
 
+const noSource = syntheticPaper()
+delete noSource.source.url
+check('validator: a source needs a url or a file hash', validatePaper(noSource).some(e => e.includes('source')))
+noSource.source.file = { name: 'de.pdf', sha256: 'a'.repeat(64) }
+check('validator: an owner-supplied file with a hash is a valid source', !validatePaper(noSource).some(e => e.includes('source')))
+const teacherOfficial = { ...syntheticPaper(), kind: 'teacher-practice' }
+check('validator: a teacher practice paper cannot claim an official key', validatePaper(teacherOfficial).some(e => e.includes('teacher')))
+check('validator: a teacher practice paper with the author key is valid', validatePaper({ ...teacherOfficial, answerKey: 'author' }).length === 0, validatePaper({ ...teacherOfficial, answerKey: 'author' }).join('; '))
+
 /* ---------- Fixture ---------- */
 check('fixture validates against learning chapters', validatePaper(fixture, { chapterIds }).length === 0, validatePaper(fixture, { chapterIds }).join('; '))
 check('fixture is labelled internal and not official', fixture.kind === 'fixture' && fixture.license === 'internal-fixture' && /không phải đề chính thức/.test(fixture.title))
@@ -158,7 +167,8 @@ flagOn.setItem(FIXTURE_FLAG, '1')
 const official = EXAMS.filter(e => e.kind !== 'fixture')
 check('only papers with every required state are takeable', official.every(e => isTakeable(e) === REQUIRED_STATES.every(state => e.states.includes(state))))
 check('owner attestation recorded without claiming the licence was seen', official.every(e => e.rights.basis === 'owner_attestation' && e.rights.status === 'OWNER_ATTESTED' && e.rights.documentSeenByAgent === false))
-check('official entries keep https source links', official.every(e => e.source.url.startsWith('https://')))
+check('public sources are https links', official.every(e => !e.source.url || e.source.url.startsWith('https://')))
+check('owner-supplied sources (no public link) belong to integrated papers', official.every(e => e.source.url || e.load))
 check('untranscribed papers stay metadata-only', official.filter(e => !e.states.includes('CONTENT_TRANSCRIBED')).every(e => !e.load && !isTakeable(e)))
 check('READY_FOR_OWNER_RELEASE is derived, never declared', official.every(e => !e.states.includes('READY_FOR_OWNER_RELEASE')) && stateList(findExam('tham-khao-2025-hoa')).includes('READY_FOR_OWNER_RELEASE'))
 check('fixture hidden and not takeable without flag', !isTakeable(findExam('fixture-kiem-thu'), { storage: flagOff }) && !visibleExams({ storage: flagOff }).some(e => e.kind === 'fixture'))

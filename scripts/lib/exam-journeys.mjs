@@ -2,12 +2,15 @@
 // (enabled per test through the fixture flag). Expected scores are computed
 // from the fixture answer key in Node.
 import fixture from '../../src/exam/papers/fixture-kiem-thu.js'
-import realPaper from '../../src/exam/papers/tham-khao-2025-hoa.js'
-import illustrativePaper from '../../src/exam/papers/minh-hoa-2025-hoa.js'
+import { EXAMS, isTakeable, loadPaper } from '../../src/exam/catalog.js'
 import { scoreExam } from '../../src/exam/scoring.js'
 import { formatPoints } from '../../src/exam/blueprints.js'
 
 const STORE_KEY = 'chemlab-v1-exam'
+const PUBLISHED = EXAMS.filter(entry => entry.kind !== 'fixture' && isTakeable(entry))
+const PAPERS = await Promise.all(PUBLISHED.map(loadPaper))
+const PENDING = EXAMS.filter(entry => entry.kind !== 'fixture' && !isTakeable(entry))
+const hasBlocks = question => Array.isArray(question.content) && question.content.some(block => ['figure', 'table', 'equation'].includes(block.type))
 const EXAM = '#learning/exam/fixture-kiem-thu'
 
 async function openWithFlag(page, baseURL, hash, { flag = true } = {}) {
@@ -49,8 +52,8 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
       sourceLinks: [...document.querySelectorAll('.ex-row.is-pending a[target="_blank"]')].every(a => a.rel.includes('noopener') && a.href.startsWith('https://'))
     }))
     record('exam A: only fully verified official papers are takeable; others link to their source; fixture hidden',
-      !catalog.fixture && catalog.ready.sort().join() === '#learning/exam/minh-hoa-2025-hoa,#learning/exam/tham-khao-2025-hoa' && catalog.official && catalog.pending === 2 && catalog.sourceLinks, JSON.stringify(catalog))
-    for (const gated of [EXAM, '#learning/exam/tot-nghiep-2025-hoa']) {
+      !catalog.fixture && catalog.ready.sort().join() === PUBLISHED.map(entry => `#learning/exam/${entry.id}`).sort().join() && catalog.official && catalog.pending === PENDING.length && catalog.sourceLinks, JSON.stringify(catalog))
+    for (const gated of [EXAM, ...PENDING.map(entry => `#learning/exam/${entry.id}`)]) {
       await page.goto(`${baseURL}/${gated}`, { waitUntil: 'load' })
       await page.waitForSelector('[data-ex-heading]')
       record(`exam A: gated paper ${gated.split('/').pop()} cannot be opened by URL`, /chưa thể làm/.test(await page.textContent('[data-ex-heading]')))
@@ -201,7 +204,7 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     await page.click('[data-ex-confirm]')
     await page.waitForSelector('.ex-results [data-ex-heading]')
     const responses = { 'tk25-1': 'A', 'tk25-2': 'B', 'tk25-13': 'D', 'tk25-ii1': { a: true, b: true, c: true }, 'tk25-iii1': '10,7', 'tk25-iii5': '1,03', 'tk25-iii6': '86' }
-    const expected = scoreExam(realPaper, responses)
+    const expected = scoreExam(PAPERS.find(paper => paper.id === 'tham-khao-2025-hoa'), responses)
     const result = await page.evaluate(() => ({
       heading: document.querySelector('[data-ex-heading]').textContent.replace(/\s+/g, ' '),
       chapters: document.querySelectorAll('.ex-analysis table')[0]?.querySelectorAll('tbody tr').length || 0,
@@ -230,7 +233,7 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
   }
 
   /* R2 — every question of every takeable official paper answered through the UI with the official key → 10 điểm */
-  for (const paper of [illustrativePaper, realPaper]) {
+  for (const paper of PAPERS) {
     const { context, page, errors } = await newPage(browser, { width: 1024, height: 900, theme: 'dark' })
     await openWithFlag(page, baseURL, `#learning/exam/${paper.id}`, { flag: false })
     await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
@@ -262,7 +265,7 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     await page.click('[data-ex-confirm]')
     await page.waitForSelector('.ex-results [data-ex-heading]')
     const heading = (await page.textContent('[data-ex-heading]')).replace(/\s+/g, ' ')
-    record(`exam R2 ${paper.id}: all 28 answered through the UI with the official key score 10/10; all figures load`,
+    record(`exam R2 ${paper.id}: all 28 answered through the UI with the paper's key score 10/10; all figures load`,
       heading.includes('10/10') && brokenFigures === 0 && !/chưa trả lời/.test(dialogText), `${heading} · broken figures ${brokenFigures} · ${dialogText}`)
     record(`console clean in R2 ${paper.id}`, errors.length === 0, errors.join(' | '))
     await context.close()
@@ -287,6 +290,38 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     }
     record(`exam R @390 ${theme}: figures, tables and equations of the real paper never overflow the page`, layouts.every(item => !item.overflow && item.figureScrolls), JSON.stringify(layouts))
     record(`console clean in the real paper @390 ${theme}`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
+  /* R3 — every figure, table and equation of every published paper at 320 px (light) and 390 px (dark) */
+  for (const [width, theme] of [[320, 'light'], [390, 'dark']]) {
+    const { context, page, errors } = await newPage(browser, { width, height: 844, theme })
+    const problems = []
+    for (const paper of PAPERS) {
+      await openWithFlag(page, baseURL, `#learning/exam/${paper.id}`, { flag: false })
+      await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
+      await page.reload({ waitUntil: 'load' })
+      await page.waitForSelector('[data-ex-start]')
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      const questions = paper.sections.flatMap(section => section.questions)
+      for (const [index, question] of questions.entries()) {
+        if (!hasBlocks(question)) continue
+        await goTo(page, index)
+        const layout = await page.evaluate(async () => {
+          const images = [...document.querySelectorAll('.ex-figure img')]
+          await Promise.all(images.map(img => (img.complete ? null : new Promise(resolve => { img.onload = img.onerror = resolve }))))
+          return {
+            overflow: document.documentElement.scrollWidth > innerWidth,
+            reachable: [...document.querySelectorAll('.ex-figure, .ex-scroll')].every(box => box.scrollWidth <= box.clientWidth + 1 || box.tabIndex === 0),
+            broken: images.filter(img => !img.naturalWidth).length
+          }
+        })
+        if (layout.overflow || !layout.reachable || layout.broken) problems.push(`${question.id} ${JSON.stringify(layout)}`)
+      }
+    }
+    record(`exam R3 @${width} ${theme}: figures, tables and equations of all ${PAPERS.length} published papers load and never overflow the page`, problems.length === 0, problems.join(' | '))
+    record(`console clean in R3 @${width} ${theme}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
 

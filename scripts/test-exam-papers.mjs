@@ -32,6 +32,18 @@ const OFFICIAL_KEYS = {
     I: 'BADADBADDDCCBCBDAD',
     II: ['SSĐĐ', 'ĐĐSĐ', 'ĐĐĐS', 'ĐĐĐS'],
     III: ['3', '6', '3', '4', '5', '24,3']
+  },
+  'dong-nai-2026-l1-0301': {
+    page: 'bảng đáp án của Sở GD&ĐT Đồng Nai, mã 0301 (xlsx và PDF)',
+    I: 'CDAABBADCADBDACABB',
+    II: ['SĐSS', 'SĐSĐ', 'ĐSSĐ', 'ĐĐSS'],
+    III: ['10', '2', '4,1', '4', '104', '4']
+  },
+  'dong-nai-2026-l1-0325': {
+    page: 'bảng đáp án của Sở GD&ĐT Đồng Nai, mã 0325 (xlsx và PDF)',
+    I: 'ACACDBBDDCDACCBDCB',
+    II: ['ĐSSS', 'ĐĐSS', 'SĐĐS', 'SSĐĐ'],
+    III: ['62,5', '4', '2', '3', '20,5', '-354']
   }
 }
 
@@ -57,6 +69,18 @@ const RECOMPUTE = {
   'minh-hoa-2025-hoa': {
     'mh25-iii6': () => round((24 * 79 + 25 * 10 + 26 * 11) / 100, 1),
     'mh25-iii5': () => 2 + 3
+  },
+  'dong-nai-2026-l1-0301': {
+    // Na⁺ released by regeneration = 2 × (Ca²⁺ + Mg²⁺) held; 1 unit = 0,5 mmol/L.
+    'dn1-iii1': () => round(200 * 150 / molarMass('NaCl') / 2 / 50000 * 1000 / 0.5, 0),
+    'dn1-iii3': () => round(0.60e-3 / molarMass('C3H5N3O9') * 1541.4e3, 1),
+    'dn1-iii5': () => molarMass('C8H8')
+  },
+  'dong-nai-2026-l1-0325': {
+    'dn2-iii1': () => molarMass('C2H3Cl'),
+    'dn2-iii5': () => round(100 * 120 / molarMass('NaCl') / 2 / (10 * 0.5e-3) / 1000, 1),
+    // C₃H₅N₃O₉ → 3/2 N₂ + 3 CO₂ + 5/2 H₂O(l) + 1/4 O₂
+    'dn2-iii6': () => round(3 * -393.5 + 2.5 * -285.8 - -1541.4, 0)
   }
 }
 const asNumber = text => Number(String(text).replace(',', '.'))

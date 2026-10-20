@@ -28,7 +28,13 @@ export function contentProblems(content) {
   }
   return problems
 }
-export const KINDS = ['official-reference', 'official-exam', 'fixture']
+// provincial-exam: a Sở GD&ĐT survey/mock exam; teacher-practice: a practice
+// paper written by a named teacher. Neither is a Ministry paper.
+export const KINDS = ['official-reference', 'official-exam', 'provincial-exam', 'teacher-practice', 'fixture']
+// official: key published by the issuing authority; author: key supplied by the
+// paper's author (teacher-practice); chemlab: key written by ChemLab.
+export const ANSWER_KEYS = ['official', 'author', 'chemlab']
+const SHA256 = /^[0-9a-f]{64}$/
 
 
 export function validatePaper(paper, { chapterIds = null } = {}) {
@@ -45,8 +51,11 @@ export function validatePaper(paper, { chapterIds = null } = {}) {
     return errors
   }
   if (paper.kind === 'fixture' && paper.license !== 'internal-fixture') fail('fixtures must use license internal-fixture')
-  if (paper.kind !== 'fixture' && (!nonEmpty(paper.source?.authority) || !nonEmpty(paper.source?.url))) fail('official paper needs source authority and url')
-  if (paper.kind !== 'fixture' && !['official', 'chemlab'].includes(paper.answerKey)) fail('official paper must say whether its answer key is official or ChemLab-written')
+  // A source is a public page (url) or a file supplied by the owner, identified by its hash.
+  if (paper.kind !== 'fixture' && (!nonEmpty(paper.source?.authority) || !(nonEmpty(paper.source?.url) || SHA256.test(paper.source?.file?.sha256 || '')))) fail('paper needs a source authority and a url or a source file hash')
+  if (paper.kind !== 'fixture' && !ANSWER_KEYS.includes(paper.answerKey)) fail('paper must say whether its answer key is official, from the author or ChemLab-written')
+  if (paper.kind === 'teacher-practice' && paper.answerKey === 'official') fail('a teacher practice paper has no official answer key')
+  if (paper.variant !== undefined && !/^\d{3,4}$/.test(paper.variant)) fail('variant (mã đề) must be 3–4 digits')
   if (!Number.isFinite(paper.timeLimitMinutes) || paper.timeLimitMinutes <= 0) fail('timeLimitMinutes must be positive')
   if (paper.kind !== 'fixture' && paper.timeLimitMinutes !== blueprint.timeLimitMinutes) fail('time limit differs from blueprint')
   if (!Array.isArray(paper.sections)) {

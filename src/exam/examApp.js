@@ -16,7 +16,16 @@ import { createExamStore, STORE_KEY } from './session.js'
 const KIND_LABEL = {
   'official-reference': 'Đề tham khảo / minh họa của Bộ GD&ĐT',
   'official-exam': 'Đề thi chính thức của Bộ GD&ĐT',
+  'provincial-exam': 'Đề khảo sát của Sở GD&ĐT (không phải đề của Bộ)',
+  'teacher-practice': 'Đề ôn luyện do giáo viên biên soạn (không phải đề chính thức)',
   fixture: 'Đề kiểm thử nội bộ'
+}
+
+const KEY_BADGE = { official: 'Đáp án chính thức', author: 'Đáp án của tác giả đề' }
+const KEY_TEXT = {
+  official: 'Theo đáp án chính thức do đơn vị ra đề công bố.',
+  author: 'Theo đáp án của tác giả đề, ChemLab đã giải lại để đối chiếu.',
+  chemlab: 'Do ChemLab biên soạn, chưa có đáp án chính thức.'
 }
 
 const CHAPTERS = new Map(GRADES.flatMap(grade => grade.chapters.map(chapter => [chapter.id, { grade: grade.grade, chapter }])))
@@ -275,13 +284,13 @@ export function createExam({ root, announce, scrollToTop }) {
           <p class="ex-row__meta">${entry.timeLimitMinutes} phút · cấu trúc ${escapeHTML(getBlueprint(entry.blueprint).title.replace(/^.*\(cấu trúc /, '').replace(/\)$/, ''))}</p>
           ${entry.source ? `<p class="ex-row__meta">Nguồn: ${escapeHTML(entry.source.authority)}</p>` : ''}
           ${takeable
-            ? (entry.answerKey === 'official' ? '<p class="ex-row__note"><span class="lx-status">Đáp án chính thức</span></p>' : '')
+            ? (KEY_BADGE[entry.answerKey] ? `<p class="ex-row__note"><span class="lx-status">${KEY_BADGE[entry.answerKey]}</span></p>` : '')
             : `<p class="ex-row__note"><span class="lx-status">Chưa sẵn sàng</span></p><p class="ex-row__note">${escapeHTML(entry.note)}</p>`}
         </div>
         <div class="ex-row__actions">
           ${takeable
             ? `<a class="ui-btn ${running ? 'ui-btn--primary' : ''}" href="${routeHash({ name: 'exam', view: 'prepare', examId: entry.id })}">${running ? 'Tiếp tục bài đang làm' : 'Xem hướng dẫn'} ${icon('arrowRight')}</a>`
-            : entry.source ? `<a class="ui-btn ui-btn--ghost" href="${escapeHTML(entry.source.url)}" target="_blank" rel="noopener noreferrer">Mở nguồn<span class="sr-only"> (mở tab mới)</span></a>` : ''}
+            : entry.source?.url ? `<a class="ui-btn ui-btn--ghost" href="${escapeHTML(entry.source.url)}" target="_blank" rel="noopener noreferrer">Mở nguồn<span class="sr-only"> (mở tab mới)</span></a>` : ''}
         </div>
       </li>
     `
@@ -290,11 +299,16 @@ export function createExam({ root, announce, scrollToTop }) {
   /* ---------- Preparation ---------- */
 
   function sourceBlock(entry, paper) {
-    const date = entry.source.publishedAt ? ` · công bố ${escapeHTML(entry.source.publishedAt.split('-').reverse().join('/'))}` : ''
+    const date = entry.source.publishedAt ? ` · ${escapeHTML(entry.source.publishedAt.split('-').reverse().join('/'))}` : ''
+    const link = entry.source.documentUrl || entry.source.url
+    const origin = link
+      ? ` · <a href="${escapeHTML(link)}" target="_blank" rel="noopener noreferrer">Tài liệu gốc<span class="sr-only"> (mở tab mới)</span></a>`
+      : ' · tệp gốc do chủ dự án cung cấp'
     return `
       <dl class="ex-source">
-        <div><dt>Nguồn</dt><dd>${escapeHTML(entry.source.authority)}${date} · <a href="${escapeHTML(entry.source.documentUrl || entry.source.url)}" target="_blank" rel="noopener noreferrer">Tài liệu gốc<span class="sr-only"> (mở tab mới)</span></a></dd></div>
-        <div><dt>Đáp án</dt><dd>${paper.answerKey === 'official' ? 'Theo đáp án chính thức công bố kèm đề.' : 'Do ChemLab biên soạn, chưa có đáp án chính thức.'} Lời giải từng câu là lời giải tham khảo do ChemLab biên soạn.</dd></div>
+        <div><dt>Nguồn</dt><dd>${escapeHTML(entry.source.authority)}${date}${origin}</dd></div>
+        ${paper.variant ? `<div><dt>Mã đề</dt><dd>${escapeHTML(paper.variant)}</dd></div>` : ''}
+        <div><dt>Đáp án</dt><dd>${KEY_TEXT[paper.answerKey] || KEY_TEXT.chemlab} Lời giải từng câu là lời giải tham khảo do ChemLab biên soạn.</dd></div>
         <div><dt>Quyền sử dụng</dt><dd>Chủ dự án ChemLab xác nhận được phép sử dụng đề này.</dd></div>
       </dl>
     `

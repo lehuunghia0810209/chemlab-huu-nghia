@@ -63,6 +63,34 @@ export const EXAMS = Object.freeze([
     load: () => import('./papers/minh-hoa-2025-hoa.js')
   }),
   Object.freeze({
+    id: 'dong-nai-2026-l1-0301',
+    title: 'Đề khảo sát chất lượng tốt nghiệp THPT 2026 lần 1 — Sở GD&ĐT Đồng Nai — Hóa học (ca 1, mã đề 0301)',
+    kind: 'provincial-exam',
+    blueprint: 'thpt-2025-hoa',
+    year: 2026,
+    timeLimitMinutes: 50,
+    source: { authority: 'Sở GD&ĐT Đồng Nai', publishedAt: '2026-04' },
+    rights: OWNER,
+    answerKey: 'official',
+    states: Object.freeze(['SOURCE_VERIFIED', 'OWNER_ATTESTED', 'CONTENT_TRANSCRIBED', 'ANSWER_KEY_VERIFIED', 'SCORING_VERIFIED', 'UI_TESTED']),
+    note: 'Đề và đáp án (bảng đáp án của Sở) do chủ dự án cung cấp. Ca 1 có 24 mã đề hoán vị cùng một bộ câu hỏi; ChemLab dùng mã 0301.',
+    load: () => import('./papers/dong-nai-2026-l1-0301.js')
+  }),
+  Object.freeze({
+    id: 'dong-nai-2026-l1-0325',
+    title: 'Đề khảo sát chất lượng tốt nghiệp THPT 2026 lần 1 — Sở GD&ĐT Đồng Nai — Hóa học (ca 2, mã đề 0325)',
+    kind: 'provincial-exam',
+    blueprint: 'thpt-2025-hoa',
+    year: 2026,
+    timeLimitMinutes: 50,
+    source: { authority: 'Sở GD&ĐT Đồng Nai', publishedAt: '2026-04' },
+    rights: OWNER,
+    answerKey: 'official',
+    states: Object.freeze(['SOURCE_VERIFIED', 'OWNER_ATTESTED', 'CONTENT_TRANSCRIBED', 'ANSWER_KEY_VERIFIED', 'SCORING_VERIFIED', 'UI_TESTED']),
+    note: 'Đề và đáp án (bảng đáp án của Sở) do chủ dự án cung cấp. Ca 2 là đề khác ca 1, có 24 mã đề hoán vị; ChemLab dùng mã 0325.',
+    load: () => import('./papers/dong-nai-2026-l1-0325.js')
+  }),
+  Object.freeze({
     id: 'tot-nghiep-2025-hoa',
     title: 'Đề thi tốt nghiệp THPT năm 2025 — Hóa học',
     kind: 'official-exam',
