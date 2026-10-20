@@ -4,6 +4,7 @@ import { onRequestGet, onRequestPost, normalizeFeedback, feedbackEnabled } from 
 import { onRequestPost as chatPost } from '../functions/api/chat.js'
 import { checkShared } from '../functions/api/_limits.js'
 import { RUBRICS, findRubric } from '../src/learning/rubrics.js'
+import { QuotaCounter, consume } from '../workers/chemai-quota/src/index.js'
 
 const origin = 'https://chemlab.example'
 let ip = 10
@@ -23,7 +24,30 @@ function kv() {
   const map = new Map()
   return { map, async get(key) { return map.get(key) ?? null }, async put(key, value) { map.set(key, value) } }
 }
-const enabledEnv = (extra = {}) => ({ GEMINI_API_KEY: 'test-key', CHEMAI_FEEDBACK: 'on', CHEMAI_LIMITER: limiter(), ...extra })
+// Durable Object namespace mock backed by the real QuotaCounter logic.
+function durableBudget({ fail = false } = {}) {
+  const objects = new Map()
+  return {
+    calls: 0,
+    idFromName: name => name,
+    get(id) {
+      const namespace = this
+      if (!objects.has(id)) objects.set(id, new QuotaCounter({ storage: memoryStorage() }))
+      return {
+        async fetch(url, init) {
+          namespace.calls += 1
+          if (fail) throw new Error('DO unreachable')
+          return objects.get(id).fetch(new Request(url, init))
+        }
+      }
+    }
+  }
+}
+function memoryStorage() {
+  const map = new Map()
+  return { async get(key) { return map.get(key) }, async put(key, value) { map.set(key, structuredClone(value)) } }
+}
+const enabledEnv = (extra = {}) => ({ GEMINI_API_KEY: 'test-key', CHEMAI_FEEDBACK: 'on', CHEMAI_BUDGET: durableBudget(), CHEMAI_LIMITER: limiter(), ...extra })
 
 const originalFetch = globalThis.fetch
 let fetchCalls = 0
@@ -64,9 +88,11 @@ await test('rubrics are well formed and server-addressable', () => {
 await test('disabled without flag, key or shared limit', async () => {
   assert.equal(feedbackEnabled({}), false)
   assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on' }), false, 'no shared limit → disabled')
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_LIMITER: limiter() }), false, 'flag off → disabled')
-  assert.equal(feedbackEnabled(enabledEnv()), true)
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv() }), true, 'KV budget alone is a shared control')
+  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_BUDGET: durableBudget() }), false, 'flag off → disabled')
+  assert.equal(feedbackEnabled(enabledEnv()), true, 'exact Durable Object budget enables')
+  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_LIMITER: limiter() }), false, 'a per-location rate limiter is not a cost budget')
+  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv() }), false, 'approximate KV budget needs explicit acceptance')
+  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv(), CHEMAI_ACCEPT_APPROX_BUDGET: 'on' }), true, 'KV accepted explicitly')
   assert.equal((await onRequestGet({ env: {} }).json()).enabled, false)
 })
 await test('disabled endpoint never calls Gemini', async () => {
@@ -193,6 +219,54 @@ await test('chat honours the shared limiter too', async () => {
   })
   assert.equal(response.status, 429)
   assert.equal(fetchCalls, 0)
+})
+
+await test('quota worker: exact count, daily reset, input validation', async () => {
+  const state = { day: '', used: 0 }
+  assert.deepEqual([1, 2, 3, 4].map(() => consume(state, { day: '2026-10-20', limit: 3 }).allowed), [true, true, true, false])
+  assert.equal(consume(state, { day: '2026-10-21', limit: 3 }).allowed, true, 'new day resets')
+  const counter = new QuotaCounter({ storage: memoryStorage() })
+  const call = body => counter.fetch(new Request('https://q/consume', { method: 'POST', body: JSON.stringify(body) }))
+  assert.equal((await call({ day: 'today', limit: 3 })).status, 400)
+  assert.equal((await call({ day: '2026-10-20', limit: 0 })).status, 400)
+  assert.equal((await counter.fetch(new Request('https://q/', { method: 'GET' }))).status, 405)
+  const results = []
+  for (let index = 0; index < 4; index += 1) results.push((await (await call({ day: '2026-10-20', limit: 2 })).json()).allowed)
+  assert.deepEqual(results, [true, true, false, false])
+})
+await test('exact Durable Object budget stops requests after the limit, without upstream calls', async () => {
+  mockGemini({ criteria: [], mistakes: [], suggestions: [], summary: '' })
+  const env = enabledEnv({ CHEMAI_LIMITER: undefined, CHEMAI_DAILY_LIMIT_FEEDBACK: '2' })
+  const statuses = []
+  for (let index = 0; index < 3; index += 1) statuses.push((await onRequestPost({ request: request({ rubricId: 'g11-l20-w1', answer }), env })).status)
+  assert.deepEqual(statuses, [200, 200, 429])
+  assert.equal(fetchCalls, 2)
+  assert.equal(env.CHEMAI_BUDGET.calls, 3)
+})
+await test('Durable Object budget unreachable → fail closed', async () => {
+  mockGemini({})
+  const response = await onRequestPost({ request: request({ rubricId: 'g11-l20-w1', answer }), env: enabledEnv({ CHEMAI_BUDGET: durableBudget({ fail: true }), CHEMAI_LIMITER: undefined }) })
+  assert.equal(response.status, 429)
+  assert.equal(fetchCalls, 0)
+})
+await test('per-isolate concurrency cap (4 in flight) → 503 BUSY for the 5th', async () => {
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  fetchCalls = 0
+  globalThis.fetch = async () => {
+    fetchCalls += 1
+    await gate
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"criteria":[],"mistakes":[],"suggestions":[],"summary":""}' }] } }] }), { status: 200 })
+  }
+  const env = enabledEnv({ CHEMAI_LIMITER: undefined })
+  const pending = Array.from({ length: 4 }, () => onRequestPost({ request: request({ rubricId: 'g11-l20-w1', answer }), env }))
+  await new Promise(resolve => setTimeout(resolve, 20))
+  const fifth = await onRequestPost({ request: request({ rubricId: 'g11-l20-w1', answer }), env })
+  release()
+  const done = await Promise.all(pending)
+  assert.equal(fifth.status, 503)
+  assert.deepEqual(done.map(item => item.status), [200, 200, 200, 200])
+  assert.equal(fetchCalls, 4)
 })
 
 globalThis.fetch = originalFetch

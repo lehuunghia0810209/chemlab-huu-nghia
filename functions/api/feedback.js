@@ -16,12 +16,18 @@ const BURST_WINDOW_MS = 60_000
 const BURST_MAX = 4
 const MAX_BUCKETS = 400
 const bursts = new Map()
+const MAX_IN_FLIGHT = 4 // concurrent upstream calls per isolate
+let inFlight = 0
 
 const STATUSES = ['met', 'partial', 'missing']
 
+// Cost is bounded by a daily request budget × one upstream call per request ×
+// ≤ 900 output tokens and ≤ 1500 answer characters. The budget must be exact
+// (Durable Object) unless the owner explicitly accepts KV's approximate count.
 export function feedbackEnabled(env) {
   const controls = sharedControls(env)
-  return env?.CHEMAI_FEEDBACK === 'on' && Boolean(env?.GEMINI_API_KEY) && (controls.limiter || controls.budget)
+  const budgeted = controls.strictBudget || (controls.budget && env?.CHEMAI_ACCEPT_APPROX_BUDGET === 'on')
+  return env?.CHEMAI_FEEDBACK === 'on' && Boolean(env?.GEMINI_API_KEY) && budgeted
 }
 
 function burst(key, now = Date.now()) {
@@ -134,6 +140,10 @@ export async function onRequestPost({ request, env }) {
     }, 429, { 'Retry-After': '60' })
   }
 
+  if (inFlight >= MAX_IN_FLIGHT) {
+    return json({ ok: false, code: 'BUSY', message: 'ChemAI đang bận. Hãy thử lại sau ít phút.' }, 503, { 'Retry-After': '30' })
+  }
+  inFlight += 1
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort('timeout'), TIMEOUT_MS)
   try {
@@ -164,5 +174,6 @@ export async function onRequestPost({ request, env }) {
   }
   finally {
     clearTimeout(timer)
+    inFlight -= 1
   }
 }

@@ -7,6 +7,8 @@ import { chromium } from 'playwright-core'
 import { practiceJourneys } from './lib/practice-journeys.mjs'
 import { examJourneys } from './lib/exam-journeys.mjs'
 import { writtenJourneys } from './lib/written-journeys.mjs'
+import { cspJourneys } from './lib/csp-journeys.mjs'
+import { pwaUpgradeJourneys } from './lib/pwa-upgrade-journeys.mjs'
 
 // Cache namespace written into public/sw.js by release:sync.
 const SW_CACHE_VERSION = (await fs.readFile(new URL('../public/sw.js', import.meta.url), 'utf8')).match(/'(chemlab-[^']+)'/)[1]
@@ -1151,7 +1153,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }
