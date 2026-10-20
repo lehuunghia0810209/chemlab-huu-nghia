@@ -590,3 +590,106 @@ html[data-theme='light'] .px-review__item.is-wrong .px-review__mark { color: #b9
     flex: 1 1 auto;
   }
 }
+
+/* Written practice (writtenPractice.js) */
+.px-written-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: var(--space-5);
+  line-height: var(--leading-body);
+}
+
+.px-written__form {
+  margin-top: var(--space-6);
+}
+
+.px-written__input {
+  width: 100%;
+  min-height: 10rem;
+  padding: var(--space-3);
+  font: inherit;
+  line-height: var(--leading-body);
+  resize: vertical;
+}
+
+.px-written__result:empty {
+  display: none;
+}
+
+.px-written__result {
+  margin-top: var(--space-6);
+}
+
+.px-written__criteria {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.px-written__criteria li {
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.px-written__criteria li.is-met {
+  border-left-color: var(--status-success);
+}
+
+.px-written__criteria li.is-partial {
+  border-left-color: var(--status-warning);
+}
+
+.px-written__criteria li.is-missing {
+  border-left-color: var(--status-danger);
+}
+
+.px-written__criteria p {
+  margin: var(--space-1) 0 0;
+}
+
+.px-written__rubric {
+  margin-top: var(--space-8);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  line-height: var(--leading-body);
+}
+
+.px-written__rubric summary {
+  min-height: var(--touch-min);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: var(--weight-semibold);
+}
+
+.px-written__checks {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.px-written__checks label {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: var(--touch-min);
+}
+
+.px-written__checks input {
+  width: 20px;
+  height: 20px;
+  margin-top: 0.2em;
+  flex: none;
+}
+
+/* Reference feedback is not a verdict: neutral accent, not the “wrong” red. */
+.px-feedback.px-written__feedback {
+  border-left-color: var(--accent);
+}

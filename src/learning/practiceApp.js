@@ -6,6 +6,7 @@ import { GRADES, getGrade, findLesson } from './catalog.js'
 import { escapeHTML, rich } from './format.js'
 import { routeHash } from './routes.js'
 import { loadQuestions, loadQuestionsById } from './questionBank.js'
+import { RUBRICS } from './rubrics.js'
 import { DIFFICULTIES, QUESTION_TYPES, evaluate, formatCorrectAnswer } from './answerEngine.js'
 import {
   loadSession,
@@ -106,6 +107,11 @@ export function createPractice({ root, announce, scrollToTop, onLegacyTopics }) 
       await renderSession({ focus })
       return
     }
+    if (route.view === 'written') {
+      const { renderWritten } = await import('./writtenPractice.js')
+      renderWritten({ root, rubricId: route.id, announce, crumbs, focus, scrollToTop })
+      return
+    }
     await renderHome({ focus })
   }
 
@@ -202,6 +208,16 @@ export function createPractice({ root, announce, scrollToTop, onLegacyTopics }) 
             ${wrong ? `<button class="ui-btn" type="button" data-px-review>Ôn ${wrong} câu sai</button>` : ''}
             <a class="ui-btn ui-btn--ghost" href="${routeHash({ name: 'practice', view: 'topics' })}">Bộ câu hỏi theo chủ đề (bản cũ)</a>
           </div>
+        </section>
+
+        <section class="lx-section px-more" aria-labelledby="px-written-title">
+          <div>
+            <h2 class="lx-section__title" id="px-written-title">Tự luận có tiêu chí</h2>
+            <p class="lx-section__note">Viết lời giải, tự đối chiếu với tiêu chí và có thể nhờ ChemAI nhận xét tham khảo.</p>
+          </div>
+          <ul class="px-written-list">
+            ${RUBRICS.map(rubric => `<li><a href="${routeHash({ name: 'practice', view: 'written', id: rubric.id })}">${escapeHTML(rubric.title)}</a></li>`).join('')}
+          </ul>
         </section>
       </div>
     `

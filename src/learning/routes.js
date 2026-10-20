@@ -21,6 +21,7 @@ export function parseRoute(hash) {
   if (parts[1] === 'practice') {
     if (parts[2] === 'session') return { name: 'practice', view: 'session' }
     if (parts[2] === 'topics') return { name: 'practice', view: 'topics' }
+    if (parts[2] === 'written' && parts[3]) return { name: 'practice', view: 'written', id: decode(parts[3]) }
     if ((parts[2] === 'lesson' || parts[2] === 'chapter') && parts[3]) {
       return { name: 'practice', view: 'start', scope: parts[2], id: decode(parts[3]) }
     }
@@ -42,6 +43,7 @@ export function routeHash(route) {
   if (route.name === 'practice') {
     if (route.view === 'session') return '#learning/practice/session'
     if (route.view === 'topics') return '#learning/practice/topics'
+    if (route.view === 'written') return `#learning/practice/written/${encodeURIComponent(route.id)}`
     if (route.view === 'start') return `#learning/practice/${route.scope}/${encodeURIComponent(route.id)}`
     return '#learning/practice'
   }

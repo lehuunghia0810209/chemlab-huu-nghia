@@ -157,6 +157,22 @@ const SCENARIOS = [
     }
   },
   {
+    name: 'written practice with feedback',
+    view: 'learning',
+    async setup(page) {
+      await page.route('**/api/feedback', route => route.request().method() === 'GET'
+        ? route.fulfill({ json: { ok: true, enabled: true } })
+        : route.fulfill({ json: { ok: true, feedback: { criteria: [{ id: 'c1', text: 'Tiêu chí', status: 'met', comment: 'Tốt.' }, { id: 'c2', text: 'Tiêu chí 2', status: 'missing', comment: '' }], mistakes: ['Lỗi'], suggestions: ['Gợi ý'], summary: 'Tóm tắt.' } } }))
+      await page.evaluate(() => { location.hash = '#learning/practice/written/g12-l22-w1' })
+      await page.waitForSelector('[data-wr-submit]', { timeout: 15000 })
+      await page.fill('#wr-answer', 'Kẽm có tính khử mạnh hơn sắt nên kẽm bị oxi hóa thay cho sắt trong nước biển.')
+      await page.click('[data-wr-submit]')
+      await page.waitForSelector('.px-written__feedback')
+      await page.click('[data-wr-rubric] summary')
+      await page.unroute('**/api/feedback')
+    }
+  },
+  {
     name: 'learning practice',
     view: 'learning',
     async setup(page) {
