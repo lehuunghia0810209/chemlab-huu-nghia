@@ -1,67 +1,74 @@
-# ChemLab 6.5 — release checklist (NOT executed)
+# ChemLab 6.5.0 — release checklist and production playbook (NOT executed)
 
-Status: the local branch holds the implementation and eight exam papers; **nothing has been released**. Every step below needs the owner's explicit approval.
+Status 2026-10-21: version **6.5.0** synced on branch `evolution/next` (local commits only). **Nothing has been pushed, merged or deployed.** Production (`origin/main`, last commit 2026-10-19) still serves 6.2.0. Every action in §3–§6 needs the owner's explicit approval.
 
-## 1. Gates before any public release
+## 1. Release gates
 
-| Gate | Owner action | Evidence / where |
-| --- | --- | --- |
-| Independent audit | Codex (or another auditor) runs `docs/audit/CODEX_HANDOFF_6.5.md` | — |
-| Exam content | 8 papers READY_FOR_OWNER_RELEASE: Ministry reference + illustrative 2025, graduation exams 2025 (mã 0338) and 2026 (mã 0330), Sở Đồng Nai survey 2026 lần 1 (ca 1, ca 2), teacher practice DTT 5 and 6. Authorization owner-attested; keys checked against the issuing authority (or re-solved for the author's key). 3 teacher-practice papers blocked pending a decision. Owner decides which to publish | `docs/exam/EXAM_SOURCES.md` §2, §2b; `docs/exam/papers/*.md` |
-| Exam scoring rule wording | Point rules confirmed on the two official answer-key pages; the Ministry decision text itself was not retrieved | `docs/exam/EXAM_SOURCES.md` §1 |
-| Teacher review | Work through `docs/learning/TEACHER_REVIEW_REGISTER.md` | Not started (0 sign-offs) |
-| ChemAI cost control | Deploy the quota worker (§3) **before** enabling feedback; run the staging plan (§4) | Code ready, nothing deployed |
-| CSP | Run §5 on a staging deployment | Verified locally only |
+| Gate | Standard | Status | Evidence |
+| --- | --- | --- | --- |
+| G1 Source code | build + regression PASS | **PASS (local)** | `docs/release/FINAL_6_5_0_COMPLETION.md` §QA |
+| G2 Exam integrity | 8 papers verified in release scope | **PASS with conditions** — 2025/2026 printed originals not compared (editorial notes shown) | `docs/exam/EXAM_RELEASE_MATRIX.md` |
+| G3 Exam scoring | scores, autosave, timer | **PASS (local)** | `npm run check:exam`, browser journeys B–I, R2 |
+| G4 PWA | 6.5.0 + migration | **PASS (local)** — real devices NOT RUN | `docs/release/PWA_6_2_TO_6_5_UPGRADE.md` |
+| G5 Security | no open P0/P1 | **PASS (local)** — headers on staging NOT RUN | CSP journey, `npm audit` 0, bundle secret scan |
+| G6 Cloudflare | staging bindings/routes | **NOT RUN** (local runtime 12/12) | `docs/release/CLOUDFLARE_STAGING_VERIFICATION.md` |
+| G7 ChemAI | live staging PASS before enabling | **NOT RUN** — feedback stays off | same |
+| G8 Educational review | human sign-off for the published scope | **OPEN** (0 sign-offs) | `docs/learning/TEACHER_REVIEW_REGISTER.md`, `docs/review/TEACHER_REVIEW_PACKET_6.5.md` |
+| G9 Authorization | owner attestation respected | **OWNER_ATTESTED** (licence not seen) | `docs/exam/EXAM_SOURCES.md` §0 |
+| G10 Owner approval | public deployment allowed | **OPEN** | — |
 
-## 2. Version and cache (EXR-005)
+## 2. Version and cache
 
-The version stays `6.2.0` on the branch on purpose: bumping it changes the production cache namespace, which is a release action.
+`package.json` is the single source; `npm run release:sync` (also run by `prebuild`) rewrites `src/appMeta.js`, `index.html`, `public/manifest.webmanifest` and `public/sw.js` (`VERSION` → cache namespace `chemlab-6.5.0-brand-1`). Already done on the branch; `npm run build` reproduces it with no diff. Upgrade behaviour and tests: `PWA_6_2_TO_6_5_UPGRADE.md`.
 
-**Where the version lives.** `package.json` is the only hand-edited source. `npm run release:sync` (`scripts/sync-release.mjs`, also run by `prebuild`) rewrites `src/appMeta.js`, `index.html`, `public/manifest.webmanifest` and `VERSION` in `public/sw.js` (cache names `<VERSION>-static`, `<VERSION>-runtime`). Version assertions in the checks read the synced values.
+## 3. Cloudflare configuration (owner — dashboard or wrangler, never in Git)
 
-**Service-worker lifecycle (read from `public/sw.js`, `src/production.js`).**
-- No `skipWaiting()` / `clients.claim()`: a new worker installs in the background and takes control only after every tab of the old version is closed (or on the next navigation of a new tab). An open lesson or exam is never switched mid-session.
-- `activate` deletes every cache whose name is not the current `STATIC`/`RUNTIME` cache, so 6.2.0 caches are removed once 6.5.0 activates.
-- The worker never touches `localStorage`: learning progress (`chemlab-v1-progress`), practice and exam sessions/results (`chemlab-v1-exam`) survive. Exam deadlines are stored timestamps, so an update during an exam cannot extend or reset the time.
+| Name | Type | Production (6.5.0 launch) | Preview (staging) |
+| --- | --- | --- | --- |
+| `GEMINI_API_KEY` | Secret | existing | staging key with small Google quota |
+| `CHEMAI_BUDGET` | Durable Object → Worker `chemai-quota`, class `QuotaCounter` | **bind before relying on chat budget** | bind |
+| `CHEMAI_DAILY_LIMIT_CHAT` / `_FEEDBACK` | Var (Gemini calls per day; retries count) | set from cost estimate | 20 / 5 |
+| `CHEMAI_FEEDBACK` | Var | **leave unset (off)** until G7 | `on` |
+| `CHEMAI_QUOTA`, `CHEMAI_ACCEPT_APPROX_BUDGET` | KV + Var | not needed with the DO | not needed |
+| `CHEMAI_LIMITER` | Rate Limiting | optional (not listed for Pages) | optional |
 
-**Automated evidence.** `npm run check:browser` → “pwa upgrade” journey (`scripts/lib/pwa-upgrade-journeys.mjs`): seeds `chemlab-6.1.0-legacy-*` caches plus progress and exam data, installs the real `sw.js`, asserts only `<current VERSION>-*` caches remain and the data is intact. The existing PWA check covers registration, v1 progress and offline reload.
+Cost model and the per-call budget: `CLOUDFLARE_STAGING_VERIFICATION.md` §2.
 
-**Release steps (owner).**
-1. Set `"version": "6.5.0"` in `package.json`.
-2. `npm run release:sync`; review `git diff` (4 files).
-3. `npm run build`, `npm run check:browser`, `npm run check:a11y`.
-4. Manual upgrade check on staging from a browser holding the 6.2.0 build: open old site, deploy, reload twice / close all tabs; DevTools → Application → Cache Storage shows only `chemlab-6.5.0-brand-1-*`; Learning progress and exam results unchanged.
+## 4. Staging (one approval for all steps)
 
-## 3. Cloudflare configuration (owner, dashboard or wrangler — not in Git)
+`CLOUDFLARE_STAGING_VERIFICATION.md` §4: deploy quota Worker → Preview bindings → push `evolution/next` (preview URL) → `node scripts/staging-smoke.mjs <url>` (+ `--ai`) → budget/binding-failure cases → PWA on devices → record evidence → mark G6/G7.
 
-| Name | Type | Purpose |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | Secret | Existing |
-| `CHEMAI_BUDGET` | Durable Object binding → worker `chemai-quota`, class `QuotaCounter` | **Exact** per-day budget per scope (preferred). Deploy from `workers/chemai-quota` using `wrangler.toml.example` |
-| `CHEMAI_QUOTA` | KV namespace | Approximate per-day budget (KV is eventually consistent; concurrent requests can overshoot). Used only without `CHEMAI_BUDGET` |
-| `CHEMAI_ACCEPT_APPROX_BUDGET` | Var `on` | Required for feedback to run on the KV budget alone (owner accepts overshoot) |
-| `CHEMAI_LIMITER` | Rate Limiting binding | Per-client burst limit. Cloudflare documents this binding for Workers; Pages Functions do not list it, so it is optional and **not** a cost budget |
-| `CHEMAI_DAILY_LIMIT_CHAT`, `CHEMAI_DAILY_LIMIT_FEEDBACK` | Vars | Defaults 2000 / 300 requests per day |
-| `CHEMAI_FEEDBACK` | Var `on` | Turns rubric feedback on |
+## 5. Production playbook (owner executes)
 
-Feedback is enabled only when `CHEMAI_FEEDBACK=on`, the key exists and there is either `CHEMAI_BUDGET` or (`CHEMAI_QUOTA` + `CHEMAI_ACCEPT_APPROX_BUDGET=on`). Any budget error fails closed (429). Each isolate also caps feedback at 4 requests in flight (503 `BUSY`).
+### Before deployment
+1. Final commit chosen on `evolution/next`; `git status` shows only the owner's own files (`AGENTS.md`, `.gitignore`, `.claude/`), decide whether they ship.
+2. `npm ci && npm run build && npm run check:browser && npm run check:a11y && npm audit --omit=dev --audit-level=high` — all PASS; `git diff` clean after build (release:sync idempotent).
+3. Version: `package.json` 6.5.0; `dist/sw.js` contains `chemlab-6.5.0-brand-1`.
+4. Bindings (§3) set for **Production**; `CHEMAI_FEEDBACK` absent; Worker `chemai-quota` deployed if `CHEMAI_BUDGET` is bound.
+5. Exam selection made (`EXAM_RELEASE_MATRIX.md`); DTT 2–4 blocked.
+6. Rollback target noted: current production deployment ID in Pages → Deployments (6.2.0, commit `e8e204b`).
+7. G8/G10 decisions recorded.
 
-## 4. Staging plan for ChemAI (EXR-003, not executed)
+### Deployment (Pages Git integration)
+1. Merge `evolution/next` into `main` (owner, after review) and push `main`; Pages builds with the project's build settings (`npm run build`, output `dist`).
+2. Watch the build log in Pages → Deployments; do not change settings during the build.
 
-| Case | Setup | Expected |
-| --- | --- | --- |
-| Not configured | no `CHEMAI_FEEDBACK` | `GET /api/feedback` → `enabled:false`; UI shows “chưa bật” |
-| Configured | DO binding + flag + key | `enabled:true`; a written answer returns rubric feedback |
-| Quota exhausted | `CHEMAI_DAILY_LIMIT_FEEDBACK=2`, send 3 | 200, 200, 429; Gemini usage shows 2 calls |
-| Binding failure | point `CHEMAI_BUDGET` at a non-existent class / undeploy worker | 429 (fail closed), no Gemini call |
-| KV only | remove DO, add KV, no acceptance flag | `enabled:false` |
+### After deployment (within 30 minutes)
+1. `node scripts/staging-smoke.mjs https://<production-host>` → 12/12 (no `--ai`).
+2. Open Home, Learning lesson, Practice, Exam catalog + one paper (start, answer, reload, submit), Virtual Lab, Periodic + Atomic Explorer, ChemAI panel; DevTools console: no `Refused to …` (CSP), no 404.
+3. PWA: from a browser with the 6.2 app, close all tabs, reopen → Cache Storage only `chemlab-6.5.0-brand-1-*`, progress present.
+4. Monitor: Pages Functions logs (errors, 429 rate), Google AI Studio usage vs `CHEMAI_DAILY_LIMIT_*`.
 
-Record request IDs and Gemini usage as evidence. Mocked results (`scripts/test-feedback-api.mjs`) are **not** a live PASS.
-
-## 5. CSP (EXR-006)
-
-`public/_headers` now sends `Content-Security-Policy` (scripts `'self'` only; inline styles allowed because components set `style=` attributes; images `data:`/`blob:`; `connect-src 'self'`; `frame-ancestors 'none'`). Local evidence: browser journey “csp” serves `dist/index.html` with this policy and opens Home, Periodic, Compound Studio, Lab, Learning, Exam, Atomic Explorer/Orbital Atlas (WebGL) and the ChemAI panel with zero violations. Staging: open the same views on the deployed preview and check the console for `Refused to …`; if a violation appears, roll back `_headers` rather than widening the policy blindly.
+### Recovery
+| Situation | Action |
+| --- | --- |
+| Site broken / CSP violations block features | Pages → Deployments → previous deployment → **Rollback**. The 6.2.0 worker re-installs on next visits; learner data stays (tested, `PWA_6_2_TO_6_5_UPGRADE.md` H). |
+| ChemAI cost or abuse | Remove `CHEMAI_FEEDBACK` (feedback off) and/or lower `CHEMAI_DAILY_LIMIT_CHAT` (e.g. 1); redeploy. Emergency: remove the `GEMINI_API_KEY` secret → chat answers “chưa cấu hình”. |
+| Quota Worker failing | Requests fail closed (429). Fix or `npx wrangler@4 rollback` in `workers/chemai-quota`; Pages needs no change. |
+| An exam paper must be withdrawn | Remove one required state (e.g. `UI_TESTED`) from its entry in `src/exam/catalog.js`, build, deploy; sessions in progress show the paper as not available, results stay stored. |
+| Old cached clients | Nothing to do: `sw.js` is revalidated on every load; activation deletes old caches. |
+| Leaked secret | Rotate in Google AI Studio, update the Pages secret, redeploy; never paste keys into issues or docs. |
 
 ## 6. Never
 
-Push/merge/deploy without approval; enable the exam fixture flag in production documentation; mark a paper READY without every state in `src/exam/catalog.js`; record a teacher sign-off that did not happen.
+Push/merge/deploy without approval; enable `CHEMAI_FEEDBACK` in Production before G7; publish DTT 2–4; label a paper “đề chính thức” outside its kind; record a teacher sign-off that did not happen.

@@ -30,3 +30,14 @@ Nguồn đề: thư mục của chủ dự án `dethihoa` trên Desktop (OneDriv
 1. Đọc file này, `git status`, `git log --oneline -10`.
 2. Fixture đề kiểm thử: `localStorage['chemlab-exam-fixtures'] = '1'` (hoặc `vite dev`).
 3. Việc còn lại thuộc chủ dự án: quyết định phát hành 8 đề và xử lí 3 đề DTT bị chặn (`docs/exam/EXAM_SOURCES.md` §2b), cấu hình Cloudflare và staging (`docs/release/RELEASE_6.5.md`), thẩm định giáo viên (`docs/learning/TEACHER_REVIEW_REGISTER.md`), audit độc lập.
+
+## 6.5.0 Final Completion (2026-10-21) — XONG phần kỹ thuật
+
+| # | Nội dung | Commit |
+| --- | --- | --- |
+| F1 | Version 6.5.0 (release:sync), budget ChemAI theo từng lần gọi Gemini, editorialNote đề 2025/2026, PWA upgrade journeys 6.2→6.5, test | “ChemLab 6.5.0 F1” |
+| F2 | Tài liệu: RELEASE (G1–G10, playbook, rollback), CLOUDFLARE_STAGING_VERIFICATION, PWA upgrade, EXAM_RELEASE_MATRIX, review packet, FINAL_6_5_0_COMPLETION, CODEX_FINAL_DELTA_HANDOFF; script staging-smoke, local-cloudflare-check, build-review-packet | “ChemLab 6.5.0 F2” |
+
+Kiểm thử cuối: build+check PASS (exam 84, papers 850, feedback 20) · browser 359/359 (2 lần liên tiếp) · a11y 100 PASS · npm audit 0 · local Cloudflare runtime 12/12. NOT RUN: staging, Gemini thật, thiết bị thật, screen reader.
+
+Verdict: TECHNICALLY COMPLETE — READY FOR OWNER ACCEPTANCE. Còn: G6/G7 (cần phê duyệt staging một lần, `docs/release/CLOUDFLARE_STAGING_VERIFICATION.md` §4), G8 thẩm định giáo viên, G10 phê duyệt phát hành; DTT 2–4 vẫn BLOCKED.

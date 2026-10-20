@@ -2,6 +2,10 @@
 
 No content in ChemLab is “Expert Verified” today. Lessons and questions are `internal` (checked by ChemLab's automated checks and by the authoring agent). AI review does not count as teacher review. A reviewer records each sign-off below; only then may a status be raised.
 
+Status vocabulary: NOT REVIEWED · AUTOMATED VERIFIED (tests + agent re-solving) · TEACHER REVIEW PENDING · TEACHER VERIFIED (only a named human reviewer, logged below) · NEEDS CORRECTION. Today every exam question is AUTOMATED VERIFIED and TEACHER REVIEW PENDING; nothing is TEACHER VERIFIED.
+
+Review packet for the 8 exam papers (224 questions, keys, ChemLab solutions, flagged and blocked items): `docs/review/TEACHER_REVIEW_PACKET_6.5.md` (regenerate with `node scripts/build-review-packet.mjs`).
+
 ## Priorities
 
 | Priority | Scope | Why | Pointer |
