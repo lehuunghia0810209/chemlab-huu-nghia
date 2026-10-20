@@ -1,13 +1,13 @@
 # ChemLab 6.5 — release checklist (NOT executed)
 
-Status: the local branch holds the implementation and two official papers; **nothing has been released**. Every step below needs the owner's explicit approval.
+Status: the local branch holds the implementation and eight exam papers; **nothing has been released**. Every step below needs the owner's explicit approval.
 
 ## 1. Gates before any public release
 
 | Gate | Owner action | Evidence / where |
 | --- | --- | --- |
 | Independent audit | Codex (or another auditor) runs `docs/audit/CODEX_HANDOFF_6.5.md` | — |
-| Official exam content | 2 papers READY_FOR_OWNER_RELEASE (owner-attested authorization; source, transcription, key, scoring and UI verified by the agent). Owner decides whether to publish them | `docs/exam/EXAM_SOURCES.md` §2, `docs/exam/papers/*.md` |
+| Exam content | 8 papers READY_FOR_OWNER_RELEASE: Ministry reference + illustrative 2025, graduation exams 2025 (mã 0338) and 2026 (mã 0330), Sở Đồng Nai survey 2026 lần 1 (ca 1, ca 2), teacher practice DTT 5 and 6. Authorization owner-attested; keys checked against the issuing authority (or re-solved for the author's key). 3 teacher-practice papers blocked pending a decision. Owner decides which to publish | `docs/exam/EXAM_SOURCES.md` §2, §2b; `docs/exam/papers/*.md` |
 | Exam scoring rule wording | Point rules confirmed on the two official answer-key pages; the Ministry decision text itself was not retrieved | `docs/exam/EXAM_SOURCES.md` §1 |
 | Teacher review | Work through `docs/learning/TEACHER_REVIEW_REGISTER.md` | Not started (0 sign-offs) |
 | ChemAI cost control | Deploy the quota worker (§3) **before** enabling feedback; run the staging plan (§4) | Code ready, nothing deployed |
