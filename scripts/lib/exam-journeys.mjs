@@ -2,6 +2,7 @@
 // (enabled per test through the fixture flag). Expected scores are computed
 // from the fixture answer key in Node.
 import fixture from '../../src/exam/papers/fixture-kiem-thu.js'
+import realPaper from '../../src/exam/papers/tham-khao-2025-hoa.js'
 import { scoreExam } from '../../src/exam/scoring.js'
 import { formatPoints } from '../../src/exam/blueprints.js'
 
@@ -40,20 +41,23 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     const { context, page, errors } = await newPage(browser, { width: 1280, height: 900, theme: 'light' })
     await openWithFlag(page, baseURL, '#learning/exam', { flag: false })
     const catalog = await page.evaluate(() => ({
-      empty: /Chưa có đề chính thức nào được phép/.test(document.body.innerText),
       fixture: /Đề kiểm thử nội bộ/.test(document.querySelector('.lx-page').innerText),
+      ready: [...document.querySelectorAll('.ex-row:not(.is-pending) a')].map(a => a.getAttribute('href')),
+      official: /Đáp án chính thức/.test(document.querySelector('.ex-row:not(.is-pending)')?.innerText || ''),
       pending: document.querySelectorAll('.ex-row.is-pending').length,
-      sourceLinks: [...document.querySelectorAll('.ex-row.is-pending a[target="_blank"]')].every(a => a.rel.includes('noopener') && a.href.startsWith('https://')),
-      startButtons: document.querySelectorAll('.ex-row:not(.is-pending) a').length
+      sourceLinks: [...document.querySelectorAll('.ex-row.is-pending a[target="_blank"]')].every(a => a.rel.includes('noopener') && a.href.startsWith('https://'))
     }))
-    record('exam A: without rights no paper is takeable; honest empty state; sources linked', catalog.empty && !catalog.fixture && catalog.pending === 4 && catalog.sourceLinks && catalog.startButtons === 0, JSON.stringify(catalog))
-    await page.goto(`${baseURL}/${EXAM}`, { waitUntil: 'load' })
-    await page.waitForSelector('[data-ex-heading]')
-    record('exam A: a gated paper cannot be opened by URL', /chưa thể làm/.test(await page.textContent('[data-ex-heading]')))
+    record('exam A: only the fully verified official paper is takeable; others link to their source; fixture hidden',
+      !catalog.fixture && catalog.ready.join() === '#learning/exam/tham-khao-2025-hoa' && catalog.official && catalog.pending === 3 && catalog.sourceLinks, JSON.stringify(catalog))
+    for (const gated of [EXAM, '#learning/exam/minh-hoa-2025-hoa']) {
+      await page.goto(`${baseURL}/${gated}`, { waitUntil: 'load' })
+      await page.waitForSelector('[data-ex-heading]')
+      record(`exam A: gated paper ${gated.split('/').pop()} cannot be opened by URL`, /chưa thể làm/.test(await page.textContent('[data-ex-heading]')))
+    }
     await page.evaluate(() => localStorage.setItem('chemlab-exam-fixtures', '1'))
     await page.goto(`${baseURL}/#learning/exam`, { waitUntil: 'load' })
-    await page.waitForSelector('.ex-row:not(.is-pending) a')
-    await page.click('.ex-row:not(.is-pending) a')
+    await page.waitForSelector('a[href="#learning/exam/fixture-kiem-thu"]')
+    await page.click('a[href="#learning/exam/fixture-kiem-thu"]')
     await page.waitForSelector('[data-ex-start]')
     const prep = await page.textContent('.lx-page')
     record('exam A: preparation shows time, parts, scoring and the fixture label', /15 phút/.test(prep) && /Phần II/.test(prep) && /0,1 · 2 ý 0,25/.test(prep) && /không phải đề chính thức/.test(prep) && /tự lưu/.test(prep))
@@ -152,6 +156,100 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     await context.close()
   }
 
+  /* R — official reference paper 2025, end to end (no fixture flag) */
+  {
+    const { context, page, errors } = await newPage(browser, { width: 1280, height: 900, theme: 'light' })
+    await openWithFlag(page, baseURL, '#learning/exam/tham-khao-2025-hoa', { flag: false })
+    await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[data-ex-start]')
+    const prep = await page.textContent('.lx-page')
+    record('exam R: preparation shows source, official key, owner attestation, 50 phút, 28 câu',
+      /Cục Quản lý chất lượng/.test(prep) && /đáp án chính thức/.test(prep) && /Chủ dự án ChemLab xác nhận/.test(prep) && /50 phút/.test(prep) && /28 câu/.test(prep))
+    await page.click('[data-ex-start]')
+    await page.waitForSelector('.ex-workspace')
+    record('exam R: original part instruction shown', /Thí sinh trả lời từ câu 1 đến câu 18/.test(await page.textContent('.ex-stage')))
+    // Part I: 1 A (đúng), 2 B (sai), 13 D (đúng, có hình)
+    await page.check('input[name="ex-tk25-1"][value="A"]')
+    await goTo(page, 1)
+    await page.check('input[name="ex-tk25-2"][value="B"]')
+    await goTo(page, 12)
+    const figure = await page.evaluate(() => {
+      const img = document.querySelector('.ex-figure img')
+      return img && img.complete && img.naturalWidth > 0 && img.alt.length > 20
+    })
+    record('exam R: figure from the original paper loads with alt text', figure)
+    await page.check('input[name="ex-tk25-13"][value="D"]')
+    await page.click('[data-ex-flag]')
+    // Part II question 1: a Đ, b Đ, c Đ (sai), d — ⇒ 2 ý đúng = 0,25
+    await goTo(page, 18)
+    record('exam R: Part II numbered as in the original', /câu 1 của phần/.test(await page.textContent('.ex-part')))
+    for (const [id, value] of [['a', 'true'], ['b', 'true'], ['c', 'true']]) await page.click(`input[name="ex-tk25-ii1-${id}"][value="${value}"] + span`)
+    // Part III: 1 → 10,7 (dot typed), 5 → 1,03, 6 → 86 (sai)
+    await goTo(page, 22)
+    await page.fill('.ex-short', '10.7')
+    await goTo(page, 26)
+    await page.fill('.ex-short', '1,03')
+    await goTo(page, 27)
+    await page.fill('.ex-short', '86')
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('.ex-workspace [data-ex-heading]')
+    record('exam R: reload keeps answers of the real paper', (await page.inputValue('.ex-short')) === '86' && (await page.$$('.ex-grid__list .is-answered')).length === 7)
+    await page.click('.ex-bar [data-ex-submit]')
+    await page.waitForSelector('[data-ex-dialog][open]')
+    await page.click('[data-ex-confirm]')
+    await page.waitForSelector('.ex-results [data-ex-heading]')
+    const responses = { 'tk25-1': 'A', 'tk25-2': 'B', 'tk25-13': 'D', 'tk25-ii1': { a: true, b: true, c: true }, 'tk25-iii1': '10,7', 'tk25-iii5': '1,03', 'tk25-iii6': '86' }
+    const expected = scoreExam(realPaper, responses)
+    const result = await page.evaluate(() => ({
+      heading: document.querySelector('[data-ex-heading]').textContent.replace(/\s+/g, ' '),
+      chapters: document.querySelectorAll('.ex-analysis table')[0]?.querySelectorAll('tbody tr').length || 0,
+      internalNote: /do ChemLab gán/.test(document.body.innerText),
+      levelNote: /không công bố mức độ/.test(document.body.innerText),
+      solutionLabel: /Lời giải tham khảo do ChemLab biên soạn/.test(document.querySelector('.ex-review').textContent)
+    }))
+    record('exam R: score of the real paper matches the official key (1,25 = 2×0,25 + 0,25 + 2×0,25)',
+      expected.earned === 125 && result.heading.includes(`${formatPoints(expected.earned)}/10`), `${result.heading} expected ${expected.earned}`)
+    record('exam R: chapter analysis, labelled ChemLab tags, honest note on missing levels, solutions labelled',
+      result.chapters >= 5 && result.internalNote && result.levelNote && result.solutionLabel, JSON.stringify(result))
+    await page.click('.ex-review__item:nth-child(13) summary')
+    record('exam R: review shows the original question with its figure and key', await page.evaluate(() => {
+      const item = document.querySelector('.ex-review__item:nth-child(13)')
+      return Boolean(item.querySelector('.ex-figure img')) && /Đáp án:/.test(item.innerText)
+    }))
+    // Try another paper afterwards.
+    await page.evaluate(() => localStorage.setItem('chemlab-exam-fixtures', '1'))
+    await page.goto(`${baseURL}/#learning/exam`, { waitUntil: 'load' })
+    await page.waitForSelector('a[href="#learning/exam/fixture-kiem-thu"]')
+    await page.click('a[href="#learning/exam/fixture-kiem-thu"]')
+    await page.waitForSelector('[data-ex-start]')
+    record('exam R: after one paper, another paper can be started', await page.isVisible('[data-ex-start]') && (await stored(page)).results.length === 1)
+    record('console clean in the real-paper journey', errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
+  /* R @390 — real paper on a phone, light and dark */
+  for (const theme of ['light', 'dark']) {
+    const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme })
+    await openWithFlag(page, baseURL, '#learning/exam/tham-khao-2025-hoa', { flag: false })
+    await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[data-ex-start]')
+    await page.click('[data-ex-start]')
+    await page.waitForSelector('.ex-workspace')
+    const layouts = []
+    for (const index of [12, 15, 16, 19, 20, 24, 26]) {
+      await goTo(page, index)
+      layouts.push(await page.evaluate(() => ({
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        figureScrolls: [...document.querySelectorAll('.ex-figure, .ex-scroll')].every(box => box.scrollWidth <= box.clientWidth + 1 || box.tabIndex === 0)
+      })))
+    }
+    record(`exam R @390 ${theme}: figures, tables and equations of the real paper never overflow the page`, layouts.every(item => !item.overflow && item.figureScrolls), JSON.stringify(layouts))
+    record(`console clean in the real paper @390 ${theme}`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
   /* E — time expired while the tab was closed */
   {
     const { context, page, errors } = await newPage(browser, { width: 1280, height: 900, theme: 'dark' })
@@ -238,9 +336,9 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     await page.waitForTimeout(400)
     const inLab = await page.evaluate(() => document.documentElement.dataset.examRunning)
     await page.goto(`${baseURL}/#learning/exam`, { waitUntil: 'load' })
-    await page.waitForSelector('.ex-row:not(.is-pending) a')
-    const resume = await page.textContent('.ex-row:not(.is-pending) a')
-    await page.click('.ex-row:not(.is-pending) a')
+    await page.waitForSelector('a[href="#learning/exam/fixture-kiem-thu"]')
+    const resume = await page.textContent('a[href="#learning/exam/fixture-kiem-thu"]')
+    await page.click('a[href="#learning/exam/fixture-kiem-thu"]')
     await page.waitForSelector('[data-ex-heading]')
     await page.click('.px-actions a.ui-btn--primary')
     await page.waitForSelector('.ex-workspace')

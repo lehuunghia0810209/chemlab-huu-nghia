@@ -3,11 +3,33 @@
 import { getBlueprint } from './blueprints.js'
 import { validateShortAnswer } from './scoring.js'
 
+const nonEmpty = value => typeof value === 'string' && value.trim().length > 0
+
 export const LEVELS = Object.freeze({ biet: 'Biết', hieu: 'Hiểu', vandung: 'Vận dụng' })
-export const LICENSES = ['licensed', 'pending', 'not-licensed', 'internal-fixture']
+// owner-attested: the project owner states ChemLab may use the paper; the
+// licence document itself was not seen by the agent (kept private by the owner).
+export const LICENSES = ['licensed', 'owner-attested', 'pending', 'not-licensed', 'internal-fixture']
+export const META_STATUSES = ['verified', 'internal', 'unverified']
+const BLOCK_TYPES = ['p', 'list', 'equation', 'table', 'figure']
+
+// Question content is a string or a list of blocks (paragraph, list, equation
+// with condition, table, figure cropped from the original paper).
+export function contentProblems(content) {
+  if (typeof content === 'string') return content.trim() ? [] : ['no content']
+  if (!Array.isArray(content) || !content.length) return ['no content']
+  const problems = []
+  for (const [index, block] of content.entries()) {
+    if (!BLOCK_TYPES.includes(block?.type)) problems.push(`block ${index}: unknown type ${block?.type}`)
+    else if (block.type === 'p' && !nonEmpty(block.text)) problems.push(`block ${index}: empty paragraph`)
+    else if (block.type === 'list' && (!Array.isArray(block.items) || !block.items.length || !block.items.every(nonEmpty))) problems.push(`block ${index}: bad list`)
+    else if (block.type === 'equation' && !nonEmpty(block.text)) problems.push(`block ${index}: empty equation`)
+    else if (block.type === 'table' && (!Array.isArray(block.head) || !Array.isArray(block.rows) || block.rows.some(row => row.length !== block.head.length))) problems.push(`block ${index}: table rows do not match the header`)
+    else if (block.type === 'figure' && (!nonEmpty(block.src) || !nonEmpty(block.alt) || block.alt.length < 20 || !(block.width > 0) || !(block.height > 0))) problems.push(`block ${index}: figure needs src, a descriptive alt, width and height`)
+  }
+  return problems
+}
 export const KINDS = ['official-reference', 'official-exam', 'fixture']
 
-const nonEmpty = value => typeof value === 'string' && value.trim().length > 0
 
 export function validatePaper(paper, { chapterIds = null } = {}) {
   const errors = []
@@ -24,6 +46,7 @@ export function validatePaper(paper, { chapterIds = null } = {}) {
   }
   if (paper.kind === 'fixture' && paper.license !== 'internal-fixture') fail('fixtures must use license internal-fixture')
   if (paper.kind !== 'fixture' && (!nonEmpty(paper.source?.authority) || !nonEmpty(paper.source?.url))) fail('official paper needs source authority and url')
+  if (paper.kind !== 'fixture' && !['official', 'chemlab'].includes(paper.answerKey)) fail('official paper must say whether its answer key is official or ChemLab-written')
   if (!Number.isFinite(paper.timeLimitMinutes) || paper.timeLimitMinutes <= 0) fail('timeLimitMinutes must be positive')
   if (paper.kind !== 'fixture' && paper.timeLimitMinutes !== blueprint.timeLimitMinutes) fail('time limit differs from blueprint')
   if (!Array.isArray(paper.sections)) {
@@ -43,7 +66,7 @@ export function validatePaper(paper, { chapterIds = null } = {}) {
       const where = `question ${question.id}`
       if (!nonEmpty(question.id) || seen.has(question.id)) fail(`${where}: missing or duplicate id`)
       seen.add(question.id)
-      if (!nonEmpty(question.content)) fail(`${where}: no content`)
+      contentProblems(question.content).forEach(problem => fail(`${where}: ${problem}`))
       if (part.type === 'single') {
         if (!Array.isArray(question.options) || question.options.length !== 4) fail(`${where}: needs 4 options`)
         else if (!question.options.some(option => option.id === question.answer)) fail(`${where}: answer not among options`)
@@ -60,9 +83,9 @@ export function validatePaper(paper, { chapterIds = null } = {}) {
       if (!nonEmpty(question.solution?.text)) fail(`${where}: no solution`)
       if (typeof question.solution?.official !== 'boolean') fail(`${where}: solution.official must say whether it is the official solution`)
       const meta = question.meta
-      if (!meta || !['verified', 'unverified'].includes(meta.status)) fail(`${where}: meta.status must be verified or unverified`)
-      else if (meta.status === 'verified') {
-        if (!LEVELS[meta.level]) fail(`${where}: unknown level ${meta.level}`)
+      if (!meta || !META_STATUSES.includes(meta.status)) fail(`${where}: meta.status must be one of ${META_STATUSES.join(', ')}`)
+      else if (meta.status !== 'unverified') {
+        if (meta.level !== undefined && !LEVELS[meta.level]) fail(`${where}: unknown level ${meta.level}`)
         if (!Array.isArray(meta.chapters) || !meta.chapters.length) fail(`${where}: verified meta needs chapters`)
         else if (chapterIds) meta.chapters.filter(id => !chapterIds.has(id)).forEach(id => fail(`${where}: unknown chapter ${id}`))
       }

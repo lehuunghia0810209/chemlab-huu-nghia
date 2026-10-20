@@ -35,6 +35,42 @@ function timeText(timestamp) {
   return new Date(timestamp).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+// Paper text: escaped, **bold**, and _{sub} / ^{sup} for notation such as Δ_{f}H°_{298}.
+function examText(text) {
+  return rich(text).replace(/_\{([^}]*)\}/g, '<sub>$1</sub>').replace(/\^\{([^}]*)\}/g, '<sup>$1</sup>')
+}
+
+function equationHTML(block) {
+  const text = examText(block.text)
+  if (!block.condition) return `<p class="ex-eq">${text}</p>`
+  // The reaction condition sits above the arrow, as in the printed paper.
+  const arrow = `<span class="ex-arrow"><span class="ex-arrow__cond">${examText(block.condition)}</span><span aria-hidden="true">⟶</span><span class="sr-only"> (điều kiện: ${escapeHTML(block.condition)}) </span></span>`
+  return `<p class="ex-eq">${text.replace('→', arrow)}</p>`
+}
+
+export function renderContent(content) {
+  if (typeof content === 'string') return `<p>${examText(content)}</p>`
+  return content.map(block => {
+    if (block.type === 'p') return `<p>${examText(block.text)}</p>`
+    if (block.type === 'list') return `<ul class="ex-content-list">${block.items.map(item => `<li>${examText(item)}</li>`).join('')}</ul>`
+    if (block.type === 'equation') return equationHTML(block)
+    if (block.type === 'table') {
+      return `<div class="ex-scroll" tabindex="0" role="region" aria-label="Bảng số liệu"><table class="ex-table ex-data">
+        <thead><tr>${block.head.map(cell => `<th scope="col">${examText(cell)}</th>`).join('')}</tr></thead>
+        <tbody>${block.rows.map(row => `<tr>${row.map((cell, index) => (index ? `<td>${examText(cell)}</td>` : `<th scope="row">${examText(cell)}</th>`)).join('')}</tr>`).join('')}</tbody>
+      </table></div>`
+    }
+    if (block.type === 'figure') {
+      const width = Math.min(block.displayWidth || block.width, block.width)
+      const height = Math.round(block.height * width / block.width)
+      // Scrolls inside its own focusable box on narrow screens instead of shrinking to an unreadable size.
+      const wide = width > 600
+      return `<figure class="ex-figure${wide ? ' is-wide' : ''}" tabindex="0" role="group" aria-label="Hình trong đề"><img src="${escapeHTML(block.src)}" alt="${escapeHTML(block.alt)}" width="${width}" height="${height}" loading="lazy" decoding="async">${wide ? '<figcaption class="ex-figure__hint" aria-hidden="true">Vuốt ngang để xem đủ hình</figcaption>' : ''}</figure>`
+    }
+    return ''
+  }).join('')
+}
+
 function flatQuestions(paper, blueprint) {
   return paper.sections.flatMap(section => {
     const part = blueprint.parts.find(item => item.id === section.part)
@@ -195,15 +231,15 @@ export function createExam({ root, announce, scrollToTop }) {
           ${takeable.length
             ? `<ul class="ex-list">${takeable.map(entry => examRow(entry, true)).join('')}</ul>`
             : `<div class="ex-empty">
-                <p><strong>Chưa có đề chính thức nào được phép đưa vào ChemLab.</strong></p>
-                <p>ChemLab chỉ đăng câu hỏi của đề thi khi đã xác minh nguồn, quyền sử dụng và đáp án. Trong lúc chờ, em có thể xem đề gốc tại trang của Bộ GD&ĐT (danh sách bên dưới) và ôn tập theo chương ở mục <a href="#learning/practice">Luyện tập</a>.</p>
+                <p><strong>Chưa có đề nào sẵn sàng.</strong></p>
+                <p>ChemLab chỉ đưa đề lên khi đã xác minh nguồn, số hóa và đối chiếu đáp án. Trong lúc chờ, em có thể xem đề gốc tại nguồn (danh sách bên dưới) và ôn tập theo chương ở mục <a href="#learning/practice">Luyện tập</a>.</p>
               </div>`}
         </section>
 
         ${pending.length ? `
           <section class="lx-section" aria-labelledby="ex-pending-title">
-            <h2 class="lx-section__title" id="ex-pending-title">Đề gốc — xem tại nguồn</h2>
-            <p class="lx-lead ex-small">Các đề này chưa được xác minh quyền sử dụng nên ChemLab chỉ dẫn liên kết đến nơi công bố.</p>
+            <h2 class="lx-section__title" id="ex-pending-title">Đề đang chuẩn bị — xem tại nguồn</h2>
+            <p class="lx-lead ex-small">Các đề này chưa được số hóa hoặc chưa đối chiếu xong nên ChemLab chỉ dẫn liên kết đến nơi công bố.</p>
             <ul class="ex-list">${pending.map(entry => examRow(entry, false)).join('')}</ul>
           </section>
         ` : ''}
@@ -238,7 +274,9 @@ export function createExam({ root, announce, scrollToTop }) {
           <h3 class="ex-row__title">${escapeHTML(entry.title)}</h3>
           <p class="ex-row__meta">${entry.timeLimitMinutes} phút · cấu trúc ${escapeHTML(getBlueprint(entry.blueprint).title.replace(/^.*\(cấu trúc /, '').replace(/\)$/, ''))}</p>
           ${entry.source ? `<p class="ex-row__meta">Nguồn: ${escapeHTML(entry.source.authority)}</p>` : ''}
-          ${takeable ? '' : `<p class="ex-row__note"><span class="lx-status">Chưa có quyền sử dụng</span></p><p class="ex-row__note">${escapeHTML(entry.note)}</p>`}
+          ${takeable
+            ? (entry.answerKey === 'official' ? '<p class="ex-row__note"><span class="lx-status">Đáp án chính thức</span></p>' : '')
+            : `<p class="ex-row__note"><span class="lx-status">Chưa sẵn sàng</span></p><p class="ex-row__note">${escapeHTML(entry.note)}</p>`}
         </div>
         <div class="ex-row__actions">
           ${takeable
@@ -250,6 +288,17 @@ export function createExam({ root, announce, scrollToTop }) {
   }
 
   /* ---------- Preparation ---------- */
+
+  function sourceBlock(entry, paper) {
+    const date = entry.source.publishedAt ? ` · công bố ${escapeHTML(entry.source.publishedAt.split('-').reverse().join('/'))}` : ''
+    return `
+      <dl class="ex-source">
+        <div><dt>Nguồn</dt><dd>${escapeHTML(entry.source.authority)}${date} · <a href="${escapeHTML(entry.source.documentUrl || entry.source.url)}" target="_blank" rel="noopener noreferrer">Tài liệu gốc<span class="sr-only"> (mở tab mới)</span></a></dd></div>
+        <div><dt>Đáp án</dt><dd>${paper.answerKey === 'official' ? 'Theo đáp án chính thức công bố kèm đề.' : 'Do ChemLab biên soạn, chưa có đáp án chính thức.'} Lời giải từng câu là lời giải tham khảo do ChemLab biên soạn.</dd></div>
+        <div><dt>Quyền sử dụng</dt><dd>Chủ dự án ChemLab xác nhận được phép sử dụng đề này.</dd></div>
+      </dl>
+    `
+  }
 
   function renderPrepare(entry, paper, blueprint) {
     let session = store.getSession(entry.id)
@@ -269,6 +318,7 @@ export function createExam({ root, announce, scrollToTop }) {
           <h1 class="lx-title" data-ex-heading tabindex="-1">${escapeHTML(paper.title)}</h1>
         </header>
         ${entry.kind === 'fixture' ? '<p class="ex-banner" role="note">Đây là đề kiểm thử do ChemLab soạn để thử hệ thống thi, <strong>không phải đề chính thức</strong>.</p>' : ''}
+        ${entry.source ? sourceBlock(entry, paper) : ''}
         <dl class="ex-facts">
           <div><dt>Thời gian</dt><dd>${paper.timeLimitMinutes} phút</dd></div>
           <div><dt>Số câu</dt><dd>${total} câu, ${counts.length} phần</dd></div>
@@ -393,16 +443,17 @@ export function createExam({ root, announce, scrollToTop }) {
 
         <div class="lx-page ex-stage">
           ${entry.kind === 'fixture' ? '<p class="ex-banner ex-banner--quiet">Đề kiểm thử nội bộ — không phải đề chính thức.</p>' : ''}
-          <p class="ex-part">${escapeHTML(part.title)}</p>
+          ${paper.preamble ? `<details class="ex-preamble"><summary>Dữ kiện chung của đề</summary><p>${examText(paper.preamble)}</p></details>` : ''}
+          <p class="ex-part">${escapeHTML(part.title)} · câu ${index - firstOfPart + 1} của phần</p>
           <div class="ex-qhead">
             <h1 class="px-counter" data-ex-heading tabindex="-1">Câu ${index + 1}<span>/${items.length}</span></h1>
             <button class="ui-btn ui-btn--sm ui-btn--ghost ex-flag${flagged ? ' is-on' : ''}" type="button" data-ex-flag aria-pressed="${flagged}">
               ${icon('flag')}${flagged ? 'Đã đánh dấu' : 'Đánh dấu xem lại'}
             </button>
           </div>
-          ${index === firstOfPart ? `<p class="px-hint">${escapeHTML(part.instruction)}</p>` : ''}
+          ${index === firstOfPart ? `<p class="px-hint">${escapeHTML(paper.sections.find(section => section.part === part.id)?.instruction || part.instruction)}</p>` : ''}
           <section class="px-question ex-question" aria-labelledby="ex-q-title">
-            <div class="px-question__content" id="ex-q-title">${rich(question.content)}</div>
+            <div class="px-question__content ex-content" id="ex-q-title">${renderContent(question.content)}</div>
             <form class="px-answer" data-ex-answer novalidate>
               ${renderInput(question, part, value)}
               <p class="px-input-error" data-ex-error role="alert"></p>
@@ -465,7 +516,7 @@ export function createExam({ root, announce, scrollToTop }) {
             <label class="px-option">
               <input type="radio" name="${name}" value="${escapeHTML(option.id)}"${value === option.id ? ' checked' : ''}>
               <span class="lx-option__letter" aria-hidden="true">${escapeHTML(option.id)}</span>
-              <span>${rich(option.text)}</span>
+              <span>${examText(option.text)}</span>
             </label>
           `).join('')}
         </fieldset>
@@ -477,7 +528,7 @@ export function createExam({ root, announce, scrollToTop }) {
         <div class="px-statements">
           ${question.statements.map(statement => `
             <fieldset class="px-statement">
-              <legend><span class="px-statement__id">${escapeHTML(statement.id)})</span> ${rich(statement.text)}</legend>
+              <legend><span class="px-statement__id">${escapeHTML(statement.id)})</span> ${examText(statement.text)}</legend>
               <div class="px-tf">
                 <label><input type="radio" name="${name}-${escapeHTML(statement.id)}" value="true"${value?.[statement.id] === true ? ' checked' : ''}><span>Đúng</span></label>
                 <label><input type="radio" name="${name}-${escapeHTML(statement.id)}" value="false"${value?.[statement.id] === false ? ' checked' : ''}><span>Sai</span></label>
@@ -686,19 +737,21 @@ export function createExam({ root, announce, scrollToTop }) {
                   }).join('')}
                 </tbody>
               </table>
-              <table class="ex-table">
+              ${analysis.levels.length ? `<table class="ex-table">
                 <caption>Theo mức độ</caption>
                 <thead><tr><th scope="col">Mức độ</th><th scope="col">Số câu</th><th scope="col">Điểm</th></tr></thead>
                 <tbody>
                   ${['biet', 'hieu', 'vandung'].map(key => analysis.levels.find(bucket => bucket.key === key)).filter(Boolean)
                     .map(bucket => `<tr><th scope="row">${LEVELS[bucket.key]}</th><td>${bucket.count}</td><td>${formatPoints(bucket.earned)}/${formatPoints(bucket.possible)}</td></tr>`).join('')}
                 </tbody>
-              </table>
+              </table>` : ''}
             </div>
           ` : ''}
           ${analysis.unverified
             ? `<p class="ex-small">${analysis.unverified} câu chưa có thông tin chương/mức độ được kiểm chứng nên không được tính trong phần phân tích (vẫn được tính điểm).</p>`
             : ''}
+          ${analysis.internal ? '<p class="ex-small">Phân loại theo chương do ChemLab gán dựa trên nội dung từng câu, chưa được giáo viên thẩm định.</p>' : ''}
+          ${analysis.chapters.length && !analysis.levels.length ? '<p class="ex-small">Đề gốc không công bố mức độ (Biết – Hiểu – Vận dụng) của từng câu nên không phân tích theo mức độ.</p>' : ''}
           ${!analysis.chapters.length ? '<p>Đề này chưa đủ dữ liệu để phân tích theo chương và mức độ.</p>' : ''}
           ${weakChapters.length ? `
             <p><strong>Nên ôn lại:</strong></p>
@@ -727,8 +780,8 @@ export function createExam({ root, announce, scrollToTop }) {
     let yours = 'Chưa trả lời'
     let key = ''
     if (part.type === 'single') {
-      yours = value ? `${escapeHTML(value)}. ${rich(question.options.find(option => option.id === value)?.text || '')}` : yours
-      key = `${escapeHTML(question.answer)}. ${rich(question.options.find(option => option.id === question.answer).text)}`
+      yours = value ? `${escapeHTML(value)}. ${examText(question.options.find(option => option.id === value)?.text || '')}` : yours
+      key = `${escapeHTML(question.answer)}. ${examText(question.options.find(option => option.id === question.answer).text)}`
     }
     else if (part.type === 'short') {
       yours = value ? escapeHTML(value) : yours
@@ -743,7 +796,7 @@ export function createExam({ root, announce, scrollToTop }) {
             <span class="ex-review__status">${STATUS_LABEL[scored.status]}${part.type === 'truefalse' && scored.status !== 'unanswered' ? ` (${scored.statementsCorrect}/4 ý)` : ''} · ${points}</span>
           </summary>
           <div class="ex-review__body">
-            <div class="px-question__content">${rich(question.content)}</div>
+            <div class="px-question__content ex-content">${renderContent(question.content)}</div>
             ${part.type === 'truefalse' ? `
               <table class="ex-table ex-tf">
                 <thead><tr><th scope="col">Ý</th><th scope="col">Em chọn</th><th scope="col">Đáp án</th></tr></thead>
@@ -751,7 +804,7 @@ export function createExam({ root, announce, scrollToTop }) {
                   ${question.statements.map(statement => {
                     const chosen = value?.[statement.id]
                     const truth = question.answer[statement.id]
-                    return `<tr class="${chosen === truth ? 'is-correct' : 'is-wrong'}"><th scope="row">${escapeHTML(statement.id)}) ${rich(statement.text)}</th><td>${chosen === true ? 'Đúng' : chosen === false ? 'Sai' : '—'}</td><td>${truth ? 'Đúng' : 'Sai'}</td></tr>`
+                    return `<tr class="${chosen === truth ? 'is-correct' : 'is-wrong'}"><th scope="row">${escapeHTML(statement.id)}) ${examText(statement.text)}</th><td>${chosen === true ? 'Đúng' : chosen === false ? 'Sai' : '—'}</td><td>${truth ? 'Đúng' : 'Sai'}</td></tr>`
                   }).join('')}
                 </tbody>
               </table>
@@ -759,8 +812,8 @@ export function createExam({ root, announce, scrollToTop }) {
               <p><strong>Em trả lời:</strong> ${yours}</p>
               <p><strong>Đáp án:</strong> ${key}</p>
             `}
-            <p class="px-feedback__label">${question.solution.official ? 'Lời giải chính thức' : 'Lời giải do ChemLab biên soạn (không phải lời giải chính thức)'}</p>
-            <p>${rich(question.solution.text)}</p>
+            <p class="px-feedback__label">${question.solution.official ? 'Lời giải chính thức' : 'Lời giải tham khảo do ChemLab biên soạn (không phải lời giải chính thức)'}</p>
+            <p>${examText(question.solution.text)}</p>
           </div>
         </details>
       </li>

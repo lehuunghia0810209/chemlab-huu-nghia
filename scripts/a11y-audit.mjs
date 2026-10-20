@@ -121,6 +121,41 @@ const SCENARIOS = [
     }
   },
   {
+    name: 'official paper: figure question and data table',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/tham-khao-2025-hoa'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.click('.ex-grid__list [data-ex-go="15"]')
+      await page.waitForSelector('.ex-figure')
+      await page.click('.ex-preamble summary')
+    }
+  },
+  {
+    name: 'official paper: results',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/tham-khao-2025-hoa'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.click('.ex-grid__list [data-ex-go="26"]')
+      await page.fill('.ex-short', '1,03')
+      await page.click('.ex-bar [data-ex-submit]')
+      await page.click('[data-ex-confirm]')
+      await page.waitForSelector('.ex-results')
+      await page.click('.ex-review__item:nth-child(27) summary')
+    }
+  },
+  {
     name: 'exam submit dialog',
     view: 'learning',
     async setup(page) {

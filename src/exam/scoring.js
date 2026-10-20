@@ -70,13 +70,17 @@ export function scoreExam(paper, responses = {}) {
   return { earned, possible, parts, questions }
 }
 
-// Chapter / level breakdown from question metadata. Questions whose metadata is
-// not verified are left out and counted, so the UI can say the data is partial.
+// Chapter / level breakdown from question metadata. Questions without usable
+// metadata are left out and counted, so the UI can say the data is partial.
+// 'internal' tags (assigned by ChemLab, not teacher-reviewed) are used but
+// reported, so the UI can label them. Levels are used only where a paper has them.
 export function analyse(paper, scored) {
   const byId = new Map(scored.questions.map(item => [item.id, item]))
   const chapters = new Map()
   const levels = new Map()
   let unverified = 0
+  let internal = 0
+  let withoutLevel = 0
   const add = (map, key, entry, possible) => {
     const bucket = map.get(key) || { key, earned: 0, possible: 0, count: 0 }
     bucket.earned += entry.points
@@ -90,13 +94,16 @@ export function analyse(paper, scored) {
     const possible = part.type === 'truefalse' ? part.tableHundredths.at(-1) : part.pointsHundredths
     for (const question of section.questions) {
       const entry = byId.get(question.id)
-      if (question.meta?.status !== 'verified') {
+      const status = question.meta?.status
+      if (status !== 'verified' && status !== 'internal') {
         unverified += 1
         continue
       }
+      if (status === 'internal') internal += 1
       for (const chapterId of question.meta.chapters) add(chapters, chapterId, entry, possible)
-      add(levels, question.meta.level, entry, possible)
+      if (question.meta.level) add(levels, question.meta.level, entry, possible)
+      else withoutLevel += 1
     }
   }
-  return { chapters: [...chapters.values()], levels: [...levels.values()], unverified }
+  return { chapters: [...chapters.values()], levels: [...levels.values()], unverified, internal, withoutLevel }
 }

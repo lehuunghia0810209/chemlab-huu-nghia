@@ -13,7 +13,7 @@
     "check:project": "node scripts/validate-project.mjs",
     "check:chem": "node scripts/test-chem-core.mjs",
     "check:learning": "node scripts/test-learning.mjs && node scripts/test-questions.mjs",
-    "check:exam": "node scripts/test-exam.mjs",
+    "check:exam": "node scripts/test-exam.mjs && node scripts/test-exam-papers.mjs",
     "check:ui": "node scripts/validate-final-ui.mjs",
     "check:ai": "node scripts/test-chemai-api.mjs && node scripts/test-feedback-api.mjs",
     "check:browser": "node scripts/browser-smoke.mjs",

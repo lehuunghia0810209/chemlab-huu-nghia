@@ -3,7 +3,7 @@
 import { BLUEPRINTS, getBlueprint, formatPoints } from '../src/exam/blueprints.js'
 import { scoreExam, scoreQuestion, validateShortAnswer, normalizeShortAnswer, analyse } from '../src/exam/scoring.js'
 import { validatePaper } from '../src/exam/validate.js'
-import { EXAMS, isTakeable, visibleExams, findExam, FIXTURE_FLAG } from '../src/exam/catalog.js'
+import { EXAMS, isTakeable, visibleExams, findExam, FIXTURE_FLAG, REQUIRED_STATES, stateList } from '../src/exam/catalog.js'
 import { createExamStore, STORE_KEY, CORRUPT_KEY } from '../src/exam/session.js'
 import fixture from '../src/exam/papers/fixture-kiem-thu.js'
 import { GRADES } from '../src/learning/catalog.js'
@@ -85,7 +85,7 @@ function syntheticPaper() {
   const id = () => `q${(n += 1)}`
   return {
     id: 'synthetic', title: 'Synthetic', kind: 'official-reference', blueprint: 'thpt-2025-hoa', license: 'licensed', dataVersion: 1,
-    timeLimitMinutes: 50, source: { authority: 'test', url: 'https://example.org' },
+    timeLimitMinutes: 50, answerKey: 'official', source: { authority: 'test', url: 'https://example.org' },
     sections: [
       { part: 'I', questions: Array.from({ length: 18 }, () => ({ id: id(), content: 'c', options: ['A', 'B', 'C', 'D'].map(o => ({ id: o, text: o })), answer: 'A', solution: { text: 's', official: true }, meta: { status: 'verified', chapters: ['g10-c1'], level: 'biet' } })) },
       { part: 'II', questions: Array.from({ length: 4 }, () => ({ id: id(), content: 'c', statements: ['a', 'b', 'c', 'd'].map(s => ({ id: s, text: s })), answer: { a: true, b: true, c: false, d: false }, solution: { text: 's', official: true }, meta: { status: 'verified', chapters: ['g10-c2'], level: 'hieu' } })) },
@@ -155,13 +155,16 @@ check('fixture analysis reports one unverified question', analyse(fixture, fixtu
 const flagOff = memoryStorage()
 const flagOn = memoryStorage()
 flagOn.setItem(FIXTURE_FLAG, '1')
-check('no official paper is takeable without verified rights', EXAMS.filter(e => e.kind !== 'fixture').every(e => !isTakeable(e, { storage: flagOn })))
-check('official entries keep source links', EXAMS.filter(e => e.kind !== 'fixture').every(e => /^https:\/\//.test(e.source.url) && e.license === 'pending'))
+const official = EXAMS.filter(e => e.kind !== 'fixture')
+check('only papers with every required state are takeable', official.every(e => isTakeable(e) === REQUIRED_STATES.every(state => e.states.includes(state))))
+check('owner attestation recorded without claiming the licence was seen', official.every(e => e.rights.basis === 'owner_attestation' && e.rights.status === 'OWNER_ATTESTED' && e.rights.documentSeenByAgent === false))
+check('official entries keep https source links', official.every(e => e.source.url.startsWith('https://')))
+check('untranscribed papers stay metadata-only', official.filter(e => !e.states.includes('CONTENT_TRANSCRIBED')).every(e => !e.load && !isTakeable(e)))
+check('READY_FOR_OWNER_RELEASE is derived, never declared', official.every(e => !e.states.includes('READY_FOR_OWNER_RELEASE')) && stateList(findExam('tham-khao-2025-hoa')).includes('READY_FOR_OWNER_RELEASE'))
 check('fixture hidden and not takeable without flag', !isTakeable(findExam('fixture-kiem-thu'), { storage: flagOff }) && !visibleExams({ storage: flagOff }).some(e => e.kind === 'fixture'))
 check('fixture takeable with flag', isTakeable(findExam('fixture-kiem-thu'), { storage: flagOn }))
-const licensed = { kind: 'official-exam', load: () => null, publication: 'published', license: 'licensed', verification: { transcription: 'verified', answerKey: 'verified' } }
-check('licensed + verified paper passes gate', isTakeable(licensed))
-check('licensed paper with unverified key is blocked', !isTakeable({ ...licensed, verification: { transcription: 'verified', answerKey: 'pending' } }))
+const almost = { kind: 'official-exam', load: () => null, states: REQUIRED_STATES.filter(state => state !== 'ANSWER_KEY_VERIFIED') }
+check('a paper missing one state (answer key) is blocked', !isTakeable(almost) && isTakeable({ ...almost, states: [...REQUIRED_STATES] }))
 
 /* ---------- Sessions ---------- */
 const entry = findExam('fixture-kiem-thu')
