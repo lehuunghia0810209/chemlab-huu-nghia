@@ -366,6 +366,17 @@ if (process.argv.includes('--write')) {
   fs.writeFileSync(COVERAGE_PATH, coverage)
   console.log(`Wrote ${path.relative(rootDir, COVERAGE_PATH)}`)
 }
+// Home dashboard totals are constants (the Home chunk must not load the catalog);
+// they must follow the Learning catalog and the guided activities.
+{
+  const { TOTALS, TOTAL_LESSONS, TOTAL_EXPERIMENTS } = await import('../src/final/homeDashboard.js')
+  const { getExperimentsForGrade } = await import('../src/lab/experiments/experiments.js')
+  check('home: lesson total matches Learning catalog', TOTAL_LESSONS === allLessons().length, `${TOTAL_LESSONS} vs ${allLessons().length}`)
+  check('home: per-grade lesson totals match', GRADES.every(grade => TOTALS[grade.grade].lessons === grade.chapters.reduce((sum, chapter) => sum + chapter.lessons.length, 0)))
+  check('home: experiment totals match guided activities', GRADES.every(grade => TOTALS[grade.grade].experiments === getExperimentsForGrade(grade.grade).length) &&
+    TOTAL_EXPERIMENTS === GRADES.reduce((sum, grade) => sum + getExperimentsForGrade(grade.grade).length, 0))
+}
+
 const existing = fs.existsSync(COVERAGE_PATH) ? fs.readFileSync(COVERAGE_PATH, 'utf8').replace(/\r\n/g, '\n') : ''
 check('coverage report is up to date (run with --write)', existing === coverage)
 

@@ -16,6 +16,8 @@ import {
   CURRICULUM
 } from '../src/lab/experiments/curriculum.js'
 
+import { allLessons } from '../src/learning/catalog.js'
+
 import {
   GRADE10_EXPERIMENTS
 } from '../src/lab/experiments/grade10.js'
@@ -428,12 +430,21 @@ for (const lesson of curriculumLessons) {
   }
 }
 
+// Two inventories on purpose: the guided-lab curriculum lists lessons that have
+// Lab activities (77); the Learning catalog adds review lessons without one
+// (g10-l23), giving the 78 lessons learners see. Every lab lesson must exist there.
+const learningLessonIds = new Set(allLessons().map(entry => entry.id))
+for (const lesson of curriculumLessons) {
+  if (!learningLessonIds.has(lesson.id)) fail(`Lesson của Guided Lab không có trong Learning catalog: ${lesson.id}`)
+}
+
 const stats = {
   version,
   chemicals: chemicalIds.length,
   reactions: REACTIONS.length,
   chapters: chapterIds.length,
-  lessons: curriculumLessons.length,
+  learningLessons: learningLessonIds.size,
+  guidedLabLessons: curriculumLessons.length,
   guidedActivities: experiments.length,
   guidedSteps: experiments.reduce(
     (total, experiment) => total + (experiment.steps?.length || 0),

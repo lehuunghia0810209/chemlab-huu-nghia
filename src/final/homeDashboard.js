@@ -2,13 +2,14 @@
 import { elements } from '../data/elements.js'
 import { icon } from '../shell/icons.js'
 
-const TOTALS = Object.freeze({
-  10: { lessons: 22, experiments: 23 },
+// Must match the Learning catalog (78 lessons incl. g10-l23) and guided activities; checked by scripts/test-learning.mjs.
+export const TOTALS = Object.freeze({
+  10: { lessons: 23, experiments: 23 },
   11: { lessons: 25, experiments: 25 },
   12: { lessons: 30, experiments: 30 }
 })
-const TOTAL_LESSONS = 77
-const TOTAL_EXPERIMENTS = 78
+export const TOTAL_LESSONS = 78
+export const TOTAL_EXPERIMENTS = 78
 
 const CATEGORY_VI = Object.freeze({
   'Nonmetal': 'Phi kim',
