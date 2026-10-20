@@ -25,6 +25,7 @@ const PATHS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   bolt: '<path d="m13 2.5-8 11.5h6.5L10.5 21.5l8-11.5H12Z"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   play: '<path d="M7 4.5v15l12.5-7.5Z"/>',

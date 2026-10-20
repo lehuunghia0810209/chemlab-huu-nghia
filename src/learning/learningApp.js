@@ -57,6 +57,7 @@ export function initLearning(host) {
   let reader = null
   let practiceRoot = null
   let practice = null
+  let exam = null
   let listsStale = false
   let renderToken = 0
 
@@ -116,6 +117,7 @@ export function initLearning(host) {
     listsStale = false
     renderToken += 1
     if (route.name !== 'lesson') reader = null
+    if (route.name !== 'exam') exam?.leave()
 
     if (route.name === 'grade') renderGrade(route.grade)
     else if (route.name === 'lesson') {
@@ -124,6 +126,10 @@ export function initLearning(host) {
     }
     else if (route.name === 'practice') {
       void renderPracticeRoute(renderToken, focus)
+      return
+    }
+    else if (route.name === 'exam') {
+      void renderExamRoute(renderToken, focus)
       return
     }
     else renderHome()
@@ -212,6 +218,14 @@ export function initLearning(host) {
             <p class="lx-section__note">Câu hỏi theo từng bài: một đáp án, nhiều đáp án, đúng/sai, trả lời ngắn và bài tính toán, có lời giải chi tiết.</p>
           </div>
           <a class="ui-btn" href="#learning/practice">Mở luyện tập ${icon('arrowRight')}</a>
+        </section>
+
+        <section class="lx-section lx-aside" aria-labelledby="lx-exam-title">
+          <div>
+            <h2 class="lx-section__title" id="lx-exam-title">Thi thử</h2>
+            <p class="lx-section__note">Làm đề theo cấu trúc kì thi tốt nghiệp THPT môn Hóa học: tính giờ, tự lưu bài, chấm điểm và phân tích kết quả.</p>
+          </div>
+          <a class="ui-btn" href="#learning/exam">Mở thi thử ${icon('arrowRight')}</a>
         </section>
       </div>
     `
@@ -791,6 +805,31 @@ export function initLearning(host) {
     window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', {
       detail: { grade: action.grade, lessonId: action.lessonId, experimentId: action.experimentId }
     }))
+  }
+
+  /* ---------- Exam ---------- */
+
+  async function renderExamRoute(token, focus) {
+    try {
+      if (!exam) {
+        const { createExam } = await import('../exam/examApp.js')
+        exam = createExam({ root, announce, scrollToTop })
+      }
+    }
+    catch (error) {
+      console.error('[ChemLab Learning] Không tải được Thi thử:', error)
+      if (token !== renderToken) return
+      renderMessage({
+        title: 'Không tải được Thi thử',
+        text: 'Hãy kiểm tra kết nối mạng rồi thử lại.',
+        actions: '<button class="ui-btn ui-btn--primary" type="button" data-lx-retry>Thử lại</button>',
+        role: 'alert'
+      })
+      root.querySelector('[data-lx-retry]').addEventListener('click', () => render({ focus: true }))
+      return
+    }
+    if (token !== renderToken) return
+    await exam.render(route, { focus })
   }
 
   /* ---------- Practice ---------- */

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { preview } from 'vite'
 import { chromium } from 'playwright-core'
 import { practiceJourneys } from './lib/practice-journeys.mjs'
+import { examJourneys } from './lib/exam-journeys.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const outDir = path.join(rootDir, 'test-results', 'browser-smoke')
@@ -1146,7 +1147,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

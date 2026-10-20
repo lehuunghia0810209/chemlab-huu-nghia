@@ -347,6 +347,11 @@ safeInit('User Preferences', initUserPreferences)
 let chemAIPromise = null
 
 async function ensureChemAI(initialPrompt = '') {
+  // Set by the Exam Workspace: no AI help while an exam is running.
+  if (document.documentElement.dataset.examRunning === 'true') {
+    announceMessage('ChemAI tạm tắt trong lúc làm bài thi.')
+    return null
+  }
   if (!chemAIPromise) {
     chemAIPromise = import('./ai/chemAI.js')
       .then(module => module.initChemAI({ version: APP_VERSION }))

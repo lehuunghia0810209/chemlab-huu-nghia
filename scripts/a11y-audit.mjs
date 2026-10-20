@@ -95,6 +95,68 @@ const SCENARIOS = [
     }
   },
   {
+    name: 'exam catalog (no licensed paper)',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { localStorage.removeItem('chemlab-exam-fixtures'); location.hash = '#learning/exam' })
+      await page.waitForSelector('.ex-row', { timeout: 15000 })
+    }
+  },
+  {
+    name: 'exam workspace (fixture, true/false)',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.setItem('chemlab-exam-fixtures', '1')
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/fixture-kiem-thu'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.check('input[name="ex-f-1"][value="A"]')
+      await page.click('[data-ex-flag]')
+      await page.click('.ex-grid__list [data-ex-go="3"]')
+      await page.waitForSelector('.px-statements')
+    }
+  },
+  {
+    name: 'exam submit dialog',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.setItem('chemlab-exam-fixtures', '1')
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/fixture-kiem-thu'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.click('.ex-bar [data-ex-submit]')
+      await page.waitForSelector('[data-ex-dialog][open]')
+    }
+  },
+  {
+    name: 'exam results with review open',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.setItem('chemlab-exam-fixtures', '1')
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/fixture-kiem-thu'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.check('input[name="ex-f-1"][value="B"]')
+      await page.click('.ex-bar [data-ex-submit]')
+      await page.click('[data-ex-confirm]')
+      await page.waitForSelector('.ex-results')
+      await page.click('.ex-review__item:nth-child(1) summary')
+      await page.click('.ex-review__item:nth-child(4) summary')
+    }
+  },
+  {
     name: 'learning practice',
     view: 'learning',
     async setup(page) {
