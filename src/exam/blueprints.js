@@ -6,8 +6,9 @@
 // - Cục Quản lý chất lượng: “Cấu trúc định dạng đề thi tốt nghiệp THPT từ năm 2025”
 //   (vqa.moet.gov.vn, 29/12/2023) and the 2025 reference papers (18/10/2024).
 // - Bộ GD&ĐT (VnExpress, 04/02/2026): 2026 keeps the 2025 structure, no new sample paper.
-// The true/false points table (0,1 / 0,25 / 0,5 / 1) and the 4-column short-answer
-// grid were confirmed through consistent secondary reports, not the primary text.
+// The point rules (Phần I 0,25; Phần II 0,1 / 0,25 / 0,5 / 1; Phần III 0,25) are
+// printed on the answer-key pages of the official đề tham khảo 2025 and đề minh
+// họa; the 4-column short-answer grid rests on secondary reports.
 
 export const BLUEPRINTS = Object.freeze({
   'thpt-2025-hoa': Object.freeze({
@@ -17,7 +18,9 @@ export const BLUEPRINTS = Object.freeze({
     note: 'Bộ GD&ĐT thông báo năm 2026 giữ ổn định cấu trúc năm 2025.',
     timeLimitMinutes: 50,
     maxPointsHundredths: 1000,
-    sourceStatus: 'secondary-consistent',
+    // Structure and point rules confirmed by the official 2025 reference and
+    // illustrative papers (both print the rules on their answer-key page).
+    sourceStatus: 'primary-official-papers',
     parts: Object.freeze([
       Object.freeze({
         id: 'I',

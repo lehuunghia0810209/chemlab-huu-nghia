@@ -3,6 +3,7 @@
 // from the fixture answer key in Node.
 import fixture from '../../src/exam/papers/fixture-kiem-thu.js'
 import realPaper from '../../src/exam/papers/tham-khao-2025-hoa.js'
+import illustrativePaper from '../../src/exam/papers/minh-hoa-2025-hoa.js'
 import { scoreExam } from '../../src/exam/scoring.js'
 import { formatPoints } from '../../src/exam/blueprints.js'
 
@@ -47,9 +48,9 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
       pending: document.querySelectorAll('.ex-row.is-pending').length,
       sourceLinks: [...document.querySelectorAll('.ex-row.is-pending a[target="_blank"]')].every(a => a.rel.includes('noopener') && a.href.startsWith('https://'))
     }))
-    record('exam A: only the fully verified official paper is takeable; others link to their source; fixture hidden',
-      !catalog.fixture && catalog.ready.join() === '#learning/exam/tham-khao-2025-hoa' && catalog.official && catalog.pending === 3 && catalog.sourceLinks, JSON.stringify(catalog))
-    for (const gated of [EXAM, '#learning/exam/minh-hoa-2025-hoa']) {
+    record('exam A: only fully verified official papers are takeable; others link to their source; fixture hidden',
+      !catalog.fixture && catalog.ready.sort().join() === '#learning/exam/minh-hoa-2025-hoa,#learning/exam/tham-khao-2025-hoa' && catalog.official && catalog.pending === 2 && catalog.sourceLinks, JSON.stringify(catalog))
+    for (const gated of [EXAM, '#learning/exam/tot-nghiep-2025-hoa']) {
       await page.goto(`${baseURL}/${gated}`, { waitUntil: 'load' })
       await page.waitForSelector('[data-ex-heading]')
       record(`exam A: gated paper ${gated.split('/').pop()} cannot be opened by URL`, /chưa thể làm/.test(await page.textContent('[data-ex-heading]')))
@@ -225,6 +226,45 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     await page.waitForSelector('[data-ex-start]')
     record('exam R: after one paper, another paper can be started', await page.isVisible('[data-ex-start]') && (await stored(page)).results.length === 1)
     record('console clean in the real-paper journey', errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
+  /* R2 — every question of every takeable official paper answered through the UI with the official key → 10 điểm */
+  for (const paper of [illustrativePaper, realPaper]) {
+    const { context, page, errors } = await newPage(browser, { width: 1024, height: 900, theme: 'dark' })
+    await openWithFlag(page, baseURL, `#learning/exam/${paper.id}`, { flag: false })
+    await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[data-ex-start]')
+    await page.click('[data-ex-start]')
+    await page.waitForSelector('.ex-workspace')
+    let index = 0
+    let brokenFigures = 0
+    for (const section of paper.sections) {
+      for (const question of section.questions) {
+        await goTo(page, index)
+        brokenFigures += await page.evaluate(async () => {
+          const images = [...document.querySelectorAll('.ex-figure img')]
+          await Promise.all(images.map(img => (img.complete ? null : new Promise(resolve => { img.onload = img.onerror = resolve }))))
+          return images.filter(img => !img.naturalWidth).length
+        })
+        if (section.part === 'I') await page.check(`input[name="ex-${question.id}"][value="${question.answer}"]`)
+        else if (section.part === 'II') {
+          for (const [id, value] of Object.entries(question.answer)) await page.click(`input[name="ex-${question.id}-${id}"][value="${value}"] + span`)
+        }
+        else await page.fill('.ex-short', question.answer)
+        index += 1
+      }
+    }
+    await page.click('.ex-bar [data-ex-submit]')
+    await page.waitForSelector('[data-ex-dialog][open]')
+    const dialogText = await page.textContent('[data-ex-dialog-text]')
+    await page.click('[data-ex-confirm]')
+    await page.waitForSelector('.ex-results [data-ex-heading]')
+    const heading = (await page.textContent('[data-ex-heading]')).replace(/\s+/g, ' ')
+    record(`exam R2 ${paper.id}: all 28 answered through the UI with the official key score 10/10; all figures load`,
+      heading.includes('10/10') && brokenFigures === 0 && !/chưa trả lời/.test(dialogText), `${heading} · broken figures ${brokenFigures} · ${dialogText}`)
+    record(`console clean in R2 ${paper.id}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
 

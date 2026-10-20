@@ -45,7 +45,7 @@ export const EXAMS = Object.freeze([
   }),
   Object.freeze({
     id: 'minh-hoa-2025-hoa',
-    title: 'Đề minh họa định dạng đề thi từ năm 2025 — Hóa học',
+    title: 'Đề minh họa định dạng đề thi từ năm 2025 — Hóa học (đề kiểm tra lớp 10)',
     kind: 'official-reference',
     blueprint: 'thpt-2025-hoa',
     year: 2025,
@@ -53,11 +53,14 @@ export const EXAMS = Object.freeze([
     source: {
       authority: 'Bộ GD&ĐT — Cục Quản lý chất lượng',
       url: 'https://vqa.moet.gov.vn/vi/news/thong-bao/cau-truc-dinh-dang-de-thi-tot-nghiep-thpt-tu-nam-2025-74.html',
+      documentUrl: 'https://drive.google.com/file/d/1ZuXbhxvdamaPrvcr1JuSpnZeVWMcndQn/view',
       publishedAt: '2023-12-29'
     },
     rights: OWNER,
-    states: Object.freeze(['SOURCE_VERIFIED', 'OWNER_ATTESTED']),
-    note: 'Chưa số hóa. Đề minh họa định dạng công bố trước khi có đề tham khảo 2025.'
+    answerKey: 'official',
+    states: Object.freeze(['SOURCE_VERIFIED', 'OWNER_ATTESTED', 'CONTENT_TRANSCRIBED', 'ANSWER_KEY_VERIFIED', 'SCORING_VERIFIED', 'UI_TESTED']),
+    note: 'Đề minh họa định dạng mới, dùng nội dung lớp 10. Đề và đáp án lấy từ tệp chính thức; lời giải tham khảo do ChemLab biên soạn.',
+    load: () => import('./papers/minh-hoa-2025-hoa.js')
   }),
   Object.freeze({
     id: 'tot-nghiep-2025-hoa',

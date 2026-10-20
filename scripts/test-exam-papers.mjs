@@ -26,6 +26,12 @@ const OFFICIAL_KEYS = {
     I: 'AADABDCABBBADBADDB',
     II: ['ĐĐSS', 'SSĐS', 'SĐĐĐ', 'ĐSSĐ'],
     III: ['10,7', '322', '2134', '7', '1,03', '86,1']
+  },
+  'minh-hoa-2025-hoa': {
+    page: '4_Hoa hoc.pdf trang 5 (ĐÁP ÁN ĐỀ KIỂM TRA LỚP 10)',
+    I: 'BADADBADDDCCBCBDAD',
+    II: ['SSĐĐ', 'ĐĐSĐ', 'ĐĐĐS', 'ĐĐĐS'],
+    III: ['3', '6', '3', '4', '5', '24,3']
   }
 }
 
@@ -47,6 +53,10 @@ const RECOMPUTE = {
       const mohr = molarMass('FeSO4') + 2 * molarMass('NH4') + molarMass('SO4') + 6 * molarMass('H2O')
       return round(molFe * mohr / 2.656 * 100, 1)
     }
+  },
+  'minh-hoa-2025-hoa': {
+    'mh25-iii6': () => round((24 * 79 + 25 * 10 + 26 * 11) / 100, 1),
+    'mh25-iii5': () => 2 + 3
   }
 }
 const asNumber = text => Number(String(text).replace(',', '.'))
