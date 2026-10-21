@@ -61,7 +61,8 @@ export function parseNumber(raw) {
   if (/^[\d.,]/.test(unit)) {
     return { ok: false, error: 'Không dùng dấu cách hay dấu chấm để phân tách hàng nghìn.' }
   }
-  const value = Number(digits.replace(',', '.')) * 10 ** exponent * (sign === '-' || sign === '−' ? -1 : 1)
+  // Number('…e…') is correctly rounded by spec; mantissa * 10 ** n is not (Math.pow differs between V8 versions).
+  const value = Number(`${sign === '-' || sign === '−' ? '-' : ''}${digits.replace(',', '.')}e${exponent}`)
   if (!Number.isFinite(value)) return { ok: false, error: 'Giá trị quá lớn hoặc không hợp lệ.' }
   return { ok: true, value, unit: unit.replace(/\s+/g, '') }
 }

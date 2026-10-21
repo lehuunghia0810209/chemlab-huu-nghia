@@ -29,6 +29,11 @@ check('parse: integer with unit', number('56 g').value === 56 && number('56 g').
 check('parse: unit without space', number('1,1V').unit === 'V')
 check('parse: negative and unicode minus', number('-0,76').value === -0.76 && number('−0,76').value === -0.76)
 check('parse: e notation', number('6,02e23').value === 6.02e23)
+// Exact, engine-independent results (Math.pow-based scaling broke on Node 22).
+check('parse: exponents are exact on every engine', [
+  ['6,02×10^23', 6.02e23], ['6.02E23', 6.02e23], ['1,6×10⁻¹⁹', 1.6e-19], ['-1,6e-19', -1.6e-19], ['−2,5 x 10^3', -2500],
+  ['9,109e-31', 9.109e-31], ['1,38e-23', 1.38e-23], ['6,626×10^-34', 6.626e-34], ['3e8', 3e8], ['0,1e1', 1]
+].every(([text, value]) => number(text).value === value))
 check('parse: ×10^', Math.abs(number('6,02×10^23').value - 6.02e23) < 1e9)
 check('parse: x10^ with spaces', Math.abs(number('1,6 x 10^-19').value - 1.6e-19) < 1e-30)
 check('parse: superscript exponent', Math.abs(number('1,6×10⁻¹⁹').value - 1.6e-19) < 1e-30)
