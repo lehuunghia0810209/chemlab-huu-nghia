@@ -53,8 +53,8 @@ const port = async (number, up = true) => {
   throw new Error(`port ${number} did not go ${up ? 'up' : 'down'}`)
 }
 const worker = () => start('quota worker', ['dev', '--config', workerConfig, '--port', '8788', '--persist-to', path.join(work, 'worker-state')], work)
-const pages = (feedback, chat) => start(`pages (limits feedback ${feedback}, chat ${chat})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
-  '--do', 'CHEMAI_BUDGET=QuotaCounter@chemai-quota', '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key',
+const pages = (feedback, chat, { budget = true } = {}) => start(`pages (limits feedback ${feedback}, chat ${chat}${budget ? '' : ', no budget binding'})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
+  ...(budget ? ['--do', 'CHEMAI_BUDGET=QuotaCounter@chemai-quota'] : []), '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key',
   '--binding', `CHEMAI_DAILY_LIMIT_FEEDBACK=${feedback}`, '--binding', `CHEMAI_DAILY_LIMIT_CHAT=${chat}`], root)
 
 const base = 'http://localhost:8790'
@@ -103,12 +103,20 @@ try {
   stop(site)
   await port(8790, false)
   clearOwnRegistry()
+  site = pages(50, 50, { budget: false })
+  await port(8790)
+  expect('no budget binding: chat refuses before any Gemini call (P1 fail-open)', await call('chat'), /^503 AI_BUDGET_NOT_CONFIGURED/)
+  expect('no budget binding: feedback stays disabled', await call('feedback'), /^503 FEEDBACK_DISABLED/)
+  stop(site)
+  await port(8790, false)
+  clearOwnRegistry()
   quota = worker()
   await port(8788)
-  site = pages(50, 50)
+  site = pages(50, 7) // the Durable Object keeps today's 3 chat units from the first phase: 4 left
   await port(8790)
   expect('quota worker back: feedback reaches Gemini again', await call('feedback'), /^502/)
-  expect('quota worker back: chat reaches Gemini again', await call('chat'), /^502/)
+  const burst = (await Promise.all(Array.from({ length: 8 }, () => call('chat')))).map(item => item.split(' ')[0])
+  expect('8 concurrent chats against the real Durable Object, 3 of 7 already used: exactly 4 reach Gemini', `${burst.filter(item => item === '502').length} passed, ${burst.filter(item => item === '429').length} refused`, /^4 passed, 4 refused$/)
 }
 finally {
   children.forEach(stop)

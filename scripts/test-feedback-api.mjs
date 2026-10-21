@@ -204,7 +204,8 @@ await test('limiter error fails closed', async () => {
 })
 await test('KV daily budget stops after the limit', async () => {
   const quota = kv()
-  const env = { CHEMAI_QUOTA: quota }
+  assert.deepEqual(await checkShared({ CHEMAI_QUOTA: quota }, { key: 'k', scope: 'feedback', limit: 3 }), { allowed: false, code: 'BUDGET_NOT_CONFIGURED' }, 'KV needs explicit acceptance')
+  const env = { CHEMAI_QUOTA: quota, CHEMAI_ACCEPT_APPROX_BUDGET: 'on' }
   const day = new Date('2026-10-20T08:00:00Z')
   const outcomes = []
   for (let index = 0; index < 4; index += 1) outcomes.push((await checkShared(env, { key: 'k', scope: 'feedback', limit: 3, now: day })).allowed)
@@ -215,7 +216,7 @@ await test('chat honours the shared limiter too', async () => {
   mockGemini({})
   const response = await chatPost({
     request: new Request(`${origin}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': '203.0.113.99' }, body: JSON.stringify({ message: 'Giải thích H2O' }) }),
-    env: { GEMINI_API_KEY: 'k', CHEMAI_LIMITER: limiter(false) }
+    env: { GEMINI_API_KEY: 'k', CHEMAI_BUDGET: durableBudget(), CHEMAI_LIMITER: limiter(false) }
   })
   assert.equal(response.status, 429)
   assert.equal(fetchCalls, 0)

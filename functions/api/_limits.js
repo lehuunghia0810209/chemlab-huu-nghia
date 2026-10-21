@@ -9,7 +9,8 @@
 //   CHEMAI_LIMITER — Workers Rate Limiting binding (per Cloudflare location,
 //                    eventually consistent). Pages Functions do not list this
 //                    binding type; kept for a Workers deployment.
-// Errors from a configured binding fail closed.
+// Errors from a configured binding fail closed, and so does a missing budget:
+// without one, no endpoint may call Gemini (no unbounded cost).
 
 export function sharedControls(env) {
   return {
@@ -17,6 +18,13 @@ export function sharedControls(env) {
     budget: typeof env?.CHEMAI_QUOTA?.get === 'function' && typeof env?.CHEMAI_QUOTA?.put === 'function',
     limiter: typeof env?.CHEMAI_LIMITER?.limit === 'function'
   }
+}
+
+// A cost budget is the exact Durable Object, or KV only when the owner
+// explicitly accepts its approximate count. A rate limiter is not a budget.
+export function costBudgetConfigured(env) {
+  const controls = sharedControls(env)
+  return controls.strictBudget || (controls.budget && env?.CHEMAI_ACCEPT_APPROX_BUDGET === 'on')
 }
 
 export function dailyLimit(env, scope, fallback) {
@@ -58,7 +66,7 @@ export async function consumeBudget(env, { scope, limit, now = new Date() }) {
       return { allowed: false, code: 'LIMITER_UNAVAILABLE' }
     }
   }
-  else if (controls.budget) {
+  else if (costBudgetConfigured(env)) {
     const budgetKey = `budget:${scope}:${day}`
     try {
       const used = Number(await env.CHEMAI_QUOTA.get(budgetKey)) || 0
@@ -69,5 +77,6 @@ export async function consumeBudget(env, { scope, limit, now = new Date() }) {
       return { allowed: false, code: 'LIMITER_UNAVAILABLE' }
     }
   }
+  else return { allowed: false, code: 'BUDGET_NOT_CONFIGURED' }
   return { allowed: true, controls }
 }

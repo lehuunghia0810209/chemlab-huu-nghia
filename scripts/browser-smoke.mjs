@@ -273,6 +273,41 @@ async function chemAIPhoneCheck(browser, baseURL) {
   await context.close()
 }
 
+// /api/chat is stubbed (no Pages Functions under vite preview, never a real Gemini call).
+async function chemAIErrorJourney(browser, baseURL) {
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
+  const replies = [
+    [503, { ok: false, code: 'GEMINI_PRECONDITION_FAILED', reason: 'REGION_NOT_SUPPORTED', message: 'ChemAI tạm thời chưa khả dụng do điều kiện sử dụng dịch vụ AI phía máy chủ.' }],
+    [503, { ok: false, code: 'GEMINI_OVERLOADED', message: 'Gemini đang quá tải.' }],
+    [200, { ok: true, answer: 'Nước là H₂O.', actions: [], suggestions: [], meta: { model: 'stub' } }]
+  ]
+  await context.route('**/api/chat', route => {
+    const [status, body] = route.request().method() === 'GET' ? [200, { ok: true, configured: true, model: 'stub' }] : replies.shift()
+    return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
+  })
+  errors.length = 0
+  await openView(page, baseURL, 'home')
+  await page.click('.app-topbar__ai')
+  await page.waitForSelector('.chemai-root.is-open #chemai-input')
+  const ask = async text => {
+    await page.fill('#chemai-input', text)
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => !document.querySelector('#chemai-input').disabled && !document.querySelector('#chemai-thinking'))
+  }
+  await ask('H2O là gì?')
+  const precondition = await page.evaluate(() => ({ notice: document.querySelector('.chemai-system-notice')?.textContent || '', retry: Boolean(document.querySelector('[data-ai-retry]')) }))
+  record('ChemAI: an account precondition error shows a clear notice without a useless retry button',
+    /chưa khả dụng/.test(precondition.notice) && !precondition.retry, JSON.stringify(precondition))
+  await ask('H2O là gì?')
+  const retryable = await page.isVisible('[data-ai-retry]')
+  await page.click('[data-ai-retry]')
+  await page.waitForFunction(() => /Nước là H₂O/.test(document.querySelector('#chemai-messages').textContent))
+  const kept = await page.evaluate(() => document.querySelectorAll('.chemai-message.user').length)
+  record('ChemAI: an overload error offers retry, retry answers, and the conversation is kept', retryable && kept >= 2, `retry ${retryable}, user messages ${kept}`)
+  record('console clean in the ChemAI error journey', errors.every(item => /Failed to load resource/.test(item)), errors.join(' | '))
+  await context.close()
+}
+
 async function pwaCheck(browser, baseURL) {
   const { context, page } = await newPage(browser, { width: 1280, height: 800, theme: 'dark', serviceWorkers: 'allow' })
   const legacyProgress = {
@@ -1153,7 +1188,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['chemai errors', chemAIErrorJourney], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

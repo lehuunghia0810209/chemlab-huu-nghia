@@ -9,6 +9,7 @@ const SESSION_KEY = 'chemlab-v62-ai-session'
 const MAX_STORED_MESSAGES = 24
 const MAX_HISTORY_TO_SERVER = 10
 const MAX_INPUT_LENGTH = 4000
+const CLIENT_TIMEOUT_MS = 65_000
 
 let singleton = null
 
@@ -588,6 +589,9 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     if (mobileMedia.matches) input.blur()
 
     controller = new AbortController()
+    const request = controller
+    // The server gives up after 52 s; never leave the learner waiting forever.
+    const timer = setTimeout(() => request.abort('timeout'), CLIENT_TIMEOUT_MS)
 
     try {
       if (!statusChecked || serviceState !== 'online') {
@@ -647,7 +651,11 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     catch (error) {
       removeThinking()
 
-      if (error?.name === 'AbortError') {
+      if (request.signal.reason === 'timeout') {
+        lastFailedQuestion = question
+        renderSystemNotice('warning', 'ChemAI phản hồi quá lâu', 'Kết nối hoặc máy chủ đang chậm. Hãy thử lại.', { retry: true })
+      }
+      else if (error?.name === 'AbortError') {
         renderSystemNotice('neutral', 'Đã dừng', 'Bạn đã dừng câu trả lời hiện tại.')
       }
       else if (error?.code === 'LOCAL_UI_ONLY') {
@@ -680,9 +688,15 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'GEMINI_OVERLOADED',
           'AI_REQUEST_FAILED'
         ])
+        // Server-side configuration: retrying from the browser cannot help.
+        const configurationCodes = new Set([
+          'GEMINI_AUTH_FAILED',
+          'GEMINI_PRECONDITION_FAILED',
+          'AI_BUDGET_NOT_CONFIGURED'
+        ])
 
-        if (error?.code === 'GEMINI_AUTH_FAILED') {
-          setServiceState('setup', 'Kiểm tra API')
+        if (configurationCodes.has(error?.code)) {
+          setServiceState('setup', 'Tạm ngưng')
         }
         else if (reachableServerCodes.has(error?.code)) {
           setServiceState('online', 'Gemini')
@@ -695,11 +709,12 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'warning',
           'ChemAI chưa thể trả lời',
           error?.message || 'Kết nối tạm thời có vấn đề. Hãy thử lại.',
-          { retry: true }
+          { retry: !configurationCodes.has(error?.code) }
         )
       }
     }
     finally {
+      clearTimeout(timer)
       controller = null
       setPending(false)
       input.disabled = false

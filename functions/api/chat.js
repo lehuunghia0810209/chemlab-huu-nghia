@@ -1,5 +1,5 @@
 import { retrieveChemKnowledge } from './_knowledge.js'
-import { checkShared, consumeBudget, dailyLimit } from './_limits.js'
+import { checkShared, consumeBudget, costBudgetConfigured, dailyLimit } from './_limits.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
@@ -321,6 +321,30 @@ export function providerError(payload, rawText = '') {
     code,
     message: message.slice(0, 500)
   }
+}
+
+// Upstream text may echo request data; drop anything shaped like a key or token.
+export function redact(value, max = 300) {
+  return String(value ?? '')
+    .replace(/AIza[\w-]{10,}/g, '[redacted]')
+    .replace(/\b(key|token|authorization|bearer)\b\s*[=:]?\s*[^\s,;&]+/gi, '$1=[redacted]')
+    .slice(0, max)
+}
+
+// 400 FAILED_PRECONDITION = an account prerequisite (billing, region of the
+// calling server for the free tier), not a payload defect: never retried.
+export function preconditionReason(message) {
+  const text = String(message || '')
+  if (/location|country|region|territor/i.test(text)) return 'REGION_NOT_SUPPORTED'
+  if (/billing|paid|free tier/i.test(text)) return 'BILLING_REQUIRED'
+  return 'ACCOUNT_PRECONDITION'
+}
+
+// One structured line per request for Cloudflare logs. No key, headers, IP or conversation text.
+function logRequest(entry) {
+  const line = JSON.stringify({ event: 'chemai.chat', apiVersion: 'v1beta', ...entry })
+  if (entry.status >= 500 || entry.upstreamStatus >= 400) console.error(line)
+  else console.log(line)
 }
 
 function isQuotaExhausted(result) {
@@ -687,19 +711,23 @@ export async function onRequestPost(context) {
     )
   }
 
-  // Cross-isolate limit and daily budget when the owner configured them.
-  const shared = await checkShared(env, { key: clientRateKey(request), scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
-  if (!shared.allowed) {
+  const requestId = crypto.randomUUID()
+  const started = Date.now()
+  const colo = request.cf?.colo || null
+  const model = String(env.GEMINI_MODEL || DEFAULT_MODEL)
+
+  // Fail closed: without an exact (or explicitly accepted) daily budget the
+  // server never calls Gemini, so a public deployment cannot run up cost.
+  if (!costBudgetConfigured(env)) {
+    logRequest({ requestId, status: 503, quota: 'BUDGET_NOT_CONFIGURED', model, colo })
     return json(
       {
         ok: false,
-        code: shared.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'AI_BUDGET_LIMITED',
-        message: shared.code === 'RATE_LIMITED'
-          ? 'Bạn đang gửi câu hỏi quá nhanh. Hãy thử lại sau một lúc.'
-          : 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.'
+        code: 'AI_BUDGET_NOT_CONFIGURED',
+        requestId,
+        message: 'ChemAI tạm thời chưa được bật trên máy chủ. Các công cụ khác của ChemLab vẫn dùng bình thường.'
       },
-      429,
-      { 'Retry-After': '60' }
+      503
     )
   }
 
@@ -756,13 +784,31 @@ export async function onRequestPost(context) {
     )
   }
 
+  // Budget is charged only for valid requests: one unit per upstream call.
+  const shared = await checkShared(env, { key: clientRateKey(request), scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
+  if (!shared.allowed) {
+    logRequest({ requestId, status: 429, quota: shared.code, model, colo })
+    return json(
+      {
+        ok: false,
+        code: shared.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'AI_BUDGET_LIMITED',
+        requestId,
+        message: shared.code === 'RATE_LIMITED'
+          ? 'Bạn đang gửi câu hỏi quá nhanh. Hãy thử lại sau một lúc.'
+          : 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.'
+      },
+      429,
+      { 'Retry-After': '60' }
+    )
+  }
+
   const history = sanitizeHistory(body?.history)
   const appContext = sanitizeContext(body?.context)
   const knowledge = retrieveChemKnowledge(message, appContext)
-  const model = String(env.GEMINI_MODEL || DEFAULT_MODEL)
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort('timeout'), 52000)
+  let charged = 1
 
   try {
     const fallbackModelList = fallbackModels(env.GEMINI_FALLBACK_MODELS, model)
@@ -780,7 +826,11 @@ export async function onRequestPost(context) {
       apiKey: env.GEMINI_API_KEY,
       body: requestBody,
       signal: controller.signal,
-      beforeRetry: async () => (await consumeBudget(env, { scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })).allowed
+      beforeRetry: async () => {
+        const outcome = await consumeBudget(env, { scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
+        if (outcome.allowed) charged += 1
+        return outcome.allowed
+      }
     })
 
     if (!result) {
@@ -789,21 +839,40 @@ export async function onRequestPost(context) {
 
     const { upstream, payload, rawText: rawUpstream } = result
     const activeModel = result.model
+    const trace = {
+      requestId,
+      model,
+      activeModel,
+      colo,
+      upstreamStatus: upstream.status,
+      attempts: result.attemptCount,
+      fallbackUsed: result.fallbackUsed,
+      budgetUnits: charged
+    }
 
     if (!upstream.ok) {
       const provider = providerError(payload, rawUpstream)
       const isAuthError = upstream.status === 401 || upstream.status === 403
       const isModelError = isModelUnavailable(result)
+      const isPrecondition = upstream.status === 400 && String(provider.code).toUpperCase() === 'FAILED_PRECONDITION'
       const isBadRequest = upstream.status === 400
       const isRateLimited = upstream.status === 429
 
       let code = 'AI_UPSTREAM_ERROR'
       let message = 'Gemini đang tạm thời không phản hồi. Hãy thử lại.'
       let status = 502
+      let reason
 
       if (isAuthError) {
         code = 'GEMINI_AUTH_FAILED'
         message = 'Gemini từ chối API key. Hãy kiểm tra lại Secret GEMINI_API_KEY trên Cloudflare.'
+      }
+      else if (isPrecondition) {
+        // Account/billing/region of the server: retrying or another model cannot fix it.
+        code = 'GEMINI_PRECONDITION_FAILED'
+        reason = preconditionReason(provider.message)
+        message = 'ChemAI tạm thời chưa khả dụng do điều kiện sử dụng dịch vụ AI phía máy chủ. Quản trị viên cần kiểm tra cấu hình; các công cụ khác của ChemLab vẫn dùng bình thường.'
+        status = 503
       }
       else if (isModelError) {
         code = 'GEMINI_MODEL_UNAVAILABLE'
@@ -826,17 +895,22 @@ export async function onRequestPost(context) {
         status = 503
       }
 
-      console.error(
-        '[ChemAI] Gemini upstream error',
-        upstream.status,
-        provider.code,
-        provider.message.slice(0, 240)
-      )
+      logRequest({
+        ...trace,
+        status,
+        code,
+        reason,
+        upstreamCode: provider.code,
+        upstreamMessage: redact(provider.message),
+        durationMs: Date.now() - started
+      })
 
       return json(
         {
           ok: false,
           code,
+          ...(reason ? { reason } : {}),
+          requestId,
           providerHttpStatus: upstream.status,
           upstreamCode: provider.code,
           attempts: result.attemptCount,
@@ -851,6 +925,7 @@ export async function onRequestPost(context) {
     const blockReason = String(payload?.promptFeedback?.blockReason || '')
 
     if (blockReason || finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+      logRequest({ ...trace, status: 422, code: 'AI_BLOCKED', reason: blockReason || finishReason, durationMs: Date.now() - started })
       return json(
         {
           ok: false,
@@ -879,6 +954,8 @@ export async function onRequestPost(context) {
       throw new Error('ChemAI structured output thiếu answer.')
     }
 
+    logRequest({ ...trace, status: 200, durationMs: Date.now() - started })
+
     return json({
       ok: true,
       answer,
@@ -888,14 +965,24 @@ export async function onRequestPost(context) {
     })
   }
   catch (error) {
-      const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
+    const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
 
-    console.error('[ChemAI] Request failed:', error?.message || error)
+    logRequest({
+      requestId,
+      model,
+      colo,
+      status: 502,
+      code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
+      error: redact(error?.message || error, 200),
+      budgetUnits: charged,
+      durationMs: Date.now() - started
+    })
 
     return json(
       {
         ok: false,
         code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
+        requestId,
         message: timedOut
           ? 'ChemAI phản hồi quá lâu. Hãy thử lại.'
           : 'ChemAI gặp lỗi kết nối. Hãy thử lại.'

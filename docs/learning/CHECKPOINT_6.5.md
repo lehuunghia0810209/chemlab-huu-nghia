@@ -41,3 +41,7 @@ Nguồn đề: thư mục của chủ dự án `dethihoa` trên Desktop (OneDriv
 Kiểm thử cuối: build+check PASS (exam 84, papers 850, feedback 20) · browser 359/359 (2 lần liên tiếp) · a11y 100 PASS · npm audit 0 · local Cloudflare runtime 12/12. NOT RUN: staging, Gemini thật, thiết bị thật, screen reader.
 
 Verdict: TECHNICALLY COMPLETE — READY FOR OWNER ACCEPTANCE. Còn: G6/G7 (cần phê duyệt staging một lần, `docs/release/CLOUDFLARE_STAGING_VERIFICATION.md` §4), G8 thẩm định giáo viên, G10 phê duyệt phát hành; DTT 2–4 vẫn BLOCKED.
+
+## ChemAI production hotfix (2026-10-21)
+
+Production `main` = `2ce2914` (owner merged `evolution/next` @ `37f30b6`). Lỗi `400 FAILED_PRECONDITION`: không do code (model/endpoint/payload hợp lệ theo tài liệu Google). Nguyên nhân thuộc điều kiện tài khoản (Free Tier); giả thuyết mạnh nhất là Functions chạy tại colo HKG (Hồng Kông không thuộc vùng Gemini hỗ trợ). CHƯA xác nhận bằng log Google. Đã sửa: P1 fail-open (thiếu `CHEMAI_BUDGET` → 503, 0 lượt gọi), kiểm tra input trước khi trừ quota, mã `GEMINI_PRECONDITION_FAILED` + `reason`, log có cấu trúc + `requestId`, UI không retry lỗi cấu hình, timeout phía client 65 s. Chi tiết và việc của chủ dự án: `docs/release/CHEMAI_PRODUCTION_HOTFIX_6.5.md`. Kiểm thử: build PASS · workerd 14/14 · browser 362/362 · a11y PASS · audit 0. Preview/production/Gemini thật: NOT RUN.
