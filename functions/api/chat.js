@@ -1,4 +1,5 @@
 import { retrieveChemKnowledge } from './_knowledge.js'
+import { checkShared, consumeBudget, dailyLimit } from './_limits.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
@@ -78,7 +79,7 @@ const RESPONSE_SCHEMA = Object.freeze({
   additionalProperties: false
 })
 
-function json(data, status = 200, extraHeaders = {}) {
+export function json(data, status = 200, extraHeaders = {}) {
   return new Response(
     JSON.stringify(data),
     {
@@ -93,7 +94,7 @@ function json(data, status = 200, extraHeaders = {}) {
   )
 }
 
-function clientRateKey(request) {
+export function clientRateKey(request) {
   const value = request.headers.get('CF-Connecting-IP')?.trim()
   if (!value || value.length > 45) return SHARED_RATE_KEY
 
@@ -164,7 +165,7 @@ function rateLimit(request) {
   return { allowed: true, retryAfter: 0 }
 }
 
-function sameOrigin(request) {
+export function sameOrigin(request) {
   const origin = request.headers.get('Origin')
   if (!origin) return true
 
@@ -300,7 +301,7 @@ function buildInteractionInput({ message, history, appContext, knowledge }) {
   ].join('\n\n')
 }
 
-function extractGenerateContentText(payload) {
+export function extractGenerateContentText(payload) {
   const candidates = Array.isArray(payload?.candidates) ? payload.candidates : []
   const parts = candidates[0]?.content?.parts
 
@@ -313,7 +314,7 @@ function extractGenerateContentText(payload) {
     .trim()
 }
 
-function providerError(payload, rawText = '') {
+export function providerError(payload, rawText = '') {
   const code = payload?.error?.status || payload?.error?.code || null
   const message = String(payload?.error?.message || rawText || '').trim()
   return {
@@ -342,7 +343,7 @@ function isModelUnavailable(result) {
   )
 }
 
-function cleanStructuredText(value) {
+export function cleanStructuredText(value) {
   return String(value ?? '')
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
@@ -465,7 +466,7 @@ function generateContentBody({ message, history, appContext, knowledge, thinking
   }
 }
 
-async function requestGemini({ model, apiKey, body, signal }) {
+export async function requestGemini({ model, apiKey, body, signal }) {
   const upstreamUrl = `${GEMINI_API_ROOT}/${encodeURIComponent(model)}:generateContent`
   const upstream = await fetch(
     upstreamUrl,
@@ -504,7 +505,8 @@ async function requestGeminiResilient({
   fallbackModelList,
   apiKey,
   body,
-  signal
+  signal,
+  beforeRetry = null
 }) {
   const attemptPlan = [
     primaryModel,
@@ -513,11 +515,18 @@ async function requestGeminiResilient({
   ].slice(0, MAX_UPSTREAM_ATTEMPTS)
 
   let lastResult = null
+  let lastError = null
   let attemptCount = 0
 
   for (let index = 0; index < attemptPlan.length; index += 1) {
     const model = attemptPlan[index]
     let result
+
+    // Every extra upstream call must fit the shared budget too.
+    if (index > 0 && beforeRetry && !(await beforeRetry())) {
+      if (lastResult) return lastResult
+      throw lastError
+    }
 
     attemptCount += 1
 
@@ -531,6 +540,7 @@ async function requestGeminiResilient({
     }
     catch (error) {
       if (signal?.aborted || index >= attemptPlan.length - 1) throw error
+      lastError = error
 
       console.warn(
         '[ChemAI] Gemini network error, retrying',
@@ -677,6 +687,22 @@ export async function onRequestPost(context) {
     )
   }
 
+  // Cross-isolate limit and daily budget when the owner configured them.
+  const shared = await checkShared(env, { key: clientRateKey(request), scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
+  if (!shared.allowed) {
+    return json(
+      {
+        ok: false,
+        code: shared.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'AI_BUDGET_LIMITED',
+        message: shared.code === 'RATE_LIMITED'
+          ? 'Bạn đang gửi câu hỏi quá nhanh. Hãy thử lại sau một lúc.'
+          : 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.'
+      },
+      429,
+      { 'Retry-After': '60' }
+    )
+  }
+
   let rawBody
   try {
     rawBody = await request.text()
@@ -753,7 +779,8 @@ export async function onRequestPost(context) {
       fallbackModelList,
       apiKey: env.GEMINI_API_KEY,
       body: requestBody,
-      signal: controller.signal
+      signal: controller.signal,
+      beforeRetry: async () => (await consumeBudget(env, { scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })).allowed
     })
 
     if (!result) {

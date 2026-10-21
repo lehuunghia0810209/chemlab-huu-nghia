@@ -3,6 +3,7 @@ import {
   getContextLabel,
   getSmartSuggestions
 } from './contextBuilder.js'
+import { APP_VERSION } from '../appMeta.js'
 
 const SESSION_KEY = 'chemlab-v62-ai-session'
 const MAX_STORED_MESSAGES = 24
@@ -178,7 +179,7 @@ function isLocalHost() {
   return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
 }
 
-export function initChemAI({ version = '6.2.0' } = {}) {
+export function initChemAI({ version = APP_VERSION } = {}) {
   if (singleton) return singleton
 
   let messages = loadSession()

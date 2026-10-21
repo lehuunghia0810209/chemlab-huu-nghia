@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { APP_VERSION } from '../src/appMeta.js'
 
 import {
   onRequestGet,
@@ -52,7 +53,7 @@ const statusPayload = await statusResponse.json()
 assert.equal(statusResponse.status, 200)
 assert.equal(statusPayload.configured, false)
 assert.equal(statusPayload.provider, 'Gemini')
-assert.equal(statusPayload.release, '6.2.0')
+assert.equal(statusPayload.release, APP_VERSION)
 
 const noKeyResponse = await onRequestPost({
   request: makeRequest({ message: 'Giải thích H2O' }),
@@ -168,7 +169,7 @@ try {
 
   assert.match(upstreamUrl, /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-3\.8-flash:generateContent/)
   assert.equal(upstreamHeaders['x-goog-api-key'], 'test-only-key')
-  assert.match(upstreamHeaders['x-goog-api-client'], /chemlab\/6\.2\.0/)
+  assert.equal(upstreamHeaders['x-goog-api-client'], `chemlab/${APP_VERSION}`)
   assert.equal(upstreamBody.generationConfig.responseMimeType, 'application/json')
   assert.equal(upstreamBody.generationConfig.thinkingConfig.thinkingLevel, 'low')
   assert.equal(upstreamBody.generationConfig.maxOutputTokens, 1800)

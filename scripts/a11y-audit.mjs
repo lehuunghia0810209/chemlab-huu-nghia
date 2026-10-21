@@ -29,6 +29,192 @@ const SCENARIOS = [
   { name: 'periodic', view: 'periodic' },
   { name: 'tools', view: 'tools' },
   { name: 'learning', view: 'learning' },
+  {
+    name: 'learning curriculum browser',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/grade-11' })
+      await page.waitForSelector('.lx-chapter')
+    }
+  },
+  {
+    name: 'learning reader (table, figure)',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/lesson/g12-l15' })
+      await page.waitForSelector('#lx-step-title')
+      if (await page.isVisible('.lx-steps-toggle')) await page.click('.lx-steps-toggle')
+      await page.click('.lx-steps [data-step-index="2"]')
+      await page.waitForSelector('.lx-figure')
+    }
+  },
+  {
+    name: 'learning quick check answered',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/lesson/g10-l1' })
+      await page.waitForSelector('#lx-step-title')
+      if (await page.isVisible('.lx-steps-toggle')) await page.click('.lx-steps-toggle')
+      await page.click('.lx-steps [data-step-index="7"]')
+      await page.click('[data-quiz="g10-l1-c1"] [data-quiz-option="b"]')
+      await page.click('[data-quiz="g10-l1-c2"] [data-quiz-option="a"]')
+    }
+  },
+  {
+    name: 'practice home',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice' })
+      await page.waitForFunction(() => /Có \d+ câu/.test(document.querySelector('[data-px-available]')?.textContent || ''), null, { timeout: 15000 })
+    }
+  },
+  {
+    name: 'practice question with feedback',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice/lesson/g10-l3' })
+      await page.waitForSelector('.px-question', { timeout: 15000 })
+      for (let index = 0; index < 7; index += 1) {
+        if (await page.$('.px-option input')) break
+        await page.click('[data-px-next]')
+      }
+      await page.check('.px-option input')
+      await page.click('.px-answer button[type="submit"]')
+      await page.waitForSelector('.px-feedback')
+    }
+  },
+  {
+    name: 'practice results',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice/lesson/g10-l1' })
+      await page.waitForSelector('.px-question', { timeout: 15000 })
+      page.once('dialog', dialog => dialog.accept())
+      await page.click('.px-head [data-px-finish]')
+      await page.waitForSelector('.px-results')
+    }
+  },
+  {
+    name: 'exam catalog (no licensed paper)',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { localStorage.removeItem('chemlab-exam-fixtures'); location.hash = '#learning/exam' })
+      await page.waitForSelector('.ex-row', { timeout: 15000 })
+    }
+  },
+  {
+    name: 'exam workspace (fixture, true/false)',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.setItem('chemlab-exam-fixtures', '1')
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/fixture-kiem-thu'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.check('input[name="ex-f-1"][value="A"]')
+      await page.click('[data-ex-flag]')
+      await page.click('.ex-grid__list [data-ex-go="3"]')
+      await page.waitForSelector('.px-statements')
+    }
+  },
+  {
+    name: 'official paper: figure question and data table',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/tham-khao-2025-hoa'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.click('.ex-grid__list [data-ex-go="15"]')
+      await page.waitForSelector('.ex-figure')
+      await page.click('.ex-preamble summary')
+    }
+  },
+  {
+    name: 'official paper: results',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/tham-khao-2025-hoa'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.click('.ex-grid__list [data-ex-go="26"]')
+      await page.fill('.ex-short', '1,03')
+      await page.click('.ex-bar [data-ex-submit]')
+      await page.click('[data-ex-confirm]')
+      await page.waitForSelector('.ex-results')
+      await page.click('.ex-review__item:nth-child(27) summary')
+    }
+  },
+  {
+    name: 'exam submit dialog',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.setItem('chemlab-exam-fixtures', '1')
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/fixture-kiem-thu'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.click('.ex-bar [data-ex-submit]')
+      await page.waitForSelector('[data-ex-dialog][open]')
+    }
+  },
+  {
+    name: 'exam results with review open',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => {
+        localStorage.setItem('chemlab-exam-fixtures', '1')
+        localStorage.removeItem('chemlab-v1-exam')
+        location.hash = '#learning/exam/fixture-kiem-thu'
+      })
+      await page.waitForSelector('[data-ex-start]', { timeout: 15000 })
+      await page.click('[data-ex-start]')
+      await page.waitForSelector('.ex-workspace')
+      await page.check('input[name="ex-f-1"][value="B"]')
+      await page.click('.ex-bar [data-ex-submit]')
+      await page.click('[data-ex-confirm]')
+      await page.waitForSelector('.ex-results')
+      await page.click('.ex-review__item:nth-child(1) summary')
+      await page.click('.ex-review__item:nth-child(4) summary')
+    }
+  },
+  {
+    name: 'written practice with feedback',
+    view: 'learning',
+    async setup(page) {
+      await page.route('**/api/feedback', route => route.request().method() === 'GET'
+        ? route.fulfill({ json: { ok: true, enabled: true } })
+        : route.fulfill({ json: { ok: true, feedback: { criteria: [{ id: 'c1', text: 'Tiêu chí', status: 'met', comment: 'Tốt.' }, { id: 'c2', text: 'Tiêu chí 2', status: 'missing', comment: '' }], mistakes: ['Lỗi'], suggestions: ['Gợi ý'], summary: 'Tóm tắt.' } } }))
+      await page.evaluate(() => { location.hash = '#learning/practice/written/g12-l22-w1' })
+      await page.waitForSelector('[data-wr-submit]', { timeout: 15000 })
+      await page.fill('#wr-answer', 'Kẽm có tính khử mạnh hơn sắt nên kẽm bị oxi hóa thay cho sắt trong nước biển.')
+      await page.click('[data-wr-submit]')
+      await page.waitForSelector('.px-written__feedback')
+      await page.click('[data-wr-rubric] summary')
+      await page.unroute('**/api/feedback')
+    }
+  },
+  {
+    name: 'learning practice',
+    view: 'learning',
+    async setup(page) {
+      await page.evaluate(() => { location.hash = '#learning/practice/topics' })
+      await page.waitForSelector('#cl-start', { timeout: 15000 })
+    }
+  },
   { name: 'lab', view: 'lab' },
   {
     name: 'lab with reaction',

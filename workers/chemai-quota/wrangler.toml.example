@@ -1,0 +1,15 @@
+# Template only — copy to wrangler.toml and deploy with the owner's account:
+#   cd workers/chemai-quota && npx wrangler deploy
+# Then, in the Pages project (dashboard → Settings → Bindings → Durable Object):
+#   variable name CHEMAI_BUDGET, namespace = chemai-quota / QuotaCounter
+name = "chemai-quota"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[[durable_objects.bindings]]
+name = "QUOTA"
+class_name = "QuotaCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["QuotaCounter"]

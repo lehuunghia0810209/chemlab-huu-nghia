@@ -338,8 +338,20 @@ export function loadProgress() {
 
 
   if (
-    !parsed
+    !isObject(
+      parsed
+    )
   ) {
+
+    // Keep the unreadable payload so it can still be recovered by hand.
+    try {
+      localStorage.setItem(
+        `${PROGRESS_STORAGE_KEY}-corrupt-backup`,
+        raw
+      )
+    }
+    catch {
+    }
 
     saveProgress(
       defaults
