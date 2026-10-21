@@ -9,14 +9,22 @@
 // exact across all locations — unlike KV (eventually consistent) or the
 // Workers Rate Limiting API (per location).
 
-export function consume(state, { day, limit }) {
+// cost: units charged by this call (1 request, or an estimate of Workers AI
+// Neurons). A call that would exceed the limit is refused whole.
+export function consume(state, { day, limit, cost = 1 }) {
   if (state.day !== day) {
     state.day = day
     state.used = 0
   }
-  if (state.used >= limit) return { allowed: false, used: state.used }
-  state.used += 1
+  if (state.used + cost > limit) return { allowed: false, used: state.used }
+  state.used += cost
   return { allowed: true, used: state.used }
+}
+
+// Gives back over-reserved units (estimate − actual) for the same day only.
+export function refund(state, { day, units }) {
+  if (state.day === day) state.used = Math.max(0, state.used - units)
+  return { used: state.used }
 }
 
 export class QuotaCounter {
@@ -34,12 +42,18 @@ export class QuotaCounter {
       return Response.json({ allowed: false, error: 'invalid body' }, { status: 400 })
     }
     const day = String(body?.day || '')
+    const isRefund = new URL(request.url).pathname === '/refund'
     const limit = Number(body?.limit)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isInteger(limit) || limit < 1) {
-      return Response.json({ allowed: false, error: 'invalid day/limit' }, { status: 400 })
+    const cost = Number(body?.cost ?? 1)
+    const units = Number(body?.units)
+    const valid = /^\d{4}-\d{2}-\d{2}$/.test(day) && (isRefund
+      ? Number.isInteger(units) && units > 0
+      : Number.isInteger(limit) && limit >= 1 && Number.isInteger(cost) && cost >= 1)
+    if (!valid) {
+      return Response.json({ allowed: false, error: 'invalid day/limit/cost' }, { status: 400 })
     }
     const state = (await this.ctx.storage.get('state')) || { day: '', used: 0 }
-    const outcome = consume(state, { day, limit })
+    const outcome = isRefund ? refund(state, { day, units }) : consume(state, { day, limit, cost })
     await this.ctx.storage.put('state', state)
     return Response.json(outcome)
   }

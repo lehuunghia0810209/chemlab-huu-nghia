@@ -188,6 +188,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
   let pending = false
   let controller = null
   let serviceState = 'checking'
+  let providerName = 'AI'
   let lastContext = buildChemAIContext()
   let serverSuggestions = []
   let lastFocused = null
@@ -219,7 +220,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
               <h2 id="chemai-title">ChemAI</h2>
               <span class="chemai-version">${escapeHTML(displayVersion)}</span>
             </div>
-            <p id="chemai-subtitle">Trợ lý Hóa học của ChemLab · Gemini</p>
+            <p id="chemai-subtitle">Trợ lý Hóa học của ChemLab</p>
           </div>
         </div>
 
@@ -277,7 +278,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       </form>
 
       <footer class="chemai-footer">
-        <span>${icon('brain')} ChemAI · Gemini · trả lời tiếng Việt · công thức và PTHH giữ chuẩn Hóa học</span>
+        <span>${icon('brain')} ChemAI · trả lời tiếng Việt · công thức và PTHH giữ chuẩn Hóa học</span>
         <small>AI có thể sai. Hãy kiểm tra kết quả quan trọng.</small>
       </footer>
     </section>
@@ -332,11 +333,12 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       const data = await response.json()
 
       if (data?.configured) {
-        serviceBadge.title = data?.model ? `Gemini · ${data.model}` : 'Gemini'
-        setServiceState('online', 'Gemini')
+        providerName = data?.provider || 'AI'
+        serviceBadge.title = data?.model ? `${providerName} · ${data.model}` : providerName
+        setServiceState('online', providerName)
       }
       else {
-        serviceBadge.title = 'Gemini chưa được cấu hình'
+        serviceBadge.title = 'ChemAI chưa được bật'
         setServiceState('setup', 'Chưa cấu hình')
       }
     }
@@ -379,7 +381,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         <span class="chemai-eyebrow">Trợ lý hiểu ngữ cảnh</span>
         <h3>Hỏi ngay trong lúc bạn đang học.</h3>
         <p>
-          ChemAI dùng Gemini cùng dữ liệu của ChemLab để giải thích bằng tiếng Việt,
+          ChemAI dùng mô hình AI cùng dữ liệu của ChemLab để giải thích bằng tiếng Việt,
           trong khi công thức, phương trình và ký hiệu Hóa học vẫn giữ chuẩn quốc tế.
         </p>
         <div class="chemai-welcome-context">
@@ -644,8 +646,9 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       renderMessages()
       renderActions(Array.isArray(data.actions) ? data.actions : [])
       renderSuggestions()
-      serviceBadge.title = data?.meta?.model ? `Gemini · ${data.meta.model}` : 'Gemini'
-      setServiceState('online', 'Gemini')
+      providerName = data?.meta?.provider || providerName
+      serviceBadge.title = data?.meta?.model ? `${providerName} · ${data.meta.model}` : providerName
+      setServiceState('online', providerName)
       scrollToBottom()
     }
     catch (error) {
@@ -669,8 +672,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         setServiceState('setup', 'Chưa cấu hình')
         renderSystemNotice(
           'warning',
-          'ChemAI chưa có API key',
-          'Thêm secret GEMINI_API_KEY trong Cloudflare Pages → Settings → Variables and Secrets, sau đó deploy lại.'
+          'ChemAI chưa được bật',
+          error?.message || 'ChemAI chưa được bật trên máy chủ. Các công cụ khác của ChemLab vẫn dùng bình thường.'
         )
       }
       else {
@@ -686,20 +689,28 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'GEMINI_MODEL_UNAVAILABLE',
           'GEMINI_BAD_REQUEST',
           'GEMINI_OVERLOADED',
-          'AI_REQUEST_FAILED'
+          'AI_REQUEST_FAILED',
+          'AI_OVERLOADED',
+          'AI_BUSY',
+          'DUPLICATE_REQUEST'
         ])
         // Server-side configuration: retrying from the browser cannot help.
         const configurationCodes = new Set([
           'GEMINI_AUTH_FAILED',
           'GEMINI_PRECONDITION_FAILED',
-          'AI_BUDGET_NOT_CONFIGURED'
+          'AI_BUDGET_NOT_CONFIGURED',
+          'AI_MODEL_NOT_ALLOWED',
+          'AI_MODEL_UNAVAILABLE',
+          // Daily limits: retrying today cannot help either.
+          'AI_DAILY_LIMIT',
+          'AI_CLIENT_LIMIT'
         ])
 
         if (configurationCodes.has(error?.code)) {
           setServiceState('setup', 'Tạm ngưng')
         }
         else if (reachableServerCodes.has(error?.code)) {
-          setServiceState('online', 'Gemini')
+          setServiceState('online', providerName)
         }
         else if (!isLocalHost()) {
           setServiceState('offline', 'Mất kết nối')

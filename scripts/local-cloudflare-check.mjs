@@ -53,8 +53,10 @@ const port = async (number, up = true) => {
   throw new Error(`port ${number} did not go ${up ? 'up' : 'down'}`)
 }
 const worker = () => start('quota worker', ['dev', '--config', workerConfig, '--port', '8788', '--persist-to', path.join(work, 'worker-state')], work)
-const pages = (feedback, chat, { budget = true } = {}) => start(`pages (limits feedback ${feedback}, chat ${chat}${budget ? '' : ', no budget binding'})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
-  ...(budget ? ['--do', 'CHEMAI_BUDGET=QuotaCounter@chemai-quota'] : []), '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key',
+// provider 'gemini' exercises the budget against Google with an invalid key (refused, no cost);
+// the default Workers AI provider runs WITHOUT an AI binding: `--ai` would spend real Neurons.
+const pages = (feedback, chat, { budget = true, provider = 'gemini' } = {}) => start(`pages (limits feedback ${feedback}, chat ${chat}${budget ? '' : ', no budget binding'}, provider ${provider})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
+  ...(budget ? ['--do', 'CHEMAI_BUDGET=QuotaCounter@chemai-quota'] : []), ...(provider === 'gemini' ? ['--binding', 'CHEMAI_PROVIDER=gemini'] : []), '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key',
   '--binding', `CHEMAI_DAILY_LIMIT_FEEDBACK=${feedback}`, '--binding', `CHEMAI_DAILY_LIMIT_CHAT=${chat}`], root)
 
 const base = 'http://localhost:8790'
@@ -107,6 +109,14 @@ try {
   await port(8790)
   expect('no budget binding: chat refuses before any Gemini call (P1 fail-open)', await call('chat'), /^503 AI_BUDGET_NOT_CONFIGURED/)
   expect('no budget binding: feedback stays disabled', await call('feedback'), /^503 FEEDBACK_DISABLED/)
+  stop(site)
+  await port(8790, false)
+  clearOwnRegistry()
+  site = pages(50, 50, { provider: 'workers_ai' })
+  await port(8790)
+  const status = await (await fetch(`${base}/api/chat`)).json()
+  expect('default provider is Workers AI; without the AI binding it reports not configured', `${status.provider} configured=${status.configured}`, /^Workers AI configured=false$/)
+  expect('Workers AI without the AI binding: chat fails closed before any model call', await call('chat'), /^503 AI_NOT_CONFIGURED/)
   stop(site)
   await port(8790, false)
   clearOwnRegistry()

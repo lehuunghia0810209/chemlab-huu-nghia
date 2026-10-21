@@ -72,7 +72,7 @@ const statusResponse = onRequestGet({
 const statusPayload = await statusResponse.json()
 assert.equal(statusResponse.status, 200)
 assert.equal(statusPayload.configured, false)
-assert.equal(statusPayload.provider, 'Gemini')
+assert.equal(statusPayload.provider, 'Workers AI')
 assert.equal(statusPayload.release, APP_VERSION)
 
 const noKeyResponse = await onRequestPost({
@@ -94,7 +94,7 @@ const badOriginRequest = new Request(`${origin}/api/chat`, {
 })
 const badOriginResponse = await onRequestPost({
   request: badOriginRequest,
-  env: { GEMINI_API_KEY: 'test-only-key' }
+  env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key' }
 })
 assert.equal(badOriginResponse.status, 403)
 
@@ -168,7 +168,7 @@ try {
       'CF-Connecting-IP': '203.0.113.12'
     }),
     env: {
-      GEMINI_API_KEY: 'test-only-key',
+      CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key',
       GEMINI_MODEL: 'gemini-3.8-flash',
       GEMINI_THINKING_LEVEL: 'low',
       CHEMAI_BUDGET: budget()
@@ -261,7 +261,7 @@ async function requestWithMock(fetchMock, env = {}) {
         { 'CF-Connecting-IP': `203.0.113.${scenarioIp}` }
       ),
       env: {
-        GEMINI_API_KEY: 'test-only-key',
+        CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key',
         GEMINI_MODEL: 'gemini-3.8-flash',
         GEMINI_THINKING_LEVEL: 'low',
         CHEMAI_BUDGET: budget(),
@@ -514,7 +514,7 @@ for (const [label, env] of [
   let calls = 0
   globalThis.fetch = async () => { calls += 1; return geminiSuccess() }
   try {
-    const response = await onRequestPost({ request: makeRequest({ message: 'H2O là gì?' }, { 'CF-Connecting-IP': '203.0.113.240' }), env: { GEMINI_API_KEY: 'test-only-key', ...env } })
+    const response = await onRequestPost({ request: makeRequest({ message: 'H2O là gì?' }, { 'CF-Connecting-IP': '203.0.113.240' }), env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', ...env } })
     assert.equal(response.status, 503, label)
     assert.equal((await response.json()).code, 'AI_BUDGET_NOT_CONFIGURED', label)
     assert.equal(calls, 0, label)
@@ -532,7 +532,7 @@ for (const [label, env] of [
     for (const [body, code] of [['{not json', 'INVALID_JSON'], [{ message: '   ' }, 'EMPTY_MESSAGE']]) {
       const response = await onRequestPost({
         request: new Request(`${origin}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': '203.0.113.241' }, body: typeof body === 'string' ? body : JSON.stringify(body) }),
-        env: { GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: charged }
+        env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: charged }
       })
       assert.equal(response.status, 400)
       assert.equal((await response.json()).code, code)
@@ -552,7 +552,7 @@ for (const [label, env] of [
   try {
     const responses = await Promise.all(Array.from({ length: 8 }, (_, index) => onRequestPost({
       request: makeRequest({ message: 'H2O là gì?' }, { 'CF-Connecting-IP': `203.0.113.${242 + index}` }),
-      env: { GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: shared }
+      env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: shared }
     })))
     assert.equal(responses.filter(item => item.status === 200).length, 3)
     assert.equal(responses.filter(item => item.status === 429).length, 5)

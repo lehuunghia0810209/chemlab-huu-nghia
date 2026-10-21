@@ -15,7 +15,7 @@
     "check:learning": "node scripts/test-learning.mjs && node scripts/test-questions.mjs",
     "check:exam": "node scripts/test-exam.mjs && node scripts/test-exam-papers.mjs",
     "check:ui": "node scripts/validate-final-ui.mjs",
-    "check:ai": "node scripts/test-chemai-api.mjs && node scripts/test-feedback-api.mjs",
+    "check:ai": "node scripts/test-chemai-api.mjs && node scripts/test-feedback-api.mjs && node scripts/test-workers-ai.mjs",
     "check:browser": "node scripts/browser-smoke.mjs",
     "check:a11y": "node scripts/a11y-audit.mjs",
     "report:reactions": "node scripts/reaction-coverage.mjs"

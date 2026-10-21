@@ -216,7 +216,7 @@ await test('chat honours the shared limiter too', async () => {
   mockGemini({})
   const response = await chatPost({
     request: new Request(`${origin}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': '203.0.113.99' }, body: JSON.stringify({ message: 'Giải thích H2O' }) }),
-    env: { GEMINI_API_KEY: 'k', CHEMAI_BUDGET: durableBudget(), CHEMAI_LIMITER: limiter(false) }
+    env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_BUDGET: durableBudget(), CHEMAI_LIMITER: limiter(false) }
   })
   assert.equal(response.status, 429)
   assert.equal(fetchCalls, 0)
@@ -234,6 +234,16 @@ await test('quota worker: exact count, daily reset, input validation', async () 
   const results = []
   for (let index = 0; index < 4; index += 1) results.push((await (await call({ day: '2026-10-20', limit: 2 })).json()).allowed)
   assert.deepEqual(results, [true, true, false, false])
+  // Workers AI Neurons: cost > 1 is charged whole or refused whole; /refund returns over-reserved units.
+  const neurons = new QuotaCounter({ storage: memoryStorage() })
+  const post = (path, body) => neurons.fetch(new Request(`https://q${path}`, { method: 'POST', body: JSON.stringify(body) })).then(response => response.json())
+  assert.equal((await post('/consume', { day: '2026-10-20', limit: 100, cost: 60 })).allowed, true)
+  assert.equal((await post('/consume', { day: '2026-10-20', limit: 100, cost: 60 })).allowed, false, 'would exceed: refused whole')
+  assert.equal((await post('/refund', { day: '2026-10-20', units: 45 })).used, 15)
+  assert.equal((await post('/consume', { day: '2026-10-20', limit: 100, cost: 60 })).used, 75)
+  assert.equal((await post('/refund', { day: '2026-10-19', units: 50 })).used, 75, 'refund for another day ignored')
+  assert.equal((await neurons.fetch(new Request('https://q/consume', { method: 'POST', body: JSON.stringify({ day: '2026-10-20', limit: 100, cost: 0 }) }))).status, 400)
+  assert.equal((await neurons.fetch(new Request('https://q/refund', { method: 'POST', body: JSON.stringify({ day: '2026-10-20', units: -5 }) }))).status, 400)
 })
 await test('exact Durable Object budget stops requests after the limit, without upstream calls', async () => {
   mockGemini({ criteria: [], mistakes: [], suggestions: [], summary: '' })
@@ -275,7 +285,7 @@ await test('chat: every upstream retry is charged to the shared budget and stops
   const budget = durableBudget()
   const response = await chatPost({
     request: new Request(`${origin}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': '203.0.113.98' }, body: JSON.stringify({ message: 'Giải thích H2O' }) }),
-    env: { GEMINI_API_KEY: 'k', CHEMAI_BUDGET: budget, CHEMAI_DAILY_LIMIT_CHAT: '2' }
+    env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_BUDGET: budget, CHEMAI_DAILY_LIMIT_CHAT: '2' }
   })
   assert.notEqual(response.status, 200)
   assert.equal(fetchCalls, 2, 'two Gemini calls fit a budget of two')
