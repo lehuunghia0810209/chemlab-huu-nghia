@@ -49,6 +49,8 @@ The Pages project is configured in the Dashboard (it has no `wrangler.toml`, and
 4. Redeploy the Preview (push the branch) and run the checks in §5.
 5. **Production.** Repeat step 3 for **Production** with `CHEMAI_DAILY_NEURONS=8000`. Do not change or delete `GEMINI_API_KEY`; it is unused while `CHEMAI_PROVIDER` is `workers_ai`.
 
+**Preview and Production bind the same namespace** (`chemai-quota_QuotaCounter`). Preview **must** set `CHEMAI_BUDGET_SCOPE=preview`, so that its counters (`budget:preview:chat-neurons`, …) stay separate from Production's (`budget:chat-neurons`); Production leaves it unset. A malformed scope (allowed: `a-z`, `0-9` and `-`, 1–32 characters) fails closed. The 10,000 free Neurons are per account, so keep Preview + Production ≤ 10,000 (2000 + 8000).
+
 `CHEMAI_BUDGET` must be bound **in each environment**. Without it, ChemAI answers `AI_BUDGET_NOT_CONFIGURED` (hotfix `1f33ce9`, unchanged).
 
 ## 4. Verification done locally (no Neurons spent)

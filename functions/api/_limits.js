@@ -24,7 +24,14 @@ export function sharedControls(env) {
 // explicitly accepts its approximate count. A rate limiter is not a budget.
 export function costBudgetConfigured(env) {
   const controls = sharedControls(env)
+  if (env?.CHEMAI_BUDGET_SCOPE !== undefined && !/^[a-z0-9-]{1,32}$/.test(env.CHEMAI_BUDGET_SCOPE)) return false
   return controls.strictBudget || (controls.budget && env?.CHEMAI_ACCEPT_APPROX_BUDGET === 'on')
+}
+
+// Preview and Production may bind the same Durable Object namespace; CHEMAI_BUDGET_SCOPE
+// (e.g. "preview") keeps their counters apart. Unset = the production names.
+function budgetName(env, scope) {
+  return env?.CHEMAI_BUDGET_SCOPE ? `budget:${env.CHEMAI_BUDGET_SCOPE}:${scope}` : `budget:${scope}`
 }
 
 export function dailyLimit(env, scope, fallback) {
@@ -54,7 +61,7 @@ export async function consumeBudget(env, { scope, limit, cost = 1, now = new Dat
   const day = now.toISOString().slice(0, 10)
   if (controls.strictBudget) {
     try {
-      const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(`budget:${scope}`))
+      const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(budgetName(env, scope)))
       const response = await stub.fetch('https://chemai-quota/consume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +75,7 @@ export async function consumeBudget(env, { scope, limit, cost = 1, now = new Dat
     }
   }
   else if (costBudgetConfigured(env)) {
-    const budgetKey = `budget:${scope}:${day}`
+    const budgetKey = `${budgetName(env, scope)}:${day}`
     try {
       const used = Number(await env.CHEMAI_QUOTA.get(budgetKey)) || 0
       if (used + cost > limit) return { allowed: false, code: 'DAILY_BUDGET_EXHAUSTED' }
@@ -89,7 +96,7 @@ export async function refundBudget(env, { scope, units, now = new Date() }) {
   const day = now.toISOString().slice(0, 10)
   try {
     if (sharedControls(env).strictBudget) {
-      const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(`budget:${scope}`))
+      const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(budgetName(env, scope)))
       await stub.fetch('https://chemai-quota/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,7 +104,7 @@ export async function refundBudget(env, { scope, units, now = new Date() }) {
       })
     }
     else if (costBudgetConfigured(env)) {
-      const budgetKey = `budget:${scope}:${day}`
+      const budgetKey = `${budgetName(env, scope)}:${day}`
       const used = Number(await env.CHEMAI_QUOTA.get(budgetKey)) || 0
       await env.CHEMAI_QUOTA.put(budgetKey, String(Math.max(0, used - units)), { expirationTtl: 2 * 86400 })
     }

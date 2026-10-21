@@ -321,6 +321,22 @@ await test('structured log: no question text, no IP, no key', async () => {
   assert.ok(!/riêng tư|203\.0\.113\.77|present-but-unused/.test(line), line)
 })
 
+await test('Preview and Production share one namespace but not counters; refunds go to the right one', async () => {
+  const shared = budget()
+  const usage = { prompt_tokens: 1000, completion_tokens: 200 }
+  const production = env({ CHEMAI_BUDGET: shared, AI: ai(() => completion('ok', { usage })) })
+  const preview = env({ CHEMAI_BUDGET: shared, CHEMAI_BUDGET_SCOPE: 'preview', CHEMAI_DAILY_NEURONS: '2000', AI: ai(() => completion('ok', { usage })) })
+  await ask(production)
+  await ask(preview)
+  await ask(preview, { message: 'Câu thứ hai' })
+  const one = actualNeurons(GLM, usage)
+  assert.equal(shared.used('chat-neurons'), one, 'production counter')
+  assert.equal(shared.used('preview:chat-neurons'), one * 2, 'preview counter, refunded to actual')
+  const invalid = env({ CHEMAI_BUDGET_SCOPE: 'Preview Env!' })
+  assert.equal((await ask(invalid)).payload.code, 'AI_BUDGET_NOT_CONFIGURED', 'a malformed scope fails closed')
+  assert.equal(invalid.AI.calls.length, 0)
+})
+
 await test('Gemini is never called on the default path', () => {
   assert.equal(geminiCalls, 0)
 })
