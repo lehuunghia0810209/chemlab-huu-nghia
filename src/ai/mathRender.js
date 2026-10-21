@@ -25,8 +25,11 @@ function loadKatex() {
 export function renderMathInto(katex, node) {
   const tex = node.textContent
   node.dataset.typeset = '1'
+  // Vietnamese decimal comma: in math mode "0,1" is punctuation + thin space ("0, 1").
+  // shortcut: a digit-comma-digit pair like (1,2) is also read as a decimal; fine for chemistry answers.
+  const prepared = tex.replace(/(\d),(?=\d)/g, '$1{,}')
   try {
-    katex.render(tex, node, { ...OPTIONS, displayMode: node.dataset.display === '1' })
+    katex.render(prepared, node, { ...OPTIONS, displayMode: node.dataset.display === '1' })
   }
   catch {
     node.classList.add('chemai-math--raw')

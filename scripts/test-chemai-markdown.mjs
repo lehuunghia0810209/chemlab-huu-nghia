@@ -85,6 +85,14 @@ test('KaTeX renders the five required formula kinds with MathML', () => {
   }
 })
 
+test('Vietnamese decimal commas render without a gap (0,1 not "0, 1"); list commas keep theirs', () => {
+  const spaces = element => (element.innerHTML.match(/class="mspace"/g) || []).length
+  for (const number of ['0,1', '24,79', '2,479']) assert.equal(spaces(typeset(number)), 0, number)
+  assert.equal(spaces(typeset('f(x, y)')), 1)
+  const fallback = typeset('\\frac{0,5}{', false)
+  assert.equal(fallback.textContent, '\\frac{0,5}{', 'the raw fallback keeps the original source')
+})
+
 test('invalid TeX keeps the readable source', () => {
   const element = typeset('\\frac{a}{', false)
   assert.deepEqual(element.classList.added, ['chemai-math--raw'])
