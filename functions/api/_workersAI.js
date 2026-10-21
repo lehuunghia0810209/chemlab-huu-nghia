@@ -7,12 +7,18 @@
 // list may be added here: the server refuses any model outside this table, so a
 // configuration mistake can never select a paid model.
 export const WORKERS_AI_MODELS = Object.freeze({
-  '@cf/zai-org/glm-4.7-flash': Object.freeze({ input: 5500, output: 36400 }),
+  // GLM reasons before answering by default; hidden reasoning tokens used up the
+  // whole output budget and cut answers short (Preview, 2026-10-21). The GLM chat
+  // template's enable_thinking switch turns it off. Not documented by Cloudflare:
+  // verify on Preview through the reasoningTokens/reasoningChars log fields.
+  '@cf/zai-org/glm-4.7-flash': Object.freeze({ input: 5500, output: 36400, options: Object.freeze({ chat_template_kwargs: { enable_thinking: false } }) }),
   '@cf/google/gemma-4-26b-a4b-it': Object.freeze({ input: 9091, output: 27273 })
 })
 export const DEFAULT_WORKERS_AI_MODEL = '@cf/zai-org/glm-4.7-flash'
 export const DEFAULT_WORKERS_AI_FALLBACK = '@cf/google/gemma-4-26b-a4b-it'
-export const MAX_OUTPUT_TOKENS = 1200 // reasoning tokens count too
+// Same ceiling as the Gemini path (1800). Reasoning tokens count too. The Neuron
+// reservation (estimateNeurons) uses this value, and the refund settles to `usage`.
+export const MAX_OUTPUT_TOKENS = 1800
 export const WORKERS_AI_TIMEOUT_MS = 30_000
 
 export function workersAIModels(env) {
@@ -76,7 +82,7 @@ export async function runWorkersAI(env, { model, messages, timeoutMs = WORKERS_A
   })
   try {
     return await Promise.race([
-      env.AI.run(model, { messages, max_completion_tokens: MAX_OUTPUT_TOKENS, temperature: 0.3 }),
+      env.AI.run(model, { messages, max_completion_tokens: MAX_OUTPUT_TOKENS, temperature: 0.3, ...WORKERS_AI_MODELS[model].options }),
       timeout
     ])
   }
@@ -120,4 +126,17 @@ export function dailyClientKey(ip) {
   const right = tail ? tail.split(':') : []
   const groups = ip.includes('::') ? [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right] : left
   return `${groups.slice(0, 4).map(group => group.padStart(4, '0')).join(':')}::/64`
+}
+
+// Measurements for the log: where the output tokens went (no text is logged).
+export function usageDetails(result) {
+  const usage = result?.usage || {}
+  const message = result?.choices?.[0]?.message || {}
+  const reasoning = message.reasoning_content ?? message.reasoning
+  return {
+    promptTokens: usage.prompt_tokens ?? null,
+    completionTokens: usage.completion_tokens ?? null,
+    reasoningTokens: usage.completion_tokens_details?.reasoning_tokens ?? null,
+    reasoningChars: typeof reasoning === 'string' ? reasoning.length : 0
+  }
 }

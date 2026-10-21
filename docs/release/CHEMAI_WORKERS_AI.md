@@ -12,7 +12,7 @@ Why: Google Gemini refuses this deployment ("User location is not supported for 
 | Free-model allowlist | `functions/api/_workersAI.js` `WORKERS_AI_MODELS`. A model outside it is refused before any call (`AI_MODEL_NOT_ALLOWED`); a paid fallback is ignored. **Never** falls back to Gemini or a paid model |
 | API contract | `/api/chat` request and response unchanged: `{ok, answer, actions, suggestions, meta}` plus error `{ok:false, code, requestId, message}`. Workers AI answers are Markdown; `actions`/`suggestions` are `[]`, so the UI shows its local suggestions |
 | Prompt | Same ChemLab system instructions, knowledge retrieval, context and last 10 history items. Adds a “check before answering” block (element and charge balance, units, missing data → say so). No JSON mode: it is not documented for these two models; JSON-wrapped output is unwrapped |
-| Output limit | `max_completion_tokens` 1200 (reasoning included), `temperature` 0.3, answer ≤ 12,000 characters. A truncated answer (`finish_reason=length`) carries a note; an empty answer → `AI_INCOMPLETE` |
+| Output limit | `max_completion_tokens` 1800 (same as the Gemini path; reasoning included), GLM hidden reasoning switched off with `chat_template_kwargs: {enable_thinking: false}` (to be confirmed on Preview via the `reasoningTokens`/`reasoningChars` log fields), `temperature` 0.3, answer ≤ 12,000 characters. A truncated answer (`finish_reason=length`, the model ran out of tokens; ChemLab never cuts) carries a note; an empty answer → `AI_INCOMPLETE` |
 | Timeout | `CHEMAI_TIMEOUT_MS` (default 30,000, max 50,000) → `AI_TIMEOUT`, no retry |
 
 ## 2. Cost control (all inference paths)
@@ -22,7 +22,7 @@ Workers Free includes **10,000 Neurons/day per account**, shared with every proj
 | Control | Where | Default |
 | --- | --- | --- |
 | Site-wide daily Neurons, exact (Durable Object `CHEMAI_BUDGET`, scope `chat-neurons`) | before **every** model call, including the retry and the fallback | `CHEMAI_DAILY_NEURONS` = 8000 (headroom under 10,000) |
-| Reservation | worst case: input ≈ characters/2 tokens + 1200 output tokens at the model's price (measured: 55–60 Neurons per question); after the answer, the unused part is refunded from `usage` | — |
+| Reservation | worst case: input ≈ characters/2 tokens + 1800 output tokens at the model's price (measured: 77–82 Neurons per question); after the answer, the unused part is refunded from `usage` | — |
 | Questions per client per day, exact (DO scope `chat-client:<ip or IPv6 /64>`) | before the first call | `CHEMAI_DAILY_LIMIT_PER_CLIENT` = 40 |
 | Client identity | `CF-Connecting-IP`, set by Cloudflare's edge and not forgeable by the client there; IPv6 grouped by /64 | — |
 | Burst | 18 requests/min per client per isolate (unchanged) | — |
@@ -31,7 +31,7 @@ Workers Free includes **10,000 Neurons/day per account**, shared with every proj
 | Input | body ≤ 64 KB, question ≤ 4000 characters, history ≤ 10 items × 2600 characters; validated **before** any budget charge | — |
 | Fail closed | no `AI` binding, unknown provider, model not allowed, or no budget binding: 0 model calls. Durable Object unreachable: 429 | — |
 
-Expected capacity: with 8000 Neurons and the reservation, at least about **133 questions/day**; typically more after refunds (to be measured on Preview). Durable Object use per question: 3 requests and 3 row writes (Free plan: 100,000 per day each). The quota Worker uses SQLite-backed Durable Objects (`new_sqlite_classes`), which Workers Free supports.
+Expected capacity: with 8000 Neurons and the reservation, at least about **97 questions/day** (Preview 2000 → about 24); typically more after refunds (to be measured on Preview). Durable Object use per question: 3 requests and 3 row writes (Free plan: 100,000 per day each). The quota Worker uses SQLite-backed Durable Objects (`new_sqlite_classes`), which Workers Free supports.
 
 ## 3. Cloudflare setup (owner, Dashboard)
 
@@ -68,7 +68,7 @@ The Pages project is configured in the Dashboard (it has no `wrangler.toml`, and
 ## 5. Preview checks (after §3, owner approval for real Neurons)
 
 1. `node scripts/staging-smoke.mjs <preview-url>`: headers, version, `/api/chat` status (`provider: Workers AI`, `configured: true`).
-2. `node scripts/chemai-eval.mjs <preview-url>` prints the plan. With `--confirm`, it sends **13 chemistry questions with reference answers** (≈ 13 × 55–60 Neurons reserved, less after refunds) and checks:
+2. `node scripts/chemai-eval.mjs <preview-url>` prints the plan. With `--confirm`, it sends **13 chemistry questions with reference answers** (≈ 13 × 77–82 Neurons reserved, less after refunds) and checks:
    - moles at đktc and at đkc (CT 2018);
    - mass, molar mass and molarity;
    - a stoichiometry problem;

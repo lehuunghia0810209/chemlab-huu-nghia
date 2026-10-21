@@ -2,7 +2,7 @@
 // Durable Object budget mock. No Neurons are consumed and Gemini must never be called.
 import assert from 'node:assert/strict'
 import { onRequestGet, onRequestPost } from '../functions/api/chat.js'
-import { estimateNeurons, actualNeurons, dailyClientKey, classifyWorkersAIError, WORKERS_AI_MODELS, DEFAULT_WORKERS_AI_MODEL } from '../functions/api/_workersAI.js'
+import { estimateNeurons, actualNeurons, dailyClientKey, classifyWorkersAIError, WORKERS_AI_MODELS, DEFAULT_WORKERS_AI_MODEL, MAX_OUTPUT_TOKENS } from '../functions/api/_workersAI.js'
 import { consume, refund } from '../workers/chemai-quota/src/index.js'
 
 const origin = 'https://chemlab.example'
@@ -100,7 +100,7 @@ await test('price table holds only free models; default is GLM 4.7 Flash', () =>
   for (const paid of ['@cf/zai-org/glm-5.2', '@cf/zai-org/glm-5.3', '@cf/zai-org/glm-5.3-flash', '@cf/moonshotai/kimi-k2.6', '@cf/deepseek-ai/deepseek-v4-pro-0813']) {
     assert.equal(Object.hasOwn(WORKERS_AI_MODELS, paid), false, paid)
   }
-  assert.equal(estimateNeurons(GLM, 6000), Math.ceil((3000 * 5500 + 1200 * 36400) / 1e6))
+  assert.equal(estimateNeurons(GLM, 6000), Math.ceil((3000 * 5500 + MAX_OUTPUT_TOKENS * 36400) / 1e6))
   assert.equal(actualNeurons(GLM, { prompt_tokens: 2000, completion_tokens: 500 }), Math.ceil((2000 * 5500 + 500 * 36400) / 1e6))
   assert.equal(actualNeurons(GLM, null), null)
 })
@@ -126,7 +126,10 @@ await test('valid Vietnamese question with history: Workers AI only, Markdown pr
   assert.equal(payload.meta.model, GLM)
   const [call] = environment.AI.calls
   assert.equal(call.model, GLM)
-  assert.equal(call.inputs.max_completion_tokens, 1200)
+  assert.equal(call.inputs.max_completion_tokens, MAX_OUTPUT_TOKENS)
+  assert.equal(MAX_OUTPUT_TOKENS, 1800)
+  assert.deepEqual(call.inputs.chat_template_kwargs, { enable_thinking: false }, 'GLM hidden reasoning off')
+  assert.match(call.inputs.messages[0].content, /không viết phần nháp/)
   assert.equal(call.inputs.messages[0].role, 'system')
   assert.match(call.inputs.messages[0].content, /Markdown/)
   assert.match(call.inputs.messages[0].content, /bảo toàn nguyên tố/)
@@ -265,7 +268,7 @@ await test('output shapes: JSON-wrapped, <think> block, legacy response field, e
   const empty = await ask(env({ AI: ai(() => completion('')) }))
   assert.deepEqual([empty.status, empty.payload.code], [502, 'AI_INCOMPLETE'])
   const cut = await ask(env({ AI: ai(() => completion('Bước 1…', { finish: 'length' })) }))
-  assert.match(cut.payload.answer, /rút gọn do giới hạn độ dài/)
+  assert.match(cut.payload.answer, /chưa hoàn chỉnh do vượt giới hạn độ dài/)
 })
 
 await test('concurrency: 8 at once → 6 enter (2 AI_BUSY), budget pays exactly 3 model calls', async () => {
@@ -335,6 +338,35 @@ await test('Preview and Production share one namespace but not counters; refunds
   const invalid = env({ CHEMAI_BUDGET_SCOPE: 'Preview Env!' })
   assert.equal((await ask(invalid)).payload.code, 'AI_BUDGET_NOT_CONFIGURED', 'a malformed scope fails closed')
   assert.equal(invalid.AI.calls.length, 0)
+})
+
+await test('cut off mid-answer by hidden reasoning: visible note, measured log, refund to usage', async () => {
+  const lines = []
+  const usage = { prompt_tokens: 1400, completion_tokens: MAX_OUTPUT_TOKENS, completion_tokens_details: { reasoning_tokens: 1700 } }
+  const environment = env({ AI: ai(() => ({
+    choices: [{ message: { role: 'assistant', content: '**3Fe + 2O₂ → Fe₃O₄**\n\n1. Cân bằng oxygen:', reasoning_content: 'x'.repeat(5000) }, finish_reason: 'length' }],
+    usage
+  })) })
+  const originalLog = console.log
+  console.log = line => lines.push(String(line))
+  const { status, payload } = await ask(environment, { message: 'Hãy cân bằng phương trình Fe + O₂ → Fe₃O₄ và giải thích từng bước.' })
+  console.log = originalLog
+  assert.equal(status, 200)
+  assert.match(payload.answer, /^\*\*3Fe \+ 2O₂ → Fe₃O₄\*\*/)
+  assert.match(payload.answer, /chưa hoàn chỉnh do vượt giới hạn độ dài/)
+  assert.doesNotMatch(payload.answer, /xxxx/, 'reasoning text is never shown')
+  const entry = JSON.parse(lines.find(item => item.includes('chemai.chat')))
+  assert.deepEqual([entry.finishReason, entry.completionTokens, entry.reasoningTokens, entry.reasoningChars], ['length', MAX_OUTPUT_TOKENS, 1700, 5000])
+  assert.equal(entry.answerChars, '**3Fe + 2O₂ → Fe₃O₄**\n\n1. Cân bằng oxygen:'.length)
+  assert.equal(environment.CHEMAI_BUDGET.used('chat-neurons'), actualNeurons(GLM, usage))
+})
+
+await test('a complete multi-step answer is passed through untouched; gemma gets no GLM-only options', async () => {
+  const long = Array.from({ length: 12 }, (_, index) => `${index + 1}. Bước ${index + 1}: n = m / M = 5,6 / 56 = 0,1 mol.`).join('\n')
+  const environment = env({ CHEMAI_MODEL: GEMMA, AI: ai(() => completion(long, { finish: 'stop' })) })
+  const { payload } = await ask(environment)
+  assert.equal(payload.answer, long)
+  assert.equal('chat_template_kwargs' in environment.AI.calls[0].inputs, false)
 })
 
 await test('Gemini is never called on the default path', () => {

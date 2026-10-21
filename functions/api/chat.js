@@ -9,7 +9,8 @@ import {
   runWorkersAI,
   extractWorkersAIText,
   workersAIAnswer,
-  dailyClientKey
+  dailyClientKey,
+  usageDetails
 } from './_workersAI.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
@@ -268,7 +269,12 @@ function sanitizeContext(context) {
   return safe
 }
 
-const MARKDOWN_FORMAT = `KIỂM TRA TRƯỚC KHI TRẢ LỜI
+const MARKDOWN_FORMAT = `TRÌNH BÀY GỌN, ĐỦ Ý
+- Đi thẳng vào lời giải, không viết phần nháp hay suy nghĩ trung gian.
+- Lời giải nhiều bước: đánh số từng bước, mỗi bước 1–3 câu; luôn viết đến kết luận cuối cùng.
+- Câu hỏi lý thuyết: khoảng 150–300 từ, trừ khi học sinh yêu cầu chi tiết hơn.
+
+KIỂM TRA TRƯỚC KHI TRẢ LỜI
 - Phương trình: kiểm tra bảo toàn nguyên tố và điện tích trước khi viết.
 - Bài tính: ghi rõ đơn vị ở mọi bước, làm tròn hợp lý và nêu đáp số cuối cùng.
 - Đề thiếu dữ kiện: nói rõ còn thiếu gì, không tự giả định số liệu.
@@ -1177,15 +1183,17 @@ async function workersAIChat({ request, env, requestId, started, colo, models, m
 
     const answer = text(workersAIAnswer(extractWorkersAIText(result)), 12000)
     const finishReason = String(result?.choices?.[0]?.finish_reason || '')
+    const measured = { ...usageDetails(result), answerChars: answer.length }
     if (!answer) {
-      logRequest({ ...trace, activeModel: model, status: 502, code: 'AI_INCOMPLETE', finishReason, attempts, fallbackUsed, neuronsReserved: charged, neuronsUsed: used, durationMs: Date.now() - started })
+      logRequest({ ...trace, activeModel: model, status: 502, code: 'AI_INCOMPLETE', finishReason, ...measured, attempts, fallbackUsed, neuronsReserved: charged, neuronsUsed: used, durationMs: Date.now() - started })
       return errorResponse('AI_INCOMPLETE', 'ChemAI chưa tạo được câu trả lời hoàn chỉnh. Hãy thử hỏi ngắn gọn hơn.', 502, requestId)
     }
 
-    logRequest({ ...trace, activeModel: model, status: 200, finishReason, attempts, fallbackUsed, neuronsReserved: charged, neuronsUsed: used, durationMs: Date.now() - started })
+    logRequest({ ...trace, activeModel: model, status: 200, finishReason, ...measured, attempts, fallbackUsed, neuronsReserved: charged, neuronsUsed: used, durationMs: Date.now() - started })
     return json({
       ok: true,
-      answer: finishReason === 'length' ? `${answer}\n\n*(Câu trả lời đã được rút gọn do giới hạn độ dài.)*` : answer,
+      // The model ran out of output tokens (ChemLab does not cut answers): say so plainly.
+      answer: finishReason === 'length' ? `${answer}\n\n*(Câu trả lời chưa hoàn chỉnh do vượt giới hạn độ dài. Hãy hỏi tiếp phần còn lại hoặc chia nhỏ câu hỏi.)*` : answer,
       actions: [],
       suggestions: [],
       meta: metaFor(knowledge, null, model, { attemptCount: attempts, fallbackUsed }, 'Workers AI')
