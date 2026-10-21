@@ -4,11 +4,14 @@ import {
   getSmartSuggestions
 } from './contextBuilder.js'
 import { APP_VERSION } from '../appMeta.js'
+import { escapeHTML, markdownToHTML } from './markdown.js'
+import { typesetMath } from './mathRender.js'
 
 const SESSION_KEY = 'chemlab-v62-ai-session'
 const MAX_STORED_MESSAGES = 24
 const MAX_HISTORY_TO_SERVER = 10
 const MAX_INPUT_LENGTH = 4000
+const CLIENT_TIMEOUT_MS = 65_000
 
 let singleton = null
 
@@ -28,107 +31,6 @@ function icon(name) {
   }
 
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.spark}</svg>`
-}
-
-function escapeHTML(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
-function inlineMarkdown(value) {
-  return escapeHTML(value)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-}
-
-function markdownToHTML(markdown) {
-  const source = String(markdown ?? '').replace(/\r\n/g, '\n').trim()
-  if (!source) return ''
-
-  const blocks = source.split(/```/)
-  const html = []
-
-  blocks.forEach((block, index) => {
-    if (index % 2 === 1) {
-      const cleaned = block.replace(/^\w+\n/, '').trim()
-      html.push(`<pre><code>${escapeHTML(cleaned)}</code></pre>`)
-      return
-    }
-
-    const lines = block.split('\n')
-    let listType = null
-    let listItems = []
-
-    const flushList = () => {
-      if (!listType || !listItems.length) return
-      html.push(`<${listType}>${listItems.join('')}</${listType}>`)
-      listType = null
-      listItems = []
-    }
-
-    for (const rawLine of lines) {
-      const line = rawLine.trim()
-
-      if (!line) {
-        flushList()
-        continue
-      }
-
-      const bullet = line.match(/^[-*]\s+(.+)$/)
-      const ordered = line.match(/^\d+[.)]\s+(.+)$/)
-
-      if (bullet) {
-        if (listType && listType !== 'ul') flushList()
-        listType = 'ul'
-        listItems.push(`<li>${inlineMarkdown(bullet[1])}</li>`)
-        continue
-      }
-
-      if (ordered) {
-        if (listType && listType !== 'ol') flushList()
-        listType = 'ol'
-        listItems.push(`<li>${inlineMarkdown(ordered[1])}</li>`)
-        continue
-      }
-
-      flushList()
-
-      if (/^###\s+/.test(line)) {
-        html.push(`<h4>${inlineMarkdown(line.replace(/^###\s+/, ''))}</h4>`)
-        continue
-      }
-
-      if (/^##\s+/.test(line)) {
-        html.push(`<h3>${inlineMarkdown(line.replace(/^##\s+/, ''))}</h3>`)
-        continue
-      }
-
-      if (/^>\s+/.test(line)) {
-        html.push(`<blockquote>${inlineMarkdown(line.replace(/^>\s+/, ''))}</blockquote>`)
-        continue
-      }
-
-      const equationLike =
-        /(?:→|⇌|↔)/.test(line) &&
-        /[A-Z][A-Za-z₀-₉⁺⁻²³⁴⁵⁶⁷⁸⁹()\[\]]*/.test(line)
-
-      if (equationLike) {
-        html.push(`<div class="chemai-equation">${inlineMarkdown(line)}</div>`)
-        continue
-      }
-
-      html.push(`<p>${inlineMarkdown(line)}</p>`)
-    }
-
-    flushList()
-  })
-
-  return html.join('')
 }
 
 function loadSession() {
@@ -187,6 +89,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
   let pending = false
   let controller = null
   let serviceState = 'checking'
+  let providerName = 'AI'
   let lastContext = buildChemAIContext()
   let serverSuggestions = []
   let lastFocused = null
@@ -218,7 +121,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
               <h2 id="chemai-title">ChemAI</h2>
               <span class="chemai-version">${escapeHTML(displayVersion)}</span>
             </div>
-            <p id="chemai-subtitle">Trợ lý Hóa học của ChemLab · Gemini</p>
+            <p id="chemai-subtitle">Trợ lý Hóa học của ChemLab</p>
           </div>
         </div>
 
@@ -276,7 +179,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       </form>
 
       <footer class="chemai-footer">
-        <span>${icon('brain')} ChemAI · Gemini · trả lời tiếng Việt · công thức và PTHH giữ chuẩn Hóa học</span>
+        <span>${icon('brain')} ChemAI · trả lời tiếng Việt · công thức và PTHH giữ chuẩn Hóa học</span>
         <small>AI có thể sai. Hãy kiểm tra kết quả quan trọng.</small>
       </footer>
     </section>
@@ -331,11 +234,12 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       const data = await response.json()
 
       if (data?.configured) {
-        serviceBadge.title = data?.model ? `Gemini · ${data.model}` : 'Gemini'
-        setServiceState('online', 'Gemini')
+        providerName = data?.provider || 'AI'
+        serviceBadge.title = data?.model ? `${providerName} · ${data.model}` : providerName
+        setServiceState('online', providerName)
       }
       else {
-        serviceBadge.title = 'Gemini chưa được cấu hình'
+        serviceBadge.title = 'ChemAI chưa được bật'
         setServiceState('setup', 'Chưa cấu hình')
       }
     }
@@ -378,7 +282,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         <span class="chemai-eyebrow">Trợ lý hiểu ngữ cảnh</span>
         <h3>Hỏi ngay trong lúc bạn đang học.</h3>
         <p>
-          ChemAI dùng Gemini cùng dữ liệu của ChemLab để giải thích bằng tiếng Việt,
+          ChemAI dùng mô hình AI cùng dữ liệu của ChemLab để giải thích bằng tiếng Việt,
           trong khi công thức, phương trình và ký hiệu Hóa học vẫn giữ chuẩn quốc tế.
         </p>
         <div class="chemai-welcome-context">
@@ -452,6 +356,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
 
       messagesEl.appendChild(article)
     }
+    void typesetMath(messagesEl)
   }
 
   function renderThinking() {
@@ -588,6 +493,9 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     if (mobileMedia.matches) input.blur()
 
     controller = new AbortController()
+    const request = controller
+    // The server gives up after 52 s; never leave the learner waiting forever.
+    const timer = setTimeout(() => request.abort('timeout'), CLIENT_TIMEOUT_MS)
 
     try {
       if (!statusChecked || serviceState !== 'online') {
@@ -640,14 +548,19 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       renderMessages()
       renderActions(Array.isArray(data.actions) ? data.actions : [])
       renderSuggestions()
-      serviceBadge.title = data?.meta?.model ? `Gemini · ${data.meta.model}` : 'Gemini'
-      setServiceState('online', 'Gemini')
+      providerName = data?.meta?.provider || providerName
+      serviceBadge.title = data?.meta?.model ? `${providerName} · ${data.meta.model}` : providerName
+      setServiceState('online', providerName)
       scrollToBottom()
     }
     catch (error) {
       removeThinking()
 
-      if (error?.name === 'AbortError') {
+      if (request.signal.reason === 'timeout') {
+        lastFailedQuestion = question
+        renderSystemNotice('warning', 'ChemAI phản hồi quá lâu', 'Kết nối hoặc máy chủ đang chậm. Hãy thử lại.', { retry: true })
+      }
+      else if (error?.name === 'AbortError') {
         renderSystemNotice('neutral', 'Đã dừng', 'Bạn đã dừng câu trả lời hiện tại.')
       }
       else if (error?.code === 'LOCAL_UI_ONLY') {
@@ -661,8 +574,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         setServiceState('setup', 'Chưa cấu hình')
         renderSystemNotice(
           'warning',
-          'ChemAI chưa có API key',
-          'Thêm secret GEMINI_API_KEY trong Cloudflare Pages → Settings → Variables and Secrets, sau đó deploy lại.'
+          'ChemAI chưa được bật',
+          error?.message || 'ChemAI chưa được bật trên máy chủ. Các công cụ khác của ChemLab vẫn dùng bình thường.'
         )
       }
       else {
@@ -678,14 +591,28 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'GEMINI_MODEL_UNAVAILABLE',
           'GEMINI_BAD_REQUEST',
           'GEMINI_OVERLOADED',
-          'AI_REQUEST_FAILED'
+          'AI_REQUEST_FAILED',
+          'AI_OVERLOADED',
+          'AI_BUSY',
+          'DUPLICATE_REQUEST'
+        ])
+        // Server-side configuration: retrying from the browser cannot help.
+        const configurationCodes = new Set([
+          'GEMINI_AUTH_FAILED',
+          'GEMINI_PRECONDITION_FAILED',
+          'AI_BUDGET_NOT_CONFIGURED',
+          'AI_MODEL_NOT_ALLOWED',
+          'AI_MODEL_UNAVAILABLE',
+          // Daily limits: retrying today cannot help either.
+          'AI_DAILY_LIMIT',
+          'AI_CLIENT_LIMIT'
         ])
 
-        if (error?.code === 'GEMINI_AUTH_FAILED') {
-          setServiceState('setup', 'Kiểm tra API')
+        if (configurationCodes.has(error?.code)) {
+          setServiceState('setup', 'Tạm ngưng')
         }
         else if (reachableServerCodes.has(error?.code)) {
-          setServiceState('online', 'Gemini')
+          setServiceState('online', providerName)
         }
         else if (!isLocalHost()) {
           setServiceState('offline', 'Mất kết nối')
@@ -695,11 +622,12 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'warning',
           'ChemAI chưa thể trả lời',
           error?.message || 'Kết nối tạm thời có vấn đề. Hãy thử lại.',
-          { retry: true }
+          { retry: !configurationCodes.has(error?.code) }
         )
       }
     }
     finally {
+      clearTimeout(timer)
       controller = null
       setPending(false)
       input.disabled = false

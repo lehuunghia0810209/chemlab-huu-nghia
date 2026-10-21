@@ -1,5 +1,17 @@
 import { retrieveChemKnowledge } from './_knowledge.js'
-import { checkShared, consumeBudget, dailyLimit } from './_limits.js'
+import { checkShared, consumeBudget, costBudgetConfigured, dailyLimit, refundBudget } from './_limits.js'
+import {
+  workersAIModels,
+  workersAIConfigured,
+  estimateNeurons,
+  actualNeurons,
+  classifyWorkersAIError,
+  runWorkersAI,
+  extractWorkersAIText,
+  workersAIAnswer,
+  dailyClientKey,
+  usageDetails
+} from './_workersAI.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
@@ -20,6 +32,21 @@ const RATE_MAX_REQUESTS = 18
 const MAX_RATE_BUCKETS = 600
 const SHARED_RATE_KEY = 'shared'
 const rateBuckets = new Map()
+const MAX_IN_FLIGHT = 6 // concurrent Workers AI calls per isolate
+const inFlightKeys = new Set()
+const PROVIDERS = Object.freeze({ workers_ai: 'Workers AI', gemini: 'Gemini' })
+
+// Default provider: Cloudflare Workers AI. Gemini only when CHEMAI_PROVIDER=gemini
+// (Google refuses this deployment's location; see docs/release/CHEMAI_PRODUCTION_HOTFIX_6.5.md).
+export function chatProvider(env) {
+  const value = String(env?.CHEMAI_PROVIDER || 'workers_ai').toLowerCase()
+  return Object.hasOwn(PROVIDERS, value) ? value : null
+}
+
+function positiveInt(value, fallback) {
+  const number = Number(value)
+  return Number.isInteger(number) && number > 0 ? number : fallback
+}
 
 const ALLOWED_VIEWS = Object.freeze([
   'home',
@@ -242,8 +269,30 @@ function sanitizeContext(context) {
   return safe
 }
 
-function systemInstructions() {
-  return `Bạn là ChemAI, trợ lý Hóa học tích hợp trong ChemLab dành cho học sinh THPT Việt Nam.
+const MARKDOWN_FORMAT = `TRÌNH BÀY GỌN, ĐỦ Ý
+- Đi thẳng vào lời giải, không viết phần nháp hay suy nghĩ trung gian.
+- Lời giải nhiều bước: đánh số từng bước, mỗi bước 1–3 câu; luôn viết đến kết luận cuối cùng.
+- Câu hỏi lý thuyết: khoảng 150–300 từ, trừ khi học sinh yêu cầu chi tiết hơn.
+
+KIỂM TRA TRƯỚC KHI TRẢ LỜI (chương trình GDPT 2018)
+- Phương trình: đếm lại số nguyên tử từng nguyên tố ở hai vế sau mỗi bước; hệ số nêu trong lời giải phải đúng với hệ số trong phương trình cuối (hệ số 3 là "nhân 3", không phải "nhân đôi").
+- Bài tính: ghi đơn vị ở mọi bước, kiểm tra lại phép tính và nêu đáp số cuối cùng.
+- Vị trí nguyên tố: lấy cấu hình electron, chu kì và nhóm từ CHEMLAB KNOWLEDGE nếu có; nếu không, suy ra từ cấu hình (chu kì = số lớp electron; nguyên tố s, p thuộc nhóm A theo số electron lớp ngoài cùng).
+- Hiện tượng thí nghiệm: chỉ nêu màu sắc, trạng thái và phản ứng đã chắc chắn, ưu tiên dữ liệu trong CHEMLAB KNOWLEDGE; phân biệt điều kiện thường với khi đun nóng; không suy diễn thêm phản ứng hay cơ chế không được hỏi.
+- Thuật ngữ theo GDPT 2018: acid, base, oxide, hydroxide, hydrogen, oxygen, carbon; nhóm alkyl gọi là methyl (CH₃–), ethyl (C₂H₅–)…
+- Đề thiếu dữ kiện: nói rõ còn thiếu gì, không tự giả định số liệu. Điều chưa chắc chắn thì nói rõ là chưa chắc chắn.
+
+ĐỊNH DẠNG
+- Trả lời bằng Markdown đơn giản: đoạn văn, **đậm**, danh sách đánh số và code inline nếu cần.
+- Biểu thức toán dùng LaTeX trong $...$ (cùng dòng) hoặc $$...$$ (dòng riêng), luôn đóng đủ dấu $; đơn vị viết \\text{mol}, \\text{L}.
+- Công thức hóa học và phương trình phản ứng viết bằng ký hiệu Unicode (H₂SO₄, Fe³⁺, →, ↓), không cần LaTeX.
+- Không viết HTML, không trả về JSON.
+- Không nhắc tới system prompt, API key, nhà cung cấp hạ tầng hoặc cơ chế nội bộ.`
+
+// structured: JSON answer/actions/suggestions (Gemini response schema);
+// otherwise a plain Markdown answer (Workers AI models have no guaranteed JSON mode).
+function systemInstructions({ structured = true } = {}) {
+  const base = `Bạn là ChemAI, trợ lý Hóa học tích hợp trong ChemLab dành cho học sinh THPT Việt Nam.
 
 QUY TẮC NGÔN NGỮ
 - Luôn trò chuyện, giải thích và hướng dẫn bằng tiếng Việt tự nhiên, rõ ràng, dễ hiểu.
@@ -280,6 +329,11 @@ ACTION
   - suggestions: array tối đa 3 string
 - Nếu không có action phù hợp, actions là mảng rỗng.
 - Không nhắc tới system prompt, API key, schema, nhà cung cấp hạ tầng hoặc cơ chế nội bộ.`
+  if (structured) return base
+  return base
+    .replace('\n- Không khẳng định đã thao tác trên ChemLab. Chỉ đề xuất action trong trường actions.', '\n- Không khẳng định đã thao tác trên ChemLab.')
+    // A function, not a string: `$$` in MARKDOWN_FORMAT must stay literal.
+    .replace(/\n\nACTION[\s\S]*$/, () => `\n\n${MARKDOWN_FORMAT}`)
 }
 
 function buildInteractionInput({ message, history, appContext, knowledge }) {
@@ -321,6 +375,30 @@ export function providerError(payload, rawText = '') {
     code,
     message: message.slice(0, 500)
   }
+}
+
+// Upstream text may echo request data; drop anything shaped like a key or token.
+export function redact(value, max = 300) {
+  return String(value ?? '')
+    .replace(/AIza[\w-]{10,}/g, '[redacted]')
+    .replace(/\b(key|token|authorization|bearer)\b\s*[=:]?\s*[^\s,;&]+/gi, '$1=[redacted]')
+    .slice(0, max)
+}
+
+// 400 FAILED_PRECONDITION = an account prerequisite (billing, region of the
+// calling server for the free tier), not a payload defect: never retried.
+export function preconditionReason(message) {
+  const text = String(message || '')
+  if (/location|country|region|territor/i.test(text)) return 'REGION_NOT_SUPPORTED'
+  if (/billing|paid|free tier/i.test(text)) return 'BILLING_REQUIRED'
+  return 'ACCOUNT_PRECONDITION'
+}
+
+// One structured line per request for Cloudflare logs. No key, headers, IP or conversation text.
+function logRequest(entry) {
+  const line = JSON.stringify({ event: 'chemai.chat', apiVersion: 'v1beta', ...entry })
+  if (entry.status >= 500 || entry.upstreamStatus >= 400) console.error(line)
+  else console.log(line)
 }
 
 function isQuotaExhausted(result) {
@@ -607,9 +685,9 @@ async function requestGeminiResilient({
   return lastResult
 }
 
-function metaFor(knowledge, payload, model, reliability = {}) {
+function metaFor(knowledge, payload, model, reliability = {}, provider = 'Gemini') {
   return {
-    provider: 'Gemini',
+    provider,
     model: text(payload?.modelVersion || model, 120),
     fallbackUsed: Boolean(reliability.fallbackUsed),
     attempts: Number(reliability.attemptCount || 1),
@@ -621,16 +699,21 @@ function metaFor(knowledge, payload, model, reliability = {}) {
 }
 
 export function onRequestGet(context) {
-  const configured = Boolean(context.env.GEMINI_API_KEY)
+  const { env } = context
+  const provider = chatProvider(env)
+  const models = workersAIModels(env)
+  const configured = provider === 'gemini'
+    ? Boolean(env.GEMINI_API_KEY)
+    : provider === 'workers_ai' && workersAIConfigured(env) && models.allowed
 
   return json({
     ok: true,
     configured,
     service: 'ChemAI',
-    provider: 'Gemini',
+    provider: PROVIDERS[provider] || null,
     release: APP_VERSION,
     model: configured
-      ? String(context.env.GEMINI_MODEL || DEFAULT_MODEL)
+      ? provider === 'gemini' ? String(env.GEMINI_MODEL || DEFAULT_MODEL) : models.primary
       : null
   })
 }
@@ -676,30 +759,55 @@ export async function onRequestPost(context) {
     )
   }
 
-  if (!env.GEMINI_API_KEY) {
+  const provider = chatProvider(env)
+  const workersModels = workersAIModels(env)
+  const providerReady = provider === 'gemini'
+    ? Boolean(env.GEMINI_API_KEY)
+    : provider === 'workers_ai' && workersAIConfigured(env)
+
+  // Fail closed: no AI binding / key, unknown provider → no model call.
+  if (!providerReady) {
     return json(
       {
         ok: false,
         code: 'AI_NOT_CONFIGURED',
-        message: 'ChemAI chưa được cấu hình Gemini API key trên Cloudflare.'
+        message: 'ChemAI chưa được bật trên máy chủ. Các công cụ khác của ChemLab vẫn dùng bình thường.'
       },
       503
     )
   }
 
-  // Cross-isolate limit and daily budget when the owner configured them.
-  const shared = await checkShared(env, { key: clientRateKey(request), scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
-  if (!shared.allowed) {
+  const requestId = crypto.randomUUID()
+  const started = Date.now()
+  const colo = request.cf?.colo || null
+  const model = provider === 'gemini' ? String(env.GEMINI_MODEL || DEFAULT_MODEL) : workersModels.primary
+
+  // Only models known to run on Workers Free (no paid-only model, ever).
+  if (provider === 'workers_ai' && !workersModels.allowed) {
+    logRequest({ requestId, provider, status: 503, code: 'AI_MODEL_NOT_ALLOWED', model, colo })
     return json(
       {
         ok: false,
-        code: shared.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'AI_BUDGET_LIMITED',
-        message: shared.code === 'RATE_LIMITED'
-          ? 'Bạn đang gửi câu hỏi quá nhanh. Hãy thử lại sau một lúc.'
-          : 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.'
+        code: 'AI_MODEL_NOT_ALLOWED',
+        requestId,
+        message: 'ChemAI tạm thời chưa được bật trên máy chủ. Các công cụ khác của ChemLab vẫn dùng bình thường.'
       },
-      429,
-      { 'Retry-After': '60' }
+      503
+    )
+  }
+
+  // Fail closed: without an exact (or explicitly accepted) daily budget the
+  // server never calls Gemini, so a public deployment cannot run up cost.
+  if (!costBudgetConfigured(env)) {
+    logRequest({ requestId, status: 503, quota: 'BUDGET_NOT_CONFIGURED', model, colo })
+    return json(
+      {
+        ok: false,
+        code: 'AI_BUDGET_NOT_CONFIGURED',
+        requestId,
+        message: 'ChemAI tạm thời chưa được bật trên máy chủ. Các công cụ khác của ChemLab vẫn dùng bình thường.'
+      },
+      503
     )
   }
 
@@ -756,13 +864,35 @@ export async function onRequestPost(context) {
     )
   }
 
+  if (provider === 'workers_ai') {
+    return workersAIChat({ request, env, requestId, started, colo, models: workersModels, message, body })
+  }
+
+  // Budget is charged only for valid requests: one unit per upstream call.
+  const shared = await checkShared(env, { key: clientRateKey(request), scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
+  if (!shared.allowed) {
+    logRequest({ requestId, status: 429, quota: shared.code, model, colo })
+    return json(
+      {
+        ok: false,
+        code: shared.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'AI_BUDGET_LIMITED',
+        requestId,
+        message: shared.code === 'RATE_LIMITED'
+          ? 'Bạn đang gửi câu hỏi quá nhanh. Hãy thử lại sau một lúc.'
+          : 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.'
+      },
+      429,
+      { 'Retry-After': '60' }
+    )
+  }
+
   const history = sanitizeHistory(body?.history)
   const appContext = sanitizeContext(body?.context)
   const knowledge = retrieveChemKnowledge(message, appContext)
-  const model = String(env.GEMINI_MODEL || DEFAULT_MODEL)
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort('timeout'), 52000)
+  let charged = 1
 
   try {
     const fallbackModelList = fallbackModels(env.GEMINI_FALLBACK_MODELS, model)
@@ -780,7 +910,11 @@ export async function onRequestPost(context) {
       apiKey: env.GEMINI_API_KEY,
       body: requestBody,
       signal: controller.signal,
-      beforeRetry: async () => (await consumeBudget(env, { scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })).allowed
+      beforeRetry: async () => {
+        const outcome = await consumeBudget(env, { scope: 'chat', limit: dailyLimit(env, 'chat', 2000) })
+        if (outcome.allowed) charged += 1
+        return outcome.allowed
+      }
     })
 
     if (!result) {
@@ -789,21 +923,40 @@ export async function onRequestPost(context) {
 
     const { upstream, payload, rawText: rawUpstream } = result
     const activeModel = result.model
+    const trace = {
+      requestId,
+      model,
+      activeModel,
+      colo,
+      upstreamStatus: upstream.status,
+      attempts: result.attemptCount,
+      fallbackUsed: result.fallbackUsed,
+      budgetUnits: charged
+    }
 
     if (!upstream.ok) {
       const provider = providerError(payload, rawUpstream)
       const isAuthError = upstream.status === 401 || upstream.status === 403
       const isModelError = isModelUnavailable(result)
+      const isPrecondition = upstream.status === 400 && String(provider.code).toUpperCase() === 'FAILED_PRECONDITION'
       const isBadRequest = upstream.status === 400
       const isRateLimited = upstream.status === 429
 
       let code = 'AI_UPSTREAM_ERROR'
       let message = 'Gemini đang tạm thời không phản hồi. Hãy thử lại.'
       let status = 502
+      let reason
 
       if (isAuthError) {
         code = 'GEMINI_AUTH_FAILED'
         message = 'Gemini từ chối API key. Hãy kiểm tra lại Secret GEMINI_API_KEY trên Cloudflare.'
+      }
+      else if (isPrecondition) {
+        // Account/billing/region of the server: retrying or another model cannot fix it.
+        code = 'GEMINI_PRECONDITION_FAILED'
+        reason = preconditionReason(provider.message)
+        message = 'ChemAI tạm thời chưa khả dụng do điều kiện sử dụng dịch vụ AI phía máy chủ. Quản trị viên cần kiểm tra cấu hình; các công cụ khác của ChemLab vẫn dùng bình thường.'
+        status = 503
       }
       else if (isModelError) {
         code = 'GEMINI_MODEL_UNAVAILABLE'
@@ -826,17 +979,22 @@ export async function onRequestPost(context) {
         status = 503
       }
 
-      console.error(
-        '[ChemAI] Gemini upstream error',
-        upstream.status,
-        provider.code,
-        provider.message.slice(0, 240)
-      )
+      logRequest({
+        ...trace,
+        status,
+        code,
+        reason,
+        upstreamCode: provider.code,
+        upstreamMessage: redact(provider.message),
+        durationMs: Date.now() - started
+      })
 
       return json(
         {
           ok: false,
           code,
+          ...(reason ? { reason } : {}),
+          requestId,
           providerHttpStatus: upstream.status,
           upstreamCode: provider.code,
           attempts: result.attemptCount,
@@ -851,6 +1009,7 @@ export async function onRequestPost(context) {
     const blockReason = String(payload?.promptFeedback?.blockReason || '')
 
     if (blockReason || finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+      logRequest({ ...trace, status: 422, code: 'AI_BLOCKED', reason: blockReason || finishReason, durationMs: Date.now() - started })
       return json(
         {
           ok: false,
@@ -879,6 +1038,8 @@ export async function onRequestPost(context) {
       throw new Error('ChemAI structured output thiếu answer.')
     }
 
+    logRequest({ ...trace, status: 200, durationMs: Date.now() - started })
+
     return json({
       ok: true,
       answer,
@@ -888,14 +1049,24 @@ export async function onRequestPost(context) {
     })
   }
   catch (error) {
-      const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
+    const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
 
-    console.error('[ChemAI] Request failed:', error?.message || error)
+    logRequest({
+      requestId,
+      model,
+      colo,
+      status: 502,
+      code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
+      error: redact(error?.message || error, 200),
+      budgetUnits: charged,
+      durationMs: Date.now() - started
+    })
 
     return json(
       {
         ok: false,
         code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
+        requestId,
         message: timedOut
           ? 'ChemAI phản hồi quá lâu. Hãy thử lại.'
           : 'ChemAI gặp lỗi kết nối. Hãy thử lại.'
@@ -905,5 +1076,136 @@ export async function onRequestPost(context) {
   }
   finally {
     clearTimeout(timeout)
+  }
+}
+
+function errorResponse(code, message, status, requestId, extraHeaders = {}) {
+  return json({ ok: false, code, requestId, message }, status, extraHeaders)
+}
+
+const UNAVAILABLE = 'ChemAI tạm thời chưa khả dụng. Quản trị viên cần kiểm tra cấu hình; các công cụ khác vẫn dùng bình thường.'
+const WORKERS_AI_ERRORS = {
+  daily_limit: ['AI_DAILY_LIMIT', 'ChemAI đã dùng hết lượt miễn phí hôm nay. Hãy quay lại vào ngày mai; các công cụ khác của ChemLab vẫn dùng bình thường.', 429],
+  capacity: ['AI_OVERLOADED', 'Máy chủ AI đang bận. Hãy thử lại sau ít phút.', 503],
+  model_missing: ['AI_MODEL_UNAVAILABLE', UNAVAILABLE, 503],
+  paid_required: ['AI_MODEL_UNAVAILABLE', UNAVAILABLE, 503],
+  model_forbidden: ['AI_MODEL_UNAVAILABLE', UNAVAILABLE, 503],
+  account_blocked: ['AI_MODEL_UNAVAILABLE', UNAVAILABLE, 503],
+  too_large: ['REQUEST_TOO_LARGE', 'Câu hỏi và lịch sử hội thoại quá dài. Hãy rút gọn hoặc bắt đầu cuộc trò chuyện mới.', 413],
+  timeout: ['AI_TIMEOUT', 'ChemAI phản hồi quá lâu. Hãy thử lại.', 502],
+  unknown: ['AI_UPSTREAM_ERROR', 'ChemAI đang tạm thời không phản hồi. Hãy thử lại.', 502]
+}
+
+// Workers AI path. Every model call is paid for in advance from two exact daily
+// budgets (Durable Object): Neurons for the whole site, questions per client.
+// At most one retry (capacity) and one fallback model, each charged separately.
+async function workersAIChat({ request, env, requestId, started, colo, models, message, body }) {
+  const history = sanitizeHistory(body?.history)
+  const appContext = sanitizeContext(body?.context)
+  const knowledge = retrieveChemKnowledge(message, appContext)
+  const messages = [
+    { role: 'system', content: systemInstructions({ structured: false }) },
+    { role: 'user', content: buildInteractionInput({ message, history, appContext, knowledge }) }
+  ]
+  const inputChars = messages.reduce((sum, item) => sum + item.content.length, 0)
+  const ip = clientRateKey(request)
+  const trace = { requestId, provider: 'workers_ai', model: models.primary, colo }
+
+  // Per isolate: the same question from the same client while one is running, or too many calls at once.
+  const duplicateKey = `${ip}\n${message}`
+  if (inFlightKeys.has(duplicateKey)) {
+    logRequest({ ...trace, status: 409, code: 'DUPLICATE_REQUEST' })
+    return errorResponse('DUPLICATE_REQUEST', 'ChemAI đang trả lời câu hỏi này. Hãy chờ một chút.', 409, requestId)
+  }
+  if (inFlightKeys.size >= MAX_IN_FLIGHT) {
+    logRequest({ ...trace, status: 503, code: 'AI_BUSY' })
+    return errorResponse('AI_BUSY', 'ChemAI đang nhận nhiều câu hỏi cùng lúc. Hãy thử lại sau vài giây.', 503, requestId, { 'Retry-After': '5' })
+  }
+  inFlightKeys.add(duplicateKey)
+
+  try {
+    const neuronLimit = positiveInt(env.CHEMAI_DAILY_NEURONS, 8000)
+    const charge = model => checkShared(env, { key: ip, scope: 'chat-neurons', limit: neuronLimit, cost: estimateNeurons(model, inputChars) })
+
+    const perClient = await consumeBudget(env, { scope: `chat-client:${dailyClientKey(ip)}`, limit: positiveInt(env.CHEMAI_DAILY_LIMIT_PER_CLIENT, 40) })
+    if (!perClient.allowed) {
+      logRequest({ ...trace, status: 429, quota: `client:${perClient.code}` })
+      return perClient.code === 'DAILY_BUDGET_EXHAUSTED'
+        ? errorResponse('AI_CLIENT_LIMIT', 'Bạn đã dùng hết số câu hỏi ChemAI cho hôm nay. Hãy quay lại vào ngày mai.', 429, requestId, { 'Retry-After': '3600' })
+        : errorResponse('AI_BUDGET_LIMITED', 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.', 429, requestId, { 'Retry-After': '60' })
+    }
+
+    const first = await charge(models.primary)
+    if (!first.allowed) {
+      logRequest({ ...trace, status: 429, quota: first.code })
+      return first.code === 'RATE_LIMITED'
+        ? errorResponse('RATE_LIMITED', 'Bạn đang gửi câu hỏi quá nhanh. Hãy thử lại sau một lúc.', 429, requestId, { 'Retry-After': '60' })
+        : errorResponse('AI_BUDGET_LIMITED', 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.', 429, requestId, { 'Retry-After': '60' })
+    }
+
+    let model = models.primary
+    let reserved = estimateNeurons(model, inputChars)
+    let charged = reserved
+    let attempts = 0
+    let retried = false
+    let failure = null
+    let result = null
+    for (;;) {
+      attempts += 1
+      try {
+        result = await runWorkersAI(env, { model, messages, timeoutMs: Math.min(positiveInt(env.CHEMAI_TIMEOUT_MS, 30_000), 50_000) })
+        break
+      }
+      catch (error) {
+        failure = classifyWorkersAIError(error)
+        failure.message = redact(error?.message || error, 200)
+        let next = null
+        if (failure.kind === 'capacity' && !retried) {
+          retried = true
+          next = model
+          await new Promise(resolve => setTimeout(resolve, 600))
+        }
+        else if (['capacity', 'model_missing', 'paid_required', 'model_forbidden'].includes(failure.kind) && models.fallback && model !== models.fallback) {
+          next = models.fallback
+        }
+        if (!next) break
+        const extra = await charge(next)
+        if (!extra.allowed) break
+        model = next
+        reserved = estimateNeurons(model, inputChars)
+        charged += reserved
+      }
+    }
+
+    const fallbackUsed = model !== models.primary
+    if (!result) {
+      const [code, userMessage, status] = WORKERS_AI_ERRORS[failure?.kind] || WORKERS_AI_ERRORS.unknown
+      logRequest({ ...trace, activeModel: model, status, code, upstreamCode: failure?.code, upstreamKind: failure?.kind, upstreamMessage: failure?.message, attempts, fallbackUsed, neuronsReserved: charged, durationMs: Date.now() - started })
+      return json({ ok: false, code, requestId, attempts, fallbackUsed, message: userMessage }, status)
+    }
+
+    const used = actualNeurons(model, result.usage)
+    if (used !== null && used < reserved) await refundBudget(env, { scope: 'chat-neurons', units: reserved - used })
+
+    const answer = text(workersAIAnswer(extractWorkersAIText(result)), 12000)
+    const finishReason = String(result?.choices?.[0]?.finish_reason || '')
+    const measured = { ...usageDetails(result), answerChars: answer.length }
+    if (!answer) {
+      logRequest({ ...trace, activeModel: model, status: 502, code: 'AI_INCOMPLETE', finishReason, ...measured, attempts, fallbackUsed, neuronsReserved: charged, neuronsUsed: used, durationMs: Date.now() - started })
+      return errorResponse('AI_INCOMPLETE', 'ChemAI chưa tạo được câu trả lời hoàn chỉnh. Hãy thử hỏi ngắn gọn hơn.', 502, requestId)
+    }
+
+    logRequest({ ...trace, activeModel: model, status: 200, finishReason, ...measured, attempts, fallbackUsed, neuronsReserved: charged, neuronsUsed: used, durationMs: Date.now() - started })
+    return json({
+      ok: true,
+      // The model ran out of output tokens (ChemLab does not cut answers): say so plainly.
+      answer: finishReason === 'length' ? `${answer}\n\n*(Câu trả lời chưa hoàn chỉnh do vượt giới hạn độ dài. Hãy hỏi tiếp phần còn lại hoặc chia nhỏ câu hỏi.)*` : answer,
+      actions: [],
+      suggestions: [],
+      meta: metaFor(knowledge, null, model, { attemptCount: attempts, fallbackUsed }, 'Workers AI')
+    })
+  }
+  finally {
+    inFlightKeys.delete(duplicateKey)
   }
 }

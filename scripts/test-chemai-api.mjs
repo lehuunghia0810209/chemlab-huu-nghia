@@ -12,6 +12,26 @@ import {
 
 const origin = 'https://chemlab.example'
 
+// Durable Object budget mock: an exact, synchronous counter (limit = Infinity by default).
+function budget(limit = Infinity) {
+  let used = 0
+  return {
+    calls: 0,
+    idFromName: name => name,
+    get() {
+      const namespace = this
+      return {
+        async fetch() {
+          namespace.calls += 1
+          const allowed = used < limit
+          if (allowed) used += 1
+          return Response.json({ allowed, used })
+        }
+      }
+    }
+  }
+}
+
 function makeRequest(body, extraHeaders = {}) {
   return new Request(`${origin}/api/chat`, {
     method: 'POST',
@@ -52,7 +72,7 @@ const statusResponse = onRequestGet({
 const statusPayload = await statusResponse.json()
 assert.equal(statusResponse.status, 200)
 assert.equal(statusPayload.configured, false)
-assert.equal(statusPayload.provider, 'Gemini')
+assert.equal(statusPayload.provider, 'Workers AI')
 assert.equal(statusPayload.release, APP_VERSION)
 
 const noKeyResponse = await onRequestPost({
@@ -74,7 +94,7 @@ const badOriginRequest = new Request(`${origin}/api/chat`, {
 })
 const badOriginResponse = await onRequestPost({
   request: badOriginRequest,
-  env: { GEMINI_API_KEY: 'test-only-key' }
+  env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key' }
 })
 assert.equal(badOriginResponse.status, 403)
 
@@ -148,9 +168,10 @@ try {
       'CF-Connecting-IP': '203.0.113.12'
     }),
     env: {
-      GEMINI_API_KEY: 'test-only-key',
+      CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key',
       GEMINI_MODEL: 'gemini-3.8-flash',
-      GEMINI_THINKING_LEVEL: 'low'
+      GEMINI_THINKING_LEVEL: 'low',
+      CHEMAI_BUDGET: budget()
     }
   })
 
@@ -240,9 +261,10 @@ async function requestWithMock(fetchMock, env = {}) {
         { 'CF-Connecting-IP': `203.0.113.${scenarioIp}` }
       ),
       env: {
-        GEMINI_API_KEY: 'test-only-key',
+        CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key',
         GEMINI_MODEL: 'gemini-3.8-flash',
         GEMINI_THINKING_LEVEL: 'low',
+        CHEMAI_BUDGET: budget(),
         ...env
       }
     })
@@ -433,6 +455,113 @@ const networkTimeout = await requestWithMock(async () => {
 assert.equal(networkTimeout.response.status, 502)
 assert.equal(networkTimeout.payload.code, 'AI_TIMEOUT')
 assert.equal(timeoutCalls, 3)
+
+/* Account prerequisites (400 FAILED_PRECONDITION): one call, no retry, no fallback, own code. */
+for (const [upstreamMessage, reason] of [
+  ['User location is not supported for the API use.', 'REGION_NOT_SUPPORTED'], // verbatim from production, 2026-10-21
+  ['User location is not supported for the API use without a billing account linked.', 'REGION_NOT_SUPPORTED'],
+  ['Gemini API free tier is not available in your country. Please enable billing on your project in Google AI Studio.', 'REGION_NOT_SUPPORTED'],
+  ['Billing is disabled for this project.', 'BILLING_REQUIRED'],
+  ['Precondition check failed.', 'ACCOUNT_PRECONDITION']
+]) {
+  let calls = 0
+  const result = await requestWithMock(async () => {
+    calls += 1
+    return geminiError(400, 'FAILED_PRECONDITION', upstreamMessage)
+  }, { GEMINI_FALLBACK_MODELS: 'gemini-3.6-flash' })
+  assert.equal(result.response.status, 503)
+  assert.equal(result.payload.code, 'GEMINI_PRECONDITION_FAILED')
+  assert.equal(result.payload.reason, reason, upstreamMessage)
+  assert.equal(result.payload.attempts, 1)
+  assert.equal(result.payload.fallbackUsed, false)
+  assert.ok(result.payload.requestId)
+  assert.ok(!result.payload.message.includes('billing') && !result.payload.message.includes('GEMINI'), 'no backend detail shown to learners')
+  assert.equal(calls, 1)
+}
+
+/* Logs: structured, correlated by requestId, without key, IP or conversation text. */
+{
+  const logged = []
+  const originalError = console.error
+  console.error = (...items) => logged.push(items.join(' '))
+  let result
+  try {
+    result = await requestWithMock(async () => geminiError(400, 'FAILED_PRECONDITION', 'Region blocked for key=AIzaSyTESTONLY1234567890abcd.'))
+  }
+  finally {
+    console.error = originalError
+  }
+  const line = logged.find(item => item.includes('chemai.chat'))
+  assert.ok(line, 'one structured log line')
+  const entry = JSON.parse(line)
+  assert.equal(entry.requestId, result.payload.requestId)
+  assert.equal(entry.upstreamStatus, 400)
+  assert.equal(entry.upstreamCode, 'FAILED_PRECONDITION')
+  assert.equal(entry.model, 'gemini-3.8-flash')
+  assert.equal(entry.apiVersion, 'v1beta')
+  assert.equal(entry.attempts, 1)
+  assert.equal(entry.budgetUnits, 1)
+  assert.ok(Number.isFinite(entry.durationMs))
+  assert.ok(!line.includes('AIza') && !line.includes('test-only-key') && !line.includes('H2O là gì') && !line.includes('203.0.113'), line)
+}
+
+/* P1 fail-open: no budget binding → zero upstream calls. */
+for (const [label, env] of [
+  ['no budget binding', {}],
+  ['rate limiter only', { CHEMAI_LIMITER: { async limit() { return { success: true } } } }],
+  ['KV without explicit acceptance', { CHEMAI_QUOTA: { async get() { return null }, async put() {} } }]
+]) {
+  let calls = 0
+  globalThis.fetch = async () => { calls += 1; return geminiSuccess() }
+  try {
+    const response = await onRequestPost({ request: makeRequest({ message: 'H2O là gì?' }, { 'CF-Connecting-IP': '203.0.113.240' }), env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', ...env } })
+    assert.equal(response.status, 503, label)
+    assert.equal((await response.json()).code, 'AI_BUDGET_NOT_CONFIGURED', label)
+    assert.equal(calls, 0, label)
+  }
+  finally {
+    globalThis.fetch = originalFetch
+  }
+}
+
+/* Input is validated before the budget is charged. */
+{
+  const charged = budget()
+  globalThis.fetch = async () => { throw new Error('must not be called') }
+  try {
+    for (const [body, code] of [['{not json', 'INVALID_JSON'], [{ message: '   ' }, 'EMPTY_MESSAGE']]) {
+      const response = await onRequestPost({
+        request: new Request(`${origin}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin, 'CF-Connecting-IP': '203.0.113.241' }, body: typeof body === 'string' ? body : JSON.stringify(body) }),
+        env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: charged }
+      })
+      assert.equal(response.status, 400)
+      assert.equal((await response.json()).code, code)
+    }
+    assert.equal(charged.calls, 0, 'invalid input costs no budget')
+  }
+  finally {
+    globalThis.fetch = originalFetch
+  }
+}
+
+/* Concurrent requests never exceed the budget: 8 at once, budget 3 → exactly 3 upstream calls. */
+{
+  const shared = budget(3)
+  let calls = 0
+  globalThis.fetch = async () => { calls += 1; return geminiSuccess() }
+  try {
+    const responses = await Promise.all(Array.from({ length: 8 }, (_, index) => onRequestPost({
+      request: makeRequest({ message: 'H2O là gì?' }, { 'CF-Connecting-IP': `203.0.113.${242 + index}` }),
+      env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: shared }
+    })))
+    assert.equal(responses.filter(item => item.status === 200).length, 3)
+    assert.equal(responses.filter(item => item.status === 429).length, 5)
+    assert.equal(calls, 3)
+  }
+  finally {
+    globalThis.fetch = originalFetch
+  }
+}
 
 async function localRateResponse(ip, extraHeaders = {}) {
   const headers = {

@@ -7,7 +7,7 @@
 // a public deployment cannot run up unbounded cost.
 import { findRubric, ANSWER_LIMITS } from '../../src/learning/rubrics.js'
 import { json, sameOrigin, clientRateKey, requestGemini, extractGenerateContentText, cleanStructuredText } from './chat.js'
-import { sharedControls, checkShared, dailyLimit } from './_limits.js'
+import { costBudgetConfigured, checkShared, dailyLimit } from './_limits.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
 const MAX_BODY_BYTES = 8 * 1024
@@ -25,9 +25,7 @@ const STATUSES = ['met', 'partial', 'missing']
 // ≤ 900 output tokens and ≤ 1500 answer characters. The budget must be exact
 // (Durable Object) unless the owner explicitly accepts KV's approximate count.
 export function feedbackEnabled(env) {
-  const controls = sharedControls(env)
-  const budgeted = controls.strictBudget || (controls.budget && env?.CHEMAI_ACCEPT_APPROX_BUDGET === 'on')
-  return env?.CHEMAI_FEEDBACK === 'on' && Boolean(env?.GEMINI_API_KEY) && budgeted
+  return env?.CHEMAI_FEEDBACK === 'on' && Boolean(env?.GEMINI_API_KEY) && costBudgetConfigured(env)
 }
 
 function burst(key, now = Date.now()) {
