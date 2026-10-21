@@ -50,6 +50,19 @@ Project settings, the same for Production and Preview:
 
 **The 6.2 and 6.5 environments are identical** as far as the API shows. A secret's value cannot be read; the owner confirms the key was not changed.
 
+### 1d. Root cause — VERIFIED (2026-10-21 09:54 UTC)
+
+This was the single owner-approved test.
+- **Request:** one question `{"message":"H2O là gì?"}` sent to the **6.2 deployment** `69508b59` (code `e8e204b`, same key and settings), while its log was tailed through a filter.
+- **Result:** `HTTP 502 GEMINI_BAD_REQUEST`, attempts 1, Function colo `HKG`.
+- **Google's log line:** `[ChemAI] Gemini upstream error 400 FAILED_PRECONDITION User location is not supported for the API use.`
+
+Conclusions:
+- **Google refuses the request because of the location it attributes to the calling server.**
+- **The 6.2 code fails in exactly the same way today**, so this is **not a 6.5 regression** and a rollback would not help.
+- The message does not mention billing, so there is no evidence that billing alone would fix it.
+- Why 6.2 worked earlier cannot be proven, because Pages keeps no past logs. Possible explanations are a different serving colo for the earlier requests, or a change on Google's side.
+
 Logs: a filtered `wrangler pages deployment tail` worked. A harmless `GET /api/chat` probe ran in colo `HKG`. No ChemAI POST occurred during the watch, so **Google's original message has not been captured yet**. Both the 6.2 and 6.5 code log it (`[ChemAI] Gemini upstream error <status> <code> <message>`). Pages keeps no history of past logs.
 
 Not done on purpose: no billing change, no key change, no proxy/VPN, no change of where Functions run in order to change the region Google sees, and no repeated Gemini calls.
@@ -96,5 +109,10 @@ Production has no `CHEMAI_BUDGET` binding (`/api/feedback` reports `enabled: fal
    1. Deploy `workers/chemai-quota` (`wrangler.toml.example`).
    2. In Pages → Settings → Bindings, add a Durable Object binding `CHEMAI_BUDGET` → `chemai-quota` / `QuotaCounter` (Preview first, then Production).
    3. Set `CHEMAI_DAILY_LIMIT_CHAT` to the daily number of Gemini calls you accept.
-3. **Act on Google's exact message** from step 1. Billing is not recommended until that message shows it is required.
+3. **Choose how ChemAI may call Gemini legitimately** (§1d: the location is refused; code cannot change that). Options to review against Google's Gemini API terms and available regions:
+   - (a) run the Gemini call from infrastructure located in a supported region, as a deliberate hosting choice that is documented and complies with Google's terms, not as a proxy to disguise origin;
+   - (b) ask Google or check AI Studio whether a Paid Tier project is accepted from this location (the message does not say so);
+   - (c) keep ChemAI disabled (the hotfix shows a clear notice).
+
+   No VPN, proxy or circumvention.
 4. **Approve** the Preview run and then the production deployment of this hotfix (see `CLOUDFLARE_STAGING_VERIFICATION.md` §4 and `scripts/staging-smoke.mjs`).

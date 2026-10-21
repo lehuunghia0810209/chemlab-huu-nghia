@@ -458,6 +458,7 @@ assert.equal(timeoutCalls, 3)
 
 /* Account prerequisites (400 FAILED_PRECONDITION): one call, no retry, no fallback, own code. */
 for (const [upstreamMessage, reason] of [
+  ['User location is not supported for the API use.', 'REGION_NOT_SUPPORTED'], // verbatim from production, 2026-10-21
   ['User location is not supported for the API use without a billing account linked.', 'REGION_NOT_SUPPORTED'],
   ['Gemini API free tier is not available in your country. Please enable billing on your project in Google AI Studio.', 'REGION_NOT_SUPPORTED'],
   ['Billing is disabled for this project.', 'BILLING_REQUIRED'],
