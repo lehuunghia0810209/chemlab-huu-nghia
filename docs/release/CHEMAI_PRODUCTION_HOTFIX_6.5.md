@@ -10,7 +10,29 @@ Playground answers normally with the same account.
 | --- | --- | --- |
 | Model / endpoint / payload (code) | `GET /api/chat` on production: `configured: true`, `model: gemini-3.8-flash`. The official model list has `gemini-3.8-flash` and `gemini-3.6-flash` as stable models with a free tier. Endpoint `v1beta/models/{model}:generateContent`, `x-goog-api-key`. A malformed payload returns `INVALID_ARGUMENT`, and a wrong model returns `404 NOT_FOUND`, not `FAILED_PRECONDITION` | **Not the cause** (no evidence of a code defect) |
 | Account prerequisite (Google) | Google's error reference: `failed_precondition`, 400 — “a prerequisite is not met (for example, disabled billing)… Verify project billing status or account prerequisites.” The key's project is on the Free Tier | **Cause class confirmed** (CASE 3/4) |
-| Region of the calling server | `/cdn-cgi/trace` from the owner's network: `loc=VN`, `colo=HKG`. Pages Functions run in the serving data centre, so Google sees the request from Hong Kong, which is **not** on Gemini API's available-regions list (Vietnam is). AI Studio is called from the user's own location, so it works | **Most likely specific cause — high confidence, NOT yet confirmed.** Google's exact message is in the production Function logs, which the agent cannot read (no Cloudflare credentials) |
+| Region of the calling server | `/cdn-cgi/trace` shows `colo=HKG` for one client network. A colo alone does not prove which location Google attributes the request to | **Hypothesis only, not verified** |
+
+### 1b. Regression check 6.2 → 6.5 (owner confirmed the key was not changed)
+
+Production deployments (`wrangler pages deployment list`):
+- `69508b59` — `e8e204b`, 6.2, the last version that worked.
+- `8583adb3` — `2ce2914`, 6.5, failing.
+
+`GET /api/chat` on both: `configured: true`, `model: gemini-3.8-flash`.
+
+The exact upstream request was captured offline (fetch stubbed, no Google call) from `e8e204b`, `37f30b6` and `1f33ce9` with the same input:
+
+| Item | 6.2 `e8e204b` | 6.5 `37f30b6` / hotfix `1f33ce9` |
+| --- | --- | --- |
+| URL | `…/v1beta/models/gemini-3.8-flash:generateContent` | identical |
+| Method / auth | POST, `x-goog-api-key` | identical |
+| Fallback | `gemini-3.6-flash` | identical |
+| Body (system prompt, user part, history, knowledge, `generationConfig` = `maxOutputTokens 1800`, `responseMimeType application/json`, `thinkingLevel low`) | 6438 bytes | **byte-identical** |
+| `x-goog-api-client` | `chemlab/6.2.0` | `chemlab/6.5.0` (only difference; a client-telemetry header) |
+| Knowledge data (`src/lab/chemicals.js`, `reactions.js`, `curriculum.js`, `src/data/elements.js`) | — | unchanged |
+| Changes in `chat.js` between versions | — | budget checks before and between calls (`96c0ecd`, `fb4636f`, `1f33ce9`), exported helpers; none touch the request |
+
+**Finding: no code change between 6.2 and 6.5 alters the request sent to Google.** The first commits touching `/api/chat` after 6.2 are `96c0ecd` (M5 shared limits) and `fb4636f` (per-retry budget); they only decide *whether* to call. Not proven: whether something outside the repository changed between the two deployments, such as Cloudflare variables, the Google project state, or the network origin. Reading the Cloudflare project configuration through the API was not permitted in this session.
 
 Not done on purpose: no billing change, no key change, no proxy/VPN, no change of where Functions run in order to change the region Google sees, and no repeated Gemini calls.
 
@@ -46,10 +68,15 @@ Production has no `CHEMAI_BUDGET` binding (`/api/feedback` reports `enabled: fal
 
 ## 5. Owner actions, in order
 
-1. **Read Google's exact message.** Cloudflare dashboard → Workers & Pages → `chemlab-edulab` → production deployment → Functions → Real-time logs. Ask one question in ChemAI and read the line `[ChemAI] Gemini upstream error 400 FAILED_PRECONDITION …` (current code) or `chemai.chat … upstreamMessage …, colo` (after the hotfix). This confirms or refutes the region hypothesis.
+1. **Two safe checks that settle the regression question** (one question each, typed by the owner; a refused `FAILED_PRECONDITION` call produces no answer):
+   1. Read Google's exact message. Run `npx wrangler pages deployment tail --project-name chemlab-edulab --environment production` (or use Dashboard → Functions → Real-time logs), ask one question on `chemlab-edulab.pages.dev`, and read the line `[ChemAI] Gemini upstream error 400 FAILED_PRECONDITION …`.
+   2. Ask one question on the 6.2 deployment `https://69508b59.chemlab-edulab.pages.dev`. It runs the exact 6.2 code with today's production variables.
+      - If it **also fails**, the cause is outside the code (account/project state or origin), and rolling back would not help.
+      - If it **works**, there is a 6.5 regression to find. The request comparison above should then be repeated with the real production variables.
+   3. Compare Settings → Variables and Secrets (Production) with what was set during 6.2 (names, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS`, `GEMINI_THINKING_LEVEL`).
 2. **Bind the exact budget** (needed regardless of the cause):
    1. Deploy `workers/chemai-quota` (`wrangler.toml.example`).
    2. In Pages → Settings → Bindings, add a Durable Object binding `CHEMAI_BUDGET` → `chemai-quota` / `QuotaCounter` (Preview first, then Production).
    3. Set `CHEMAI_DAILY_LIMIT_CHAT` to the daily number of Gemini calls you accept.
-3. **Resolve eligibility** (owner decision). If Google's message is about location or the free tier, the remedy Google itself names is enabling billing for the Gemini API project in Google AI Studio (Paid Tier). A Google AI Pro subscription does not do this. The budget from step 2 caps the number of calls, and you can also set a spending limit or budget alert in Google Cloud Billing. If you do not want billing, keep ChemAI disabled.
+3. **Act on Google's exact message** from step 1. Billing is not recommended until that message shows it is required.
 4. **Approve** the Preview run and then the production deployment of this hotfix (see `CLOUDFLARE_STAGING_VERIFICATION.md` §4 and `scripts/staging-smoke.mjs`).
