@@ -32,7 +32,25 @@ The exact upstream request was captured offline (fetch stubbed, no Google call) 
 | Knowledge data (`src/lab/chemicals.js`, `reactions.js`, `curriculum.js`, `src/data/elements.js`) | — | unchanged |
 | Changes in `chat.js` between versions | — | budget checks before and between calls (`96c0ecd`, `fb4636f`, `1f33ce9`), exported helpers; none touch the request |
 
-**Finding: no code change between 6.2 and 6.5 alters the request sent to Google.** The first commits touching `/api/chat` after 6.2 are `96c0ecd` (M5 shared limits) and `fb4636f` (per-retry budget); they only decide *whether* to call. Not proven: whether something outside the repository changed between the two deployments, such as Cloudflare variables, the Google project state, or the network origin. Reading the Cloudflare project configuration through the API was not permitted in this session.
+**Finding: no code change between 6.2 and 6.5 alters the request sent to Google.** The first commits touching `/api/chat` after 6.2 are `96c0ecd` (M5 shared limits) and `fb4636f` (per-retry budget); they only decide *whether* to call. ### 1c. Cloudflare configuration (read-only, owner-approved, 2026-10-21)
+
+| Deployment | Commit | Created (UTC) | Compat date | Variables | Bindings |
+| --- | --- | --- | --- | --- | --- |
+| `8583adb3` (6.5, failing) | `2ce2914` | 2026-10-21 08:17 | 2026-10-14 | `GEMINI_API_KEY` (secret) | none |
+| `69508b59` (6.2) | `e8e204b` | 2026-10-19 06:42 | 2026-10-14 | `GEMINI_API_KEY` (secret) | none |
+| `c2ddfea7` | `d06c3dd` | 2026-10-18 16:07 | 2026-10-14 | `GEMINI_API_KEY` (secret) | none |
+| `b34ab928`, `adf82fdf` | `3f49e29`, `da21745` | 2026-10-16 / 10-14 | 2026-10-14 | none | none |
+
+Project settings, the same for Production and Preview:
+- no compatibility flags;
+- `placement: null`;
+- usage model `standard`;
+- no `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS`, `GEMINI_THINKING_LEVEL`, `CHEMAI_*` variables, so the code defaults apply;
+- Preview has **no** `GEMINI_API_KEY`.
+
+**The 6.2 and 6.5 environments are identical** as far as the API shows. A secret's value cannot be read; the owner confirms the key was not changed.
+
+Logs: a filtered `wrangler pages deployment tail` worked. A harmless `GET /api/chat` probe ran in colo `HKG`. No ChemAI POST occurred during the watch, so **Google's original message has not been captured yet**. Both the 6.2 and 6.5 code log it (`[ChemAI] Gemini upstream error <status> <code> <message>`). Pages keeps no history of past logs.
 
 Not done on purpose: no billing change, no key change, no proxy/VPN, no change of where Functions run in order to change the region Google sees, and no repeated Gemini calls.
 
