@@ -2,6 +2,32 @@ import { CHEMICALS } from '../../src/lab/chemicals.js'
 import { REACTIONS } from '../../src/lab/reactions.js'
 import { CURRICULUM } from '../../src/lab/experiments/curriculum.js'
 import { elements as ELEMENTS } from '../../src/data/elements.js'
+import { getElectronConfiguration } from '../../src/chem/electronConfiguration.js'
+
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
+
+// Configuration, period and group (A/B numbering used in Vietnamese textbooks),
+// derived from ChemLab's electron configuration engine so the model does not
+// have to recall them. s/p block → A groups; d block → B groups (8–10 → VIIIB,
+// 11 → IB, 12 → IIB); f block → IIIB.
+export function periodicPosition(atomicNumber) {
+  const config = getElectronConfiguration(atomicNumber)
+  if (!config) return {}
+  // Pd ([Kr] 4d¹⁰) is the only element with an empty outer s subshell.
+  if (atomicNumber === 46) return { electronConfiguration: config.full, period: 5, group: 'VIIIB' }
+  const period = config.shells.length
+  const last = config.energyOrder.at(-1)
+  const ns = config.subshells.find(item => item.n === period && item.l === 0)?.electrons || 0
+  let group
+  if (atomicNumber === 2) group = 'VIIIA'
+  else if (last.l <= 1) group = `${ROMAN[ns + (config.subshells.find(item => item.n === period && item.l === 1)?.electrons || 0)]}A`
+  else if (last.l === 3) group = 'IIIB'
+  else {
+    const count = ns + last.electrons
+    group = count <= 7 ? `${ROMAN[count]}B` : count <= 10 ? 'VIIIB' : count === 11 ? 'IB' : 'IIB'
+  }
+  return { electronConfiguration: config.full, period, group }
+}
 
 const SUBSCRIPT_DIGITS = Object.freeze({
   '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4',
@@ -187,7 +213,7 @@ export function retrieveChemKnowledge(query, context = {}) {
       category: element.category
     })),
     5
-  )
+  ).map(element => ({ ...element, ...periodicPosition(element.number) }))
 
   const chemicals = selectTop(
     Object.values(CHEMICALS).map(chemical => ({

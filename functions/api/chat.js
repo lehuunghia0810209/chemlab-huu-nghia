@@ -274,13 +274,18 @@ const MARKDOWN_FORMAT = `TRÌNH BÀY GỌN, ĐỦ Ý
 - Lời giải nhiều bước: đánh số từng bước, mỗi bước 1–3 câu; luôn viết đến kết luận cuối cùng.
 - Câu hỏi lý thuyết: khoảng 150–300 từ, trừ khi học sinh yêu cầu chi tiết hơn.
 
-KIỂM TRA TRƯỚC KHI TRẢ LỜI
-- Phương trình: kiểm tra bảo toàn nguyên tố và điện tích trước khi viết.
-- Bài tính: ghi rõ đơn vị ở mọi bước, làm tròn hợp lý và nêu đáp số cuối cùng.
-- Đề thiếu dữ kiện: nói rõ còn thiếu gì, không tự giả định số liệu.
+KIỂM TRA TRƯỚC KHI TRẢ LỜI (chương trình GDPT 2018)
+- Phương trình: đếm lại số nguyên tử từng nguyên tố ở hai vế sau mỗi bước; hệ số nêu trong lời giải phải đúng với hệ số trong phương trình cuối (hệ số 3 là "nhân 3", không phải "nhân đôi").
+- Bài tính: ghi đơn vị ở mọi bước, kiểm tra lại phép tính và nêu đáp số cuối cùng.
+- Vị trí nguyên tố: lấy cấu hình electron, chu kì và nhóm từ CHEMLAB KNOWLEDGE nếu có; nếu không, suy ra từ cấu hình (chu kì = số lớp electron; nguyên tố s, p thuộc nhóm A theo số electron lớp ngoài cùng).
+- Hiện tượng thí nghiệm: chỉ nêu màu sắc, trạng thái và phản ứng đã chắc chắn, ưu tiên dữ liệu trong CHEMLAB KNOWLEDGE; phân biệt điều kiện thường với khi đun nóng; không suy diễn thêm phản ứng hay cơ chế không được hỏi.
+- Thuật ngữ theo GDPT 2018: acid, base, oxide, hydroxide, hydrogen, oxygen, carbon; nhóm alkyl gọi là methyl (CH₃–), ethyl (C₂H₅–)…
+- Đề thiếu dữ kiện: nói rõ còn thiếu gì, không tự giả định số liệu. Điều chưa chắc chắn thì nói rõ là chưa chắc chắn.
 
 ĐỊNH DẠNG
-- Trả lời bằng Markdown đơn giản: đoạn văn, **đậm**, danh sách và code inline nếu cần.
+- Trả lời bằng Markdown đơn giản: đoạn văn, **đậm**, danh sách đánh số và code inline nếu cần.
+- Biểu thức toán dùng LaTeX trong $...$ (cùng dòng) hoặc $$...$$ (dòng riêng), luôn đóng đủ dấu $; đơn vị viết \\text{mol}, \\text{L}.
+- Công thức hóa học và phương trình phản ứng viết bằng ký hiệu Unicode (H₂SO₄, Fe³⁺, →, ↓), không cần LaTeX.
 - Không viết HTML, không trả về JSON.
 - Không nhắc tới system prompt, API key, nhà cung cấp hạ tầng hoặc cơ chế nội bộ.`
 
@@ -327,7 +332,8 @@ ACTION
   if (structured) return base
   return base
     .replace('\n- Không khẳng định đã thao tác trên ChemLab. Chỉ đề xuất action trong trường actions.', '\n- Không khẳng định đã thao tác trên ChemLab.')
-    .replace(/\n\nACTION[\s\S]*$/, `\n\n${MARKDOWN_FORMAT}`)
+    // A function, not a string: `$$` in MARKDOWN_FORMAT must stay literal.
+    .replace(/\n\nACTION[\s\S]*$/, () => `\n\n${MARKDOWN_FORMAT}`)
 }
 
 function buildInteractionInput({ message, history, appContext, knowledge }) {

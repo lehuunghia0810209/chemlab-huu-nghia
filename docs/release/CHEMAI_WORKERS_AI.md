@@ -83,3 +83,39 @@ The Pages project is configured in the Dashboard (it has no `wrangler.toml`, and
 5. Read the `chemai.chat` log lines (`wrangler pages deployment tail <id> --project-name chemlab-edulab`): check `neuronsReserved`, `neuronsUsed` and `finishReason`.
 
 Production only after these pass and the owner approves the merge.
+
+## 6. Answer quality and math rendering (2026-10-21, after the first real evaluation)
+
+The first Preview evaluation of GLM-4.7-Flash had 12/13 correct final answers and every answer complete (`finish_reason=stop`), using about 18.5 Neurons per question. It found two groups of defects:
+- **Raw LaTeX.** The ChemAI renderer only knew bold, code and lists.
+- **Chemistry mistakes:**
+  - a wrong coefficient in a balancing explanation;
+  - Na placed in group IVA;
+  - Cu(OH)₂ described as green and "oxidised by air", with an unbalanced decomposition;
+  - "nhóm metan" instead of methyl.
+
+| Change | Where |
+| --- | --- |
+| **KaTeX 0.19.0** for `$…$`, `$$…$$`, `\(…\)`, `\[…\]` and `\ce{}` (mhchem). | `src/ai/markdown.js`, `src/ai/mathRender.js` |
+| Math handling, step by step: | |
+| — Math is cut out before Markdown and escaping, kept as escaped placeholders, then typeset with `trust: false`, `maxExpand 300` and MathML output. | `src/ai/markdown.js`, `src/ai/mathRender.js` |
+| — Invalid TeX, or KaTeX not loaded yet (offline), keeps the readable source. | `src/ai/mathRender.js` |
+| — An unclosed `$$` becomes the rest of its line and never swallows the next formula. | `src/ai/markdown.js` |
+| — LaTeX without delimiters is detected only in ASCII runs, so Vietnamese prose stays text. | `src/ai/markdown.js` |
+| — KaTeX is lazy-loaded only when an answer contains math (≈ 78 kB + 8 kB CSS + 8 kB mhchem, gzip). The main bundle is unchanged; the ChemAI chunk grows by 1 kB gzip. | |
+| — Long display formulas scroll inside their box, are focusable, and follow the theme colour. | `src/ai/chemAI.css` |
+| Knowledge: every retrieved element now carries its electron configuration, period and A/B group, from ChemLab's `getElectronConfiguration` engine. This is shared with the Gemini path, whose system prompt is unchanged. | `functions/api/_knowledge.js` |
+| Prompt (Workers AI only) adds general accuracy rules: | `functions/api/chat.js` |
+| — atom counts after each balancing step, with explained coefficients that match the final equation; | |
+| — positions taken from CHEMLAB KNOWLEDGE; | |
+| — observations: only certain ones, room temperature vs heating, no extra mechanisms; | |
+| — GDPT 2018 terms (acid, base, oxide, hydrogen, methyl…); | |
+| — math in closed `$…$` / `$$…$$`, chemical formulas in Unicode. | |
+| Fixed two latent prompt bugs: a `\t` in `\text` became a TAB, and `String.replace` turned `$$` into `$`. | `functions/api/chat.js` |
+| Prompt growth | ≈ +1,200 characters (≈ +2 Neurons per question; reservation 80–86) |
+| Evaluation: 19 cases, graded per category; PASS only if all pass, and fabrication is always checked by a person. The 6 new variant cases cover the four defects without reusing the 13 questions' answers. | `scripts/lib/chemai-eval-cases.mjs`, `scripts/chemai-eval.mjs [--only ids]` |
+| — Categories: final answer, steps, facts/phenomena, terminology, display, completeness. | |
+| — Variant cases: Al₂O₃ balancing, K and Cl positions, heating Cu(OH)₂, FeCl₃ + NaOH, alkyl names. | |
+| Tests | `test-chemai-markdown` (10), `test-chemai-eval` (9), `test-workers-ai` (25), browser math journey (desktop dark and 390 px light), a11y scenario "ChemAI answer with math" |
+
+Not done here: no real Workers AI call. The next Preview run should use `node scripts/chemai-eval.mjs <preview-url> --confirm` (19 questions, ≈ 400 Neurons), after approval.

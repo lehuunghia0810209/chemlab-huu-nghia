@@ -132,7 +132,7 @@ await test('valid Vietnamese question with history: Workers AI only, Markdown pr
   assert.match(call.inputs.messages[0].content, /không viết phần nháp/)
   assert.equal(call.inputs.messages[0].role, 'system')
   assert.match(call.inputs.messages[0].content, /Markdown/)
-  assert.match(call.inputs.messages[0].content, /bảo toàn nguyên tố/)
+  assert.match(call.inputs.messages[0].content, /đếm lại số nguyên tử từng nguyên tố/)
   assert.doesNotMatch(call.inputs.messages[0].content, /JSON object hợp lệ|actions: array/)
   const user = call.inputs.messages[1].content
   assert.match(user, /Mình đang học chương mol/)
@@ -367,6 +367,28 @@ await test('a complete multi-step answer is passed through untouched; gemma gets
   const { payload } = await ask(environment)
   assert.equal(payload.answer, long)
   assert.equal('chat_template_kwargs' in environment.AI.calls[0].inputs, false)
+})
+
+await test('knowledge carries configuration, period and A/B group for every element', async () => {
+  const { periodicPosition, retrieveChemKnowledge } = await import('../functions/api/_knowledge.js')
+  const expected = { 1: 'IA', 2: 'VIIIA', 6: 'IVA', 11: 'IA', 12: 'IIA', 13: 'IIIA', 17: 'VIIA', 18: 'VIIIA', 19: 'IA', 21: 'IIIB', 24: 'VIB', 26: 'VIIIB', 29: 'IB', 30: 'IIB', 35: 'VIIA', 46: 'VIIIB', 47: 'IB', 57: 'IIIB', 58: 'IIIB', 80: 'IIB', 82: 'IVA', 92: 'IIIB' }
+  for (const [z, group] of Object.entries(expected)) assert.equal(periodicPosition(Number(z)).group, group, `Z=${z}`)
+  assert.deepEqual([periodicPosition(11).period, periodicPosition(46).period, periodicPosition(55).period], [3, 5, 6])
+  for (let z = 1; z <= 118; z += 1) assert.match(periodicPosition(z).group, /^(I|II|III|IV|V|VI|VII|VIII)[AB]$/, `Z=${z}`)
+  const na = retrieveChemKnowledge('Cấu hình electron của Na (Z = 11)', {}).elements.find(item => item.symbol === 'Na')
+  assert.deepEqual([na.electronConfiguration, na.period, na.group], ['1s² 2s² 2p⁶ 3s¹', 3, 'IA'])
+})
+
+await test('runtime prompt: accuracy rules, literal $$ and \\text, no stray control characters', async () => {
+  const environment = env()
+  await ask(environment)
+  const prompt = environment.AI.calls[0].inputs.messages[0].content
+  assert.match(prompt, /\$\$\.\.\.\$\$ \(dòng riêng\)/)
+  assert.match(prompt, /\\text\{mol\}/)
+  assert.doesNotMatch(prompt, /[\t\u0000]/)
+  assert.match(prompt, /hệ số 3 là "nhân 3"/)
+  assert.match(prompt, /phân biệt điều kiện thường với khi đun nóng/)
+  assert.match(prompt, /methyl \(CH₃–\)/)
 })
 
 await test('Gemini is never called on the default path', () => {

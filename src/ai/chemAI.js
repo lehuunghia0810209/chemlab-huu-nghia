@@ -4,6 +4,8 @@ import {
   getSmartSuggestions
 } from './contextBuilder.js'
 import { APP_VERSION } from '../appMeta.js'
+import { escapeHTML, markdownToHTML } from './markdown.js'
+import { typesetMath } from './mathRender.js'
 
 const SESSION_KEY = 'chemlab-v62-ai-session'
 const MAX_STORED_MESSAGES = 24
@@ -29,107 +31,6 @@ function icon(name) {
   }
 
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.spark}</svg>`
-}
-
-function escapeHTML(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
-function inlineMarkdown(value) {
-  return escapeHTML(value)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-}
-
-function markdownToHTML(markdown) {
-  const source = String(markdown ?? '').replace(/\r\n/g, '\n').trim()
-  if (!source) return ''
-
-  const blocks = source.split(/```/)
-  const html = []
-
-  blocks.forEach((block, index) => {
-    if (index % 2 === 1) {
-      const cleaned = block.replace(/^\w+\n/, '').trim()
-      html.push(`<pre><code>${escapeHTML(cleaned)}</code></pre>`)
-      return
-    }
-
-    const lines = block.split('\n')
-    let listType = null
-    let listItems = []
-
-    const flushList = () => {
-      if (!listType || !listItems.length) return
-      html.push(`<${listType}>${listItems.join('')}</${listType}>`)
-      listType = null
-      listItems = []
-    }
-
-    for (const rawLine of lines) {
-      const line = rawLine.trim()
-
-      if (!line) {
-        flushList()
-        continue
-      }
-
-      const bullet = line.match(/^[-*]\s+(.+)$/)
-      const ordered = line.match(/^\d+[.)]\s+(.+)$/)
-
-      if (bullet) {
-        if (listType && listType !== 'ul') flushList()
-        listType = 'ul'
-        listItems.push(`<li>${inlineMarkdown(bullet[1])}</li>`)
-        continue
-      }
-
-      if (ordered) {
-        if (listType && listType !== 'ol') flushList()
-        listType = 'ol'
-        listItems.push(`<li>${inlineMarkdown(ordered[1])}</li>`)
-        continue
-      }
-
-      flushList()
-
-      if (/^###\s+/.test(line)) {
-        html.push(`<h4>${inlineMarkdown(line.replace(/^###\s+/, ''))}</h4>`)
-        continue
-      }
-
-      if (/^##\s+/.test(line)) {
-        html.push(`<h3>${inlineMarkdown(line.replace(/^##\s+/, ''))}</h3>`)
-        continue
-      }
-
-      if (/^>\s+/.test(line)) {
-        html.push(`<blockquote>${inlineMarkdown(line.replace(/^>\s+/, ''))}</blockquote>`)
-        continue
-      }
-
-      const equationLike =
-        /(?:→|⇌|↔)/.test(line) &&
-        /[A-Z][A-Za-z₀-₉⁺⁻²³⁴⁵⁶⁷⁸⁹()\[\]]*/.test(line)
-
-      if (equationLike) {
-        html.push(`<div class="chemai-equation">${inlineMarkdown(line)}</div>`)
-        continue
-      }
-
-      html.push(`<p>${inlineMarkdown(line)}</p>`)
-    }
-
-    flushList()
-  })
-
-  return html.join('')
 }
 
 function loadSession() {
@@ -455,6 +356,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
 
       messagesEl.appendChild(article)
     }
+    void typesetMath(messagesEl)
   }
 
   function renderThinking() {

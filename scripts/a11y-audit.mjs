@@ -276,6 +276,27 @@ const SCENARIOS = [
       })))
       await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
     }
+  },
+  {
+    name: 'ChemAI answer with math',
+    view: 'home',
+    scope: '.chemai-panel',
+    async setup(page) {
+      // Stubbed /api/chat: no model call. The answer mixes Markdown, inline/display math and a long formula.
+      const answer = '**Bước 1:** $n = \\frac{m}{M} = \\frac{5,6}{56} = 0,1 \\text{ mol}$\n\n1. \\(C_M = \\frac{n}{V}\\)\n2. $$3Fe + 2O_2 \\rightarrow Fe_3O_4$$\n\n$$m_{\\text{dd}} = 5,85 + 494,15 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 = 500 \\text{ g}$$'
+      await page.route('**/api/chat', route => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(route.request().method() === 'GET'
+          ? { ok: true, configured: true, provider: 'Workers AI', model: 'stub' }
+          : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub' } })
+      }))
+      await page.click('[data-chemai-open]:visible')
+      await page.fill('#chemai-input', 'Ví dụ có công thức')
+      await page.keyboard.press('Enter')
+      await page.waitForSelector('.chemai-answer .katex', { timeout: 15000 })
+      await page.waitForFunction(() => !document.querySelector('.chemai-answer .chemai-math:not([data-typeset])'))
+    }
   }
 ]
 

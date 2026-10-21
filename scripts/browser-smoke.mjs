@@ -273,6 +273,68 @@ async function chemAIPhoneCheck(browser, baseURL) {
   await context.close()
 }
 
+// Math in answers: KaTeX typesetting, no raw TeX, no page overflow, theme colour, XSS inert.
+const MATH_ANSWER = [
+  '**Bước 1:** Số mol $n = \\frac{m}{M} = \\frac{5,6}{56} = 0,1 \\text{ mol}$',
+  '',
+  '1. Nồng độ: \\(C_M = \\frac{n}{V}\\)',
+  '2. Phương trình: $$3Fe + 2O_2 \\rightarrow Fe_3O_4$$',
+  '',
+  '\\[ V = n \\times 24,79 = 0,1 \\times 24,79 = 2,479 \\text{ L} \\]',
+  'Thiếu dấu đô la: m = \\frac{49}{98} = 0,5',
+  '$$V \\approx 2,48$ L$',
+  '$$m_{\\text{dung dịch}} = m_{\\text{chất tan}} + m_{\\text{nước}} = 5,85 + 494,15 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 = 500 \\text{ g}$$',
+  '<img src=x onerror="window.__chemaiXss = 1"> $\\href{javascript:window.__chemaiXss=2}{x}$'
+].join('\n')
+
+async function chemAIMathJourney(browser, baseURL) {
+  for (const viewport of [{ width: 1280, height: 800, theme: 'dark' }, { width: 390, height: 844, theme: 'light' }]) {
+    const { context, page, errors } = await newPage(browser, viewport)
+    await context.route('**/api/chat', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(route.request().method() === 'GET'
+        ? { ok: true, configured: true, provider: 'Workers AI', model: 'stub' }
+        : { ok: true, answer: MATH_ANSWER, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub' } })
+    }))
+    await openView(page, baseURL, 'home')
+    await page.click('[data-chemai-open]:visible') // the topbar button is phone-only
+    await page.waitForSelector('.chemai-root.is-open #chemai-input')
+    await page.fill('#chemai-input', 'Tính toán mẫu')
+    await page.keyboard.press('Enter')
+    await page.waitForSelector('.chemai-answer .katex', { timeout: 15000 })
+    await page.waitForFunction(() => !document.querySelector('.chemai-answer .chemai-math:not([data-typeset])'))
+    const state = await page.evaluate(() => {
+      const answer = document.querySelector('.chemai-answer')
+      const visible = [...answer.querySelectorAll('.katex-html, :scope > p, :scope > ol li')].map(node => node.innerText).join(' ')
+      const display = [...answer.querySelectorAll('.chemai-math--display')]
+      const katex = answer.querySelector('.katex')
+      return {
+        math: answer.querySelectorAll('.chemai-math').length,
+        typeset: answer.querySelectorAll('.katex').length,
+        raw: answer.querySelectorAll('.chemai-math--raw').length,
+        mathml: answer.querySelectorAll('.katex-mathml math').length,
+        dollars: (answer.innerText.match(/\$/g) || []).length,
+        backslashText: /\\frac|\\text|\\rightarrow/.test(visible),
+        pageOverflow: document.documentElement.scrollWidth - innerWidth,
+        displayInside: display.every(node => node.getBoundingClientRect().right <= innerWidth + 1),
+        scrolls: display.some(node => node.scrollWidth > node.clientWidth),
+        sameColour: getComputedStyle(katex).color === getComputedStyle(answer).color,
+        xss: window.__chemaiXss ?? null,
+        liveTags: answer.querySelectorAll('img, script, a[href^="javascript"]').length
+      }
+    })
+    const label = `${viewport.width}px ${viewport.theme}`
+    record(`ChemAI math (${label}): every formula typeset with MathML, no raw $ or TeX left`,
+      state.math === 8 && state.typeset === 8 && state.raw === 0 && state.mathml === 8 && state.dollars === 0 && !state.backslashText, JSON.stringify(state))
+    record(`ChemAI math (${label}): long formulas scroll in their box, the page never overflows; colour follows the theme`,
+      state.pageOverflow <= 1 && state.displayInside && state.sameColour && (viewport.width > 600 || state.scrolls), JSON.stringify(state))
+    record(`ChemAI math (${label}): HTML and \\href in an answer stay inert`, state.xss === null && state.liveTags === 0, JSON.stringify(state))
+    record(`console clean in the ChemAI math journey (${label})`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+}
+
 // /api/chat is stubbed (no Pages Functions under vite preview, never a real Gemini call).
 async function chemAIErrorJourney(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
@@ -1188,7 +1250,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['chemai errors', chemAIErrorJourney], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['chemai errors', chemAIErrorJourney], ['chemai math', chemAIMathJourney], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }
