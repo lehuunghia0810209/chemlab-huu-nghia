@@ -52,9 +52,16 @@ for (const [name, question, expectations] of QUESTIONS) {
   const missing = expectations.filter(pattern => !pattern.test(answer)).map(String)
   const pass = response.ok && payload.ok === true && missing.length === 0
   results.push(pass)
-  console.log(`${pass ? 'PASS' : 'FAIL'} ${name} — HTTP ${response.status} ${payload.code || ''} ${payload.meta?.model || ''} ${Date.now() - started} ms${missing.length ? ` — missing ${missing.join(', ')}` : ''}`)
-  console.log(`     ${answer.slice(0, 220)}${answer.length > 220 ? '…' : ''}`)
+  const attempts = payload.meta?.attempts ?? payload.attempts ?? '?'
+  console.log(`${pass ? 'PASS' : 'FAIL'} ${name} — HTTP ${response.status} ${payload.code || ''} ${payload.meta?.model || ''} attempts=${attempts} fallback=${payload.meta?.fallbackUsed ?? payload.fallbackUsed ?? false} ${Date.now() - started} ms${missing.length ? ` — missing ${missing.join(', ')}` : ''}`)
+  // Full answer: the keyword check is only a first filter; a person grades the chemistry.
+  console.log(String(payload.answer || payload.message || '').replace(/^/gm, '     '))
   if (payload.code === 'AI_DAILY_LIMIT' || payload.code === 'AI_BUDGET_LIMITED') break
+  // An approved run is one model call per question: stop on any retry or fallback.
+  if (attempts !== 1 || payload.meta?.fallbackUsed || payload.fallbackUsed) {
+    console.log('STOP: a retry or fallback happened; the run was approved for one call per question.')
+    break
+  }
 }
 console.log(`${results.filter(Boolean).length}/${QUESTIONS.length} chemistry answers matched the reference.`)
 process.exit(results.length === QUESTIONS.length && results.every(Boolean) ? 0 : 1)
