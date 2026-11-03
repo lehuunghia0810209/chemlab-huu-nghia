@@ -108,6 +108,14 @@ if (!manifest.name.includes(version)) {
   fail(`manifest.webmanifest chưa chứa version ${version}.`)
 }
 
+if (!manifest.name.startsWith(`ChemLab ${version} —`) || !manifest.name.includes('EduLab')) {
+  fail('manifest.webmanifest phải giữ ChemLab làm tên chính và EduLab làm thương hiệu hệ sinh thái.')
+}
+
+if (manifest.short_name !== 'ChemLab') {
+  fail('manifest.webmanifest short_name phải là ChemLab.')
+}
+
 if (!indexHtml.includes(`ChemLab ${version}`)) {
   fail(`index.html chưa chứa version ${version}.`)
 }

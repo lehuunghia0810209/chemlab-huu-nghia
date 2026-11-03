@@ -69,8 +69,10 @@ const manifest = JSON.parse(
   await fs.readFile(manifestPath, 'utf8')
 )
 
-manifest.name =
-  `ChemLab ${version} — Hữu Nghĩa Edition`
+manifest.name = `ChemLab ${version} — Phòng thí nghiệm Hóa học | EduLab`
+manifest.short_name = 'ChemLab'
+manifest.description =
+  'Phòng thí nghiệm Hóa học tương tác với bảng tuần hoàn, công cụ học tập, mô phỏng và ChemAI. Thuộc hệ sinh thái EduLab.'
 
 await fs.writeFile(
   manifestPath,
