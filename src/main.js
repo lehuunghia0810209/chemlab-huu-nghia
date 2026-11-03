@@ -230,7 +230,7 @@ app.innerHTML = `
         </div>
 
         <div class="app-topbar__ecosystem" aria-label="ChemLab, thuộc hệ sinh thái EduLab">
-          <img src="/brand/edulab-logo.png" width="24" height="24" alt="" decoding="async">
+          <img src="/brand/edulab-logo-96.png" width="24" height="24" alt="" decoding="async">
           <span><strong>ChemLab</strong><small>Thuộc hệ sinh thái EduLab</small></span>
         </div>
       </header>
@@ -264,7 +264,7 @@ app.innerHTML = `
         </section>
       </main>
       <footer class="app-footer">
-        <img src="/brand/edulab-logo.png" width="24" height="24" alt="EduLab" loading="lazy">
+        <img src="/brand/edulab-logo-96.png" width="24" height="24" alt="EduLab" loading="lazy">
         <span>ChemLab thuộc hệ sinh thái EduLab — <span lang="en">Education Laboratory</span>.</span>
         <a class="app-footer__home" href="https://edulab-education.pages.dev/">Về EduLab Home</a>
       </footer>
