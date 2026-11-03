@@ -497,6 +497,42 @@ html[data-theme='light'] .app-theme-icon--light {
   text-overflow: ellipsis;
 }
 
+.app-topbar__ecosystem {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.app-topbar__ecosystem img,
+.app-footer img {
+  flex: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  object-fit: contain;
+}
+
+.app-topbar__ecosystem span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.app-topbar__ecosystem strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.app-topbar__ecosystem small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
 .app-topbar__actions {
   display: flex;
   align-items: center;
@@ -515,6 +551,37 @@ html[data-theme='light'] .app-theme-icon--light {
   margin: 0 auto;
   padding: var(--space-8) clamp(var(--space-4), 3vw, var(--space-10)) var(--space-16);
   outline: none;
+}
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.app-footer__home {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.app-footer__home:hover {
+  color: var(--text-primary);
+}
+
+.app-footer__home:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
 }
 
 .app-view.active {
@@ -816,7 +883,10 @@ html[data-theme='light'] .app-theme-icon--light {
 
   .app-topbar {
     gap: var(--space-2);
-    height: calc(56px + var(--safe-top));
+    height: auto;
+    min-height: calc(56px + var(--safe-top));
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
     padding: var(--safe-top) max(var(--space-2), var(--safe-right)) 0 max(var(--space-4), var(--safe-left));
   }
 
@@ -834,8 +904,19 @@ html[data-theme='light'] .app-theme-icon--light {
     font-size: var(--text-md);
   }
 
+  .app-topbar__ecosystem {
+    flex: 1 0 100%;
+    min-height: 28px;
+    margin-left: calc(32px + var(--space-2));
+  }
+
   .app-main {
     padding: var(--space-5) var(--space-4) calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--space-8));
+  }
+
+  .app-footer {
+    flex-wrap: wrap;
+    padding-inline: var(--space-4);
   }
 
   .app-bottom-nav {

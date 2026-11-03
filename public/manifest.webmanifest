@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "ChemLab 6.5.0 — Hữu Nghĩa Edition",
+  "name": "ChemLab 6.5.0 — Phòng thí nghiệm Hóa học | EduLab",
   "short_name": "ChemLab",
-  "description": "ChemLab 6.2 Final — nền tảng Hóa học tích hợp ChemAI Gemini: Bảng tuần hoàn, Công cụ, Learning, Chem Flow và Virtual Lab.",
+  "description": "Phòng thí nghiệm Hóa học tương tác với bảng tuần hoàn, công cụ học tập, mô phỏng và ChemAI. Thuộc hệ sinh thái EduLab.",
   "lang": "vi",
   "start_url": "/#home",
   "scope": "/",

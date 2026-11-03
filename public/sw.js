@@ -21,6 +21,8 @@ const CORE_FILES = [
 
   '/brand/favicon-32.png',
 
+  '/brand/chemlab-icon-32.png',
+
   '/brand/chemlab-mark.webp'
 
 ]

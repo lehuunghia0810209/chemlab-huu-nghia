@@ -14,7 +14,12 @@ import { pwaUpgradeJourneys } from './lib/pwa-upgrade-journeys.mjs'
 const SW_CACHE_VERSION = (await fs.readFile(new URL('../public/sw.js', import.meta.url), 'utf8')).match(/'(chemlab-[^']+)'/)[1]
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const outDir = path.join(rootDir, 'test-results', 'browser-smoke')
+const outDir = process.env.CHEMLAB_QA_OUTPUT_DIR
+  ? path.resolve(process.env.CHEMLAB_QA_OUTPUT_DIR)
+  : path.join(rootDir, 'test-results', 'browser-smoke', `run-${Date.now()}`)
+const buildDir = process.env.CHEMLAB_BUILD_DIR
+  ? path.resolve(process.env.CHEMLAB_BUILD_DIR)
+  : path.join(rootDir, 'dist')
 const VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
 const WIDTHS = [320, 360, 390, 430, 768, 1024, 1440, 1920]
 const THEMES = ['dark', 'light']
@@ -73,7 +78,7 @@ async function openView(page, baseURL, view) {
 
 async function screenshotOnFail(page, name) {
   await fs.mkdir(outDir, { recursive: true })
-  await page.screenshot({ path: path.join(outDir, `${name}.png`) }).catch(() => {})
+  await page.screenshot({ path: path.join(outDir, `${name}.png`) })
 }
 
 async function layoutSweep(browser, baseURL) {
@@ -91,6 +96,10 @@ async function layoutSweep(browser, baseURL) {
           const section = document.querySelector('.app-view.active')
           const bottomNav = document.querySelector('.app-bottom-nav')
           const navVisible = bottomNav && getComputedStyle(bottomNav).display !== 'none'
+          const ecosystem = document.querySelector('.app-topbar__ecosystem')
+          const ecosystemLogo = ecosystem?.querySelector('img')
+          const footer = document.querySelector('.app-footer')
+          const homeLink = footer?.querySelector('.app-footer__home')
           const covered = navVisible
             ? [...bottomNav.querySelectorAll('.app-bottom-nav__item')].filter(item => {
                 const r = item.getBoundingClientRect()
@@ -103,6 +112,11 @@ async function layoutSweep(browser, baseURL) {
             overflow: doc.scrollWidth - window.innerWidth,
             visible: Boolean(section && !section.hidden && section.getBoundingClientRect().height > 0),
             moduleError: Boolean(section?.querySelector('.app-route-error, .app-module-error')),
+            ecosystemVisible: Boolean(ecosystem && getComputedStyle(ecosystem).display !== 'none' && ecosystem.textContent.includes('Thuộc hệ sinh thái EduLab')),
+            ecosystemLogoLoaded: Boolean(ecosystemLogo?.complete && ecosystemLogo.naturalWidth > 0),
+            footerBranded: Boolean(footer?.textContent.includes('Education Laboratory')),
+            homeLink: homeLink?.getAttribute('href'),
+            homeLinkVisible: Boolean(homeLink && getComputedStyle(homeLink).display !== 'none'),
             navVisible,
             covered
           }
@@ -113,11 +127,23 @@ async function layoutSweep(browser, baseURL) {
           state.overflow <= 1 &&
           state.visible &&
           !state.moduleError &&
+          state.ecosystemVisible &&
+          state.ecosystemLogoLoaded &&
+          state.footerBranded &&
+          state.homeLink === 'https://edulab-education.pages.dev/' &&
+          state.homeLinkVisible &&
           (width >= 768 || state.navVisible) &&
           state.covered.length === 0
 
         record(`layout ${label}`, pass, JSON.stringify(state))
         if (!pass) await screenshotOnFail(page, `layout-${view}-${width}-${theme}`)
+        if (view === 'home' && theme === 'dark' && (width === 1440 || width === 390)) {
+          await fs.mkdir(outDir, { recursive: true })
+          await page.screenshot({
+            path: path.join(outDir, `branding-${width === 1440 ? 'desktop' : 'mobile'}.png`),
+            fullPage: true
+          })
+        }
       }
 
       record(`console clean @${width} ${theme}`, errors.length === 0, errors.join(' | '))
@@ -1182,6 +1208,7 @@ async function brandChecks(browser, baseURL) {
   for (const [width, theme] of [[1440, 'dark'], [390, 'light']]) {
     const { context, page, errors } = await newPage(browser, { width, height: width < 768 ? 844 : 900, theme })
     await openView(page, baseURL, 'home')
+    await page.screenshot({ path: path.join(outDir, `branding-${width}-${theme}.png`) })
     const head = await page.evaluate(async () => {
       const links = [...document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')].map(link => link.href)
       const manifest = await (await fetch(document.querySelector('link[rel="manifest"]').href)).json()
@@ -1198,7 +1225,11 @@ async function brandChecks(browser, baseURL) {
         purposes: manifest.icons.map(icon => icon.purpose)
       }
     })
-    const expected = { 'favicon-32.png': '32x32', 'favicon-48.png': '48x48', 'apple-touch-icon.png': '180x180' }
+    const expected = {
+      'chemlab-icon-32.png': '32x32',
+      'chemlab-icon-48.png': '48x48',
+      'chemlab-apple-touch-icon.png': '180x180'
+    }
     record(`brand @${width} ${theme}: favicons and apple-touch icon load at their declared sizes`,
       head.links.length === 3 && head.links.every(([name, size]) => size === expected[name]), JSON.stringify(head.links))
     record(`brand @${width} ${theme}: every manifest icon (any + maskable, shortcuts) matches its declared size`,
@@ -1243,6 +1274,7 @@ async function brandChecks(browser, baseURL) {
 
 const server = await preview({
   root: rootDir,
+  build: { outDir: buildDir },
   logLevel: 'silent',
   preview: { port: 4179, strictPort: false, open: false }
 })

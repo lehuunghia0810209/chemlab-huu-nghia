@@ -228,6 +228,11 @@ app.innerHTML = `
             ${icon('settings')}
           </button>
         </div>
+
+        <div class="app-topbar__ecosystem" aria-label="ChemLab, thuộc hệ sinh thái EduLab">
+          <img src="/brand/edulab-logo.png" width="24" height="24" alt="" decoding="async">
+          <span><strong>ChemLab</strong><small>Thuộc hệ sinh thái EduLab</small></span>
+        </div>
       </header>
 
       <main id="workspace-main" class="app-main" tabindex="-1">
@@ -258,6 +263,11 @@ app.innerHTML = `
           <div id="lab-host"></div>
         </section>
       </main>
+      <footer class="app-footer">
+        <img src="/brand/edulab-logo.png" width="24" height="24" alt="EduLab" loading="lazy">
+        <span>ChemLab thuộc hệ sinh thái EduLab — <span lang="en">Education Laboratory</span>.</span>
+        <a class="app-footer__home" href="https://edulab-education.pages.dev/">Về EduLab Home</a>
+      </footer>
     </div>
 
     <nav class="app-bottom-nav" aria-label="Điều hướng chính">
