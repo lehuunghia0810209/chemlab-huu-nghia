@@ -1,9 +1,11 @@
-// CSP compatibility check (EXR-006): every document is served from the built
-// dist/index.html with the policy declared in public/_headers (vite preview
+// CSP compatibility check (EXR-006): every document is served from
+// the built index.html with the policy declared in public/_headers (vite preview
 // does not apply _headers, and editor extensions can inject inline scripts into
 // the local preview). Any securitypolicyviolation in key modules — including
 // WebGL scenes and the ChemAI panel — fails the check.
 import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export function cspFromHeaders(file = new URL('../../public/_headers', import.meta.url)) {
   const text = fs.readFileSync(file, 'utf8')
@@ -16,7 +18,10 @@ export async function cspJourneys(browser, baseURL, { newPage, record }) {
   const policy = cspFromHeaders()
   record('CSP: public/_headers declares a Content-Security-Policy', Boolean(policy), String(policy))
   if (!policy) return
-  const html = fs.readFileSync(new URL('../../dist/index.html', import.meta.url), 'utf8')
+  const buildDir = process.env.CHEMLAB_BUILD_DIR
+    ? path.resolve(process.env.CHEMLAB_BUILD_DIR)
+    : fileURLToPath(new URL('../../dist', import.meta.url))
+  const html = fs.readFileSync(path.join(buildDir, 'index.html'), 'utf8')
   const inline = html.match(INLINE_SCRIPT)
   record('CSP: built index.html contains no inline script', !inline, inline ? html.slice(inline.index, inline.index + 120) : '')
 

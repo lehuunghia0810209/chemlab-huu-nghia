@@ -7,6 +7,9 @@ import { chromium } from 'playwright-core'
 
 const require = createRequire(import.meta.url)
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const buildDir = process.env.CHEMLAB_BUILD_DIR
+  ? path.resolve(process.env.CHEMLAB_BUILD_DIR)
+  : path.join(rootDir, 'dist')
 const AXE_PATH = require.resolve('axe-core/axe.min.js')
 const PREFS_KEY = 'chemlab-v5-user-preferences'
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
@@ -302,6 +305,7 @@ const SCENARIOS = [
 
 const server = await preview({
   root: rootDir,
+  build: { outDir: buildDir },
   logLevel: 'silent',
   preview: { port: 4181, strictPort: false, open: false }
 })

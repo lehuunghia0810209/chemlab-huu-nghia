@@ -5,6 +5,8 @@
 // is not used because Chromium bypasses service workers when it is on.
 // Learner data in localStorage must survive every step.
 import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const OLD = 'chemlab-6.2.0-brand-1'
 const BROKEN = 'chemlab-6.5.1-broken-test'
@@ -46,7 +48,10 @@ async function update(page) {
 }
 
 export async function pwaUpgradeJourneys(browser, baseURL, options) {
-  const built = new URL('../../dist/sw.js', import.meta.url)
+  const buildDir = process.env.CHEMLAB_BUILD_DIR
+    ? path.resolve(process.env.CHEMLAB_BUILD_DIR)
+    : fileURLToPath(new URL('../../dist', import.meta.url))
+  const built = path.join(buildDir, 'sw.js')
   const original = fs.readFileSync(built, 'utf8')
   const stage = { name: 'start' }
   try {
