@@ -132,3 +132,8 @@ export function parseSpecies(raw) {
 export function parseFormula(raw) {
   return parseSpecies(raw).atoms
 }
+
+export function sameAtoms(a, b) {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+  return [...keys].every(key => (a[key] || 0) === (b[key] || 0))
+}

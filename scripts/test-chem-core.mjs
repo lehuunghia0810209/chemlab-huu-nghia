@@ -216,8 +216,15 @@ test('90% boundary-surface level encloses ~90% of the probability on the grid', 
 })
 
 
-const { parseFormula, parseSpecies } = await import('../src/chem/formula.js')
+const { parseFormula, parseSpecies, sameAtoms } = await import('../src/chem/formula.js')
 const { balanceSpecies, checkEquation, parseEquation } = await import('../src/chem/equation.js')
+const { escapeHTML } = await import('../src/html.js')
+
+test('shared HTML escaping handles special characters and falsy input', () => {
+  assert.equal(escapeHTML(`<&>"'`), '&lt;&amp;&gt;&quot;&#39;')
+  assert.equal(escapeHTML(null), '')
+  assert.equal(escapeHTML(0), '0')
+})
 
 test('formula parser: subscripts, brackets, hydrates', () => {
   assert.deepEqual(parseFormula('H2O'), { H: 2, O: 1 })
@@ -231,6 +238,12 @@ test('formula parser: subscripts, brackets, hydrates', () => {
   assert.deepEqual(parseFormula('CuSO4∙5H2O'), parseFormula('CuSO₄·5H₂O'))
   assert.deepEqual(parseFormula('Ca{OH}2'), { Ca: 1, O: 2, H: 2 })
   assert.deepEqual(parseFormula(' H2 SO4 '), { H: 2, S: 1, O: 4 })
+})
+
+test('atom-count equality ignores key order and missing zero counts', () => {
+  assert.equal(sameAtoms({ H: 2, O: 1 }, { O: 1, H: 2 }), true)
+  assert.equal(sameAtoms({ H: 2, O: 1 }, { H: 2 }), false)
+  assert.equal(sameAtoms({ H: 2 }, { H: 2, O: 0 }), true)
 })
 
 test('formula parser rejects unknown symbols and broken brackets', () => {

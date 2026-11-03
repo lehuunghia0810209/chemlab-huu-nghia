@@ -1,6 +1,6 @@
 
 import { splitSpecies } from '../chem/equation.js'
-import { parseFormula, parseSpecies } from '../chem/formula.js'
+import { parseFormula, parseSpecies, sameAtoms } from '../chem/formula.js'
 import { elements } from '../data/elements.js'
 
 const MASS = new Map(elements.map(element => [element.symbol, element.mass]))
@@ -21,11 +21,6 @@ const ARROW = /\s*(?:⇌|→)\s*/
 
 export function molarMass(atoms) {
   return Object.entries(atoms).reduce((sum, [symbol, count]) => sum + MASS.get(symbol) * count, 0)
-}
-
-function sameAtoms(a, b) {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
-  return [...keys].every(key => (a[key] || 0) === (b[key] || 0))
 }
 
 export function computeStoichiometry(reaction, mixture, reagents, concentrationOf) {

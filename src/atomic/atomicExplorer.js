@@ -3,6 +3,7 @@ import './atomicExplorer.css'
 import { getElement, formatMass, CATEGORIES } from '../periodic/periodicData.js'
 import { orbitalBoxes, SHELL_LETTERS } from '../chem/electronConfiguration.js'
 import { orbitalVariants, nodeCounts } from '../chem/orbitalMath.js'
+import { escapeHTML } from '../html.js'
 import { createSceneHost, disposeObject, QUALITY, prefersReducedMotion } from '../three/sceneHost.js'
 import { createOrbitalScene, PHASE_COLORS, WORLD_RADIUS } from './orbitalScene.js'
 import { createShellScene } from './shellScene.js'
@@ -12,12 +13,6 @@ const L_NAMES = ['s', 'p', 'd', 'f']
 const PREFERRED_VARIANT = { 0: 's', 1: 'pz', 2: 'dz2', 3: 'fz3' }
 
 let active = null
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[char])
-}
 
 function parseAbundance(text) {
   const match = String(text || '').replace(',', '.').match(/(\d+(?:\.\d+)?)\s*%/)

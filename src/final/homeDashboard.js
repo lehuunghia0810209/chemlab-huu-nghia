@@ -1,5 +1,6 @@
 
 import { elements } from '../data/elements.js'
+import { escapeHTML } from '../html.js'
 import { icon } from '../shell/icons.js'
 
 // Must match the Learning catalog (78 lessons incl. g10-l23) and guided activities; checked by scripts/test-learning.mjs.
@@ -65,12 +66,6 @@ function formatMinutes(seconds) {
   const hours = Math.floor(minutes / 60)
   const remainder = minutes % 60
   return remainder ? `${hours} giờ ${remainder} phút` : `${hours} giờ`
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[char])
 }
 
 function greeting(date = new Date()) {

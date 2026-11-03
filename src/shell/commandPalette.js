@@ -1,4 +1,5 @@
 
+import { escapeHTML } from '../html.js'
 import { icon } from './icons.js'
 
 export function normalizeSearch(value) {
@@ -8,12 +9,6 @@ export function normalizeSearch(value) {
     .replace(/đ/g, 'd')
     .toLowerCase()
     .trim()
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[char])
 }
 
 export function createCommandPalette({ commands, onRun }) {

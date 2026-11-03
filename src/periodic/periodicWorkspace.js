@@ -11,6 +11,7 @@ import {
 } from './periodicData.js'
 import { orbitalBoxes, SHELL_LETTERS } from '../chem/electronConfiguration.js'
 import { getCommonOxidationStates, formatOxidationState } from '../chem/oxidationStates.js'
+import { escapeHTML } from '../html.js'
 import { icon } from '../shell/icons.js'
 
 const STORAGE_KEY = 'chemlab-v5-periodic'
@@ -58,12 +59,6 @@ function loadPeriodicData() {
       return null
     })
   return periodicDataPromise
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[char])
 }
 
 function readPreferences() {

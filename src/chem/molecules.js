@@ -1,4 +1,6 @@
 
+import { sameAtoms } from './formula.js'
+
 export const ATOM_STYLE = {
   H: { color: '#f1f5f9', covalent: 0.31, vdw: 1.2 },
   B: { color: '#f9a8a8', covalent: 0.84, vdw: 1.92 },
@@ -109,11 +111,6 @@ export const MOLECULES = [
   { formula: 'C2H4', name: 'Ethene', shape: 'Phẳng', angle: ['H–C–H', 117.4], length: ['C=C', 1.339], ...ethene(1.339, 1.087, 117.4) },
   { formula: 'C2H2', name: 'Ethyne', shape: 'Đường thẳng', angle: ['H–C≡C', 180], length: ['C≡C', 1.203], ...ethyne(1.203, 1.063) }
 ]
-
-function sameAtoms(a, b) {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
-  return [...keys].every(key => (a[key] || 0) === (b[key] || 0))
-}
 
 export function countAtoms(molecule) {
   const counts = {}
