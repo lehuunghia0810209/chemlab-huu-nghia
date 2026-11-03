@@ -905,7 +905,7 @@ html[data-theme='light'] .app-theme-icon--light {
   }
 
   .app-topbar__ecosystem {
-    flex: 1 0 100%;
+    flex: 1 0 calc(100% - 32px - var(--space-2));
     min-height: 28px;
     margin-left: calc(32px + var(--space-2));
   }

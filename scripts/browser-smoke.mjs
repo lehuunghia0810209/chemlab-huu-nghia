@@ -109,7 +109,7 @@ async function layoutSweep(browser, baseURL) {
             : []
           return {
             theme: doc.dataset.theme,
-            overflow: doc.scrollWidth - window.innerWidth,
+            overflow: doc.scrollWidth - doc.clientWidth,
             visible: Boolean(section && !section.hidden && section.getBoundingClientRect().height > 0),
             moduleError: Boolean(section?.querySelector('.app-route-error, .app-module-error')),
             ecosystemVisible: Boolean(ecosystem && getComputedStyle(ecosystem).display !== 'none' && ecosystem.textContent.includes('Thuộc hệ sinh thái EduLab')),
@@ -344,7 +344,7 @@ async function chemAIMathJourney(browser, baseURL) {
         mathml: answer.querySelectorAll('.katex-mathml math').length,
         dollars: (answer.innerText.match(/\$/g) || []).length,
         backslashText: /\\frac|\\text|\\rightarrow/.test(visible),
-        pageOverflow: document.documentElement.scrollWidth - innerWidth,
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         displayInside: display.every(node => node.getBoundingClientRect().right <= innerWidth + 1),
         scrolls: display.some(node => node.scrollWidth > node.clientWidth),
         sameColour: getComputedStyle(katex).color === getComputedStyle(answer).color,
@@ -659,7 +659,7 @@ async function labPHChecks(browser, baseURL) {
   await add('ethanoic')
   const weak = await read()
   record('lab pH: weak acid shown only as < 7, not as a number', weak.pH === '< 7' && /định tính/.test(weak.mode), JSON.stringify(weak))
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   record('lab pH meter fits at 390px', overflow <= 1, overflow)
   record('console clean in lab pH flow', errors.length === 0, errors.join(' | '))
   await context.close()
@@ -938,7 +938,7 @@ async function learningReaderLayout(browser, baseURL) {
           .map(node => node.textContent.trim().slice(0, 30))
         const body = document.querySelector('.lx-step__body p')
         return {
-          overflow: doc.scrollWidth - innerWidth,
+          overflow: doc.scrollWidth - doc.clientWidth,
           bodySize: parseFloat(getComputedStyle(body).fontSize),
           table: Boolean(document.querySelector('.lx-table')),
           small
