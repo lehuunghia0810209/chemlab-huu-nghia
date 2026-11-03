@@ -115,6 +115,7 @@ async function layoutSweep(browser, baseURL) {
             ecosystemVisible: Boolean(ecosystem && getComputedStyle(ecosystem).display !== 'none' && ecosystem.textContent.includes('Thuộc hệ sinh thái EduLab')),
             ecosystemLogoLoaded: Boolean(ecosystemLogo?.complete && ecosystemLogo.naturalWidth > 0),
             footerBranded: Boolean(footer?.textContent.includes('Education Laboratory')),
+            titleBranded: document.title.startsWith('ChemLab') && document.title.includes('EduLab'),
             homeLink: homeLink?.getAttribute('href'),
             homeLinkVisible: Boolean(homeLink && getComputedStyle(homeLink).display !== 'none'),
             navVisible,
@@ -130,6 +131,7 @@ async function layoutSweep(browser, baseURL) {
           state.ecosystemVisible &&
           state.ecosystemLogoLoaded &&
           state.footerBranded &&
+          state.titleBranded &&
           state.homeLink === 'https://edulab-education.pages.dev/' &&
           state.homeLinkVisible &&
           (width >= 768 || state.navVisible) &&

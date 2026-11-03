@@ -29,7 +29,7 @@ function initProduction() {
 
 
   document.title =
-    `${PRODUCT.name} ${PRODUCT.version} | ${PRODUCT.author}`
+    `${PRODUCT.name} ${PRODUCT.version} — Phòng thí nghiệm Hóa học tương tác | EduLab`
 
 
   document.documentElement
