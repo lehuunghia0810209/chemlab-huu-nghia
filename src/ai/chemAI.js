@@ -180,7 +180,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
 
       <footer class="chemai-footer">
         <span>${icon('brain')} ChemAI · trả lời tiếng Việt · công thức và PTHH giữ chuẩn Hóa học</span>
-        <small>AI có thể sai. Hãy kiểm tra kết quả quan trọng.</small>
+        <small>ChemAI có thể sai kiến thức. Hãy đối chiếu SGK hoặc hỏi giáo viên.</small>
       </footer>
     </section>
   `
