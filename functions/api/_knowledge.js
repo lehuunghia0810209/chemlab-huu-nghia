@@ -1,5 +1,8 @@
 import { CHEMICALS } from '../../src/lab/chemicals.js'
 import { REACTIONS } from '../../src/lab/reactions.js'
+import { reactionDescription, reactionTitle } from '../../src/lab/reactionsVi.js'
+import { solidsOf } from '../../src/lab/engine/precipitates.js'
+import { substanceFacts } from './_chemFacts.js'
 import { CURRICULUM } from '../../src/lab/experiments/curriculum.js'
 import { elements as ELEMENTS } from '../../src/data/elements.js'
 import { getElectronConfiguration } from '../../src/chem/electronConfiguration.js'
@@ -46,6 +49,7 @@ function normalize(value) {
     .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/g, char => SUPERSCRIPT_DIGITS[char] || char)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
     .toLowerCase()
     .replace(/[→⇌↔=+]/g, ' ')
     .replace(/[^a-z0-9\s-]/g, ' ')
@@ -62,7 +66,8 @@ const STOP_WORDS = new Set([
   'tai', 'sao', 'nhu', 'the', 'voi', 'cua', 'va', 'hoac', 'trong', 'tren',
   'duoi', 'mot', 'cac', 'nhung', 'hay', 'giup', 'giai', 'thich', 'phan',
   'ung', 'hoa', 'hoc', 'dang', 'hien', 'tai', 'can', 'biet', 'lam', 'duoc',
-  'ket', 'tua', 'tao', 'trung', 'hoa', 'oxi', 'khu'
+  'ket', 'tua', 'tao', 'trung', 'hoa', 'oxi', 'khu', 'mol', 'tinh', 'khi', 'dung', 'dich', 'gam',
+  'lit', 'nguyen', 'nhom', 'chat', 'nuoc', 'nhu', 'ten', 'viet', 'cong', 'thuc', 'vao', 'khi'
 ])
 
 function formulaTokens(value) {
@@ -72,8 +77,9 @@ function formulaTokens(value) {
 
   const matches = plain.match(/\b(?:[A-Z][a-z]?\d*)+(?:\([A-Za-z0-9]+\)\d*)*(?:\^?[0-9]*[+-])?\b/g) || []
 
+  // Same compact form as the data, so Cu(OH)2 can match at all.
   return matches
-    .map(item => item.toLowerCase())
+    .map(compactFormula)
     .filter(item => item.length >= 2)
 }
 
@@ -134,12 +140,31 @@ function scoreText(queryTokens, fields) {
   return score
 }
 
-function selectTop(items, limit) {
-  return items
-    .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score)
+// Weak matches are noise the model may treat as facts, and every one costs input tokens.
+function selectTop(items, limit, minScore = 1) {
+  const sorted = items.filter(item => item.score >= minScore).sort((a, b) => b.score - a.score)
+  const floor = (sorted[0]?.score || 0) * 0.6
+  return sorted
+    .filter(item => item.score >= floor)
     .slice(0, limit)
     .map(({ score, ...item }) => item)
+}
+
+// An element is named by its exact symbol, Z or whole name; a single letter needs a word that says it is an element.
+function elementScore(element, raw, normalized) {
+  const atomicNumbers = [...raw.matchAll(/\bZ\s*=\s*(\d{1,3})\b/g)].map(match => Number(match[1]))
+  if (atomicNumbers.includes(element.number)) return 20
+  const symbol = element.symbol
+  const name = normalize(element.name)
+  if (name.length >= 3 && ` ${normalized} `.includes(` ${name} `)) return 12
+  if (symbol.length > 1) return new RegExp(`(?<![A-Za-z0-9])${symbol}(?![a-z0-9(])`).test(raw) ? 12 : 0
+  return new RegExp(`(?:nguyên tố|nguyên tử|kim loại|phi kim|element)\\s+${symbol}(?![A-Za-z0-9])`, 'iu').test(raw) ? 12 : 0
+}
+
+const formulaHits = (formulas, values) => formulas.filter(formula => values.includes(formula)).length
+
+function speciesOfEquation(equation) {
+  return String(equation).split(/→|⇌|\+/).map(part => compactFormula(part.replace(/[↓↑]/g, '')).replace(/^\d+/, '')).filter(Boolean)
 }
 
 function lessonRows() {
@@ -189,23 +214,23 @@ export function retrieveChemKnowledge(query, context = {}) {
 
   const queryTokens = tokensFrom(contextText)
 
-  if (!queryTokens.length) {
+  // "Nguyên tố K ở đâu?" has no searchable word but still names an element.
+  if (!contextText.trim()) {
     return {
       elements: [],
       chemicals: [],
       reactions: [],
-      lessons: []
+      lessons: [],
+      substances: []
     }
   }
 
+  const normalizedContext = normalize(contextText)
+  const formulas = formulaTokens(contextText)
+
   const elements = selectTop(
     ELEMENTS.map(element => ({
-      score: scoreText(queryTokens, [
-        element.number,
-        element.symbol,
-        element.name,
-        element.category
-      ]),
+      score: elementScore(element, contextText, normalizedContext),
       number: element.number,
       symbol: element.symbol,
       name: element.name,
@@ -217,12 +242,8 @@ export function retrieveChemKnowledge(query, context = {}) {
 
   const chemicals = selectTop(
     Object.values(CHEMICALS).map(chemical => ({
-      score: scoreText(queryTokens, [
-        chemical.id,
+      score: 12 * formulaHits(formulas, [compactFormula(chemical.formula), String(chemical.id).toLowerCase()]) + scoreText(queryTokens, [
         chemical.name,
-        chemical.formula,
-        chemical.family,
-        chemical.category,
         ...(chemical.tags || [])
       ]),
       id: chemical.id,
@@ -233,47 +254,47 @@ export function retrieveChemKnowledge(query, context = {}) {
       acidBase: chemical.acidBase,
       hazards: chemical.hazards || []
     })),
+    4,
     6
   )
 
   const reactions = selectTop(
-    REACTIONS.map(reaction => ({
-      score: scoreText(queryTokens, [
-        reaction.id,
-        reaction.title,
-        reaction.equation,
-        reaction.description,
-        reaction.category,
-        ...(reaction.reactants || [])
-      ]),
-      id: reaction.id,
-      title: reaction.title,
-      equation: reaction.equation,
-      description: reaction.description,
-      category: reaction.category,
-      conditions: reaction.conditions || {}
-    })),
+    REACTIONS.map(reaction => {
+      const solids = solidsOf(reaction).filter(item => item.label).map(item => ({ formula: item.formula, color: item.label }))
+      return {
+        // With formulas in the question, only a reaction containing them is relevant.
+        score: formulas.length
+          ? 12 * formulaHits(formulas, speciesOfEquation(reaction.equation))
+          : scoreText(queryTokens, [reaction.id, reactionTitle(reaction), reactionDescription(reaction), reaction.category]),
+        id: reaction.id,
+        title: reactionTitle(reaction),
+        equation: reaction.equation,
+        description: reactionDescription(reaction),
+        category: reaction.category,
+        conditions: reaction.conditions || {},
+        ...(solids.length ? { solids } : {})
+      }
+    }),
+    3,
     6
   )
 
   const lessons = selectTop(
     LESSONS.map(lesson => ({
-      score: scoreText(queryTokens, [
-        lesson.id,
-        lesson.grade,
-        lesson.chapter,
-        lesson.title,
-        lesson.type
-      ]),
+      score: scoreText(queryTokens, [lesson.title]),
       ...lesson
     })),
+    3,
     6
   )
+
+  const substances = substanceFacts([contextText, ...reactions.map(item => item.equation)].join(' '))
 
   return {
     elements,
     chemicals,
     reactions,
-    lessons
+    lessons,
+    substances
   }
 }
