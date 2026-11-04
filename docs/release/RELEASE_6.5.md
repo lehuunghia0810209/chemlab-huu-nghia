@@ -1,5 +1,7 @@
 # ChemLab 6.5.0 — release checklist and production playbook (NOT executed)
 
+> **Cập nhật 2026-11-04 — 6.5.2 (nhánh hotfix, chưa deploy):** G7 của 6.5.1 KHÔNG ĐẠT trên Preview (13/19). 6.5.2 sửa truy hồi kiến thức, thêm kiểm tra xác định sau model, cổng an toàn và nâng cấp bộ chấm; xem `CHEMAI_WORKERS_AI.md` §7. G7 vẫn chưa đạt cho tới khi có lượt đánh giá thật được duyệt; G8 và G10 vẫn mở.
+>
 > **Cập nhật 2026-11-03 — 6.5.1:** `origin/main` đã chứa 6.5.0 qua PR #1 và #2 nên dòng trạng thái bên dưới là lịch sử. 6.5.1 là bản vá: nhận diện EduLab (logo, icon, OG, manifest), logo header/footer 96 px thay cho PNG 1,19 MB, gộp `escapeHTML`/`sameAtoms`, `CHEMLAB_BUILD_DIR` cho QA. Không đổi dữ liệu hóa học, reaction engine, ChemAI hay khóa lưu trữ. Worker chuyển sang cache `chemlab-6.5.1-brand-1`; dữ liệu học tập giữ nguyên theo hành trình `pwaUpgradeJourneys`. Các gate G6, G7, G8, G10 vẫn mở.
 
 Status 2026-10-21: version **6.5.0** synced on branch `evolution/next` (local commits only). **Nothing has been pushed, merged or deployed.** Production (`origin/main`, last commit 2026-10-19) still serves 6.2.0. Every action in §3–§6 needs the owner's explicit approval.

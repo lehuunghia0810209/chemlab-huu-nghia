@@ -119,3 +119,45 @@ The first Preview evaluation of GLM-4.7-Flash had 12/13 correct final answers an
 | Tests | `test-chemai-markdown` (10), `test-chemai-eval` (9), `test-workers-ai` (25), browser math journey (desktop dark and 390 px light), a11y scenario "ChemAI answer with math" |
 
 Not done here: no real Workers AI call. The next Preview run should use `node scripts/chemai-eval.mjs <preview-url> --confirm` (19 questions, ≈ 400 Neurons), after approval.
+
+## 7. Accuracy and reliability hotfix (2026-11-04, ChemLab 6.5.2)
+
+The owner-approved evaluation of 6.5.1 on Preview (2026-11-04) **failed G7**: 13/19 automatic passes, and reading the answers found errors the grader had passed. Full record: `CHEMAI_EVAL_2026-11-04.md` in the EduLab root, outside this repository. 6.5.0 runs the same `functions/` and model, so these errors also apply to production 6.5.0.
+
+**G7 is still not passed.** Nothing below has been measured against the real model. It needs a new owner-approved run and a person reading the answers.
+
+| Root cause | Evidence | Change |
+| --- | --- | --- |
+| The verified colour never reached the model | Retrieval sent "Copper(II) hydroxide precipitate forms."; `PRECIPITATES` and `reactionsVi` hold "xanh lam" | Reactions carry the Vietnamese title and `solids`; new `substances` block (colour, base/acid strength) |
+| Retrieval noise and misses | `K (Z = 19)` returned Y; `mol` matched Mo; `Cu(OH)2` could not match; `đ` was deleted from words; an equation about Fe returned carbonates | Elements by exact symbol, Z or name; reactions by the species in the equation; floor on weak matches. Knowledge JSON on the 19 questions: average 2927 → 982 characters |
+| Rules existed only as prompt text, and hidden reasoning is off (`enable_thinking: false`), so nothing checked an answer | Old defects returned (Cu(OH)₂ "xanh lục") | `answerGuard`: deterministic checks after the model, no extra call |
+| The grader read keywords | `\xrightarrow{\Delta}` failed a correct equation; `\b` never matched "bazơ"; `V = nRT`, "trùng hợp" and "kim loại kiềm" passed | Unicode-aware terms, more arrow forms, new `science` category, separate verdicts |
+| Timeout | Same output size took 8 s or 27.5 s (390–411 tokens, 14–50 tokens/s), and a short question hit 30 s. Time does not follow tokens, so this looks like upstream queueing (strong hypothesis, not confirmed) | Smaller input. Timeout, retry policy and model unchanged: a timeout stays one call, one charge, no retry, no fallback. The timed-out call is not cancelled upstream and may still be billed |
+
+### `answerGuard` (`functions/api/_chemFacts.js`)
+
+Runs on the Workers AI path only; the Gemini path is unchanged.
+
+| Check | Source of truth |
+| --- | --- |
+| Colour of a named solid or of "kết tủa …" | `PRECIPITATES` (Virtual Lab) plus common oxides |
+| Hydroxide, acid and salt class; polymerization label | Tables in the module |
+| `V = nRT`, R against pressure unit, 22,4 vs 24,79 L/mol, limiting reagent, period wording | Rules in the module |
+| Equation balance | `src/chem/equation.js`. Skips the question's own skeleton and ionic right sides |
+| Cu, Ag, Au, Pt, Hg + acid → H₂ | Activity series |
+
+- A finding puts a correction **above** the model's text, which stays visible: rewriting it could add new errors. No badge is shown for a clean answer, because passing these checks does not mean the answer is correct.
+- Old names with a one-to-one current name (axit → acid) are rewritten silently. This is style, not a science error.
+- The guard catches known error classes only. A wrong statement outside these rules passes through.
+
+### Safety gate (`functions/api/_chemSafety.js`)
+
+Requests to make something dangerous, household chemical mixing, and hazardous experiments at home or without protection get fixed text before any budget or model call. Learning questions (why dangerous, first aid, textbook equations, supervised lab practice) reach the model, whose prompt forbids amounts and procedures. Pattern matching cannot catch every wording, and the model's safety behaviour is unmeasured.
+
+### Evaluation
+
+`scripts/chemai-eval.mjs`: 41 cases (the 19 plus 22 new: same error classes on other substances, false premises, and safety), of which 37 reach the model. Estimate 555–1110 Neurons; `--max-neurons` stops the run, `--only` selects cases, `--out` saves JSON. Verdicts are `AUTO PASS`/`AUTO FAIL` and `SCIENTIFIC FAIL`/`HUMAN REVIEW REQUIRED`/`NO ANSWER`; only a person's review can set `SCIENTIFIC PASS`. `scripts/test-chemai-guard.mjs` replays the recorded answers offline (`scripts/fixtures/`).
+
+### Stopping ChemAI without a code change
+
+Set `CHEMAI_PROVIDER=off` for Production in the Pages settings, then create a new deployment. Any unknown value fails closed: no model call, no budget, `configured: false`. Learning data and other tools are untouched. Undo by restoring `workers_ai` and redeploying.
