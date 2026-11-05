@@ -19,7 +19,8 @@ const HAZARDS = Object.freeze({
 })
 // Without diacritics "bơm" (pump) and "bom" (bomb) are the same word.
 const BOMB = /(?<![\p{L}\p{N}])bom(?![\p{L}\p{N}])/iu
-const MAKE = /\b(cach (lam|che|tao|dieu che|pha|tong hop|san xuat)|tu (lam|che|pha|dieu che|tong hop)|lam sao de (tao|che|co)|huong dan[^.?!]{0,30}(lam|che|dieu che|tao|pha)|quy trinh (che|dieu che|tong hop|san xuat)|ti le (pha|tron)|cong thuc (che|pha|lam)|de (che|tao ra|lam ra)|dieu che)\b/
+const MAKE = /\b(cach (lam|che|tao|dieu che|pha|tong hop|san xuat)|tu (lam|che|pha|dieu che|tong hop)|lam sao de (tao|che|co)|huong dan[^.?!]{0,30}(lam|che|dieu che|tao|pha)|quy trinh (che|dieu che|tong hop|san xuat)|ti le (pha|tron)|cong thuc (che|pha|lam)|de (che|tao ra|lam ra))\b/
+const MAKE_AT_HOME = /\b(lam|che|tao|dieu che|tong hop|pha)\b/
 const AT_HOME = /\b(o nha|tai nha|trong nha|ngoai san|phong ngu|nha bep)\b/
 const NO_PROTECTION = /\bkhong (can|co|deo|dung)\b[^.?!]{0,20}\b(kinh|gang|bao ho|tu hut|giao vien)\b/
 const LEARNING = /\b(vi sao|tai sao|nguy co|nguy hiem nhu the nao|so cuu|phong tranh|phong ngua|bien phap an toan|xu ly khi|tac hai|anh huong|lich su|phuong trinh|phan ung nao|trong phong thi nghiem|cong nghiep|sgk|bai tap|de thi|ly thuyet|nguyen ly|nguyen tac)\b/
@@ -41,8 +42,14 @@ export function safetyGate(message) {
   const unprotected = NO_PROTECTION.test(text)
   if (BLEACH_MIX.test(text) && !LEARNING.test(text)) return { category: 'household_mix', answer: REPLIES.mix }
   if (REACTIVE.test(text) && DOING.test(text) && (home || unprotected)) return { category: 'unsupervised_lab', answer: REPLIES.supervised }
-  const hazard = BOMB.test(String(message ?? '').normalize('NFC')) ? 'explosive' : Object.keys(HAZARDS).find(name => HAZARDS[name].test(text))
-  if (!hazard) return null
-  if (MAKE.test(text) && (home || !LEARNING.test(text))) return { category: hazard, answer: REPLIES.make }
+  // The hazard and the intent must share a sentence: a pasted exam passage can name an
+  // explosive in one sentence and say "bằng cách làm giãn mạch" in the next.
+  const raw = String(message ?? '').normalize('NFC').split(/[.?!\n]+/)
+  for (const part of raw) {
+    const sentence = flat(part)
+    const hazard = BOMB.test(part) ? 'explosive' : Object.keys(HAZARDS).find(name => HAZARDS[name].test(sentence))
+    if (!hazard) continue
+    if (AT_HOME.test(sentence) ? MAKE_AT_HOME.test(sentence) : MAKE.test(sentence) && !LEARNING.test(sentence)) return { category: hazard, answer: REPLIES.make }
+  }
   return null
 }

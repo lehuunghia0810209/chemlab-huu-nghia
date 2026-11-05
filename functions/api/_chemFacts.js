@@ -124,7 +124,7 @@ function colorFindings(text) {
   const afterPrecipitate = new RegExp(`${WB}kết tủa(?: có)?(?: màu)? (${COLOR_WORD})${WE}`, 'iu')
   for (const sentence of sentences(text)) {
     if (NOT_THIS.test(sentence)) continue
-    const named = solids.filter(formula => has(formula, sentence))
+    const named = solids.filter(formula => has(formula, sentence) && !new RegExp(`${FORMULA_AT(formula)}\\s*/`).test(sentence))
     for (const formula of named) {
       const adjacent = new RegExp(`(?<![A-Za-z0-9)])${FORMULA_AT(formula)}(?![A-Za-z0-9])\\s*[(,]?\\s*(?:(?:là|có|kết tủa|chất rắn|màu)\\s+)*(${COLOR_WORD})${WE}`, 'iu').exec(sentence)
       if (adjacent) flag(formula, adjacent[1].toLowerCase())
@@ -152,9 +152,9 @@ function classificationFindings(text) {
     if (NOT_THIS.test(sentence)) continue
     for (const match of sentence.matchAll(HYDROXIDE)) {
       const strong = STRONG_BASES.has(match[0])
-      const rest = sentence.slice(match.index, match.index + match[0].length + 40)
-      if (!strong && /(?:base|bazơ|kiềm) mạnh/iu.test(rest)) found.push({ id: `class:base:${match[0]}`, severity: 'error', note: `${shown(match[0])} là base yếu.` })
-      if (strong && /base yếu/iu.test(rest)) found.push({ id: `class:base:${match[0]}`, severity: 'error', note: `${shown(match[0])} là base mạnh.` })
+      const rest = sentence.slice(match.index + match[0].length, match.index + match[0].length + 45)
+      if (!strong && /^\s*(?:là|thuộc)\s[^,]{0,35}(?:base|bazơ|kiềm) mạnh/iu.test(rest)) found.push({ id: `class:base:${match[0]}`, severity: 'error', note: `${shown(match[0])} là base yếu.` })
+      if (strong && /^\s*(?:là|thuộc)\s[^,]{0,35}base yếu/iu.test(rest)) found.push({ id: `class:base:${match[0]}`, severity: 'error', note: `${shown(match[0])} là base mạnh.` })
     }
     for (const formula of STRONG_ACIDS) {
       if (has(formula, sentence) && new RegExp(`${FORMULA_AT(formula)}[^,]{0,30}acid yếu`, 'iu').test(sentence)) found.push({ id: `class:acid:${formula}`, severity: 'error', note: `${shown(formula)} là acid mạnh.` })
@@ -175,7 +175,7 @@ function classificationFindings(text) {
   }
   if (!/polyme|polymer|monome|monomer|nhựa|cao su|polyethylene|polypropylene|PVC|n ?CH2/iu.test(scan)) {
     for (const sentence of sentences(text)) {
-      if (!NOT_THIS.test(sentence) && new RegExp(`${WB}phản ứng trùng hợp${WE}`, 'iu').test(sentence)) {
+      if (!NOT_THIS.test(sentence) && new RegExp(`${WB}phản ứng trùng hợp${WE}`, 'iu').test(sentence) && /kết tủa|↓|dung dịch|NaOH|KOH|[A-Z][a-z]?\d*(?:Cl|SO4|NO3)\d*(?![A-Za-z])/u.test(scan)) {
         found.push({ id: 'reaction:polymerization', severity: 'error', note: 'Trùng hợp là phản ứng tạo polymer từ monomer. Hai dung dịch tạo kết tủa là phản ứng trao đổi ion.' })
       }
     }
@@ -217,8 +217,14 @@ export function extractEquations(text) {
   const out = []
   for (const line of lines(text)) {
     for (const match of line.matchAll(EQUATION)) {
-      // Ionic right side (HCl → H⁺ + Cl⁻): this pattern reads molecular species only, so it is not judged.
-      if (/^\d*[+-]/.test(line.slice(match.index + match[0].length))) continue
+      const before = line.slice(0, match.index)
+      const after = line.slice(match.index + match[0].length)
+      const clause = `${before.split(/[;:,⇒]/).at(-1)}${match[0]}${after.split(/[;:,⇒]/)[0]}`
+      // This pattern reads molecular species only. Ions and half-reactions, chains (A → B → C)
+      // and structural formulas (CH₂=CH₂) would be misread, so they are not judged.
+      if (/[⁺⁻]|[A-Za-z0-9)\]][+-](?=\s|$)|\de(?:\s|$|-)|\+\s*e\b/.test(clause)) continue
+      if ((clause.match(/→|⇌|⟶|->/g) || []).length > 1) continue
+      if (/[=≡–-]$/.test(before) || /^[=≡–-]/.test(after)) continue
       out.push({ left: clean(match[1]), right: clean(match[2]), line })
     }
   }
@@ -244,6 +250,10 @@ function equationFindings(text, question) {
       found.push({ id: 'reaction:no-hydrogen', severity: 'error', note: 'Cu, Ag, Au, Pt và Hg đứng sau H trong dãy hoạt động hóa học nên không đẩy được H₂ khỏi dung dịch acid.' })
     }
     if (asked.has(key) || /ban đầu|chưa cân bằng|sơ đồ/iu.test(equation.line)) continue
+    // Only an equation that claims to be balanced: with no coefficient it may be a skeleton or
+    // shorthand (NaCl → Na + Cl₂), and a false correction costs more than a miss here.
+    const species = `${equation.left} + ${equation.right}`.split(' + ')
+    if (species.length < 3 || !species.some(item => /^[2-9]/.test(item))) continue
     if (balanced(equation) === false) found.push({ id: `equation:${key}`, severity: 'error', note: `Phương trình ${shown(equation.left)} → ${shown(equation.right)} chưa cân bằng.` })
   }
   return found
