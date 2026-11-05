@@ -301,6 +301,53 @@ async function chemAIPhoneCheck(browser, baseURL) {
   await context.close()
 }
 
+// A correction must be seen before the wrong text, the notice must show on phones, and a switched-off ChemAI must read as such.
+async function chemAINoticeJourney(browser, baseURL) {
+  const long = Array.from({ length: 30 }, (_, index) => `${index + 1}. Dòng giải thích số ${index + 1}.`).join('\n')
+  const answer = `**ChemLab đối chiếu tự động và thấy điểm cần lưu ý trong câu trả lời bên dưới:**\n- Cu(OH)₂ có màu xanh lam theo dữ liệu ChemLab.\n\nKết tủa xanh lục.\n${long}`
+  for (const viewport of [{ width: 1280, height: 800, theme: 'dark' }, { width: 390, height: 844, theme: 'light' }, { width: 320, height: 700, theme: 'dark' }]) {
+    const { context, page, errors } = await newPage(browser, viewport)
+    await context.route('**/api/chat', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(route.request().method() === 'GET'
+        ? { ok: true, configured: true, provider: 'Workers AI', model: 'stub' }
+        : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub', corrections: 1 } })
+    }))
+    await openView(page, baseURL, 'home')
+    await page.click('[data-chemai-open]:visible')
+    await page.waitForSelector('.chemai-root.is-open #chemai-input')
+    await page.fill('#chemai-input', 'Câu hỏi mẫu')
+    await page.keyboard.press('Enter')
+    await page.waitForSelector('.chemai-answer li', { timeout: 15000 })
+    await page.waitForTimeout(400)
+    const state = await page.evaluate(() => {
+      const box = document.querySelector('#chemai-messages').getBoundingClientRect()
+      const head = document.querySelector('.chemai-answer strong').getBoundingClientRect()
+      const notice = document.querySelector('.chemai-footer small')
+      const n = notice.getBoundingClientRect()
+      return { headTop: Math.round(head.top - box.top), inView: head.top >= box.top && head.bottom <= box.bottom, notice: notice.textContent, noticeVisible: n.height > 0 && n.bottom <= innerHeight + 1 && n.right <= innerWidth + 1, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }
+    })
+    record(`ChemAI ${viewport.width}: a correction on a long answer stays in view`, state.inView, JSON.stringify(state))
+    record(`ChemAI ${viewport.width}: the reliability notice is visible`, state.noticeVisible && /đối chiếu SGK/.test(state.notice) && state.overflow <= 1, JSON.stringify(state))
+    record(`console clean in ChemAI correction flow ${viewport.width}`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
+  await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, configured: false, provider: null, model: null }) }))
+  await openView(page, baseURL, 'home')
+  await page.click('[data-chemai-open]:visible')
+  await page.waitForSelector('.chemai-root.is-open #chemai-input')
+  await page.waitForFunction(() => /Chưa cấu hình/.test(document.querySelector('#chemai-service-badge')?.textContent || ''))
+  await page.fill('#chemai-input', 'H2O là gì?')
+  await page.keyboard.press('Enter')
+  await page.waitForSelector('.chemai-system-notice')
+  const off = await page.textContent('.chemai-system-notice')
+  record('ChemAI off: a plain notice, no internal code', /Các công cụ khác của ChemLab vẫn dùng bình thường/.test(off) && !/not-configured/.test(off), off.replace(/\s+/g, ' '))
+  record('console clean with ChemAI off', errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 // Math in answers: KaTeX typesetting, no raw TeX, no page overflow, theme colour, XSS inert.
 const MATH_ANSWER = [
   '**Bước 1:** Số mol $n = \\frac{m}{M} = \\frac{5,6}{56} = 0,1 \\text{ mol}$',
@@ -1284,7 +1331,7 @@ const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
 const browser = await launchBrowser()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['chemai errors', chemAIErrorJourney], ['chemai math', chemAIMathJourney], ['pwa', pwaCheck]]) {
+  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['chemai errors', chemAIErrorJourney], ['chemai math', chemAIMathJourney], ['ChemAI correction and off state', chemAINoticeJourney], ['pwa', pwaCheck]]) {
     try {
       await run(browser, baseURL)
     }

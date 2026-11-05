@@ -262,6 +262,13 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     renderSuggestions()
   }
 
+  function scrollToLatestAnswer() {
+    requestAnimationFrame(() => {
+      const answer = [...messagesEl.querySelectorAll('.chemai-answer')].at(-1)
+      if (answer) messagesEl.scrollTop += answer.getBoundingClientRect().top - messagesEl.getBoundingClientRect().top - 8
+    })
+  }
+
   function scrollToBottom(behavior = 'smooth') {
     requestAnimationFrame(() => {
       messagesEl.scrollTo({
@@ -507,7 +514,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       }
 
       if (serviceState === 'setup') {
-        throw Object.assign(new Error('not-configured'), { code: 'AI_NOT_CONFIGURED' })
+        // No message: the notice falls back to its learner-facing text.
+        throw Object.assign(new Error(''), { code: 'AI_NOT_CONFIGURED' })
       }
 
       const response = await fetch('/api/chat', {
@@ -551,7 +559,9 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       providerName = data?.meta?.provider || providerName
       serviceBadge.title = data?.meta?.model ? `${providerName} · ${data.meta.model}` : providerName
       setServiceState('online', providerName)
-      scrollToBottom()
+      // A correction sits above the answer; scrolling to the end would hide it on a long answer.
+      if (data?.meta?.corrections) scrollToLatestAnswer()
+      else scrollToBottom()
     }
     catch (error) {
       removeThinking()

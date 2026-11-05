@@ -149,6 +149,9 @@ Runs on the Workers AI path only; the Gemini path is unchanged.
 - A finding puts a correction **above** the model's text, which stays visible: rewriting it could add new errors. No badge is shown for a clean answer, because passing these checks does not mean the answer is correct.
 - Old names with a one-to-one current name (axit → acid) are rewritten silently. This is style, not a science error.
 - The guard catches known error classes only. A wrong statement outside these rules passes through.
+- Balance is judged only for an equation with a coefficient and at least three species. Ions, half-reactions, chains, structural formulas and shorthand such as `NaCl → Na + Cl₂` are skipped: a false correction costs more than a miss.
+- `test-chemai-guard` runs the guard and the safety gate over ChemLab's own lessons, questions and papers (over 10,000 strings). The first run found 65 kinds of false alarm, now fixed. The only accepted findings are three statements written to be wrong (common-mistake items and a true/false option).
+- Phones previously hid the footer and with it the only reliability notice. It now shows at every width.
 
 ### Safety gate (`functions/api/_chemSafety.js`)
 
