@@ -348,6 +348,12 @@ export async function openAtomicExplorer(number, { mode = 'shell', subshell = nu
     if (!nodes.length) return
     const first = nodes[0]
     const last = nodes[nodes.length - 1]
+    if (!layer.contains(document.activeElement)) {
+      event.preventDefault()
+      const target = event.shiftKey ? last : first
+      target.focus()
+      return
+    }
     if (event.shiftKey && document.activeElement === first) {
       event.preventDefault()
       last.focus()
@@ -365,13 +371,13 @@ export async function openAtomicExplorer(number, { mode = 'shell', subshell = nu
     orbital?.dispose()
     host?.dispose()
     host = null
-    layer.removeEventListener('keydown', onKeydown)
+    document.removeEventListener('keydown', onKeydown)
     layer.remove()
     document.documentElement.classList.remove('ax-open')
     if (restoreFocus && returnFocus?.isConnected) returnFocus.focus()
   }
 
-  layer.addEventListener('keydown', onKeydown)
+  document.addEventListener('keydown', onKeydown)
 
   layer.addEventListener('click', event => {
     const target = event.target
@@ -385,6 +391,7 @@ export async function openAtomicExplorer(number, { mode = 'shell', subshell = nu
     if (modeButton && modeButton.dataset.mode !== state.mode) {
       state.mode = modeButton.dataset.mode
       render()
+      layer.querySelector(`.ax-modes [data-mode="${state.mode}"]`)?.focus()
       return
     }
 
@@ -394,6 +401,7 @@ export async function openAtomicExplorer(number, { mode = 'shell', subshell = nu
       state.variant = null
       renderPanel()
       renderScene()
+      layer.querySelector(`[data-subshell="${state.subshell}"]`)?.focus()
       return
     }
 
@@ -402,6 +410,7 @@ export async function openAtomicExplorer(number, { mode = 'shell', subshell = nu
       state.variant = variant.dataset.variant
       renderPanel()
       renderScene()
+      layer.querySelector(`[data-variant="${state.variant}"]`)?.focus()
       return
     }
 

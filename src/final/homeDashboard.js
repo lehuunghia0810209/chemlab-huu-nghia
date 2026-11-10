@@ -354,10 +354,11 @@ export function createHomeDashboard({ root, getProgressSummary, getGradeSummary 
     })
   }
 
-  root.addEventListener('click', event => {
+  root.addEventListener('click', async event => {
     const trigger = event.target.closest('[data-open-element]')
     if (!trigger) return
-    window.ChemLabApp?.navigate('periodic')
+    const ready = await window.ChemLabApp?.navigate('periodic')
+    if (!ready) return
     window.ChemLabPeriodic?.openElement(trigger.dataset.openElement)
   })
 

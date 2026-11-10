@@ -9,6 +9,7 @@ import { formatPoints } from '../../src/exam/blueprints.js'
 const STORE_KEY = 'chemlab-v1-exam'
 const PUBLISHED = EXAMS.filter(entry => entry.kind !== 'fixture' && isTakeable(entry))
 const PAPERS = await Promise.all(PUBLISHED.map(loadPaper))
+export const EXAM_PAPER_IDS = PAPERS.map(paper => paper.id)
 const PENDING = EXAMS.filter(entry => entry.kind !== 'fixture' && !isTakeable(entry))
 const hasBlocks = question => Array.isArray(question.content) && question.content.some(block => ['figure', 'table', 'equation'].includes(block.type))
 const EXAM = '#learning/exam/fixture-kiem-thu'
@@ -25,7 +26,7 @@ async function openWithFlag(page, baseURL, hash, { flag = true } = {}) {
 
 async function goTo(page, index) {
   await page.click(`.ex-grid__list [data-ex-go="${index}"]`)
-  await page.waitForSelector(`.ex-grid__list [data-ex-go="${index}"][aria-current="step"]`)
+  await page.waitForSelector(`.ex-grid__list [data-ex-go="${index}"][aria-current="step"]`, { timeout: 10000 })
 }
 
 async function startFresh(page, baseURL) {
@@ -39,7 +40,14 @@ async function startFresh(page, baseURL) {
 
 const stored = page => page.evaluate(key => JSON.parse(localStorage.getItem(key) || 'null'), STORE_KEY)
 
-export async function examJourneys(browser, baseURL, { newPage, record }) {
+export async function examJourneys(browser, baseURL, {
+  newPage,
+  record,
+  groups = ['core', 'scoring', 'recovery', ...EXAM_PAPER_IDS.flatMap(id => [320, 390].map(width => `layout-${id}-${width}`))]
+}) {
+  const selectedGroups = new Set(groups)
+
+  if (selectedGroups.has('core')) {
   /* A — catalog, publication gate */
   {
     const { context, page, errors } = await newPage(browser, { width: 1280, height: 900, theme: 'light' })
@@ -55,8 +63,12 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
       !catalog.fixture && catalog.ready.sort().join() === PUBLISHED.map(entry => `#learning/exam/${entry.id}`).sort().join() && catalog.official && catalog.pending === PENDING.length && catalog.sourceLinks, JSON.stringify(catalog))
     for (const gated of [EXAM, ...PENDING.map(entry => `#learning/exam/${entry.id}`)]) {
       await page.goto(`${baseURL}/${gated}`, { waitUntil: 'load' })
-      await page.waitForSelector('[data-ex-heading]')
-      record(`exam A: gated paper ${gated.split('/').pop()} cannot be opened by URL`, /chưa thể làm/.test(await page.textContent('[data-ex-heading]')))
+      await page.waitForFunction(
+        hash => location.hash === hash && /chưa thể làm/.test(document.querySelector('[data-ex-heading]')?.textContent || ''),
+        gated,
+        { timeout: 10000 }
+      )
+      record(`exam A: gated paper ${gated.split('/').pop()} cannot be opened by URL`, true)
     }
     await page.evaluate(() => localStorage.setItem('chemlab-exam-fixtures', '1'))
     await page.goto(`${baseURL}/#learning/exam`, { waitUntil: 'load' })
@@ -231,8 +243,10 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     record('console clean in the real-paper journey', errors.length === 0, errors.join(' | '))
     await context.close()
   }
+  }
 
   /* R2 — every question of every takeable official paper answered through the UI with the official key → 10 điểm */
+  if (selectedGroups.has('scoring')) {
   for (const paper of PAPERS) {
     const { context, page, errors } = await newPage(browser, { width: 1024, height: 900, theme: 'dark' })
     await openWithFlag(page, baseURL, `#learning/exam/${paper.id}`, { flag: false })
@@ -270,8 +284,10 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     record(`console clean in R2 ${paper.id}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
+  }
 
   /* R @390 — real paper on a phone, light and dark */
+  if (selectedGroups.has('core')) {
   for (const theme of ['light', 'dark']) {
     const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme })
     await openWithFlag(page, baseURL, '#learning/exam/tham-khao-2025-hoa', { flag: false })
@@ -292,39 +308,58 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
     record(`console clean in the real paper @390 ${theme}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
+  }
 
   /* R3 — every figure, table and equation of every published paper at 320 px (light) and 390 px (dark) */
-  for (const [width, theme] of [[320, 'light'], [390, 'dark']]) {
+  const layoutTargets = [[320, 'light'], [390, 'dark']]
+    .flatMap(([width, theme]) => PAPERS.map(paper => ({ paper, width, theme })))
+    .filter(({ paper, width }) => selectedGroups.has(`layout-${paper.id}-${width}`))
+  for (const { paper, width, theme } of layoutTargets) {
     const { context, page, errors } = await newPage(browser, { width, height: 844, theme })
     const problems = []
-    for (const paper of PAPERS) {
-      await openWithFlag(page, baseURL, `#learning/exam/${paper.id}`, { flag: false })
-      await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
-      await page.reload({ waitUntil: 'load' })
-      await page.waitForSelector('[data-ex-start]')
-      await page.click('[data-ex-start]')
-      await page.waitForSelector('.ex-workspace')
-      const questions = paper.sections.flatMap(section => section.questions)
-      for (const [index, question] of questions.entries()) {
-        if (!hasBlocks(question)) continue
-        await goTo(page, index)
-        const layout = await page.evaluate(async () => {
-          const images = [...document.querySelectorAll('.ex-figure img')]
-          await Promise.all(images.map(img => (img.complete ? null : new Promise(resolve => { img.onload = img.onerror = resolve }))))
-          return {
-            overflow: document.documentElement.scrollWidth > innerWidth,
-            reachable: [...document.querySelectorAll('.ex-figure, .ex-scroll')].every(box => box.scrollWidth <= box.clientWidth + 1 || box.tabIndex === 0),
-            broken: images.filter(img => !img.naturalWidth).length
-          }
-        })
-        if (layout.overflow || !layout.reachable || layout.broken) problems.push(`${question.id} ${JSON.stringify(layout)}`)
+    await openWithFlag(page, baseURL, `#learning/exam/${paper.id}`, { flag: false })
+    await page.evaluate(key => localStorage.removeItem(key), STORE_KEY)
+    await page.reload({ waitUntil: 'load' })
+    await page.waitForSelector('[data-ex-start]')
+    await page.click('[data-ex-start]')
+    await page.waitForSelector('.ex-workspace')
+    const questions = paper.sections.flatMap(section => section.questions)
+    for (const [index, question] of questions.entries()) {
+      if (!hasBlocks(question)) continue
+      await goTo(page, index)
+      const figure = page.locator('.ex-figure').first()
+      if (await figure.count()) await figure.scrollIntoViewIfNeeded()
+      let imageWaitTimedOut = false
+      try {
+        await page.waitForFunction(
+          () => [...document.querySelectorAll('.ex-figure img')].every(img => img.complete),
+          null,
+          { timeout: 8000 }
+        )
+      }
+      catch (error) {
+        if (error?.name !== 'TimeoutError') throw error
+        imageWaitTimedOut = true
+      }
+      const layout = await page.evaluate(() => {
+        const images = [...document.querySelectorAll('.ex-figure img')]
+        return {
+          overflow: document.documentElement.scrollWidth > innerWidth,
+          reachable: [...document.querySelectorAll('.ex-figure, .ex-scroll')].every(box => box.scrollWidth <= box.clientWidth + 1 || box.tabIndex === 0),
+          broken: images.filter(img => !img.naturalWidth).length,
+          pending: images.filter(img => !img.complete).map(img => img.src)
+        }
+      })
+      if (layout.overflow || !layout.reachable || layout.broken || imageWaitTimedOut) {
+        problems.push(`${question.id} ${JSON.stringify({ ...layout, imageWaitTimedOut })}`)
       }
     }
-    record(`exam R3 @${width} ${theme}: figures, tables and equations of all ${PAPERS.length} published papers load and never overflow the page`, problems.length === 0, problems.join(' | '))
+    record(`exam R3 ${paper.id} @${width} ${theme}: figures, tables and equations load and never overflow the page`, problems.length === 0, problems.join(' | '))
     record(`console clean in R3 @${width} ${theme}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
 
+  if (selectedGroups.has('recovery')) {
   /* E — time expired while the tab was closed */
   {
     const { context, page, errors } = await newPage(browser, { width: 1280, height: 900, theme: 'dark' })
@@ -426,5 +461,6 @@ export async function examJourneys(browser, baseURL, { newPage, record }) {
       inLab === undefined && /Tiếp tục/.test(resume) && kept && await page.evaluate(() => !document.documentElement.dataset.examRunning), JSON.stringify({ inLab, resume, kept }))
     record('console clean across modules with an exam running', errors.length === 0, errors.join(' | '))
     await context.close()
+  }
   }
 }

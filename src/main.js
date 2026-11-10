@@ -8,7 +8,6 @@ import './ai/chemAI.css'
 
 import { APP_VERSION } from './appMeta.js'
 import { createRouteModuleLoader } from './routeModuleLoader.js'
-import { initPeriodicWorkspace } from './periodic/periodicWorkspace.js'
 import {
   initProgressStorage,
   getProgressSummary,
@@ -322,10 +321,6 @@ function renderModuleError(host, name) {
 }
 
 
-safeInit('Bảng tuần hoàn', () => {
-  initPeriodicWorkspace({ root: periodicRoot, drawer })
-}, periodicRoot)
-
 safeInit('Progress Storage', initProgressStorage)
 
 const homeDashboard = createHomeDashboard({
@@ -345,6 +340,7 @@ const routeModules = createRouteModuleLoader({
     learning: learningHost,
     lab: labHost
   },
+  drawer,
   safeInit,
   renderModuleError,
   getCurrentView: () => currentView
@@ -427,13 +423,15 @@ function switchView(viewName, {
   if (routeStatus === 'ready') routeModules.setAppStatus('Sẵn sàng', 'ready')
   else if (routeStatus === 'error') routeModules.setAppStatus('Có lỗi khi tải', 'error')
 
-  void routeModules.ensureViewReady(viewName)
+  const ready = routeModules.ensureViewReady(viewName)
 
   if (changed) {
     window.dispatchEvent(new CustomEvent('chemlab:view-change', {
       detail: { view: viewName, title: info.title, version: APP_VERSION }
     }))
   }
+
+  return ready
 }
 
 function closeDrawer() {
@@ -681,7 +679,7 @@ function getAppContext() {
 window.ChemLabApp = Object.freeze({
   version: APP_VERSION,
   navigate(viewName) {
-    switchView(viewName)
+    return switchView(viewName)
   },
   openTool,
   openChemAI(prompt = '') {

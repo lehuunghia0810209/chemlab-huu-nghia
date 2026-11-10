@@ -3,9 +3,9 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { preview } from 'vite'
-import { chromium } from 'playwright-core'
+import { chromium, firefox, webkit } from 'playwright-core'
 import { practiceJourneys } from './lib/practice-journeys.mjs'
-import { examJourneys } from './lib/exam-journeys.mjs'
+import { examJourneys, EXAM_PAPER_IDS } from './lib/exam-journeys.mjs'
 import { writtenJourneys } from './lib/written-journeys.mjs'
 import { cspJourneys } from './lib/csp-journeys.mjs'
 import { pwaUpgradeJourneys } from './lib/pwa-upgrade-journeys.mjs'
@@ -24,16 +24,43 @@ const VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
 const WIDTHS = [320, 360, 390, 430, 768, 1024, 1440, 1920]
 const THEMES = ['dark', 'light']
 const PREFS_KEY = 'chemlab-v5-user-preferences'
+const requestedBrowser = process.env.CHEMLAB_BROWSER?.toLowerCase() || 'chromium'
+const selectedSuites = process.env.CHEMLAB_SUITES
+  ? new Set(process.env.CHEMLAB_SUITES.split(',').map(name => name.trim()).filter(Boolean))
+  : null
+const selectedGroups = process.env.CHEMLAB_GROUPS
+  ? new Set(process.env.CHEMLAB_GROUPS.split(',').map(name => name.trim().toLowerCase()).filter(Boolean))
+  : null
+
+function timeoutFromEnvironment(name, fallback) {
+  const value = process.env[name]
+  if (value === undefined) return fallback
+  const milliseconds = Number(value)
+  if (!Number.isSafeInteger(milliseconds) || milliseconds <= 0) {
+    throw new Error(`${name} phải là số mili giây nguyên dương.`)
+  }
+  return milliseconds
+}
+
+const SUITE_TIMEOUT_MS = timeoutFromEnvironment('CHEMLAB_SUITE_TIMEOUT_MS', 240000)
+const RUNNER_TIMEOUT_MS = timeoutFromEnvironment('CHEMLAB_RUNNER_TIMEOUT_MS', 1200000)
 
 const IGNORED_ERRORS = [/\/api\/chat/, /Failed to load resource: the server responded with a status of 404/]
 
 const results = []
+let activeTrace = null
 
 function record(name, pass, detail = '') {
-  results.push({ name, pass: Boolean(pass), detail: pass ? '' : String(detail).slice(0, 160) })
+  results.push({ name, pass: Boolean(pass), detail: pass ? '' : String(detail).slice(0, 500) })
 }
 
 async function launchBrowser() {
+  if (requestedBrowser === 'firefox') return firefox.launch({ headless: true })
+  if (requestedBrowser === 'webkit') return webkit.launch({ headless: true })
+  if (requestedBrowser !== 'chromium') {
+    throw new Error(`Trình duyệt không được hỗ trợ: ${requestedBrowser}. Dùng chromium, firefox hoặc webkit.`)
+  }
+
   const channels = [process.env.CHEMLAB_BROWSER_CHANNEL, 'chrome', 'msedge'].filter(Boolean)
   for (const channel of channels) {
     try {
@@ -53,6 +80,10 @@ async function newPage(browser, { width, height, theme, serviceWorkers = 'block'
     hasTouch: width < 1024,
     isMobile: width < 768
   })
+  if (activeTrace) {
+    await context.tracing.start({ screenshots: true, snapshots: true, sources: true })
+    activeTrace.contexts.set(context, ++activeTrace.serial)
+  }
   await context.addInitScript(([key, value]) => {
     localStorage.setItem(key, value)
   }, [PREFS_KEY, JSON.stringify({ theme })])
@@ -66,6 +97,49 @@ async function newPage(browser, { width, height, theme, serviceWorkers = 'block'
   })
   page.on('pageerror', error => errors.push(error.message))
   return { context, page, errors }
+}
+
+async function saveTimeoutTraces(contexts) {
+  if (!activeTrace) return []
+  const traceDir = path.join(outDir, 'traces')
+  await fs.mkdir(traceDir, { recursive: true })
+  const saved = []
+  for (const context of contexts) {
+    const serial = activeTrace.contexts.get(context)
+    if (!serial) continue
+    const file = path.join(
+      traceDir,
+      `${requestedBrowser}-${activeTrace.slug}-${serial}-${Date.now()}.zip`
+    )
+    try {
+      await context.tracing.stop({ path: file })
+      saved.push(file)
+    }
+    catch (error) {
+      saved.push(`trace-error:${error.message.split('\n')[0]}`)
+    }
+  }
+  return saved
+}
+
+async function runWithTimeout(run, milliseconds, kind) {
+  let timer
+  try {
+    return await Promise.race([
+      Promise.resolve().then(run),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const error = new Error(`${kind} timeout after ${milliseconds} ms`)
+          error.code = 'CHEMLAB_TIMEOUT'
+          error.timeoutKind = kind
+          reject(error)
+        }, milliseconds)
+      })
+    ])
+  }
+  finally {
+    clearTimeout(timer)
+  }
 }
 
 async function openView(page, baseURL, view) {
@@ -932,13 +1006,25 @@ async function learningLegacyData(browser, baseURL) {
   record('learning F: opening a completed legacy lesson keeps completion and counters',
     reader && stored.record.completed === true && stored.statistics.completedLessons === 1 && stored.statistics.totalAnswers === 4,
     JSON.stringify(stored))
+  const previousTitle = await page.textContent('.lx-reader__title')
   await page.click('.lx-crumbs a')
   await page.click('a.lx-row[href="#learning/lesson/g10-l23"]')
-  await page.waitForSelector('#lx-step-title')
+  await page.waitForFunction(
+    previous => document.querySelector('.lx-reader__title')?.textContent.trim() !== previous &&
+      /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status')?.textContent || ''),
+    previousTitle,
+    { timeout: 10000 }
+  )
   record('learning: g10-l23, missing in 6.3, now opens as a full lesson',
     await page.evaluate(() => /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status').textContent)))
+  const previousGrade12Title = await page.textContent('.lx-reader__title')
   await page.evaluate(() => { location.hash = '#learning/lesson/g12-l29' })
-  await page.waitForSelector('#lx-step-title')
+  await page.waitForFunction(
+    previous => document.querySelector('.lx-reader__title')?.textContent.trim() !== previous &&
+      /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status')?.textContent || ''),
+    previousGrade12Title,
+    { timeout: 10000 }
+  )
   // 6.4 published all 78 lessons, so the last short-content sample (g12-l29) now opens in full.
   record('learning: g12-l29, the last short-content lesson, now opens as a full lesson',
     await page.evaluate(() => /Bài học đầy đủ/.test(document.querySelector('.lx-reader__status').textContent) && document.querySelectorAll('.lx-steps li').length > 2))
@@ -1071,7 +1157,11 @@ async function labStoichChecks(browser, baseURL) {
   await add('naoh', 50)
   const alumina = await drawn()
   await add('naoh', 50)
-  await page.waitForTimeout(1200)
+  await page.waitForFunction(
+    () => !document.querySelector('.liquid-mask')?.dataset.precipitateAmount,
+    null,
+    { timeout: 3000 }
+  )
   const dissolved = await drawn()
   const dissolvedText = (await panel()).text
   record('lab amounts: Al(OH)₃↓ forms, then dissolves completely in excess NaOH (10 mmol OH⁻ per 2,5 mmol Al³⁺)',
@@ -1321,6 +1411,54 @@ async function brandChecks(browser, baseURL) {
   }
 }
 
+const suites = [
+  ['layout sweep', 'layout', layoutSweep],
+  ['interactions', 'layout', interactionChecks],
+  ['tools', 'tools', toolChecks],
+  ['lab pH', 'lab', labPHChecks],
+  ['lab amounts', 'lab', labStoichChecks],
+  ['guided pH', 'lab', guidedPHChecks],
+  ['observations', 'lab', observationChecks],
+  ['guided sulfite', 'lab', guidedSulfiteChecks],
+  ['lab state', 'lab', labStateChecks],
+  ['brand', 'layout', brandChecks],
+  ['lesson models', 'learning', lessonModelChecks],
+  ['learning journeys', 'learning', learningJourneys],
+  ['learning legacy data', 'learning', learningLegacyData],
+  ['learning reader layout', 'learning', learningReaderLayout],
+  ['practice journeys', 'practice', (browser, url) => practiceJourneys(browser, url, { newPage, record })],
+  ['exam core', 'exam', (browser, url) => examJourneys(browser, url, { newPage, record, groups: ['core'] })],
+  ['exam all-paper scoring', 'exam', (browser, url) => examJourneys(browser, url, { newPage, record, groups: ['scoring'] })],
+  ...EXAM_PAPER_IDS.flatMap(id => [320, 390].map(width => [
+    `exam layout ${id} ${width}px`,
+    'exam',
+    (browser, url) => examJourneys(browser, url, { newPage, record, groups: [`layout-${id}-${width}`] })
+  ])),
+  ['exam recovery', 'exam', (browser, url) => examJourneys(browser, url, { newPage, record, groups: ['recovery'] })],
+  ['written practice', 'practice', (browser, url) => writtenJourneys(browser, url, { newPage, record })],
+  ['csp', 'security', (browser, url) => cspJourneys(browser, url, { newPage, record })],
+  ['pwa upgrade', 'pwa', (browser, url) => pwaUpgradeJourneys(browser, url, { newPage, record })],
+  ['chemai phone', 'ai', chemAIPhoneCheck],
+  ['chemai errors', 'ai', chemAIErrorJourney],
+  ['chemai math', 'ai', chemAIMathJourney],
+  ['ChemAI correction and off state', 'ai', chemAINoticeJourney],
+  ['pwa', 'pwa', pwaCheck]
+]
+const availableGroups = new Set(suites.map(([, group]) => group))
+const invalidSuites = selectedSuites
+  ? [...selectedSuites].filter(name => !suites.some(([suiteName]) => suiteName === name))
+  : []
+const invalidGroups = selectedGroups
+  ? [...selectedGroups].filter(group => !availableGroups.has(group))
+  : []
+
+if (invalidSuites.length) {
+  throw new Error(`Unknown CHEMLAB_SUITES value(s): ${invalidSuites.join(', ')}. Available: ${suites.map(([name]) => name).join(', ')}`)
+}
+if (invalidGroups.length) {
+  throw new Error(`Unknown CHEMLAB_GROUPS value(s): ${invalidGroups.join(', ')}. Available: ${[...availableGroups].join(', ')}`)
+}
+
 const server = await preview({
   root: rootDir,
   build: { outDir: buildDir },
@@ -1328,21 +1466,87 @@ const server = await preview({
   preview: { port: 4179, strictPort: false, open: false }
 })
 const baseURL = server.resolvedUrls.local[0].replace(/\/$/, '')
-const browser = await launchBrowser()
+let browser
+let runnerTimedOut = false
+const runnerStarted = Date.now()
 
 try {
-  for (const [name, run] of [['layout sweep', layoutSweep], ['interactions', interactionChecks], ['tools', toolChecks], ['lab pH', labPHChecks], ['lab amounts', labStoichChecks], ['guided pH', guidedPHChecks], ['observations', observationChecks], ['guided sulfite', guidedSulfiteChecks], ['lab state', labStateChecks], ['brand', brandChecks], ['lesson models', lessonModelChecks], ['learning journeys', learningJourneys], ['learning legacy data', learningLegacyData], ['learning reader layout', learningReaderLayout], ['practice journeys', (browser, baseURL) => practiceJourneys(browser, baseURL, { newPage, record })], ['exam journeys', (browser, baseURL) => examJourneys(browser, baseURL, { newPage, record })], ['written practice', (browser, baseURL) => writtenJourneys(browser, baseURL, { newPage, record })], ['csp', (browser, baseURL) => cspJourneys(browser, baseURL, { newPage, record })], ['pwa upgrade', (browser, baseURL) => pwaUpgradeJourneys(browser, baseURL, { newPage, record })], ['chemai phone', chemAIPhoneCheck], ['chemai errors', chemAIErrorJourney], ['chemai math', chemAIMathJourney], ['ChemAI correction and off state', chemAINoticeJourney], ['pwa', pwaCheck]]) {
+  browser = await launchBrowser()
+  const activeSuites = suites.filter(([name, group]) =>
+    (!selectedSuites || selectedSuites.has(name)) &&
+    (!selectedGroups || selectedGroups.has(group)))
+  if (!activeSuites.length) throw new Error('Không có browser suite nào khớp bộ lọc đã chọn.')
+  const filters = [
+    selectedGroups ? `groups=${[...selectedGroups].join(',')}` : '',
+    selectedSuites ? `suites=${[...selectedSuites].join(',')}` : ''
+  ].filter(Boolean).join(' ')
+  console.log(`Running ${activeSuites.length}/${suites.length} browser suites on ${requestedBrowser}${filters ? ` (${filters})` : ''}`)
+
+  for (const [name, group, run] of activeSuites) {
+    const remaining = RUNNER_TIMEOUT_MS - (Date.now() - runnerStarted)
+    if (remaining <= 0) {
+      runnerTimedOut = true
+      const detail = `browser=${requestedBrowser} group=${group} suite=${name} elapsed=${Date.now() - runnerStarted}ms error=runner timeout after ${RUNNER_TIMEOUT_MS} ms before suite start trace=none`
+      console.error(`TIMEOUT ${detail}`)
+      record('browser runner stayed within its global deadline', false, detail)
+      break
+    }
+
+    const timeoutMs = Math.min(SUITE_TIMEOUT_MS, remaining)
+    const timeoutKind = remaining <= SUITE_TIMEOUT_MS ? 'runner' : 'suite'
+    const started = Date.now()
+    const before = results.length
+    const contextsBefore = new Set(browser.contexts())
+    activeTrace = {
+      contexts: new Map(),
+      serial: 0,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    }
+    console.log(`START ${name} [${group}] timeout=${timeoutMs}ms`)
     try {
-      await run(browser, baseURL)
+      await runWithTimeout(() => run(browser, baseURL), timeoutMs, timeoutKind)
     }
     catch (error) {
-      record(`${name} finished without crashing`, false, error.message.split('\n')[0])
+      if (error.code === 'CHEMLAB_TIMEOUT') {
+        const traces = await saveTimeoutTraces(browser.contexts())
+        const elapsed = Date.now() - started
+        const detail = `browser=${requestedBrowser} group=${group} suite=${name} elapsed=${elapsed}ms error=${error.message} trace=${traces.length ? traces.join(',') : 'none'}`
+        console.error(`TIMEOUT ${detail}`)
+        record(`${name} finished within its deadline`, false, detail)
+        runnerTimedOut = error.timeoutKind === 'runner'
+      }
+      else {
+        record(`${name} finished without crashing`, false, error.message.split('\n')[0])
+      }
     }
+    finally {
+      const leakedContexts = browser.contexts().filter(context => !contextsBefore.has(context))
+      for (const context of leakedContexts) {
+        try {
+          await context.close()
+        }
+        catch (error) {
+          record(`${name} closes an unclosed browser context`, false, error.message.split('\n')[0])
+        }
+      }
+      if (leakedContexts.length) {
+        record(`${name} closes ${leakedContexts.length} unclosed browser context(s)`, false, 'Suite left browser contexts open.')
+      }
+      activeTrace = null
+      console.log(`END ${name} [${group}] — ${results.length - before} checks, ${Math.round((Date.now() - started) / 1000)}s`)
+    }
+    if (runnerTimedOut) break
   }
 }
 finally {
-  await browser.close()
-  await new Promise(resolve => server.httpServer.close(resolve))
+  try {
+    if (browser) await browser.close()
+  }
+  finally {
+    await new Promise((resolve, reject) => {
+      server.httpServer.close(error => error ? reject(error) : resolve())
+    })
+  }
 }
 
 const failures = results.filter(result => !result.pass)

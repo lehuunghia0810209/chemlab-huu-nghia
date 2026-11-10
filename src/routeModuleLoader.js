@@ -4,6 +4,7 @@ export function createRouteModuleLoader({
   routeProgress,
   appStatus,
   hosts,
+  drawer,
   safeInit,
   renderModuleError,
   getCurrentView
@@ -16,8 +17,8 @@ export function createRouteModuleLoader({
       label: 'Tổng quan'
     },
     periodic: {
-      status: 'ready',
-      promise: Promise.resolve(true),
+      status: 'idle',
+      promise: null,
       host: hosts.periodic,
       label: 'Bảng tuần hoàn'
     },
@@ -42,6 +43,15 @@ export function createRouteModuleLoader({
   }
 
   let activeRouteLoads = 0
+
+  async function loadPeriodicRoute() {
+    const { initPeriodicWorkspace } = await import('./periodic/periodicWorkspace.js')
+    safeInit(
+      'Bảng tuần hoàn',
+      () => initPeriodicWorkspace({ root: hosts.periodic, drawer }),
+      hosts.periodic
+    )
+  }
 
   function setAppStatus(
     message,
@@ -336,6 +346,7 @@ export function createRouteModuleLoader({
   }
 
   const loaders = {
+    periodic: loadPeriodicRoute,
     tools: loadToolsRoute,
     learning: loadLearningRoute,
     lab: loadLabRoute

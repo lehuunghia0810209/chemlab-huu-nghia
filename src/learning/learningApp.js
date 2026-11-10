@@ -776,7 +776,8 @@ export function initLearning(host) {
         await window.ChemLabApp?.openTool(action.tool)
       }
       else if (action.kind === 'periodic') {
-        window.ChemLabApp?.navigate('periodic')
+        const ready = await window.ChemLabApp?.navigate('periodic')
+        if (!ready) throw new Error('Bảng tuần hoàn chưa sẵn sàng')
         window.ChemLabPeriodic?.openElement(action.element)
       }
     }
