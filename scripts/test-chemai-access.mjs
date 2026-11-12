@@ -78,6 +78,17 @@ await test('default: GET status reveals nothing about provider, model or secrets
   assert.equal((await (await feedbackGet({ request: request('/api/feedback', { method: 'GET' }), env: full() })).json()).enabled, false)
 })
 
+await test('status separates "signed in but not approved" from anonymous, revealing nothing else', async () => {
+  const env = full({ CHEMAI_ACCESS_MODE: 'internal_testing' })
+  const get = async headers => (await chatGet({ request: request('/api/chat', { host: internalHost, method: 'GET', headers }), env })).json()
+  const unapproved = await get({ 'Cf-Access-Jwt-Assertion': await token({ email: 'student@example.org' }) })
+  assert.deepEqual(Object.keys(unapproved).sort(), ['access', 'authenticated', 'configured', 'ok', 'release', 'service'])
+  assert.deepEqual([unapproved.access, unapproved.authenticated], [false, true])
+  for (const headers of [{}, { 'Cf-Access-Jwt-Assertion': await token({}, { key: otherPair.privateKey }) }, { 'X-User-Email': 'teacher@example.org' }]) {
+    assert.equal((await get(headers)).authenticated, undefined, 'no identity claim without a verified token')
+  }
+})
+
 await test('student_access cannot be switched on by the flag, even with a valid approved identity', async () => {
   const headers = { 'Cf-Access-Jwt-Assertion': await token() }
   await assertLocked(await chatPost({ request: request('/api/chat', { headers }), env: full({ CHEMAI_ACCESS_MODE: 'student_access' }) }), 'chat')

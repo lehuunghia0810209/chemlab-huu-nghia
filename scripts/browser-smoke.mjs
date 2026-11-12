@@ -441,6 +441,16 @@ async function chemAINoticeJourney(browser, baseURL) {
     record(`console clean with ChemAI locked ${viewport.width}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
+  // Signed in through Access but not on the allowlist: told so, still no composer.
+  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
+  await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, service: 'ChemAI', release: 'x', access: false, configured: false, authenticated: true }) }))
+  await openView(page, baseURL, 'home')
+  await page.click('[data-chemai-open]:visible')
+  await page.waitForFunction(() => /Chưa mở/.test(document.querySelector('#chemai-service-badge')?.textContent || ''))
+  const signedIn = await page.evaluate(() => ({ text: document.querySelector('#chemai-locked').textContent, form: document.querySelector('#chemai-form').hidden }))
+  record('ChemAI signed in but not approved: says so, no composer', /đã đăng nhập nhưng tài khoản chưa được cấp quyền/.test(signedIn.text) && signedIn.form, JSON.stringify(signedIn))
+  record('console clean with ChemAI signed in but not approved', errors.length === 0, errors.join(' | '))
+  await context.close()
 }
 
 // Math in answers: KaTeX typesetting, no raw TeX, no page overflow, theme colour, XSS inert.

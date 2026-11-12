@@ -721,7 +721,8 @@ function metaFor(knowledge, payload, model, reliability = {}, provider = 'Gemini
 export async function onRequestGet(context) {
   const { request, env } = context
   const access = await chemAIAccess(request, env, { provider: 'gemini' })
-  if (!access.allowed) return json({ ok: true, service: 'ChemAI', release: APP_VERSION, access: false, configured: false })
+  // `authenticated` only for a verified Access identity that is not on the allowlist.
+  if (!access.allowed) return json({ ok: true, service: 'ChemAI', release: APP_VERSION, access: false, configured: false, ...(access.reason === 'NOT_APPROVED' ? { authenticated: true } : {}) })
   return chatStatus(context)
 }
 

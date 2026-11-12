@@ -712,4 +712,35 @@ const answerJSON = answer => JSON.stringify({ answer, actions: [], suggestions: 
   }
 }
 
+{
+  // Provider responses that must never become an answer, each with a bounded number of calls.
+  const cases = [
+    ['prompt blocked by safety', () => new Response(JSON.stringify({ promptFeedback: { blockReason: 'SAFETY' } }), { status: 200 }), 422, 'AI_BLOCKED', 1],
+    ['candidate stopped for SAFETY', () => geminiPayload([{ text: '' }], 'SAFETY'), 422, 'AI_BLOCKED', 1],
+    ['empty candidates', () => new Response(JSON.stringify({ candidates: [] }), { status: 200 }), 502, 'AI_REQUEST_FAILED', 1],
+    ['text is not JSON', () => geminiPayload([{ text: 'Đây không phải JSON' }]), 502, 'AI_REQUEST_FAILED', 1],
+    ['JSON without answer', () => geminiPayload([{ text: '{"actions":[]}' }]), 502, 'AI_REQUEST_FAILED', 1],
+    ['HTML instead of JSON (HTTP 200)', () => new Response('<html>proxy</html>', { status: 200 }), 502, 'AI_REQUEST_FAILED', 1]
+  ]
+  for (const [label, reply, status, code, expectedCalls] of cases) {
+    let calls = 0
+    const originalError = console.error
+    console.error = () => {}
+    const result = await requestWithMock(async () => { calls += 1; return reply() })
+    console.error = originalError
+    assert.deepEqual([result.response.status, result.payload.code, calls], [status, code, expectedCalls], label)
+    assert.ok(!result.payload.answer, `${label}: no answer shown`)
+    assert.ok(!/test-only-key|googleapis|v1beta/.test(JSON.stringify(result.payload)), `${label}: no backend detail`)
+  }
+
+  // Persistent 500: bounded retries, then a clear error (never an endless loop).
+  let calls = 0
+  const originalError = console.error
+  console.error = () => {}
+  const serverError = await requestWithMock(async () => { calls += 1; return geminiError(500, 'INTERNAL', 'Internal error.') }, { GEMINI_FALLBACK_MODELS: '' })
+  console.error = originalError
+  assert.ok(serverError.response.status >= 500 && calls >= 2 && calls <= 4, `500: status ${serverError.response.status}, ${calls} calls`)
+  assert.ok(serverError.payload.message && !/INTERNAL|Internal error/.test(serverError.payload.message), 'learner message hides the provider text')
+}
+
 console.log('\nPASS — ChemAI Gemini API mock tests passed.\n')

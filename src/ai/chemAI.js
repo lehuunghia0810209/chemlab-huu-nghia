@@ -13,6 +13,7 @@ const MAX_HISTORY_TO_SERVER = 10
 const MAX_INPUT_LENGTH = 4000
 const CLIENT_TIMEOUT_MS = 65_000
 const LOCKED_COPY = 'ChemAI đang được hoàn thiện và kiểm định. Tính năng hiện chưa được mở cho học sinh.'
+const NOT_APPROVED_COPY = 'Bạn đã đăng nhập nhưng tài khoản chưa được cấp quyền dùng ChemAI. ' + LOCKED_COPY
 
 let singleton = null
 
@@ -250,6 +251,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
 
       setAccess(data?.access === true)
       if (!accessGranted) {
+        lockedEl.textContent = data?.authenticated === true ? NOT_APPROVED_COPY : LOCKED_COPY
         serviceBadge.title = ''
         setServiceState('locked', 'Chưa mở')
       }
