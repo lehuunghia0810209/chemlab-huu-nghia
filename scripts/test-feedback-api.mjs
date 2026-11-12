@@ -1,7 +1,7 @@
 // ChemAI rubric feedback + shared limits: mocked Gemini and Cloudflare bindings.
 import assert from 'node:assert/strict'
-import { onRequestGet, onRequestPost, normalizeFeedback, feedbackEnabled } from '../functions/api/feedback.js'
-import { onRequestPost as chatPost } from '../functions/api/chat.js'
+import { onRequestGet, feedbackHandler as onRequestPost, normalizeFeedback, feedbackEnabled } from '../functions/api/feedback.js'
+import { chatHandler as chatPost } from '../functions/api/chat.js'
 import { checkShared } from '../functions/api/_limits.js'
 import { RUBRICS, findRubric } from '../src/learning/rubrics.js'
 import { QuotaCounter, consume } from '../workers/chemai-quota/src/index.js'
@@ -93,7 +93,7 @@ await test('disabled without flag, key or shared limit', async () => {
   assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_LIMITER: limiter() }), false, 'a per-location rate limiter is not a cost budget')
   assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv() }), false, 'approximate KV budget needs explicit acceptance')
   assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv(), CHEMAI_ACCEPT_APPROX_BUDGET: 'on' }), true, 'KV accepted explicitly')
-  assert.equal((await onRequestGet({ env: {} }).json()).enabled, false)
+  assert.equal((await (await onRequestGet({ request: new Request('https://chemlab.example/api/feedback'), env: enabledEnv() })).json()).enabled, false, 'gate locked by default even when fully configured')
 })
 await test('disabled endpoint never calls Gemini', async () => {
   mockGemini({})

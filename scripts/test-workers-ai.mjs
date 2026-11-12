@@ -1,7 +1,7 @@
 // ChemAI on Cloudflare Workers AI: mocked env.AI binding and an exact
 // Durable Object budget mock. No Neurons are consumed and Gemini must never be called.
 import assert from 'node:assert/strict'
-import { onRequestGet, onRequestPost } from '../functions/api/chat.js'
+import { chatStatus as onRequestGet, chatHandler as onRequestPost } from '../functions/api/chat.js'
 import { estimateNeurons, actualNeurons, dailyClientKey, classifyWorkersAIError, WORKERS_AI_MODELS, DEFAULT_WORKERS_AI_MODEL, MAX_OUTPUT_TOKENS } from '../functions/api/_workersAI.js'
 import { consume, refund } from '../workers/chemai-quota/src/index.js'
 

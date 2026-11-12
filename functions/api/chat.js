@@ -15,6 +15,7 @@ import {
   usageDetails
 } from './_workersAI.js'
 import { APP_VERSION } from '../../src/appMeta.js'
+import { chemAIAccess, accessDenied, malformedEnvNames } from './_access.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
 const DEFAULT_FALLBACK_MODELS = Object.freeze([
@@ -708,7 +709,23 @@ function metaFor(knowledge, payload, model, reliability = {}, provider = 'Gemini
   }
 }
 
-export function onRequestGet(context) {
+// Public status: unauthorised callers learn only that ChemAI is locked (no provider, model or config).
+export async function onRequestGet(context) {
+  const { request, env } = context
+  const access = await chemAIAccess(request, env, { provider: chatProvider(env) })
+  if (!access.allowed) return json({ ok: true, service: 'ChemAI', release: APP_VERSION, access: false, configured: false })
+  return chatStatus(context)
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context
+  const access = await chemAIAccess(request, env, { provider: chatProvider(env) })
+  if (!access.allowed) return accessDenied(access.reason, 'chat')
+  return chatHandler(context)
+}
+
+// Ungated pipeline below: reachable over HTTP only through the access checks above.
+export function chatStatus(context) {
   const { env } = context
   const provider = chatProvider(env)
   const models = workersAIModels(env)
@@ -718,7 +735,9 @@ export function onRequestGet(context) {
 
   return json({
     ok: true,
+    access: true,
     configured,
+    configWarnings: malformedEnvNames(env),
     service: 'ChemAI',
     provider: PROVIDERS[provider] || null,
     release: APP_VERSION,
@@ -728,7 +747,7 @@ export function onRequestGet(context) {
   })
 }
 
-export async function onRequestPost(context) {
+export async function chatHandler(context) {
   const { request, env } = context
 
   if (!sameOrigin(request)) {

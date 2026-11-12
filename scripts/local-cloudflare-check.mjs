@@ -1,10 +1,11 @@
-// Local Cloudflare runtime check (no cloud resource, no cost):
-// `wrangler pages dev dist` (workerd + public/_headers + functions/) bound to the
-// quota Worker (`wrangler dev`, Durable Object QuotaCounter) through the local
-// dev registry, with an invalid Gemini key so every upstream call is refused
-// by Google before any billing. Verifies headers/routes (staging-smoke) and the
-// exact daily budget: allowed → exhausted (429) → worker down (fail closed) →
-// worker back. Requires `npm run build` first and network access for npx.
+// Local Cloudflare runtime check (no cloud resource, no cost, no AI call):
+// `wrangler pages dev dist` (workerd + public/_headers + functions/) with every AI
+// setting present (Gemini provider, invalid key, feedback on) to prove the 6.5.4
+// access gate holds in the real runtime: headers/routes (staging-smoke), locked
+// status without backend detail, and 403 for chat/feedback in disabled,
+// student_access and approved_users-without-identity modes. The exact daily budget
+// behind the gate is covered by the Node tests (check:ai).
+// Requires `npm run build` first and network access for npx.
 // usage: node scripts/local-cloudflare-check.mjs
 import { spawn, execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -15,10 +16,6 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'chemlab-cf-'))
 const started = Date.now()
-const workerConfig = path.join(work, 'worker.toml')
-fs.writeFileSync(workerConfig, fs.readFileSync(path.join(root, 'workers/chemai-quota/wrangler.toml.example'), 'utf8')
-  .replace(/^main = .*$/m, `main = ${JSON.stringify(path.join(root, 'workers/chemai-quota/src/index.js').replace(/\\/g, '/'))}`))
-
 // Force-stopped dev processes leave entries in wrangler's dev registry that break
 // cross-process Durable Object bindings; remove only the entries this run created.
 const registries = [path.join(os.homedir(), 'AppData/Roaming/xdg.config/.wrangler/registry'), path.join(os.homedir(), '.config/.wrangler/registry'), path.join(os.homedir(), 'Library/Preferences/.wrangler/registry')]
@@ -52,20 +49,17 @@ const port = async (number, up = true) => {
   }
   throw new Error(`port ${number} did not go ${up ? 'up' : 'down'}`)
 }
-const worker = () => start('quota worker', ['dev', '--config', workerConfig, '--port', '8788', '--persist-to', path.join(work, 'worker-state')], work)
-// provider 'gemini' exercises the budget against Google with an invalid key (refused, no cost);
-// the default Workers AI provider runs WITHOUT an AI binding: `--ai` would spend real Neurons.
-const pages = (feedback, chat, { budget = true, provider = 'gemini' } = {}) => start(`pages (limits feedback ${feedback}, chat ${chat}${budget ? '' : ', no budget binding'}, provider ${provider})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
-  ...(budget ? ['--do', 'CHEMAI_BUDGET=QuotaCounter@chemai-quota'] : []), ...(provider === 'gemini' ? ['--binding', 'CHEMAI_PROVIDER=gemini'] : []), '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key',
-  '--binding', `CHEMAI_DAILY_LIMIT_FEEDBACK=${feedback}`, '--binding', `CHEMAI_DAILY_LIMIT_CHAT=${chat}`], root)
+const pages = (bindings = []) => start(`pages (${bindings.join(' ') || 'default access'})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
+  ...(bindings.some(item => item.startsWith('CHEMAI_PROVIDER=')) ? [] : ['--binding', 'CHEMAI_PROVIDER=gemini']), '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key', '--binding', 'CHEMAI_ACCEPT_APPROX_BUDGET=on',
+  ...bindings.flatMap(item => ['--binding', item])], root)
 
 const base = 'http://localhost:8790'
 let ip = 1
-async function call(kind) {
+async function call(kind, headers = {}) {
   const body = kind === 'feedback'
     ? { rubricId: 'g11-l20-w1', answer: 'Khi cho dung dịch NaOH vào dung dịch CuSO4 xuất hiện kết tủa xanh Cu(OH)2 do ion Cu2+ kết hợp với ion OH- tạo kết tủa.' }
     : { message: 'H2O là gì?' }
-  const response = await fetch(`${base}/api/${kind}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base, 'CF-Connecting-IP': `198.51.100.${ip++}` }, body: JSON.stringify(body) })
+  const response = await fetch(`${base}/api/${kind}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base, 'CF-Connecting-IP': `198.51.100.${ip++}`, ...headers }, body: JSON.stringify(body) })
   const payload = await response.json().catch(() => ({}))
   return `${response.status} ${payload.code || ''}`
 }
@@ -75,11 +69,18 @@ const expect = (name, got, pattern) => {
   results.push(pass)
   log(pass ? 'PASS' : 'FAIL', name, '→', got)
 }
+const restart = async (site, bindings) => {
+  stop(site)
+  await port(8790, false)
+  clearOwnRegistry()
+  const next = pages(bindings)
+  await port(8790)
+  return next
+}
+const b64 = value => Buffer.from(JSON.stringify(value)).toString('base64url')
 
 try {
-  let quota = worker()
-  await port(8788)
-  let site = pages(2, 3)
+  let site = pages()
   await port(8790)
   try {
     execSync(`node scripts/staging-smoke.mjs ${base}`, { cwd: root, stdio: 'inherit' })
@@ -88,45 +89,19 @@ try {
   catch {
     results.push(false)
   }
-  expect('feedback 1 of 2 passes the budget (Gemini refuses the invalid key)', await call('feedback'), /^502/)
-  expect('feedback 2 of 2 passes the budget', await call('feedback'), /^502/)
-  expect('feedback 3 refused: budget exhausted', await call('feedback'), /^429 AI_BUDGET_LIMITED/)
-  for (let index = 1; index <= 3; index += 1) expect(`chat ${index} of 3 passes the budget`, await call('chat'), /^502/)
-  expect('chat 4 refused: budget exhausted', await call('chat'), /^429 AI_BUDGET_LIMITED/)
-  stop(site)
-  stop(quota)
-  await port(8790, false)
-  await port(8788, false)
-  clearOwnRegistry()
-  site = pages(50, 50)
-  await port(8790)
-  expect('quota worker down, budget not exhausted: feedback fails closed', await call('feedback'), /^429 AI_BUDGET_LIMITED/)
-  expect('quota worker down: chat fails closed', await call('chat'), /^429 AI_BUDGET_LIMITED/)
-  stop(site)
-  await port(8790, false)
-  clearOwnRegistry()
-  site = pages(50, 50, { budget: false })
-  await port(8790)
-  expect('no budget binding: chat refuses before any Gemini call (P1 fail-open)', await call('chat'), /^503 AI_BUDGET_NOT_CONFIGURED/)
-  expect('no budget binding: feedback stays disabled', await call('feedback'), /^503 FEEDBACK_DISABLED/)
-  stop(site)
-  await port(8790, false)
-  clearOwnRegistry()
-  site = pages(50, 50, { provider: 'workers_ai' })
-  await port(8790)
   const status = await (await fetch(`${base}/api/chat`)).json()
-  expect('default provider is Workers AI; without the AI binding it reports not configured', `${status.provider} configured=${status.configured}`, /^Workers AI configured=false$/)
-  expect('Workers AI without the AI binding: chat fails closed before any model call', await call('chat'), /^503 AI_NOT_CONFIGURED/)
-  stop(site)
-  await port(8790, false)
-  clearOwnRegistry()
-  quota = worker()
-  await port(8788)
-  site = pages(50, 7) // the Durable Object keeps today's 3 chat units from the first phase: 4 left
-  await port(8790)
-  expect('quota worker back: feedback reaches Gemini again', await call('feedback'), /^502/)
-  const burst = (await Promise.all(Array.from({ length: 8 }, () => call('chat')))).map(item => item.split(' ')[0])
-  expect('8 concurrent chats against the real Durable Object, 3 of 7 already used: exactly 4 reach Gemini', `${burst.filter(item => item === '502').length} passed, ${burst.filter(item => item === '429').length} refused`, /^4 passed, 4 refused$/)
+  expect('default: status says locked and names no provider/model', JSON.stringify(Object.keys(status).sort()) + ` access=${status.access}`, /^\["access","configured","ok","release","service"\] access=false$/)
+  expect('default: feedback status disabled', `enabled=${(await (await fetch(`${base}/api/feedback`)).json()).enabled}`, /^enabled=false$/)
+  expect('default (fully configured): chat refused before any AI call', await call('chat'), /^403 AI_ACCESS_LOCKED$/)
+  expect('default (fully configured): feedback refused before any AI call', await call('feedback'), /^403 AI_ACCESS_LOCKED$/)
+  site = await restart(site, ['CHEMAI_ACCESS_MODE=student_access'])
+  expect('student_access flag cannot open chat', await call('chat'), /^403 AI_ACCESS_LOCKED$/)
+  expect('student_access flag cannot open feedback', await call('feedback'), /^403 AI_ACCESS_LOCKED$/)
+  site = await restart(site, ['CHEMAI_ACCESS_MODE=approved_users', 'CHEMAI_PROVIDER=workers_ai', 'CF_ACCESS_TEAM_DOMAIN=https://chemlab-local-test.cloudflareaccess.com', 'CF_ACCESS_AUD=local-test', 'CHEMAI_APPROVED_EMAILS=teacher@example.org'])
+  expect('approved_users: direct request without identity refused', await call('chat'), /^403 AI_ACCESS_LOCKED$/)
+  expect('approved_users: spoofed identity headers refused', await call('chat', { 'X-User-Email': 'teacher@example.org', Cookie: 'CF_Authorization=forged' }), /^403 AI_ACCESS_LOCKED$/)
+  const unsigned = `${b64({ alg: 'none', kid: 'k' })}.${b64({ email: 'teacher@example.org', aud: ['local-test'], iss: 'https://chemlab-local-test.cloudflareaccess.com', exp: 9999999999 })}.`
+  expect('approved_users: unsigned (alg none) Access token refused', await call('chat', { 'Cf-Access-Jwt-Assertion': unsigned }), /^403 AI_ACCESS_LOCKED$/)
 }
 finally {
   children.forEach(stop)

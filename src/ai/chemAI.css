@@ -246,8 +246,12 @@
 .chemai-service-badge.offline { color: var(--status-warning); border-color: color-mix(in oklab, var(--status-warning) 39%, transparent); background: color-mix(in oklab, var(--status-warning) 11%, transparent); }
 .chemai-service-badge.setup i,
 .chemai-service-badge.offline i { background: var(--status-warning); }
-.chemai-service-badge.local { color: var(--accent-text); border-color: color-mix(in oklab, var(--accent) 39%, transparent); background: color-mix(in oklab, var(--accent) 11%, transparent); }
-.chemai-service-badge.local i { background: var(--accent); }
+.chemai-service-badge.local,
+.chemai-service-badge.locked { color: var(--accent-text); border-color: color-mix(in oklab, var(--accent) 39%, transparent); background: color-mix(in oklab, var(--accent) 11%, transparent); }
+.chemai-service-badge.local i,
+.chemai-service-badge.locked i { background: var(--accent); }
+.chemai-suggestions[hidden], .chemai-composer[hidden], .chemai-locked[hidden] { display: none; }
+.chemai-locked { margin: 0 14px 14px; padding: 12px 14px; border: 1px solid var(--border-subtle); border-radius: 14px; color: var(--text-primary); background: var(--surface-hover); font-size: var(--text-sm); line-height: 1.55; }
 
 .chemai-messages {
   min-height: 0;

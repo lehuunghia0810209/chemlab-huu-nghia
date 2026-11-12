@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { APP_VERSION } from '../src/appMeta.js'
 
 import {
-  onRequestGet,
-  onRequestPost
+  chatStatus as onRequestGet,
+  chatHandler as onRequestPost
 } from '../functions/api/chat.js'
 
 import {

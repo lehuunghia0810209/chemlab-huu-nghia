@@ -291,7 +291,7 @@ const SCENARIOS = [
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(route.request().method() === 'GET'
-          ? { ok: true, configured: true, provider: 'Workers AI', model: 'stub' }
+          ? { ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }
           : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub' } })
       }))
       await page.click('[data-chemai-open]:visible')

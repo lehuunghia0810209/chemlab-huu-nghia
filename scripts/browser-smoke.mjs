@@ -356,8 +356,11 @@ async function interactionChecks(browser, baseURL) {
 
 async function chemAIPhoneCheck(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
+  // Layout of the composer as an approved user sees it (stubbed GET; nothing is sent).
+  await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }) }))
   await openView(page, baseURL, 'home')
   await page.click('.app-topbar__ai')
+  await page.waitForSelector('#chemai-form:not([hidden])', { timeout: 10000 })
   await page.waitForSelector('.chemai-root.is-open .chemai-panel', { timeout: 10000 })
   await page.waitForTimeout(500)
   const state = await page.evaluate(() => {
@@ -385,7 +388,7 @@ async function chemAINoticeJourney(browser, baseURL) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(route.request().method() === 'GET'
-        ? { ok: true, configured: true, provider: 'Workers AI', model: 'stub' }
+        ? { ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }
         : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub', corrections: 1 } })
     }))
     await openView(page, baseURL, 'home')
@@ -407,19 +410,37 @@ async function chemAINoticeJourney(browser, baseURL) {
     record(`console clean in ChemAI correction flow ${viewport.width}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
-  const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
-  await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, configured: false, provider: null, model: null }) }))
-  await openView(page, baseURL, 'home')
-  await page.click('[data-chemai-open]:visible')
-  await page.waitForSelector('.chemai-root.is-open #chemai-input')
-  await page.waitForFunction(() => /Chưa cấu hình/.test(document.querySelector('#chemai-service-badge')?.textContent || ''))
-  await page.fill('#chemai-input', 'H2O là gì?')
-  await page.keyboard.press('Enter')
-  await page.waitForSelector('.chemai-system-notice')
-  const off = await page.textContent('.chemai-system-notice')
-  record('ChemAI off: a plain notice, no internal code', /Các công cụ khác của ChemLab vẫn dùng bình thường/.test(off) && !/not-configured/.test(off), off.replace(/\s+/g, ' '))
-  record('console clean with ChemAI off', errors.length === 0, errors.join(' | '))
-  await context.close()
+  // Locked (the 6.5.4 default): the server's public answer, as Production returns it.
+  for (const viewport of [{ width: 1280, height: 800, theme: 'dark' }, { width: 390, height: 844, theme: 'light' }, { width: 320, height: 700, theme: 'dark' }]) {
+    const { context, page, errors } = await newPage(browser, viewport)
+    const posts = []
+    await context.route('**/api/chat', route => {
+      if (route.request().method() !== 'GET') posts.push(route.request().method())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, service: 'ChemAI', release: 'x', access: false, configured: false }) })
+    })
+    await openView(page, baseURL, 'home')
+    await page.evaluate(() => window.ChemLabApp.openChemAI('H2O là gì?'))
+    await page.waitForFunction(() => /Chưa mở/.test(document.querySelector('#chemai-service-badge')?.textContent || ''))
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(300)
+    const state = await page.evaluate(() => {
+      const locked = document.querySelector('#chemai-locked')
+      const box = locked.getBoundingClientRect()
+      return {
+        lockedVisible: !locked.hidden && box.height > 0 && box.right <= innerWidth + 1,
+        text: locked.textContent.trim(),
+        formHidden: document.querySelector('#chemai-form').hidden && !document.querySelector('#chemai-send').offsetParent,
+        suggestionsHidden: !document.querySelector('#chemai-suggestions').offsetParent,
+        leaks: /Workers AI|Gemini|stub|model/i.test(document.querySelector('.chemai-panel').innerText),
+        overflow: document.documentElement.scrollWidth - innerWidth
+      }
+    })
+    record(`ChemAI locked ${viewport.width}: notice shown, no send button, no suggestions, no backend detail`,
+      state.lockedVisible && state.text === 'ChemAI đang được hoàn thiện và kiểm định. Tính năng hiện chưa được mở cho học sinh.' && state.formHidden && state.suggestionsHidden && !state.leaks && state.overflow <= 1, JSON.stringify(state))
+    record(`ChemAI locked ${viewport.width}: no request other than the status GET`, posts.length === 0, posts.join(','))
+    record(`console clean with ChemAI locked ${viewport.width}`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
 }
 
 // Math in answers: KaTeX typesetting, no raw TeX, no page overflow, theme colour, XSS inert.
@@ -443,7 +464,7 @@ async function chemAIMathJourney(browser, baseURL) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(route.request().method() === 'GET'
-        ? { ok: true, configured: true, provider: 'Workers AI', model: 'stub' }
+        ? { ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }
         : { ok: true, answer: MATH_ANSWER, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub' } })
     }))
     await openView(page, baseURL, 'home')
@@ -493,7 +514,7 @@ async function chemAIErrorJourney(browser, baseURL) {
     [200, { ok: true, answer: 'Nước là H₂O.', actions: [], suggestions: [], meta: { model: 'stub' } }]
   ]
   await context.route('**/api/chat', route => {
-    const [status, body] = route.request().method() === 'GET' ? [200, { ok: true, configured: true, model: 'stub' }] : replies.shift()
+    const [status, body] = route.request().method() === 'GET' ? [200, { ok: true, access: true, configured: true, model: 'stub' }] : replies.shift()
     return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   })
   errors.length = 0

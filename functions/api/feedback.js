@@ -8,6 +8,7 @@
 import { findRubric, ANSWER_LIMITS } from '../../src/learning/rubrics.js'
 import { json, sameOrigin, clientRateKey, requestGemini, extractGenerateContentText, cleanStructuredText } from './chat.js'
 import { costBudgetConfigured, checkShared, dailyLimit } from './_limits.js'
+import { chemAIAccess, accessDenied } from './_access.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
 const MAX_BODY_BYTES = 8 * 1024
@@ -98,11 +99,20 @@ export function normalizeFeedback(rubric, structured) {
   }
 }
 
-export function onRequestGet({ env }) {
-  return json({ ok: true, enabled: Boolean(feedbackEnabled(env)) })
+// Feedback always calls Gemini, so it shares ChemAI's server-side access gate.
+export async function onRequestGet({ request, env }) {
+  const access = await chemAIAccess(request, env, { provider: 'gemini' })
+  return json({ ok: true, enabled: access.allowed && Boolean(feedbackEnabled(env)) })
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const access = await chemAIAccess(context.request, context.env, { provider: 'gemini' })
+  if (!access.allowed) return accessDenied(access.reason, 'feedback')
+  return feedbackHandler(context)
+}
+
+// Ungated pipeline: reachable over HTTP only through onRequestPost above.
+export async function feedbackHandler({ request, env }) {
   if (!sameOrigin(request)) return json({ ok: false, code: 'ORIGIN_NOT_ALLOWED', message: 'Yêu cầu không hợp lệ.' }, 403)
   if (!feedbackEnabled(env)) {
     return json({ ok: false, code: 'FEEDBACK_DISABLED', message: 'Chức năng nhận xét của ChemAI chưa được bật.' }, 503)

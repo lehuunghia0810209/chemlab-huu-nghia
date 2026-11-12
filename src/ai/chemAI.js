@@ -12,6 +12,7 @@ const MAX_STORED_MESSAGES = 24
 const MAX_HISTORY_TO_SERVER = 10
 const MAX_INPUT_LENGTH = 4000
 const CLIENT_TIMEOUT_MS = 65_000
+const LOCKED_COPY = 'ChemAI đang được hoàn thiện và kiểm định. Tính năng hiện chưa được mở cho học sinh.'
 
 let singleton = null
 
@@ -94,6 +95,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
   let serverSuggestions = []
   let lastFocused = null
   let statusChecked = false
+  let accessGranted = false
   let lastFailedQuestion = ''
   const displayVersion = String(version).replace(/\.0$/, '')
 
@@ -153,9 +155,11 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         aria-relevant="additions"
       ></div>
 
-      <div id="chemai-suggestions" class="chemai-suggestions" aria-label="Gợi ý câu hỏi"></div>
+      <div id="chemai-suggestions" class="chemai-suggestions" aria-label="Gợi ý câu hỏi" hidden></div>
 
-      <form id="chemai-form" class="chemai-composer">
+      <p id="chemai-locked" class="chemai-locked" role="status" hidden>${LOCKED_COPY}</p>
+
+      <form id="chemai-form" class="chemai-composer" hidden>
         <div class="chemai-input-shell">
           <textarea
             id="chemai-input"
@@ -196,6 +200,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
   const countEl = root.querySelector('#chemai-count')
   const contextLabel = root.querySelector('#chemai-context-label')
   const serviceBadge = root.querySelector('#chemai-service-badge')
+  const lockedEl = root.querySelector('#chemai-locked')
   const mobileMedia = window.matchMedia('(max-width: 767px)')
 
   function syncVisualViewport() {
@@ -217,6 +222,16 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     serviceBadge.querySelector('span').textContent = label
   }
 
+  // The composer exists only after the server confirmed access (GET /api/chat → access: true).
+  // Hiding it is UX only; the server refuses every unauthorised request on its own.
+  function setAccess(granted) {
+    accessGranted = granted
+    form.hidden = !granted
+    suggestionsEl.hidden = !granted
+    input.disabled = !granted
+    lockedEl.hidden = granted
+  }
+
   async function checkService({ force = false } = {}) {
     if (statusChecked && !force) return serviceState
     statusChecked = true
@@ -233,7 +248,12 @@ export function initChemAI({ version = APP_VERSION } = {}) {
 
       const data = await response.json()
 
-      if (data?.configured) {
+      setAccess(data?.access === true)
+      if (!accessGranted) {
+        serviceBadge.title = ''
+        setServiceState('locked', 'Chưa mở')
+      }
+      else if (data?.configured) {
         providerName = data?.provider || 'AI'
         serviceBadge.title = data?.model ? `${providerName} · ${data.model}` : providerName
         setServiceState('online', providerName)
@@ -244,8 +264,9 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       }
     }
     catch {
+      setAccess(false)
       if (isLocalHost()) {
-        setServiceState('local', 'Local UI')
+        setServiceState('locked', 'Chưa mở')
       }
       else {
         setServiceState('offline', 'Ngoại tuyến')
@@ -509,8 +530,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         await checkService({ force: true })
       }
 
-      if (serviceState === 'local') {
-        throw Object.assign(new Error('local-ui'), { code: 'LOCAL_UI_ONLY' })
+      if (!accessGranted) {
+        throw Object.assign(new Error(''), { code: 'AI_ACCESS_LOCKED' })
       }
 
       if (serviceState === 'setup') {
@@ -534,7 +555,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
 
       const contentType = response.headers.get('content-type') || ''
       if (!contentType.includes('application/json')) {
-        throw Object.assign(new Error('invalid-response'), { code: isLocalHost() ? 'LOCAL_UI_ONLY' : 'INVALID_RESPONSE' })
+        throw Object.assign(new Error('invalid-response'), { code: 'INVALID_RESPONSE' })
       }
 
       const data = await response.json()
@@ -573,12 +594,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       else if (error?.name === 'AbortError') {
         renderSystemNotice('neutral', 'Đã dừng', 'Bạn đã dừng câu trả lời hiện tại.')
       }
-      else if (error?.code === 'LOCAL_UI_ONLY') {
-        renderSystemNotice(
-          'info',
-          'Đang ở chế độ kiểm tra giao diện',
-          'Vite localhost không chạy Cloudflare Pages Function. Sau khi deploy, hoặc khi chạy bằng Cloudflare Pages dev, ChemAI sẽ kết nối API thật.'
-        )
+      else if (error?.code === 'AI_ACCESS_LOCKED') {
+        setServiceState('locked', 'Chưa mở')
       }
       else if (error?.code === 'AI_NOT_CONFIGURED') {
         setServiceState('setup', 'Chưa cấu hình')
@@ -640,8 +657,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       clearTimeout(timer)
       controller = null
       setPending(false)
-      input.disabled = false
-      if (!mobileMedia.matches) input.focus()
+      input.disabled = !accessGranted
+      if (!mobileMedia.matches && !input.disabled) input.focus()
     }
   }
 

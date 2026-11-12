@@ -3,3 +3,10 @@
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-3.8-flash
 GEMINI_THINKING_LEVEL=low
+
+# ChemAI access gate (6.5.4). Missing/unknown mode = disabled. student_access is refused in code.
+# CHEMAI_ACCESS_MODE=disabled
+# CF_ACCESS_TEAM_DOMAIN=https://<team>.cloudflareaccess.com
+# CF_ACCESS_AUD=<Access application AUD tag>
+# CHEMAI_APPROVED_EMAILS=teacher@example.org
+# CHEMAI_INTERNAL_HOSTS=<preview host only, never the production host>
