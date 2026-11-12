@@ -289,7 +289,7 @@ await test('chat: every upstream retry is charged to the shared budget and stops
   })
   assert.notEqual(response.status, 200)
   assert.equal(fetchCalls, 2, 'two Gemini calls fit a budget of two')
-  assert.equal(budget.calls, 3, 'the third attempt was refused by the budget')
+  assert.equal(budget.calls, 4, 'one per-client check, two paid calls, then the third attempt refused')
 })
 
 globalThis.fetch = originalFetch

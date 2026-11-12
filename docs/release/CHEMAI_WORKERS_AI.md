@@ -1,5 +1,7 @@
 # ChemAI on Cloudflare Workers AI (Free) — ChemLab 6.5
 
+> **Superseded in 6.5.4:** ChemAI uses Gemini only (`functions/api/chat.js`); the Workers AI path and `_workersAI.js` were removed. See `reports/chemlab-6.5.4/GEMINI_RESTORATION.md`. Kept for history.
+
 Why: Google Gemini refuses this deployment ("User location is not supported for the API use.", verified 2026-10-21, see `CHEMAI_PRODUCTION_HOTFIX_6.5.md`). ChemAI now uses **Cloudflare Workers AI** through the Pages binding `env.AI` by default. Gemini code is kept and runs only when `CHEMAI_PROVIDER=gemini`.
 
 ## 1. Design

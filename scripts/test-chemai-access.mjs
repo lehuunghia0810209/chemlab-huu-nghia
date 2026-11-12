@@ -71,7 +71,7 @@ await test('default (no mode): logged-out user is refused on chat and feedback, 
 })
 
 await test('default: GET status reveals nothing about provider, model or secrets', async () => {
-  const payload = await (await chatGet({ request: request('/api/chat', { method: 'GET' }), env: full({ ' GEMINI_API_KEY': 'x', CHEMAI_PROVIDER: 'gemini' }) })).json()
+  const payload = await (await chatGet({ request: request('/api/chat', { method: 'GET' }), env: full({ ' GEMINI_API_KEY': 'x' }) })).json()
   assert.deepEqual(Object.keys(payload).sort(), ['access', 'configured', 'ok', 'release', 'service'])
   assert.equal(payload.access, false)
   assert.equal(payload.configured, false)
@@ -143,7 +143,7 @@ await test('internal_testing never opens on the production host or an unlisted h
 
 await test('Gemini is refused outside internal_testing (provider terms not verified)', async () => {
   const headers = { 'Cf-Access-Jwt-Assertion': await token() }
-  await assertLocked(await chatPost({ request: request('/api/chat', { headers }), env: full({ CHEMAI_ACCESS_MODE: 'approved_users', CHEMAI_PROVIDER: 'gemini' }) }), 'chat gemini')
+  await assertLocked(await chatPost({ request: request('/api/chat', { headers }), env: full({ CHEMAI_ACCESS_MODE: 'approved_users' }) }), 'chat gemini')
   await assertLocked(await feedbackPost({ request: request('/api/feedback', { headers }), env: full({ CHEMAI_ACCESS_MODE: 'approved_users' }) }), 'feedback gemini')
 })
 
@@ -168,16 +168,32 @@ await test('a refused request is answered before its body is read (no provider l
 assert.equal(calls.google, 0, 'no request may reach Google while locked')
 assert.equal(calls.ai, 0, 'no model call while locked')
 
-await test('approved_users + verified approved identity reaches the (mocked) Workers AI pipeline', async () => {
+await test('internal_testing + allowlisted preview host + verified approved identity reaches the (mocked) Gemini pipeline', async () => {
   const headers = { 'Cf-Access-Jwt-Assertion': await token({ email: 'Teacher@Example.org' }) }
-  const env = full({ CHEMAI_ACCESS_MODE: 'approved_users', ' GEMINI_API_KEY': 'x' })
-  const status = await (await chatGet({ request: request('/api/chat', { method: 'GET', headers }), env })).json()
+  const env = full({ CHEMAI_ACCESS_MODE: 'internal_testing', ' GEMINI_API_KEY': 'x' })
+  const status = await (await chatGet({ request: request('/api/chat', { host: internalHost, method: 'GET', headers }), env })).json()
   assert.equal(status.access, true)
+  assert.equal(status.provider, 'Gemini')
   assert.deepEqual(status.configWarnings, ['" GEMINI_API_KEY"'], 'malformed env name reported by name only')
   assert.ok(!JSON.stringify(status).includes('test-only-not-a-key'))
-  const response = await chatPost({ request: request('/api/chat', { headers }), env })
-  assert.equal(response.status, 200, await response.clone().text())
-  assert.equal(calls.ai, 1)
+  const saved = globalThis.fetch
+  let google = 0
+  globalThis.fetch = async (url, init) => {
+    if (!String(url).startsWith('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent')) return saved(url, init)
+    google += 1
+    assert.equal(init.headers['x-goog-api-key'], 'test-only-not-a-key', 'key only in the header, never in the URL')
+    return Response.json({ candidates: [{ content: { parts: [{ text: '{"answer":"H₂O là nước.","actions":[],"suggestions":[]}' }] }, finishReason: 'STOP' }] })
+  }
+  try {
+    const response = await chatPost({ request: request('/api/chat', { host: internalHost, headers }), env })
+    assert.equal(response.status, 200, await response.clone().text())
+    assert.equal((await response.json()).meta.provider, 'Gemini')
+  }
+  finally {
+    globalThis.fetch = saved
+  }
+  assert.equal(google, 1)
+  assert.equal(calls.ai, 0, 'no Workers AI call even with the AI binding present')
 })
 
 await test('JWKS is cached per isolate', () => assert.ok(calls.jwks <= 2, `jwks fetched ${calls.jwks} times`))

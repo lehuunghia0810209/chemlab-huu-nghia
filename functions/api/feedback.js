@@ -6,11 +6,10 @@
 // limit (CHEMAI_LIMITER and/or CHEMAI_QUOTA, see _limits.js) is configured, so
 // a public deployment cannot run up unbounded cost.
 import { findRubric, ANSWER_LIMITS } from '../../src/learning/rubrics.js'
-import { json, sameOrigin, clientRateKey, requestGemini, extractGenerateContentText, cleanStructuredText } from './chat.js'
+import { json, sameOrigin, clientRateKey, requestGemini, extractGenerateContentText, cleanStructuredText, geminiConfigured, geminiModel, geminiModelAllowed } from './chat.js'
 import { costBudgetConfigured, checkShared, dailyLimit } from './_limits.js'
 import { chemAIAccess, accessDenied } from './_access.js'
 
-const DEFAULT_MODEL = 'gemini-3.8-flash'
 const MAX_BODY_BYTES = 8 * 1024
 const TIMEOUT_MS = 25_000
 const BURST_WINDOW_MS = 60_000
@@ -26,7 +25,7 @@ const STATUSES = ['met', 'partial', 'missing']
 // ≤ 900 output tokens and ≤ 1500 answer characters. The budget must be exact
 // (Durable Object) unless the owner explicitly accepts KV's approximate count.
 export function feedbackEnabled(env) {
-  return env?.CHEMAI_FEEDBACK === 'on' && Boolean(env?.GEMINI_API_KEY) && costBudgetConfigured(env)
+  return env?.CHEMAI_FEEDBACK === 'on' && geminiConfigured(env) && geminiModelAllowed(env) && costBudgetConfigured(env)
 }
 
 function burst(key, now = Date.now()) {
@@ -157,8 +156,8 @@ export async function feedbackHandler({ request, env }) {
   try {
     // One upstream attempt only: a failed request is cheaper to retry by the learner than automatically.
     const result = await requestGemini({
-      model: String(env.GEMINI_MODEL || DEFAULT_MODEL),
-      apiKey: env.GEMINI_API_KEY,
+      model: geminiModel(env),
+      env,
       signal: controller.signal,
       body: {
         system_instruction: { parts: [{ text: systemInstructions() }] },

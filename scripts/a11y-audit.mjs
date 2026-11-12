@@ -291,8 +291,8 @@ const SCENARIOS = [
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(route.request().method() === 'GET'
-          ? { ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }
-          : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub' } })
+          ? { ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub' }
+          : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Gemini', model: 'stub' } })
       }))
       await page.click('[data-chemai-open]:visible')
       await page.fill('#chemai-input', 'Ví dụ có công thức')

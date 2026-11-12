@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { APP_VERSION } from '../src/appMeta.js'
+import { consume, refund } from '../workers/chemai-quota/src/index.js'
 
 import {
   chatStatus as onRequestGet,
@@ -13,19 +14,21 @@ import {
 const origin = 'https://chemlab.example'
 
 // Durable Object budget mock: an exact, synchronous counter (limit = Infinity by default).
+// One counter per scope, like the real namespace; `limit` applies to the site-wide chat scope.
 function budget(limit = Infinity) {
-  let used = 0
+  const counters = new Map()
   return {
     calls: 0,
     idFromName: name => name,
-    get() {
+    get(id) {
       const namespace = this
       return {
         async fetch() {
           namespace.calls += 1
-          const allowed = used < limit
-          if (allowed) used += 1
-          return Response.json({ allowed, used })
+          const used = counters.get(id) || 0
+          const allowed = used < (id === 'budget:chat' ? limit : Infinity)
+          if (allowed) counters.set(id, used + 1)
+          return Response.json({ allowed, used: counters.get(id) || 0 })
         }
       }
     }
@@ -72,7 +75,14 @@ const statusResponse = onRequestGet({
 const statusPayload = await statusResponse.json()
 assert.equal(statusResponse.status, 200)
 assert.equal(statusPayload.configured, false)
-assert.equal(statusPayload.provider, 'Workers AI')
+assert.equal(statusPayload.provider, 'Gemini')
+assert.equal(statusPayload.model, null)
+// A key stored under " GEMINI_API_KEY" (leading space) is never read: still not configured.
+assert.equal((await onRequestGet({ env: { ' GEMINI_API_KEY': 'x', CHEMAI_BUDGET: {} } }).json()).configured, false)
+// Only free-tier, documented models: anything else is refused before a call.
+assert.equal((await onRequestGet({ env: { GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-2.5-pro' } }).json()).configured, false)
+assert.equal((await onRequestGet({ env: { GEMINI_API_KEY: 'k' } }).json()).model, 'gemini-3.8-flash')
+assert.equal((await onRequestGet({ env: { GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-3.6-flash' } }).json()).model, 'gemini-3.6-flash')
 assert.equal(statusPayload.release, APP_VERSION)
 
 const noKeyResponse = await onRequestPost({
@@ -544,7 +554,8 @@ for (const [label, env] of [
   }
 }
 
-/* Concurrent requests never exceed the budget: 8 at once, budget 3 → exactly 3 upstream calls. */
+/* Concurrent requests never exceed the budget: 8 at once, budget 3 → exactly 3 upstream calls;
+   the in-flight cap of 6 turns the last 2 away before they reach the budget. */
 {
   const shared = budget(3)
   let calls = 0
@@ -555,7 +566,8 @@ for (const [label, env] of [
       env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: shared }
     })))
     assert.equal(responses.filter(item => item.status === 200).length, 3)
-    assert.equal(responses.filter(item => item.status === 429).length, 5)
+    assert.equal(responses.filter(item => item.status === 429).length, 3)
+    assert.equal(responses.filter(item => item.status === 503).length, 2)
     assert.equal(calls, 3)
   }
   finally {
@@ -636,6 +648,68 @@ try {
 }
 finally {
   Date.now = originalNow
+}
+
+// 6.5.4 Gemini-only path: protections restored from the Workers AI path.
+const geminiPayload = (parts, finishReason = 'STOP') => new Response(JSON.stringify({ candidates: [{ content: { role: 'model', parts }, finishReason }] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+const answerJSON = answer => JSON.stringify({ answer, actions: [], suggestions: [] })
+{
+  const truncated = await requestWithMock(async () => geminiPayload([{ text: '{"answer":"Bước 1: n = 0,1 mol. Bước 2' }], 'MAX_TOKENS'))
+  assert.deepEqual([truncated.response.status, truncated.payload.code], [502, 'AI_INCOMPLETE'], 'a cut-off answer is never shown as complete')
+
+  const thought = await requestWithMock(async () => geminiPayload([{ text: 'Suy nghĩ nội bộ: thử nhiều cách', thought: true }, { text: answerJSON('Nước là H₂O.') }]))
+  assert.equal(thought.payload.answer, 'Nước là H₂O.')
+  assert.ok(!JSON.stringify(thought.payload).includes('Suy nghĩ nội bộ'), 'thought parts never reach learners')
+
+  let calls = 0
+  const paidModel = await requestWithMock(async () => { calls += 1; return geminiSuccess() }, { GEMINI_MODEL: 'gemini-2.5-pro' })
+  assert.deepEqual([paidModel.response.status, paidModel.payload.code, calls], [503, 'AI_MODEL_NOT_ALLOWED', 0], 'unlisted model refused before any call')
+
+  const urls = []
+  const paidFallback = await requestWithMock(async url => {
+    urls.push(String(url))
+    return geminiError(404, 'NOT_FOUND', 'models/gemini-3.8-flash is not found for API version v1beta, or is not supported for generateContent.')
+  }, { GEMINI_FALLBACK_MODELS: 'gemini-2.5-pro' })
+  assert.deepEqual([paidFallback.response.status, paidFallback.payload.code], [502, 'GEMINI_MODEL_UNAVAILABLE'])
+  assert.equal(urls.length, 1, 'no fallback call when the only listed fallback is not allowed')
+  assert.ok(urls.every(url => !url.includes('gemini-2.5-pro')), 'an unlisted fallback model is ignored')
+  assert.ok(urls.every(url => url.startsWith('https://generativelanguage.googleapis.com/v1beta/models/') && url.endsWith(':generateContent') && !url.includes('key=')), 'documented endpoint, key never in the URL')
+}
+{
+  // Per-client daily limit (exact budget): the second question of the day is refused before Gemini.
+  let calls = 0
+  globalThis.fetch = async () => { calls += 1; return geminiSuccess() }
+  const states = new Map()
+  const exactBudget = { idFromName: name => name, get: id => ({ async fetch(url, init) {
+    if (!states.has(id)) states.set(id, { day: '', used: 0 })
+    const body = JSON.parse(init.body)
+    return Response.json(new URL(url).pathname === '/refund' ? refund(states.get(id), body) : consume(states.get(id), body))
+  } }) }
+  const env = { GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: exactBudget, CHEMAI_DAILY_LIMIT_PER_CLIENT: '1' }
+  try {
+    const ask = () => onRequestPost({ request: makeRequest({ message: `H2O là gì? ${calls}` }, { 'CF-Connecting-IP': '198.51.100.230' }), env })
+    assert.equal((await ask()).status, 200)
+    const second = await ask()
+    assert.deepEqual([second.status, (await second.json()).code, calls], [429, 'AI_CLIENT_LIMIT', 1])
+
+    // The same question from the same client while it is still running → 409, one upstream call.
+    let release
+    const gate = new Promise(resolve => { release = resolve })
+    calls = 0
+    globalThis.fetch = async () => { calls += 1; await gate; return geminiSuccess() }
+    const dupEnv = { GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: budget() }
+    const same = () => onRequestPost({ request: makeRequest({ message: 'Fe có hóa trị mấy?' }, { 'CF-Connecting-IP': '198.51.100.231' }), env: dupEnv })
+    const first = same()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    const duplicate = await same()
+    assert.deepEqual([duplicate.status, (await duplicate.json()).code], [409, 'DUPLICATE_REQUEST'])
+    release()
+    assert.equal((await first).status, 200)
+    assert.equal(calls, 1)
+  }
+  finally {
+    globalThis.fetch = originalFetch
+  }
 }
 
 console.log('\nPASS — ChemAI Gemini API mock tests passed.\n')

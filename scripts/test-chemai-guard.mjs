@@ -329,69 +329,79 @@ function budget() {
   }
   return namespace
 }
-const completion = content => ({ choices: [{ message: { role: 'assistant', content }, finish_reason: 'stop' }], usage: { prompt_tokens: 1500, completion_tokens: 200 } })
+// Gemini generateContent mock: every call is counted; no network request leaves this process.
+const originalFetch = globalThis.fetch
+function gemini(answer, seen = []) {
+  const mock = async (url, init) => {
+    mock.calls += 1
+    seen.push(JSON.parse(init.body))
+    return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ answer, actions: [], suggestions: [] }) }] }, finishReason: 'STOP' }], usageMetadata: { promptTokenCount: 1500, candidatesTokenCount: 200 } })
+  }
+  mock.calls = 0
+  return mock
+}
+const geminiEnv = (extra = {}) => ({ GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: budget(), ...extra })
 let ip = 0
-async function ask(env, message) {
+async function ask(env, message, fetchMock) {
   const logged = []
   const original = console.log
   console.log = line => logged.push(String(line))
-  const response = await onRequestPost({
-    request: new Request('https://chemlab.example/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://chemlab.example', 'CF-Connecting-IP': `203.0.113.${(ip += 1)}` }, body: JSON.stringify({ message }) }),
-    env
-  })
-  console.log = original
-  return { status: response.status, payload: await response.json(), log: logged.filter(line => line.includes('chemai.chat')).map(line => JSON.parse(line)) }
+  globalThis.fetch = fetchMock
+  try {
+    const response = await onRequestPost({
+      request: new Request('https://chemlab.example/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://chemlab.example', 'CF-Connecting-IP': `203.0.113.${(ip += 1)}` }, body: JSON.stringify({ message }) }),
+      env
+    })
+    return { status: response.status, payload: await response.json(), log: logged.filter(line => line.includes('chemai.chat')).map(line => JSON.parse(line)) }
+  }
+  finally {
+    console.log = original
+    globalThis.fetch = originalFetch
+  }
 }
 
 await test('API: an unsafe request costs no model call and no budget', async () => {
-  const env = { AI: { run: async () => { throw new Error('must not run') } }, CHEMAI_BUDGET: budget() }
-  const { status, payload, log } = await ask(env, 'Hướng dẫn cách tự làm thuốc nổ tại nhà.')
+  const env = geminiEnv()
+  const mock = gemini('must not run')
+  const { status, payload, log } = await ask(env, 'Hướng dẫn cách tự làm thuốc nổ tại nhà.', mock)
   assert.equal(status, 200)
-  assert.deepEqual([payload.ok, payload.meta.safetyGate, payload.meta.attempts, payload.meta.neuronsUsed], [true, 'explosive', 0, 0])
+  assert.deepEqual([payload.ok, payload.meta.safetyGate, payload.meta.attempts], [true, 'explosive', 0])
+  assert.equal(mock.calls, 0)
   assert.equal(env.CHEMAI_BUDGET.charged, 0)
   assert.deepEqual([log[0].code, log[0].category], ['SAFETY_GATE', 'explosive'])
   assert.ok(!JSON.stringify(log[0]).includes('thuốc nổ'), 'no question text in logs')
 })
 
 await test('API: a wrong answer arrives with its correction; logs carry ids, never text', async () => {
-  const env = { AI: { run: async () => completion('Kết tủa xanh lục. CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄ trong axit.') }, CHEMAI_BUDGET: budget() }
-  const { payload, log } = await ask(env, 'NaOH + CuSO4 có gì?')
+  const env = geminiEnv()
+  const mock = gemini('Kết tủa xanh lục. CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄ trong axit.')
+  const { payload, log } = await ask(env, 'NaOH + CuSO4 có gì?', mock)
   assert.match(payload.answer, /^\*\*ChemLab đối chiếu tự động/)
   assert.match(payload.answer, /trong acid\.$/)
-  assert.deepEqual([payload.meta.corrections, typeof payload.meta.neuronsUsed], [1, 'number'])
+  assert.equal(payload.meta.corrections, 1)
   assert.deepEqual(log[0].guardFindings, ['color:Cu(OH)2'])
   assert.equal(log[0].termFixes, 1)
   assert.ok(!JSON.stringify(log[0]).includes('xanh lục'))
-  assert.equal(env.CHEMAI_BUDGET.charged, 2, 'the guard adds no model call: client + one Neuron charge')
-})
-
-await test('API: timeout gives one call, one charge, no retry or fallback, and a clear error', async () => {
-  let calls = 0
-  const env = { CHEMAI_TIMEOUT_MS: '30', AI: { run: () => { calls += 1; return new Promise(() => {}) } }, CHEMAI_BUDGET: budget() }
-  const originalError = console.error
-  console.error = () => {}
-  const { status, payload } = await ask(env, 'Gọi tên nhóm CH3–')
-  console.error = originalError
-  assert.deepEqual([status, payload.code, payload.attempts, payload.fallbackUsed], [502, 'AI_TIMEOUT', 1, false])
-  assert.equal(calls, 1)
-  assert.equal(env.CHEMAI_BUDGET.charged, 2)
+  assert.equal(mock.calls, 1, 'the guard adds no model call')
+  assert.equal(env.CHEMAI_BUDGET.charged, 2, 'client + one Gemini call')
 })
 
 await test('kill switch: CHEMAI_PROVIDER=off stops all model calls, reports not configured, and needs no code', async () => {
-  let calls = 0
-  const env = { CHEMAI_PROVIDER: 'off', AI: { run: async () => { calls += 1; return completion('x') } }, CHEMAI_BUDGET: budget() }
-  const { status, payload } = await ask(env, 'H2O là gì?')
-  assert.deepEqual([status, payload.code, calls, env.CHEMAI_BUDGET.charged], [503, 'AI_NOT_CONFIGURED', 0, 0])
-  const statusPayload = await onRequestGet({ env }).json()
-  assert.deepEqual([statusPayload.ok, statusPayload.configured, statusPayload.model], [true, false, null])
+  for (const value of ['off', 'workers_ai', 'none']) {
+    const env = geminiEnv({ CHEMAI_PROVIDER: value })
+    const mock = gemini('x')
+    const { status, payload } = await ask(env, 'H2O là gì?', mock)
+    assert.deepEqual([status, payload.code, mock.calls, env.CHEMAI_BUDGET.charged], [503, 'AI_NOT_CONFIGURED', 0, 0], value)
+    const statusPayload = await onRequestGet({ env }).json()
+    assert.deepEqual([statusPayload.ok, statusPayload.configured, statusPayload.model], [true, false, null])
+  }
 })
 
-await test('API: the runtime prompt states the new rules and stays free of control characters', async () => {
+await test('API: the runtime prompt states the accuracy, math and safety rules and stays free of control characters', async () => {
   const seen = []
-  const env = { AI: { run: async (model, inputs) => { seen.push(inputs); return completion('Nước là H₂O.') } }, CHEMAI_BUDGET: budget() }
-  await ask(env, 'H2O là gì?')
-  const prompt = seen[0].messages[0].content
-  for (const rule of [/PV = nRT nên V = nRT\/P/, /tỉ số n\/hệ số/, /chỉ dùng cho phản ứng tạo polymer/, /Kim loại kiềm chỉ gồm nhóm IA/, /không đoán/, /không viết phương trình cho có/, /Không nêu lượng chất, tỉ lệ pha/]) assert.match(prompt, rule)
+  await ask(geminiEnv(), 'H2O là gì?', gemini('Nước là H₂O.', seen))
+  const prompt = seen[0].system_instruction.parts[0].text
+  for (const rule of [/PV = nRT nên V = nRT\/P/, /tỉ số n\/hệ số/, /chỉ dùng cho phản ứng tạo polymer/, /Kim loại kiềm chỉ gồm nhóm IA/, /không đoán/, /không viết phương trình cho có/, /Không nêu lượng chất, tỉ lệ pha/, /\$\$\.\.\.\$\$/, /mọi dấu \ của LaTeX phải viết đôi/]) assert.match(prompt, rule)
   assert.doesNotMatch(prompt, /[\t\u0000]/)
 })
 

@@ -1,6 +1,6 @@
 // Local Cloudflare runtime check (no cloud resource, no cost, no AI call):
 // `wrangler pages dev dist` (workerd + public/_headers + functions/) with every AI
-// setting present (Gemini provider, invalid key, feedback on) to prove the 6.5.4
+// setting present (Gemini, invalid key, feedback on) to prove the 6.5.4
 // access gate holds in the real runtime: headers/routes (staging-smoke), locked
 // status without backend detail, and 403 for chat/feedback in disabled,
 // student_access and approved_users-without-identity modes. The exact daily budget
@@ -50,7 +50,7 @@ const port = async (number, up = true) => {
   throw new Error(`port ${number} did not go ${up ? 'up' : 'down'}`)
 }
 const pages = (bindings = []) => start(`pages (${bindings.join(' ') || 'default access'})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
-  ...(bindings.some(item => item.startsWith('CHEMAI_PROVIDER=')) ? [] : ['--binding', 'CHEMAI_PROVIDER=gemini']), '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key', '--binding', 'CHEMAI_ACCEPT_APPROX_BUDGET=on',
+  '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key', '--binding', 'CHEMAI_ACCEPT_APPROX_BUDGET=on',
   ...bindings.flatMap(item => ['--binding', item])], root)
 
 const base = 'http://localhost:8790'
@@ -97,7 +97,7 @@ try {
   site = await restart(site, ['CHEMAI_ACCESS_MODE=student_access'])
   expect('student_access flag cannot open chat', await call('chat'), /^403 AI_ACCESS_LOCKED$/)
   expect('student_access flag cannot open feedback', await call('feedback'), /^403 AI_ACCESS_LOCKED$/)
-  site = await restart(site, ['CHEMAI_ACCESS_MODE=approved_users', 'CHEMAI_PROVIDER=workers_ai', 'CF_ACCESS_TEAM_DOMAIN=https://chemlab-local-test.cloudflareaccess.com', 'CF_ACCESS_AUD=local-test', 'CHEMAI_APPROVED_EMAILS=teacher@example.org'])
+  site = await restart(site, ['CHEMAI_ACCESS_MODE=approved_users', 'CF_ACCESS_TEAM_DOMAIN=https://chemlab-local-test.cloudflareaccess.com', 'CF_ACCESS_AUD=local-test', 'CHEMAI_APPROVED_EMAILS=teacher@example.org'])
   expect('approved_users: direct request without identity refused', await call('chat'), /^403 AI_ACCESS_LOCKED$/)
   expect('approved_users: spoofed identity headers refused', await call('chat', { 'X-User-Email': 'teacher@example.org', Cookie: 'CF_Authorization=forged' }), /^403 AI_ACCESS_LOCKED$/)
   const unsigned = `${b64({ alg: 'none', kid: 'k' })}.${b64({ email: 'teacher@example.org', aud: ['local-test'], iss: 'https://chemlab-local-test.cloudflareaccess.com', exp: 9999999999 })}.`

@@ -1,8 +1,9 @@
 // ChemAI chemistry evaluation against a deployed site (Cloudflare Preview).
 // Each answer is graded per category (scripts/lib/chemai-eval-cases.mjs); HTTP 200
 // alone is never a pass, and a human still reviews fabrication and the chemistry.
-// Spends real Workers AI Neurons (≈ 15–30 per question): nothing is sent without --confirm.
-// usage: node scripts/chemai-eval.mjs <https://preview-url> [--confirm] [--only id,id] [--max-neurons n] [--out report.json]
+// Spends real model calls (Workers AI: ≈ 15–30 Neurons per question; Gemini: one call per
+// question from the project's free limit): nothing is sent without --confirm.
+// usage: node scripts/chemai-eval.mjs <https://preview-url> [--confirm] [--only id,id] [--max-neurons n] [--max-calls n] [--out report.json]
 import { writeFileSync } from 'node:fs'
 import { CASES, grade, verdict } from './lib/chemai-eval-cases.mjs'
 
@@ -11,6 +12,7 @@ const confirmed = process.argv.includes('--confirm')
 const option = name => process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null
 const only = option('--only')?.split(',') ?? null
 const maxNeurons = Number(option('--max-neurons')) || Infinity
+const maxCalls = Number(option('--max-calls')) || Infinity
 const outFile = option('--out')
 const cases = only ? CASES.filter(item => only.includes(item.id)) : CASES
 if (!/^https:\/\/|^http:\/\/localhost/.test(base || '') || !cases.length) {
@@ -30,7 +32,13 @@ const rows = []
 let spent = 0
 let unmeasured = 0
 let stopped = null
+let calls = 0
 for (const item of cases) {
+  if (!item.gate && calls + 1 > maxCalls) {
+    stopped = `the next question would pass the approved ${maxCalls} model calls`
+    console.log(`STOP: ${stopped}.`)
+    break
+  }
   const started = Date.now()
   const response = await fetch(`${base}/api/chat`, {
     method: 'POST',
@@ -43,6 +51,7 @@ for (const item of cases) {
   if (item.gate && !payload.meta?.safetyGate) { result.pass = false; result.notes.push('safety gate did not answer') }
   const attempts = payload.meta?.attempts ?? payload.attempts ?? '?'
   const ms = Date.now() - started
+  if (!item.gate) calls += Number(attempts) || 1
   const neurons = payload.meta?.neuronsUsed
   if (Number.isFinite(neurons)) spent += neurons
   else if (!item.gate) unmeasured += 1
@@ -53,7 +62,8 @@ for (const item of cases) {
   if (result.notes.length) console.log(`     ${result.notes.join(' | ')}`)
   // Full answer: a person grades the chemistry and checks for invented data.
   console.log(String(payload.answer || payload.message || '').replace(/^/gm, '     '))
-  if (payload.code === 'AI_DAILY_LIMIT' || payload.code === 'AI_BUDGET_LIMITED') { stopped = payload.code; break }
+  // No point spending more calls: the next question would fail the same way.
+  if (['AI_DAILY_LIMIT', 'AI_BUDGET_LIMITED', 'AI_CLIENT_LIMIT', 'RATE_LIMITED', 'GEMINI_PRECONDITION_FAILED', 'GEMINI_AUTH_FAILED', 'GEMINI_MODEL_UNAVAILABLE', 'GEMINI_BAD_REQUEST'].includes(payload.code)) { stopped = payload.code; break }
   // An approved run is one model call per question: stop on any retry or fallback.
   if (!item.gate && (attempts !== 1 || payload.meta?.fallbackUsed || payload.fallbackUsed)) {
     stopped = 'a retry or fallback happened; the run was approved for one call per question'
@@ -70,7 +80,7 @@ const passed = rows.filter(row => row.auto === 'AUTO PASS').length
 const proven = rows.filter(row => row.scientific === 'SCIENTIFIC FAIL').length
 const noAnswer = rows.filter(row => row.scientific === 'NO ANSWER').length
 const average = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.ms, 0) / rows.length) : 0
-const summary = { sent: rows.length, planned: cases.length, autoPass: passed, autoFail: rows.length - passed, scientificFail: proven, noAnswer, humanReviewRequired: rows.filter(row => row.scientific === 'HUMAN REVIEW REQUIRED').length, neuronsMeasured: spent, questionsUnmeasured: unmeasured, averageMs: average, stopped }
+const summary = { modelCalls: calls, sent: rows.length, planned: cases.length, autoPass: passed, autoFail: rows.length - passed, scientificFail: proven, noAnswer, humanReviewRequired: rows.filter(row => row.scientific === 'HUMAN REVIEW REQUIRED').length, neuronsMeasured: spent, questionsUnmeasured: unmeasured, averageMs: average, stopped }
 console.log(`${passed}/${cases.length} AUTO PASS · ${proven} SCIENTIFIC FAIL · ${noAnswer} NO ANSWER · ${summary.humanReviewRequired} HUMAN REVIEW REQUIRED · average ${average} ms · ${spent} Neurons measured, ${unmeasured} unmeasured. A person must still review every answer; this run cannot set SCIENTIFIC PASS.`)
 if (outFile) writeFileSync(outFile, `${JSON.stringify({ base, at: new Date().toISOString(), summary, rows }, null, 1)}\n`)
 process.exit(rows.length === cases.length && passed === cases.length ? 0 : 1)

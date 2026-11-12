@@ -357,7 +357,7 @@ async function interactionChecks(browser, baseURL) {
 async function chemAIPhoneCheck(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
   // Layout of the composer as an approved user sees it (stubbed GET; nothing is sent).
-  await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }) }))
+  await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub' }) }))
   await openView(page, baseURL, 'home')
   await page.click('.app-topbar__ai')
   await page.waitForSelector('#chemai-form:not([hidden])', { timeout: 10000 })
@@ -388,8 +388,8 @@ async function chemAINoticeJourney(browser, baseURL) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(route.request().method() === 'GET'
-        ? { ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }
-        : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub', corrections: 1 } })
+        ? { ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub' }
+        : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Gemini', model: 'stub', corrections: 1 } })
     }))
     await openView(page, baseURL, 'home')
     await page.click('[data-chemai-open]:visible')
@@ -464,8 +464,8 @@ async function chemAIMathJourney(browser, baseURL) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(route.request().method() === 'GET'
-        ? { ok: true, access: true, configured: true, provider: 'Workers AI', model: 'stub' }
-        : { ok: true, answer: MATH_ANSWER, actions: [], suggestions: [], meta: { provider: 'Workers AI', model: 'stub' } })
+        ? { ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub' }
+        : { ok: true, answer: MATH_ANSWER, actions: [], suggestions: [], meta: { provider: 'Gemini', model: 'stub' } })
     }))
     await openView(page, baseURL, 'home')
     await page.click('[data-chemai-open]:visible') // the topbar button is phone-only
