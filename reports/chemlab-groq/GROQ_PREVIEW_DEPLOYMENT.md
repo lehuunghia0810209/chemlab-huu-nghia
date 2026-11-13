@@ -164,3 +164,41 @@ No variable name contains whitespace.
 | Unapproved signed-in → 403 | BLOCKED (no new deployment; needs the owner's browser session) |
 | Approved → `access:true`, `configured:true` | BLOCKED (same) |
 | Live Groq inference | NOT RUN (by design) |
+
+## 8. Git ref fix and successful redeploy (2026-11-13 ~16:06Z)
+
+**Git ref error.** The Dashboard retry (`139e7759`) failed at `clone_repo` with `fatal: couldn't find remote ref 7e1a5c7`. Confirmed cause: the branch had never been pushed, so the Dashboard's Git clone could not find the commit. Earlier deployments were direct uploads, which do not need the remote.
+
+**Push.** `feature/chemlab-groq-chemai` was pushed to origin as a new branch at `aa13124` (no force). `main` on origin is still `873417b`. Secret scan of `873417b..aa13124`: only the fake test key and `example.org` addresses; no `.dev.vars` or `.env` tracked.
+
+**Branch control (API):** source `github`, production branch `main`, preview setting `all`. The Groq branch can only produce Preview deployments.
+
+**GitHub integration did not build `aa13124`.** GitHub shows 0 check-runs and 0 deployments for that commit, while earlier commits (`873417b`, `9ae14d4`) each have a "Cloudflare Pages" check. The Pages API returned `no healthy upstream` for about 30 minutes and Cloudflare Status listed "Workers API availability" as an incident. Strong hypothesis: the push webhook was dropped during the incident. Not confirmed.
+
+**Redeploy.** One direct upload after the API recovered succeeded: deployment **`c006307a`** (commit label `aa13124`; `dist` built from `7e1a5c7`, whose code is identical: the two commits differ only in this report). The earlier "Failed to publish your Function" errors were therefore the platform incident, not the configuration: the same bundle and the same variables published once the incident eased.
+
+**Snapshot of `c006307a` (names and types only):**
+
+| Item | Result |
+|---|---|
+| `CF_ACCESS_AUD` | 64 hex, equals the AUD in the live Access redirect |
+| `CF_ACCESS_TEAM_DOMAIN` | equals the Access login origin |
+| `CHEMAI_ACCESS_MODE` | `internal_testing` |
+| `CHEMAI_INTERNAL_HOSTS` | the Groq alias |
+| `CHEMAI_APPROVED_EMAILS` | 1 well-formed entry |
+| `GROQ_API_KEY` | secret_text, present |
+| `CHEMAI_BUDGET` | Durable Object `chemai-quota/QuotaCounter` |
+
+**Checks:**
+
+| Check | Status |
+|---|---|
+| Anonymous GET/POST `/api/chat`, GET `/` on alias and hash URL (6 requests) | PASS — 302 to Access |
+| Forged JWT POST | PASS — 302 |
+| Production (`afea91b9`, `release 6.5.4`, `access:false`, `configured:false`) | PASS — unchanged |
+| Signed-in unapproved account → 403 | NOT RUN (needs the owner's signed-in browser; Chrome extension not connected) |
+| Signed-in approved account → `access:true`, `configured:true` | NOT RUN (same) |
+| Runtime JWT verification and quota binding on a real request | NOT RUN (same) |
+| Live Groq inference | NOT RUN (by design) |
+
+Failed deployments left in place: `385c507d`, `b2df561c`, `306a8411`, `139e7759`.
