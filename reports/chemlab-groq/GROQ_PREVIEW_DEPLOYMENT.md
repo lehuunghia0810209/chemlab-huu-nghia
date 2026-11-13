@@ -202,3 +202,64 @@ No variable name contains whitespace.
 | Live Groq inference | NOT RUN (by design) |
 
 Failed deployments left in place: `385c507d`, `b2df561c`, `306a8411`, `139e7759`.
+
+## 9. Approved-account check and live-test preparation (2026-11-13 ~16:15Z)
+
+### 9.1 Configuration — PASS
+
+Owner-reported result of a signed-in, approved `GET /api/chat` on the Preview alias (checked by the owner in their own browser; not observed by the agent):
+
+`ok:true, access:true, configured:true, configWarnings:[], service:ChemAI, provider:Groq, release:6.5.4, model:openai/gpt-oss-120b`
+
+What this proves at runtime on `c006307a`:
+- the Access JWT was verified against the team keys, and AUD, issuer and the email allowlist match (`access:true`);
+- `GROQ_API_KEY` is readable by the Function, the model is on the allowlist and the `CHEMAI_BUDGET` binding is usable (`configured:true`);
+- no malformed variable names (`configWarnings:[]`).
+
+`GET /api/chat` makes no provider call.
+
+### 9.2 Security and quota regression (mock, local) — PASS
+
+| Suite | Result |
+|---|---|
+| `test-chemai-groq.mjs` (429 + Retry-After, retries charged to the shared budget, fail-closed without key/model/budget, gate in front of Groq) | PASS 16 |
+| `test-chemai-access.mjs` (anonymous, forged JWT, signed-in-but-not-approved, `student_access` refused) | PASS 15 |
+| `test-chemai-api.mjs` (Gemini mock) | PASS (exit 0) |
+| `test-chemai-guard.mjs` | PASS 23 |
+| `test-feedback-api.mjs` (limits) | PASS 20 |
+| `local-cloudflare-check.mjs` (workerd) | PASS 10/10 |
+
+### 9.3 Unapproved signed-in account — NOT RUN (live)
+
+No test account exists that passes the Access policy but is absent from `CHEMAI_APPROVED_EMAILS`. The case is covered by mock only (`NOT_APPROVED` → 403, status shows "signed in but not approved"). To test live, the owner would add a second adult email to the Access policy only (an Access change, owner's decision).
+
+### 9.4 Groq terms for the tester — owner confirmation required
+
+Groq Services Agreement, as read earlier in this work: users must be 18 or older; the service is not for consumer use; the customer is responsible for its users. The agent cannot verify a person's age or role. Precondition for a live call: the owner confirms that the single approved tester is an adult acting for the project, not a student.
+
+### 9.5 Prepared live test — NOT RUN, waiting for separate approval
+
+`scripts/chemai-eval.mjs` cannot be used: it sends no Access identity, and an Access service token carries no email, so the Function would refuse it. The test therefore runs in the approved tester's signed-in browser, through the normal ChemAI panel, while the agent tails `c006307a`.
+
+| # | Question (from `chemai-eval-cases.mjs`) | Expected |
+|---|---|---|
+| 1 | Khối lượng của 0,5 mol H2SO4 là bao nhiêu gam? | 49 g (M = 98 g/mol) |
+| 2 | Cân bằng phương trình: Fe + O2 → Fe3O4 | 3Fe + 2O2 → Fe3O4 |
+| 3 | Tính pH của dung dịch HCl 0,01 M. | pH = 2 |
+
+Cost ceiling: 3 questions, at most 3 upstream attempts each = 9 Groq requests worst case, against a Developer limit of 30 RPM / 1K RPD.
+
+Recorded per question: HTTP status, answer correctness, Markdown/KaTeX rendering, `usage` tokens and latency from the `chemai.chat` log line, budget consumption, and that no key appears in logs or responses.
+
+Stop conditions: any `GROQ_AUTH_FAILED`, `GROQ_BAD_REQUEST`, `AI_MODEL_UNAVAILABLE`, 429, or a wrong chemistry answer.
+
+### 9.6 Status
+
+| Area | Status |
+|---|---|
+| Preview configuration (snapshot + approved GET) | **PASS** |
+| Anonymous / forged JWT blocked | **PASS** |
+| Mock security and quota regression | **PASS** |
+| Unapproved signed-in account, live | NOT RUN |
+| **Live Groq inference** | **NOT RUN** |
+| Production | unchanged (6.5.4, AI locked) |
