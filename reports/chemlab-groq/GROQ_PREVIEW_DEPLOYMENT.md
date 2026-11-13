@@ -116,3 +116,51 @@ Notes:
 | Live Groq inference | NOT RUN (by design) |
 
 Nothing was pushed or merged to `main`. No Production deploy, secret or Access change was made. The Workers AI binding was not touched.
+
+## 7. Redeploy with internal_testing configuration (2026-11-13 ~15:23Z) — BLOCKED
+
+**Preview configuration, re-verified through the API** (names and types only; no secret values read):
+
+| Name | Type | Check |
+|---|---|---|
+| `CF_ACCESS_AUD` | plain_text | 64 hex characters; **equals** the AUD in the live Access login redirect |
+| `CF_ACCESS_TEAM_DOMAIN` | plain_text | `https://chemlab-edulab-pages.cloudflareaccess.com`; **equals** the redirect origin |
+| `CHEMAI_ACCESS_MODE` | plain_text | `internal_testing` |
+| `CHEMAI_INTERNAL_HOSTS` | plain_text | `feature-chemlab-groq-chemai.chemlab-edulab.pages.dev` |
+| `CHEMAI_APPROVED_EMAILS` | plain_text | 1 entry, well-formed (value not reported) |
+| `CHEMAI_BUDGET_SCOPE` / `CHEMAI_DAILY_NEURONS` | plain_text | `preview` / `2000` |
+| `GROQ_API_KEY` | secret_text | present |
+| `CHEMAI_BUDGET` | Durable Object | `chemai-quota/QuotaCounter`, present once (nothing added) |
+
+No variable name contains whitespace.
+
+**Deploy:**
+- Build of `7e1a5c7` PASS; `dist/` key scan 0 hits.
+- Three `wrangler pages deploy` attempts all failed at the publish stage:
+
+  | Deployment | Error |
+  |---|---|
+  | `385c507d` | `Failed to publish your Function. Got error: Unknown internal error occurred.` |
+  | `b2df561c` | same |
+  | `306a8411` | same |
+
+- Each failed snapshot holds the new variables and `CHEMAI_BUDGET`.
+- The only difference from the successful `66052d2f` is the five new access variables; the Functions bundle is identical.
+- Cloudflare Status at that time reported **Workers: degraded_performance**.
+- Root cause is **not confirmed**. Strong hypothesis: a platform-side issue. Unverified possibility: something in the new Dashboard values that the publisher rejects.
+- Retries stopped after 3 attempts.
+
+**State after the attempts:**
+- The alias still serves `66052d2f`, which has the old env (mode `disabled`). Anonymous access → 302 to Access.
+- Production is unchanged: `release 6.5.4`, `access:false`, `configured:false`.
+- The failed deployments were left in place; deleting them needs owner approval.
+
+| Step | Status |
+|---|---|
+| Configuration names, types, AUD, domain, budget binding | PASS |
+| New Preview deploy | BLOCKED (Cloudflare publish error) |
+| Runtime snapshot of a live new deployment | BLOCKED |
+| Anonymous blocked (current alias) | PASS |
+| Unapproved signed-in → 403 | BLOCKED (no new deployment; needs the owner's browser session) |
+| Approved → `access:true`, `configured:true` | BLOCKED (same) |
+| Live Groq inference | NOT RUN (by design) |
