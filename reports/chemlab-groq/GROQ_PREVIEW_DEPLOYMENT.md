@@ -2,7 +2,15 @@
 
 Date: 2026-11-13 · Branch `feature/chemlab-groq-chemai` · Code commit `5d3f9da`
 
-**Verdict: GROQ PREVIEW DEPLOYED — LOCKED; 3 configuration items missing before a live call.**
+**Verdict: GROQ PREVIEW DEPLOYED — LOCKED; access configuration (Access AUD, allowlist, internal_testing) missing before a live call.**
+
+> **Correction (same day):** the first version of this report stated that `CHEMAI_BUDGET` was missing. That was wrong. The inspection script printed `env_vars`, `ai_bindings`, `kv_namespaces` and `d1_databases`, but never `durable_object_namespaces`. Re-checked through the API:
+>
+> - Preview config, Production config and the `66052d2f` deployment snapshot all contain `CHEMAI_BUDGET → namespace d435a6efcd7d4a08ad6189c717e7b25c`.
+> - That id is `chemai-quota/QuotaCounter`.
+> - There is no `wrangler.toml` that could override it.
+>
+> The binding was already in place when `66052d2f` was created (2026-11-13T14:38Z), because the snapshot holds it.
 
 No Groq inference has been performed. The API key value was never read or printed: the Cloudflare API does not return secret values, and only the name and type were checked.
 
@@ -25,15 +33,18 @@ No Groq inference has been performed. The API key value was never read or printe
 | `CHEMAI_BUDGET_SCOPE` / `CHEMAI_DAILY_NEURONS` | `preview` / `2000` | — / `6000` |
 | `CHEMAI_ACCESS_MODE` | **missing** → `disabled` | missing → `disabled` |
 | `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `CHEMAI_APPROVED_EMAILS`, `CHEMAI_INTERNAL_HOSTS` | **missing** | missing |
-| `CHEMAI_BUDGET` (Durable Object) / `CHEMAI_QUOTA` (KV) | **missing** → chat answers 503 `AI_BUDGET_NOT_CONFIGURED` | missing |
+| `CHEMAI_BUDGET` (Durable Object) | present → `chemai-quota/QuotaCounter`; also in the `66052d2f` snapshot | present (same namespace) |
+| `CHEMAI_QUOTA` (KV) | not set (not needed when the DO is bound) | not set |
 | `AI` (Workers AI binding) | present, unused | present, unused by 6.5.4 |
 
-The deployment snapshot of `66052d2f` contains exactly `CHEMAI_BUDGET_SCOPE`, `CHEMAI_DAILY_NEURONS` and `GROQ_API_KEY`.
+The deployment snapshot of `66052d2f` contains:
+- env vars `CHEMAI_BUDGET_SCOPE`, `CHEMAI_DAILY_NEURONS` and `GROQ_API_KEY`;
+- bindings `CHEMAI_BUDGET` (DO) and `AI`.
 
 **Workers AI inventory:** Groq-branch Functions contain 0 references to `env.AI`. The `AI` binding is left unchanged. Removing it would affect only old Workers-AI preview deployments, which are already behind Cloudflare Access. Leaving it costs nothing because no code calls it.
 
 **Existing resources:**
-- Worker `chemai-quota` with Durable Object class `QuotaCounter` exists in the account, but it is not bound to Pages.
+- Worker `chemai-quota` with Durable Object class `QuotaCounter` exists in the account, and it is bound to Pages as `CHEMAI_BUDGET`.
 - There are no KV namespaces.
 - The Cloudflare Access app list is empty through the OAuth token, most likely because the token has no Access scope. The redirect still carries the application AUD: 64 hex characters, starting `521895…`, identical on the alias and the hash URL.
 
@@ -48,7 +59,7 @@ The deployment snapshot of `66052d2f` contains exactly `CHEMAI_BUDGET_SCOPE`, `C
 **Defence in depth: if Access were bypassed, the Function would still refuse.**
 - The mode is `disabled`, so the response is 403 `AI_ACCESS_LOCKED` before any provider call.
 - This is covered by `test-chemai-access.mjs` and the local workerd check, 10/10 with a fake Groq key.
-- Even with access configured, the missing budget binding stops the request with 503 before any fetch to Groq.
+- Access is the only gate still closed: the budget binding is present, so once access is configured an approved request would reach Groq.
 
 **Production is unchanged.**
 - The canonical deployment is still `afea91b9`.
@@ -59,9 +70,7 @@ The deployment snapshot of `66052d2f` contains exactly `CHEMAI_BUDGET_SCOPE`, `C
 
 Set these in Dashboard → Workers & Pages → `chemlab-edulab` → Settings → **Preview**. Do not edit Production.
 
-1. **Budget binding**
-   - Bindings → Add → Durable Object namespace.
-   - Variable name `CHEMAI_BUDGET`, namespace `chemai-quota` / `QuotaCounter`.
+1. **Budget binding** — already present (`CHEMAI_BUDGET`). Do **not** add another.
 2. **Variables (plain text)**
 
    | Name | Value |
@@ -79,7 +88,7 @@ Set these in Dashboard → Workers & Pages → `chemlab-edulab` → Settings →
    - The two lists are independent layers: an email must pass both.
 4. **Redeploy**
    - Pages snapshots env vars per deployment, so `66052d2f` will never see the new values.
-   - Ask me to redeploy the branch after steps 1–3.
+   - Ask me to redeploy the branch after steps 2–3.
 5. **Live-call precondition (owner/legal)**
    - Groq's Services Agreement requires users to be 18 or older, and the service is not for consumer use.
    - Confirm that every tester is an adult staff member. ChemAI stays closed to students: `student_access` is refused in code.
