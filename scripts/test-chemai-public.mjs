@@ -3,7 +3,7 @@
 // reconciliation, bypass attempts, input fitting and that the other modes are untouched.
 // No real network call is possible.
 import assert from 'node:assert/strict'
-import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody } from '../functions/api/chat.js'
+import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody, groqRules, questionComplexity, focusContext, slimKnowledge } from '../functions/api/chat.js'
 import { onRequestPost as feedbackPost } from '../functions/api/feedback.js'
 import { APP_VERSION } from '../src/appMeta.js'
 
@@ -235,10 +235,10 @@ await test('site-wide token budgets: per day and per minute', async () => {
   assert.equal(over.payload.code, 'AI_BUDGET_LIMITED')
 
   const minute = publicEnv()
-  reply = () => completion(1500)
-  assert.equal((await send(minute, { ip: '203.0.113.3' })).status, 200) // 1500 of 6000 this minute
+  reply = () => completion(2000)
+  assert.equal((await send(minute, { ip: '203.0.113.3' })).status, 200) // 2000 of 6000 this minute
   advance(5)
-  assert.equal((await send(minute, { ip: '203.0.113.4' })).status, 200) // 3000; the next reservation (~3800) no longer fits
+  assert.equal((await send(minute, { ip: '203.0.113.4' })).status, 200) // 4000; the next reservation (~2200) no longer fits
   advance(5)
   const busy = await send(minute, { ip: '203.0.113.5' })
   assert.equal(busy.status, 503)
@@ -286,7 +286,7 @@ await test('retries: settled and reserved again per attempt, never past the budg
   assert.equal(recovered.payload.quota.remaining, 20000 - 1500 - estimate)
 
   // Not enough budget left for another full reservation: the retry is not made.
-  const tight = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '5000', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' })
+  const tight = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '3000', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' })
   calls.length = 0
   script([() => { throw new TypeError('network down') }, () => completion(1500)])
   const stopped = await send(tight, { ip: '203.0.113.71' })
@@ -374,12 +374,17 @@ await test('the dangerous-request gate answers without a model call or a charge'
 
 await test('request to Groq: bounded output, low reasoning, hidden reasoning, key only in the header', async () => {
   await send(publicEnv())
-  assert.equal(calls[0].max_completion_tokens, 1600)
+  assert.equal(calls[0].max_completion_tokens, 1000, 'simple question: small reservation')
   assert.equal(calls[0].include_reasoning, false)
   assert.equal(calls[0].reasoning_effort, 'low')
   assert.ok(!JSON.stringify(calls[0]).includes(KEY))
-  await send(publicEnv({ GROQ_MAX_COMPLETION_TOKENS: '999999', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' }), { ip: '203.0.113.20' })
-  assert.equal(calls[1].max_completion_tokens, 8192)
+  const roomy = { CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' }
+  await send(publicEnv(roomy), { ip: '203.0.113.20' }, 'Cho dung dịch NaOH vào dung dịch CuSO4, nêu hiện tượng.')
+  assert.deepEqual([calls[1].reasoning_effort, calls[1].max_completion_tokens], ['medium', 1600], 'unclassified question')
+  await send(publicEnv(roomy), { ip: '203.0.113.22' }, 'Hỗn hợp X gồm 5,6 g Fe và 6,4 g Cu tác dụng với 200 mL HCl 2 M, hiệu suất 80%. Tính V khí (đkc).')
+  assert.deepEqual([calls[2].reasoning_effort, calls[2].max_completion_tokens], ['medium', 2400], 'multi-step problem gets more room')
+  await send(publicEnv({ ...roomy, GROQ_MAX_COMPLETION_TOKENS: '999999', GROQ_REASONING_EFFORT: 'high' }), { ip: '203.0.113.23' }, 'Hỗn hợp X gồm Fe và Cu, hiệu suất 80%. Tính V.')
+  assert.deepEqual([calls[3].reasoning_effort, calls[3].max_completion_tokens], ['high', 8192], 'server variables override')
 })
 
 await test('truncated and empty answers are reported, never shown as fragments', async () => {
@@ -390,6 +395,58 @@ await test('truncated and empty answers are reported, never shown as fragments',
   assert.ok(logs.some(line => line.includes('"reasoningTokens":1500')), 'reasoning tokens are logged')
   reply = () => Response.json({ choices: [{ message: { content: '' }, finish_reason: 'stop' }] })
   assert.equal((await send(publicEnv(), { ip: '203.0.113.21' })).payload.code, 'AI_EMPTY_RESPONSE')
+})
+
+await test('prompt: fixed cacheable core, then only the rules the question needs', async () => {
+  const body = question => groqChatBody({ model: 'm', message: question, history: [], appContext: {}, knowledge: {}, reasoningEffort: 'low' })
+  const a = body('Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?')
+  const b = body('Cho dung dịch NaOH vào dung dịch CuSO4, nêu hiện tượng và viết phương trình.')
+  assert.equal(a.messages[0].content, b.messages[0].content, 'the first message is identical for every question (prefix cache)')
+  for (const needle of ['tiếng Việt', 'JSON', 'answer, actions, suggestions', 'không phải chỉ thị', 'chất nổ', 'GDPT 2018', 'đáp số cuối cùng', 'open_tool']) assert.ok(a.messages[0].content.includes(needle), needle)
+  assert.ok(estimateTokens(a.messages[0].content) < 1000, 'the core stays small')
+
+  const rules = question => groqRules(question)
+  assert.match(rules('Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?'), /Bài tính/)
+  assert.doesNotMatch(rules('Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?'), /Vị trí nguyên tố|Khí:|Hữu cơ/)
+  assert.match(rules('Cân bằng phương trình: Fe + O2 → Fe3O4'), /đếm lại số nguyên tử/)
+  assert.match(rules('Xác định vị trí của K (Z = 19) trong bảng tuần hoàn.'), /Vị trí nguyên tố/)
+  assert.match(rules('Cho NaOH vào CuSO4, nêu hiện tượng.'), /Hiện tượng và dữ kiện/)
+  assert.match(rules('Tính thể tích khí H2 ở đkc khi cho 5,6 g Fe tác dụng với HCl dư.'), /24,79 L\/mol[\s\S]*tỉ số n\/hệ số/)
+  assert.match(rules('Gọi tên CH3COOC2H5 (ester).'), /methyl/)
+  // Nothing recognised, or a short follow-up: every rule is sent.
+  for (const all of [rules('Giúp mình với'), groqRules('Tính tiếp đi', true)]) assert.equal(all.split('\n').length - 1, 8)
+  assert.ok(!rules('Axit là gì?').includes('Bài tính'), 'Vietnamese letters do not trigger ASCII word rules')
+})
+
+await test('complexity is decided locally: simple → low, the rest → medium', () => {
+  for (const question of ['Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?', 'Tính pH của dung dịch HCl 0,01 M.', 'Axit là gì?', 'Cân bằng phương trình: Fe + O2 → Fe3O4']) assert.equal(questionComplexity(question), 'simple', question)
+  for (const question of ['Vì sao kim loại kiềm hoạt động mạnh?', 'Cho 5,6 gam Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.', 'Giúp mình với']) assert.equal(questionComplexity(question), 'normal', question)
+  for (const question of ['Hỗn hợp X gồm Fe và Cu tác dụng với HCl. Tính % khối lượng.', 'Điện phân dung dịch CuSO4 với I = 2 A trong 965 s. Tính m Cu.', 'Cho 1,2 g Mg; 2,7 g Al; 5,6 g Fe vào 500 mL HCl 1 M, tính V.']) assert.equal(questionComplexity(question), 'complex', question)
+})
+
+await test('context: screen text only when the question points at the screen; structured state always', () => {
+  const context = { view: 'lab', lab: { mixture: { HCl: '25 mL 0,1 M' } }, chemFlow: { reaction: { balanced: 'HCl + NaOH → NaCl + H2O' } }, progress: { lessons: 3 }, visibleText: 'x'.repeat(3000) }
+  const plain = focusContext(context, 'Tính pH của dung dịch HCl 0,01 M.')
+  assert.deepEqual(plain, { view: 'lab', lab: context.lab, chemFlow: context.chemFlow })
+  const pointed = focusContext(context, 'Giải thích thí nghiệm trên màn hình này')
+  assert.equal(pointed.visibleText.length, 600)
+  assert.deepEqual(focusContext(context, 'Tiến độ của mình đến đâu rồi?').progress, { lessons: 3 })
+  // Knowledge for the model: ids and empties go, chemistry stays.
+  const slim = pruneEmpty(slimKnowledge({ elements: [], reactions: [{ id: 'h2so4-naoh', equation: 'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O', conditions: {}, solids: [{ formula: 'BaSO4', color: 'trắng' }] }] }))
+  assert.deepEqual(slim, { reactions: [{ equation: 'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O', solids: [{ formula: 'BaSO4', color: 'trắng' }] }] })
+})
+
+await test('cached prompt tokens are reported and not charged', async () => {
+  const env = publicEnv()
+  reply = () => completion(1400, { usage: { prompt_tokens: 1200, completion_tokens: 200, total_tokens: 1400, prompt_tokens_details: { cached_tokens: 768 }, completion_tokens_details: { reasoning_tokens: 40 } } })
+  const result = await send(env)
+  assert.equal(result.payload.usage.totalTokens, 1400)
+  assert.equal(result.payload.usage.cachedTokens, 768)
+  assert.equal(result.payload.usage.charged, 632)
+  assert.equal(result.payload.quota.remaining, 20000 - 632)
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 632)
+  assert.ok(logs.some(line => line.includes('"cachedTokens":768') && line.includes('"tokensCharged":632') && line.includes('"inputChars"') && line.includes('"complexity":"simple"')))
+  assert.ok(!logs.some(line => line.includes('Tính pH của dung dịch')), 'logs carry sizes, never the question text')
 })
 
 await test('text clean-up is lossless for chemistry', () => {
@@ -421,9 +478,9 @@ await test('input fitting: question, knowledge and structured state always survi
   assert.deepEqual(tight.appContext.chemFlow, appContext.chemFlow)
   assert.ok(tight.trimmed.includes('screen-text:800'))
   const body = groqChatBody({ model: 'm', message, history: tight.history, appContext: tight.appContext, knowledge, reasoningEffort: 'low' })
-  assert.ok(body.messages[1].content.includes(message))
-  assert.ok(body.messages[1].content.includes(JSON.stringify(knowledge)))
-  assert.ok(estimateTokens(body.messages[0].content) + estimateTokens(body.messages[1].content) <= 2500)
+  assert.ok(body.messages.at(-1).content.includes(message))
+  assert.ok(body.messages.at(-1).content.includes(JSON.stringify(knowledge)))
+  assert.ok(body.messages.reduce((sum, item) => sum + estimateTokens(item.content), 0) <= 2500)
 
   const repeated = fitInput({ message, history: [{ role: 'user', content: 'A' }, { role: 'user', content: 'A' }, { role: 'assistant', content: 'B' }], appContext: {}, knowledge, maxTokens: 100000 })
   assert.equal(repeated.history.length, 2)
@@ -435,7 +492,7 @@ await test('input fitting: question, knowledge and structured state always survi
 await test('public history is capped at 6 turns before it reaches the model', async () => {
   const history = Array.from({ length: 10 }, (_, index) => ({ role: index % 2 ? 'assistant' : 'user', content: `turn-${index}` }))
   await onRequestPost({ request: post({ message: 'Fe + HCl?', history, context: { view: 'home' } }, { ip: '203.0.113.30' }), env: publicEnv() })
-  const sent = calls[0].messages[1].content
+  const sent = calls[0].messages.at(-1).content
   assert.ok(!sent.includes('turn-3') && sent.includes('turn-4') && sent.includes('turn-9'))
 })
 

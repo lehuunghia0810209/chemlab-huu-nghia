@@ -2,7 +2,7 @@
 // KaTeX runs here with the same options as the browser (mathRender.js).
 import assert from 'node:assert/strict'
 import katex from 'katex'
-import { markdownToHTML, extractMath } from '../src/ai/markdown.js'
+import { markdownToHTML, extractMath, undoubleBackslashes } from '../src/ai/markdown.js'
 import { renderMathInto } from '../src/ai/mathRender.js'
 
 let passed = 0
@@ -115,6 +115,62 @@ test('XSS: HTML, javascript: links and dangerous TeX never become live markup', 
 
 test('NUL characters from the model cannot forge math tokens', () => {
   assert.doesNotMatch(markdownToHTML('a \u00000\u0000 b'), /chemai-math/)
+})
+
+// 6.6.1: the model sometimes escapes LaTeX twice; a lone backslash must never reach the page.
+const BS = String.fromCharCode(92)
+const typeset661 = html => [...html.matchAll(/<span class="chemai-math[^"]*" data-display="(\d)"[^>]*>([^<]*)<\/span>/g)].map(([, display, tex]) => {
+  const source = tex.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#039;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+  return katex.renderToString(source, { displayMode: display === '1', throwOnError: true, strict: 'ignore' })
+})
+const visibleText = html => html.replace(/<span class="chemai-math[^>]*>[^<]*<\/span>/g, '').replace(/<[^>]+>/g, '')
+// tex`…` keeps backslashes as typed; D doubles every backslash, like an over-escaped answer.
+const tex = String.raw
+const D = value => value.split(BS).join(BS + BS)
+
+test('delimiters escaped twice become one display formula, no stray backslash', () => {
+  const formula = tex`m = 0{,}5\ \text{mol} \times 98\ \text{g/mol} = 49\ \text{g}`
+  const answer = ['Công thức:', '', D(tex`\[`), D(formula), D(tex`\]`), '', 'Vậy m = 49 g.'].join('\n')
+  const html = markdownToHTML(answer)
+  assert.deepEqual(maths(answer), [`D:${formula}`])
+  assert.ok(!visibleText(html).includes(BS), visibleText(html))
+  assert.equal(typeset661(html).length, 1)
+  const inline = markdownToHTML(`Ta có ${D(tex`\(n = \dfrac{m}{M}\)`)} nên m = n·M.`)
+  assert.ok(!visibleText(inline).includes(BS), visibleText(inline))
+  assert.equal(typeset661(inline).length, 1)
+})
+
+test('an answer escaped twice throughout is undone exactly once; a mixed answer is left alone', () => {
+  const correct = tex`Khối lượng: $m = n \times M = 0{,}5 \times 98 = 49\ \text{g}$`
+  assert.equal(undoubleBackslashes(D(correct)), correct)
+  assert.equal(undoubleBackslashes(correct), correct)
+  const html = markdownToHTML(D(correct))
+  assert.ok(!visibleText(html).includes(BS), visibleText(html))
+  assert.match(typeset661(html)[0], /×/)
+  // Correct LaTeX with a real line break keeps its double backslash.
+  const aligned = tex`$$\begin{aligned} n &= 0{,}1\ \text{mol} \\ m &= 5{,}6\ \text{g} \end{aligned}$$`
+  assert.equal(undoubleBackslashes(aligned), aligned)
+  assert.equal(typeset661(markdownToHTML(aligned)).length, 1)
+})
+
+test('6.6.1 rendering set: formulas, fractions, indices, equations, multi-line, Markdown with LaTeX', () => {
+  const cases = {
+    'unicode formula': ['Dung dịch H₂SO₄ loãng.', 0],
+    'm = n × M': [tex`Công thức $m = n \times M$.`, 1],
+    'fraction': [tex`$C_M = \dfrac{n}{V} = \dfrac{0{,}1}{0{,}5} = 0{,}2\ \text{M}$`, 1],
+    'indices': [tex`Ion $Fe^{3+}$ và $SO_4^{2-}$; $M_{H_2SO_4} = 98$`, 3],
+    'chemical equation': ['2NaOH + H₂SO₄ → Na₂SO₄ + 2H₂O', 0],
+    'multi-line display': [['$$', tex`\begin{aligned}`, tex`n &= 0{,}5\ \text{mol} \\`, tex`m &= 49\ \text{g}`, tex`\end{aligned}`, '$$'].join('\n'), 1],
+    'markdown + latex': [[tex`1. **Bước 1:** $n = \dfrac{m}{M}$`, tex`2. **Kết quả:** $m = 49\ \text{g}$`, '', tex`- pH = $-\log[H^+] = 2$`].join('\n'), 3],
+    'display delimiters': [tex`\[ pH = -\log(0{,}01) = 2 \]`, 1]
+  }
+  for (const [name, [answer, count]] of Object.entries(cases)) {
+    const html = markdownToHTML(answer)
+    assert.equal(typeset661(html).length, count, name)
+    assert.ok(!visibleText(html).includes(BS), `${name}: ${visibleText(html)}`)
+    assert.ok(!visibleText(html).includes('$'), name)
+  }
+  assert.match(markdownToHTML(cases['chemical equation'][0]), /chemai-equation/)
 })
 
 console.log(`PASS — ${passed} ChemAI rendering checks passed.`)

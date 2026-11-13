@@ -64,6 +64,17 @@ export function extractMath(source) {
       index = stop
       continue
     }
+    // Delimiters escaped twice by the model (\\[ … \\]): the whole piece was over-escaped,
+    // so its doubled backslashes are single ones.
+    if (source.startsWith('\\\\[', index) || source.startsWith('\\\\(', index)) {
+      const display = source[index + 2] === '['
+      const end = source.indexOf(display ? '\\\\]' : '\\\\)', index + 3)
+      if (end > index + 3) {
+        out += token(source.slice(index + 3, end).replace(/\\\\/g, '\\'), display)
+        index = end + 3
+        continue
+      }
+    }
     if (source.startsWith('\\[', index) || source.startsWith('\\(', index)) {
       const display = source[index + 1] === '['
       const end = source.indexOf(display ? '\\]' : '\\)', index + 2)
@@ -109,8 +120,17 @@ function inlineMarkdown(value, maths) {
     .replace(TOKEN, (_, number) => maths[Number(number)] ? mathHTML(maths[Number(number)]) : '')
 }
 
+// An answer whose every LaTeX backslash arrived doubled (\\text, \\times, never a single
+// one) was escaped once too often on the way here: undo exactly one level. An answer that
+// mixes both forms is left alone, because there \\ is a real LaTeX line break.
+export function undoubleBackslashes(source) {
+  const doubled = /\\\\[A-Za-z]/.test(source)
+  const single = /(^|[^\\])\\[A-Za-z]/.test(source)
+  return doubled && !single ? source.replace(/\\\\/g, '\\') : source
+}
+
 export function markdownToHTML(markdown) {
-  const source = String(markdown ?? '').replace(/\r\n/g, '\n').replace(/\u0000/g, '').trim()
+  const source = undoubleBackslashes(String(markdown ?? '').replace(/\r\n/g, '\n').replace(/\u0000/g, '').trim())
   if (!source) return ''
 
   const blocks = source.split(/```/)

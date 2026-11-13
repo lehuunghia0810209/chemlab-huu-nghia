@@ -389,7 +389,7 @@ async function chemAINoticeJourney(browser, baseURL) {
       contentType: 'application/json',
       body: JSON.stringify(route.request().method() === 'GET'
         ? { ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub', quota: { limit: 20000, remaining: 20000 } }
-        : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Gemini', model: 'stub', corrections: 1 }, quota: { limit: 20000, remaining: 17850 } })
+        : { ok: true, answer, actions: [], suggestions: ['Tính số mol của 9,8 g H₂SO₄ và giải thích từng bước thật chi tiết', 'Viết phương trình H₂SO₄ tác dụng với NaOH, nêu hiện tượng', 'Nồng độ mol của dung dịch chứa 0,5 mol H₂SO₄ trong 250 mL là bao nhiêu?'], meta: { provider: 'Gemini', model: 'stub', corrections: 1 }, quota: { limit: 20000, remaining: 17850 } })
     }))
     await openView(page, baseURL, 'home')
     await page.click('[data-chemai-open]:visible')
@@ -412,6 +412,26 @@ async function chemAINoticeJourney(browser, baseURL) {
       const box = line.getBoundingClientRect()
       return { text: line.textContent, visible: !line.hidden && box.height > 0 && box.right <= innerWidth + 1 && box.bottom <= innerHeight + 1 }
     })
+    // 6.6.1 regressions: long suggestions stay inside their chips and the footer is one column.
+    const layout = await page.evaluate(() => {
+      const panel = document.querySelector('.chemai-panel').getBoundingClientRect()
+      const chips = [...document.querySelectorAll('#chemai-suggestions button')]
+      const rects = chips.map(chip => chip.getBoundingClientRect())
+      const strip = document.querySelector('#chemai-suggestions').getBoundingClientRect()
+      const input = document.querySelector('#chemai-input').getBoundingClientRect()
+      const parts = [...document.querySelector('.chemai-footer').children].map(node => node.getBoundingClientRect()).filter(rect => rect.height > 0)
+      return {
+        chips: chips.length,
+        spill: chips.some(chip => chip.scrollWidth > chip.clientWidth + 1),
+        overlap: rects.some((a, i) => rects.some((b, j) => j > i && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)),
+        touch: Math.round(Math.min(...rects.map(rect => rect.height))),
+        stripInPanel: strip.left >= panel.left - 1 && strip.right <= panel.right + 1 && strip.bottom <= input.top + 1,
+        footerColumns: new Set(parts.map(rect => Math.round(rect.left))).size,
+        footerInPanel: parts.every(rect => rect.right <= panel.right + 1 && rect.bottom <= innerHeight + 1)
+      }
+    })
+    record(`ChemAI ${viewport.width}: long suggestions do not overlap or spill out of their chips`, layout.chips === 3 && !layout.spill && !layout.overlap && layout.stripInPanel && layout.touch >= (viewport.width < 700 ? 44 : 38), JSON.stringify(layout))
+    record(`ChemAI ${viewport.width}: the footer is a single column inside the panel`, layout.footerColumns === 1 && layout.footerInPanel, JSON.stringify(layout))
     record(`ChemAI ${viewport.width}: the remaining token budget is shown after an answer`, quota.visible && quota.text === 'Bạn còn 17.850 / 20.000 token hôm nay.', JSON.stringify(quota))
     record(`console clean in ChemAI correction flow ${viewport.width}`, errors.length === 0, errors.join(' | '))
     await context.close()

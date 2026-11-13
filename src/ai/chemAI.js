@@ -462,7 +462,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       : (serverSuggestions.length ? serverSuggestions : getSmartSuggestions(lastContext))
 
     suggestionsEl.innerHTML = suggestions.slice(0, 3).map(item => `
-      <button type="button" data-ai-suggestion="${escapeHTML(item)}">${escapeHTML(item)}</button>
+      <button type="button" data-ai-suggestion="${escapeHTML(item)}" title="${escapeHTML(item)}"><span>${escapeHTML(item)}</span></button>
     `).join('')
   }
 

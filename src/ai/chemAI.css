@@ -346,6 +346,10 @@
 }
 .chemai-suggestions::-webkit-scrollbar { display:none; }
 .chemai-suggestions:empty { display:none; }
+.chemai-suggestions { scroll-snap-type:x proximity; scroll-padding-inline:15px; overscroll-behavior-x:contain; }
+.chemai-suggestions button { scroll-snap-align:start; display:inline-flex; align-items:center; min-width:0; overflow:hidden; }
+/* Long suggestions are cut with an ellipsis inside their own chip (full text in the title). */
+.chemai-suggestions button > span { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chemai-suggestions button { flex:0 0 auto; max-width:260px; min-height:38px; padding:8px 11px; border:1px solid var(--border-subtle); border-radius:999px; color:var(--text-secondary); background:var(--surface-hover); font-size:var(--text-xs); white-space:nowrap; cursor:pointer; transition:color .16s ease,border-color .16s ease,background .16s ease; }
 .chemai-suggestions button:hover { color:var(--text-primary); border-color:color-mix(in oklab, var(--accent) 45%, transparent); background:color-mix(in oklab, var(--accent) 11%, transparent); }
 
@@ -363,12 +367,15 @@
 .chemai-root.is-pending .chemai-send { background:linear-gradient(145deg,var(--status-danger),var(--status-danger)); }
 .chemai-root.is-pending .chemai-send-icon.send { display:none; }
 .chemai-root.is-pending .chemai-send-icon.stop { display:grid; }
+.chemai-composer-meta > span { min-width:0; }
+.chemai-composer-meta > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chemai-composer-meta > span:last-child { flex:0 0 auto; }
 .chemai-composer-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 4px 0; color:var(--text-muted); font-size:var(--text-xs); }
 
 .chemai-quota { margin:0; padding:4px 4px 0; color:var(--text-muted); font-size:var(--text-xs); }
 .chemai-quota[data-state="empty"] { color:var(--text-primary, inherit); font-weight:600; }
 
-.chemai-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 15px 11px; border-top:1px solid var(--border-subtle); color:var(--text-muted); background:var(--bg-sunken); font-size:var(--text-xs); }
+.chemai-footer { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:8px 15px 10px; border-top:1px solid var(--border-subtle); color:var(--text-muted); background:var(--bg-sunken); font-size:var(--text-xs); }
 .chemai-footer > span { display:inline-flex; align-items:center; gap:5px; }
 .chemai-footer svg { width:12px; height:12px; }
 .chemai-footer small { color:inherit; font-size:inherit; }
