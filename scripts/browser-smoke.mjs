@@ -388,8 +388,8 @@ async function chemAINoticeJourney(browser, baseURL) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(route.request().method() === 'GET'
-        ? { ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub' }
-        : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Gemini', model: 'stub', corrections: 1 } })
+        ? { ok: true, access: true, configured: true, provider: 'Gemini', model: 'stub', quota: { limit: 20000, remaining: 20000 } }
+        : { ok: true, answer, actions: [], suggestions: [], meta: { provider: 'Gemini', model: 'stub', corrections: 1 }, quota: { limit: 20000, remaining: 17850 } })
     }))
     await openView(page, baseURL, 'home')
     await page.click('[data-chemai-open]:visible')
@@ -407,6 +407,12 @@ async function chemAINoticeJourney(browser, baseURL) {
     })
     record(`ChemAI ${viewport.width}: a correction on a long answer stays in view`, state.inView, JSON.stringify(state))
     record(`ChemAI ${viewport.width}: the reliability notice is visible`, state.noticeVisible && /đối chiếu SGK/.test(state.notice) && state.overflow <= 1, JSON.stringify(state))
+    const quota = await page.evaluate(() => {
+      const line = document.querySelector('#chemai-quota')
+      const box = line.getBoundingClientRect()
+      return { text: line.textContent, visible: !line.hidden && box.height > 0 && box.right <= innerWidth + 1 && box.bottom <= innerHeight + 1 }
+    })
+    record(`ChemAI ${viewport.width}: the remaining token budget is shown after an answer`, quota.visible && quota.text === 'Bạn còn 17.850 / 20.000 token hôm nay.', JSON.stringify(quota))
     record(`console clean in ChemAI correction flow ${viewport.width}`, errors.length === 0, errors.join(' | '))
     await context.close()
   }

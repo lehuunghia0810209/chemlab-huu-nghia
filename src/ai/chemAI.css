@@ -365,6 +365,9 @@
 .chemai-root.is-pending .chemai-send-icon.stop { display:grid; }
 .chemai-composer-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 4px 0; color:var(--text-muted); font-size:var(--text-xs); }
 
+.chemai-quota { margin:0; padding:4px 4px 0; color:var(--text-muted); font-size:var(--text-xs); }
+.chemai-quota[data-state="empty"] { color:var(--text-primary, inherit); font-weight:600; }
+
 .chemai-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 15px 11px; border-top:1px solid var(--border-subtle); color:var(--text-muted); background:var(--bg-sunken); font-size:var(--text-xs); }
 .chemai-footer > span { display:inline-flex; align-items:center; gap:5px; }
 .chemai-footer svg { width:12px; height:12px; }

@@ -1,6 +1,7 @@
-// ChemAI public (anonymous) mode: mocked Groq and an in-memory exact budget only.
-// Covers the release gate, anonymous access, quotas, bypass attempts, input fitting and
-// that the other modes are untouched. No real network call is possible.
+// ChemAI public (anonymous) mode and token budgets: mocked Groq and an in-memory exact
+// counter only. Covers the release gate, anonymous access, token reservation and
+// reconciliation, bypass attempts, input fitting and that the other modes are untouched.
+// No real network call is possible.
 import assert from 'node:assert/strict'
 import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody } from '../functions/api/chat.js'
 import { onRequestPost as feedbackPost } from '../functions/api/feedback.js'
@@ -11,21 +12,29 @@ const origin = `https://${HOST}`
 const KEY = 'gsk_test0nly0not0a0real0key0000'
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
-// Same contract as workers/chemai-quota: one state per name, reset when "day" changes.
+// Same contract as workers/chemai-quota (consume / refund, one state per name).
 const exactBudget = () => {
   const states = new Map()
   return {
     states,
+    used: prefix => [...states].filter(([name]) => name.startsWith(prefix)).reduce((sum, [, state]) => sum + state.used, 0),
     idFromName: name => name,
     get: id => ({
-      fetch: async (_url, init) => {
-        const { day, limit, cost = 1 } = JSON.parse(init.body)
-        assert.match(day, /^\d{4}-\d{2}-\d{2}$/, 'QuotaCounter only accepts YYYY-MM-DD')
+      fetch: async (url, init) => {
+        const body = JSON.parse(init.body)
+        assert.match(body.day, /^\d{4}-\d{2}-\d{2}$/, 'QuotaCounter only accepts YYYY-MM-DD')
         const state = states.get(id) || { day: '', used: 0 }
+        states.set(id, state)
+        if (new URL(url).pathname === '/refund') {
+          assert.ok(Number.isInteger(body.units) && body.units > 0, 'refund units')
+          if (state.day === body.day) state.used = Math.max(0, state.used - body.units)
+          return Response.json({ used: state.used })
+        }
+        const { day, limit, cost = 1 } = body
+        assert.ok(Number.isInteger(limit) && limit >= 1 && Number.isInteger(cost) && cost >= 1, 'consume limit/cost')
         if (state.day !== day) Object.assign(state, { day, used: 0 })
         const allowed = state.used + cost <= limit
         if (allowed) state.used += cost
-        states.set(id, state)
         return Response.json({ allowed, used: state.used })
       }
     })
@@ -49,18 +58,19 @@ const logs = []
 for (const level of ['log', 'warn', 'error']) console[level] = (...args) => logs.push(args.map(String).join(' '))
 const calls = []
 let reply = null
+const completion = (total = 1110, extra = {}) => Response.json({
+  model: 'openai/gpt-oss-120b',
+  choices: [{ message: { role: 'assistant', content: JSON.stringify({ answer: 'pH = 2.', actions: [], suggestions: [] }) }, finish_reason: 'stop' }],
+  usage: { prompt_tokens: total - 210, completion_tokens: 210, total_tokens: total, completion_tokens_details: { reasoning_tokens: 64 } },
+  ...extra
+})
 globalThis.fetch = async (url, init) => {
   if (String(url) !== GROQ_URL) throw new Error(`unexpected network call: ${url}`)
   calls.push(JSON.parse(init.body))
-  if (reply) return reply()
-  return Response.json({
-    model: 'openai/gpt-oss-120b',
-    choices: [{ message: { role: 'assistant', content: JSON.stringify({ answer: 'pH = 2.', actions: [], suggestions: [] }) }, finish_reason: 'stop' }],
-    usage: { prompt_tokens: 900, completion_tokens: 210, completion_tokens_details: { reasoning_tokens: 64 } }
-  })
+  return reply ? reply() : completion()
 }
 
-// Fixed clock: cooldown windows must not depend on when the suite runs.
+// Fixed clock: cooldown and minute windows must not depend on when the suite runs.
 const realNow = Date.now
 let clock = Date.UTC(2026, 10, 14, 8, 0, 0)
 Date.now = () => clock
@@ -68,14 +78,15 @@ const advance = seconds => { clock += seconds * 1000 }
 
 const send = async (env, options = {}, message = 'Tính pH của dung dịch HCl 0,01 M.') => {
   const response = await onRequestPost({ request: post({ message, history: [], context: { view: 'home' } }, options), env })
-  return { status: response.status, headers: response.headers, payload: await response.json() }
+  return { status: response.status, headers: response.headers, payload: await response.json(), cookie: (response.headers.get('Set-Cookie') || '').split(';')[0] }
 }
-const status = async env => (await onRequestGet({ request: new Request(`${origin}/api/chat`), env })).json()
+const status = async (env, headers = {}) => (await onRequestGet({ request: new Request(`${origin}/api/chat`, { headers }), env })).json()
 
 let passed = 0
 const test = async (name, fn) => {
   calls.length = 0
   reply = null
+  advance(120)
   try { await fn() }
   catch (error) { console.info(`FAIL — ${name}`); throw error }
   passed += 1
@@ -109,6 +120,7 @@ await test('approved public mode: an anonymous visitor gets an answer, no identi
   const info = await status(env)
   assert.equal(info.access, true)
   assert.equal(info.configured, true)
+  assert.deepEqual(info.quota, { limit: 20000, remaining: 20000 })
   const result = await send(env)
   assert.equal(result.status, 200)
   assert.equal(result.payload.answer, 'pH = 2.')
@@ -126,86 +138,203 @@ await test('public mode never opens the feedback route', async () => {
   assert.equal(response.status, 403)
 })
 
-await test('cooldown: a second question inside 10 s is refused without a model call', async () => {
+await test('no question count: a learner may ask many questions while tokens remain', async () => {
+  const env = publicEnv({ CHEMAI_TOKENS_GLOBAL_MINUTE: '1000000', CHEMAI_PUBLIC_REQUESTS_PER_MINUTE: '1000' })
+  let cookie = ''
+  for (let index = 0; index < 12; index += 1) {
+    const result = await send(env, { headers: cookie ? { Cookie: cookie } : {} }, `Câu ${index}: pH của HCl 0,01 M?`)
+    assert.equal(result.status, 200, `question ${index + 1}`)
+    cookie ||= result.cookie
+    advance(5)
+  }
+  assert.equal(calls.length, 12)
+  assert.ok(!logs.some(line => line.includes('AI_CLIENT_LIMIT')))
+})
+
+await test('token accounting uses the provider usage: reserve, then refund down to total_tokens', async () => {
   const env = publicEnv()
-  assert.equal((await send(env)).status, 200)
+  reply = () => completion(1234)
+  const first = await send(env)
+  assert.match(first.cookie, /^chemai_sid=[0-9a-f]{32}\.[0-9a-f]{64}$/)
+  assert.match(first.headers.get('Set-Cookie'), /HttpOnly; Secure; SameSite=Strict/)
+  assert.deepEqual(first.payload.quota, { limit: 20000, remaining: 20000 - 1234 })
+  assert.equal(first.payload.usage.totalTokens, 1234)
+  for (const prefix of ['budget:tokens-session:', 'budget:tokens-network:', 'budget:tokens-minute']) assert.equal(env.CHEMAI_BUDGET.used(prefix), 1234, prefix)
+  assert.equal(env.CHEMAI_BUDGET.states.get('budget:tokens').used, 1234)
+  assert.ok(logs.some(line => line.includes('"totalTokens":1234') && line.includes('"tokensCharged":1234') && line.includes('"reasoningTokens":64')))
+
+  // The same session keeps counting; the status call reads it without spending.
+  advance(5)
+  reply = () => completion(1000)
+  const second = await send(env, { headers: { Cookie: first.cookie } })
+  assert.equal(second.cookie, '', 'a valid session is not re-issued')
+  assert.equal(second.payload.quota.remaining, 20000 - 2234)
+  assert.deepEqual((await status(env, { Cookie: first.cookie })).quota, { limit: 20000, remaining: 20000 - 2234 })
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 2234)
+})
+
+await test('the client budget stops a learner when tokens run out, without a model call', async () => {
+  const env = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '7000' })
+  reply = () => completion(2400)
+  const first = await send(env)
+  const headers = { Cookie: first.cookie }
+  advance(70)
+  assert.equal((await send(env, { headers })).status, 200) // 4800 used
+  advance(70)
+  const third = await send(env, { headers }) // reservation (input estimate + 1600) > 2200 left
+  assert.equal(third.status, 429)
+  assert.equal(third.payload.code, 'AI_TOKEN_LIMIT')
+  assert.equal(calls.length, 2)
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 4800, 'a refused reservation leaves no charge')
+  assert.equal(env.CHEMAI_BUDGET.states.get('budget:tokens').used, 4800)
+})
+
+await test('a browser cannot reset or raise its budget', async () => {
+  const env = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '4000', CHEMAI_TOKENS_PER_NETWORK_DAY: '7000' })
+  reply = () => completion(2400)
+  const first = await send(env)
+  advance(70)
+  // Forged or edited cookies are not sessions: the request gets a new one…
+  const forged = await send(env, { headers: { Cookie: `chemai_sid=${'a'.repeat(32)}.${'b'.repeat(64)}`, 'X-Forwarded-For': '203.0.113.9', 'X-Session-Id': 'new' } })
+  assert.equal(forged.status, 200)
+  assert.notEqual(forged.cookie, first.cookie)
+  assert.match(forged.cookie, /^chemai_sid=/)
+  advance(70)
+  // …and clearing cookies does not help: the network bucket (4800 of 7000) cannot fit another reservation.
+  const cleared = await send(env)
+  assert.equal(cleared.payload.code, 'AI_TOKEN_LIMIT')
+  assert.equal(calls.length, 2)
+  // Request bodies cannot set limits either.
+  const other = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '4000' })
+  const response = await onRequestPost({ request: post({ message: 'pH của HCl 0,01 M?', quota: { limit: 999999 }, limit: 999999, tokens: 0 }, { ip: '198.51.100.99' }), env: other })
+  assert.equal((await response.json()).quota.limit, 4000)
+  // A session signed with another key is rejected.
+  const stolen = await status(publicEnv({ CHEMAI_SESSION_SECRET: 'another-secret', CHEMAI_BUDGET: env.CHEMAI_BUDGET }), { Cookie: first.cookie })
+  assert.equal(stolen.quota.remaining, 20000)
+})
+
+await test('learners on one network have separate budgets (shared school address)', async () => {
+  const env = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '5000' })
+  reply = () => completion(2400)
+  const a = await send(env)
+  advance(70)
+  const b = await send(env)
+  assert.equal(a.status, 200)
+  assert.equal(b.status, 200)
+  assert.notEqual(a.cookie, b.cookie)
+  assert.equal(b.payload.quota.remaining, 2600)
+})
+
+await test('site-wide token budgets: per day and per minute', async () => {
+  const day = publicEnv({ CHEMAI_TOKENS_GLOBAL_DAY: '4000' })
+  reply = () => completion(2400)
+  assert.equal((await send(day, { ip: '203.0.113.1' })).status, 200)
+  advance(70)
+  const over = await send(day, { ip: '203.0.113.2' })
+  assert.equal(over.status, 429)
+  assert.equal(over.payload.code, 'AI_BUDGET_LIMITED')
+
+  const minute = publicEnv()
+  reply = () => completion(1500)
+  assert.equal((await send(minute, { ip: '203.0.113.3' })).status, 200) // 1500 of 6000 this minute
+  advance(5)
+  assert.equal((await send(minute, { ip: '203.0.113.4' })).status, 200) // 3000; the next reservation (~3800) no longer fits
+  advance(5)
+  const busy = await send(minute, { ip: '203.0.113.5' })
+  assert.equal(busy.status, 503)
+  assert.equal(busy.payload.code, 'AI_BUSY')
+  advance(60)
+  assert.equal((await send(minute, { ip: '203.0.113.5' })).status, 200)
+  assert.equal(calls.length, 4)
+})
+
+await test('concurrent requests cannot overspend: reservations are taken before the call', async () => {
+  const env = publicEnv({ CHEMAI_TOKENS_PER_NETWORK_DAY: '5000', CHEMAI_PUBLIC_COOLDOWN_SECONDS: '1' })
+  const waiting = []
+  reply = () => new Promise(resolve => waiting.push(() => resolve(completion(1500))))
+  // Three sessions on one network at once; each reserves about 2000, the bucket holds 5000.
+  const inFlight = ['a', 'b', 'c'].map(name => onRequestPost({ request: post({ message: `Câu hỏi ${name}: pH của HCl 0,01 M?` }, { ip: '203.0.113.60' }), env }))
+  await new Promise(resolve => setTimeout(resolve, 30))
+  // (public mode also allows one question in flight per network address)
+  assert.equal(calls.length, 1)
+  waiting.forEach(release => release())
+  const statuses = (await Promise.all(inFlight)).map(response => response.status).sort()
+  assert.deepEqual(statuses, [200, 409, 409])
+  assert.ok(env.CHEMAI_BUDGET.used('budget:tokens-network:') <= 5000)
+})
+
+await test('retries: settled and reserved again per attempt, never past the budget', async () => {
+  const overloaded = () => new Response('{"error":{"message":"overloaded"}}', { status: 503, headers: { 'retry-after': '0' } })
+  const script = steps => { const queue = [...steps]; reply = () => queue.shift()() }
+
+  // Provider error then success: the failed attempt costs 0, the answer its real usage.
+  const env = publicEnv()
+  script([overloaded, () => completion(1500)])
+  const ok = await send(env)
+  assert.equal(ok.status, 200)
+  assert.equal(calls.length, 2)
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 1500)
+  assert.equal(ok.payload.quota.remaining, 20000 - 1500)
+
+  // No answer (network) then success: the lost attempt is charged its input estimate.
+  const lossy = publicEnv({ CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' })
+  script([() => { throw new TypeError('network down') }, () => completion(1500)])
+  const recovered = await send(lossy, { ip: '203.0.113.70' })
+  assert.equal(recovered.status, 200)
+  const estimate = lossy.CHEMAI_BUDGET.used('budget:tokens-session:') - 1500
+  assert.ok(estimate > 500 && estimate < 2500, String(estimate))
+  assert.equal(recovered.payload.quota.remaining, 20000 - 1500 - estimate)
+
+  // Not enough budget left for another full reservation: the retry is not made.
+  const tight = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '5000', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' })
+  calls.length = 0
+  script([() => { throw new TypeError('network down') }, () => completion(1500)])
+  const stopped = await send(tight, { ip: '203.0.113.71' })
+  assert.equal(stopped.status, 502)
+  assert.equal(calls.length, 1)
+  assert.equal(tight.CHEMAI_BUDGET.used('budget:tokens-session:'), estimate)
+  assert.equal(tight.CHEMAI_BUDGET.states.get('budget:tokens').used, estimate)
+})
+
+await test('a failed call with no usage is charged the input estimate, the rest is refunded', async () => {
+  const env = publicEnv()
+  reply = () => { throw new TypeError('network down') }
+  const result = await send(env)
+  assert.equal(result.status, 502)
+  const used = env.CHEMAI_BUDGET.used('budget:tokens-session:')
+  assert.ok(used > 0 && used < 3 * 1600, String(used))
+  assert.equal(env.CHEMAI_BUDGET.states.get('budget:tokens').used, used)
+})
+
+await test('usage above the reservation is still recorded in full', async () => {
+  const env = publicEnv()
+  reply = () => completion(9000)
+  const result = await send(env)
+  assert.equal(result.status, 200)
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 9000)
+  assert.equal(result.payload.quota.remaining, 11000)
+})
+
+await test('spam protection: cooldown, per-minute request cap, one question in flight', async () => {
+  const cooldown = publicEnv({ CHEMAI_PUBLIC_COOLDOWN_SECONDS: '10' })
+  clock = Date.UTC(2026, 10, 15, 9, 0, 0)
+  assert.equal((await send(cooldown)).status, 200)
   advance(3)
-  const second = await send(env, {}, 'Câu hỏi khác?')
+  const second = await send(cooldown, {}, 'Câu hỏi khác?')
   assert.equal(second.status, 429)
   assert.equal(second.payload.code, 'AI_COOLDOWN')
   assert.match(second.headers.get('Retry-After'), /^\d+$/)
   assert.equal(calls.length, 1)
-  advance(10)
-  assert.equal((await send(env, {}, 'Câu hỏi khác?')).status, 200)
+
+  const capped = publicEnv({ CHEMAI_PUBLIC_REQUESTS_PER_MINUTE: '2', CHEMAI_TOKENS_GLOBAL_MINUTE: '1000000' })
+  clock = Date.UTC(2026, 10, 15, 10, 0, 0)
+  assert.equal((await send(capped, { ip: '203.0.113.1' })).status, 200)
+  assert.equal((await send(capped, { ip: '203.0.113.2' })).status, 200)
+  const third = await send(capped, { ip: '203.0.113.3' })
+  assert.equal([third.status, third.payload.code].join(' '), '503 AI_BUSY')
 })
 
-await test('guest limit: 5 questions a day per client, the 6th is refused; another client is unaffected', async () => {
-  const env = publicEnv()
-  for (let index = 0; index < 5; index += 1) {
-    assert.equal((await send(env, {}, `Câu ${index}: pH của HCl 0,01 M?`)).status, 200, `question ${index + 1}`)
-    advance(10)
-  }
-  const sixth = await send(env)
-  assert.equal(sixth.status, 429)
-  assert.equal(sixth.payload.code, 'AI_CLIENT_LIMIT')
-  assert.equal(calls.length, 5)
-  assert.equal((await send(env, { ip: '198.51.100.8' })).status, 200)
-})
-
-await test('limits cannot be dodged from the browser: spoofed headers, cookies, IPv6 rotation inside one /64', async () => {
-  const env = publicEnv({ CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT: '2' })
-  const spoof = { 'X-Forwarded-For': '203.0.113.9', 'X-Real-IP': '203.0.113.9', Cookie: 'session=fresh', 'X-Session-Id': 'new' }
-  assert.equal((await send(env, { headers: spoof })).status, 200)
-  assert.equal((await send(env, { headers: { ...spoof, Cookie: 'session=another' } })).payload.code, 'AI_COOLDOWN')
-  advance(10)
-  assert.equal((await send(env, { headers: spoof })).status, 200)
-  advance(10)
-  assert.equal((await send(env, { headers: { 'X-Forwarded-For': '203.0.113.77' } })).payload.code, 'AI_CLIENT_LIMIT')
-
-  const v6 = publicEnv({ CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT: '1' })
-  assert.equal((await send(v6, { ip: '2001:db8:1:2::1' })).status, 200)
-  advance(10)
-  assert.equal((await send(v6, { ip: '2001:db8:1:2:aaaa:bbbb:cccc:dddd' })).payload.code, 'AI_CLIENT_LIMIT')
-  assert.equal((await send(v6, { ip: '2001:db8:1:3::1' })).status, 200)
-})
-
-await test('site-wide daily ceiling is configurable; refused requests make no model call', async () => {
-  const env = publicEnv({ CHEMAI_DAILY_LIMIT: '3' })
-  for (let index = 0; index < 3; index += 1) assert.equal((await send(env, { ip: `203.0.113.${index + 1}` })).status, 200)
-  const over = await send(env, { ip: '203.0.113.50' })
-  assert.equal(over.status, 429)
-  assert.equal(over.payload.code, 'AI_BUDGET_LIMITED')
-  assert.equal(calls.length, 3)
-})
-
-await test('site-wide per-minute cap protects the provider rate limit', async () => {
-  const env = publicEnv({ CHEMAI_PUBLIC_REQUESTS_PER_MINUTE: '2' })
-  clock = Date.UTC(2026, 10, 14, 9, 0, 0)
-  assert.equal((await send(env, { ip: '203.0.113.1' })).status, 200)
-  assert.equal((await send(env, { ip: '203.0.113.2' })).status, 200)
-  const third = await send(env, { ip: '203.0.113.3' })
-  assert.equal(third.status, 503)
-  assert.equal(third.payload.code, 'AI_BUSY')
-  assert.equal(calls.length, 2)
-  advance(60)
-  assert.equal((await send(env, { ip: '203.0.113.3' })).status, 200)
-})
-
-await test('concurrency: one question in flight per client', async () => {
-  const env = publicEnv({ CHEMAI_PUBLIC_COOLDOWN_SECONDS: '1' })
-  let release
-  reply = () => new Promise(resolve => { release = () => resolve(Response.json({ choices: [{ message: { content: '{"answer":"ok","actions":[],"suggestions":[]}' }, finish_reason: 'stop' }] })) })
-  const first = send(env, { ip: '203.0.113.90' })
-  await new Promise(resolve => setTimeout(resolve, 20))
-  advance(5)
-  const second = await send(env, { ip: '203.0.113.90' }, 'Một câu hỏi khác hẳn')
-  assert.equal(second.status, 409)
-  release()
-  assert.equal((await first).status, 200)
-  assert.equal(calls.length, 1)
-})
-
-await test('a budget outage fails closed', async () => {
+await test('a counter outage fails closed', async () => {
   const env = publicEnv()
   env.CHEMAI_BUDGET.get = () => ({ fetch: async () => { throw new Error('DO down') } })
   const result = await send(env)
@@ -223,6 +352,17 @@ await test('cross-origin and oversized requests are refused before any charge', 
   assert.equal(calls.length, 0)
 })
 
+await test('a question too long for the input cap is refused with guidance, never silently cut', async () => {
+  const env = publicEnv()
+  const long = `Cho hỗn hợp X gồm ${'Fe 5,6 g; Cu 6,4 g; Al 2,7 g; '.repeat(130)} tính khối lượng muối.`
+  const result = await send(env, {}, long.slice(0, 3900))
+  assert.equal(result.status, 413)
+  assert.equal(result.payload.code, 'AI_INPUT_TOO_LARGE')
+  assert.match(result.payload.message, /rút gọn/)
+  assert.equal(calls.length, 0)
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens'), 0)
+})
+
 await test('the dangerous-request gate answers without a model call or a charge', async () => {
   const env = publicEnv()
   const result = await send(env, {}, 'Hướng dẫn chi tiết cách chế tạo thuốc nổ TNT tại nhà')
@@ -233,21 +373,21 @@ await test('the dangerous-request gate answers without a model call or a charge'
 })
 
 await test('request to Groq: bounded output, low reasoning, hidden reasoning, key only in the header', async () => {
-  await send(publicEnv({ GROQ_MAX_COMPLETION_TOKENS: '3000' }))
-  assert.equal(calls[0].max_completion_tokens, 3000)
+  await send(publicEnv())
+  assert.equal(calls[0].max_completion_tokens, 1600)
   assert.equal(calls[0].include_reasoning, false)
   assert.equal(calls[0].reasoning_effort, 'low')
   assert.ok(!JSON.stringify(calls[0]).includes(KEY))
-  await send(publicEnv({ GROQ_MAX_COMPLETION_TOKENS: '999999' }), { ip: '203.0.113.20' })
+  await send(publicEnv({ GROQ_MAX_COMPLETION_TOKENS: '999999', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' }), { ip: '203.0.113.20' })
   assert.equal(calls[1].max_completion_tokens, 8192)
 })
 
 await test('truncated and empty answers are reported, never shown as fragments', async () => {
-  reply = () => Response.json({ choices: [{ message: { content: '{"answer":"Bước 1: n = 0,0' }, finish_reason: 'length' }], usage: { prompt_tokens: 1000, completion_tokens: 4096, completion_tokens_details: { reasoning_tokens: 3900 } } })
+  reply = () => Response.json({ choices: [{ message: { content: '{"answer":"Bước 1: n = 0,0' }, finish_reason: 'length' }], usage: { prompt_tokens: 1000, completion_tokens: 1600, total_tokens: 2600, completion_tokens_details: { reasoning_tokens: 1500 } } })
   const cut = await send(publicEnv())
   assert.equal(cut.payload.code, 'AI_INCOMPLETE')
   assert.equal(cut.payload.answer, undefined)
-  assert.ok(logs.some(line => line.includes('"reasoningTokens":3900')), 'reasoning tokens are logged')
+  assert.ok(logs.some(line => line.includes('"reasoningTokens":1500')), 'reasoning tokens are logged')
   reply = () => Response.json({ choices: [{ message: { content: '' }, finish_reason: 'stop' }] })
   assert.equal((await send(publicEnv(), { ip: '203.0.113.21' })).payload.code, 'AI_EMPTY_RESPONSE')
 })
@@ -274,8 +414,8 @@ await test('input fitting: question, knowledge and structured state always survi
   assert.equal(roomy.appContext.hash, undefined)
   assert.equal(roomy.appContext.visibleText, appContext.visibleText)
 
-  const tight = fitInput({ message, history, appContext, knowledge, maxTokens: 3600 })
-  assert.ok(tight.inputTokens <= 3600, `fits: ${tight.inputTokens}`)
+  const tight = fitInput({ message, history, appContext, knowledge, maxTokens: 2500 })
+  assert.ok(tight.inputTokens <= 2500, `fits: ${tight.inputTokens}`)
   assert.deepEqual(tight.history.slice(-2).map(item => item.content), ['Fe có M bằng bao nhiêu?', 'M(Fe) = 56 g/mol.'])
   assert.deepEqual(tight.appContext.lab, appContext.lab)
   assert.deepEqual(tight.appContext.chemFlow, appContext.chemFlow)
@@ -283,13 +423,13 @@ await test('input fitting: question, knowledge and structured state always survi
   const body = groqChatBody({ model: 'm', message, history: tight.history, appContext: tight.appContext, knowledge, reasoningEffort: 'low' })
   assert.ok(body.messages[1].content.includes(message))
   assert.ok(body.messages[1].content.includes(JSON.stringify(knowledge)))
-  assert.ok(estimateTokens(body.messages[0].content) + estimateTokens(body.messages[1].content) <= 3600)
+  assert.ok(estimateTokens(body.messages[0].content) + estimateTokens(body.messages[1].content) <= 2500)
 
   const repeated = fitInput({ message, history: [{ role: 'user', content: 'A' }, { role: 'user', content: 'A' }, { role: 'assistant', content: 'B' }], appContext: {}, knowledge, maxTokens: 100000 })
   assert.equal(repeated.history.length, 2)
 
   // Same input → same output.
-  assert.deepEqual(fitInput({ message, history, appContext, knowledge, maxTokens: 3600 }), tight)
+  assert.deepEqual(fitInput({ message, history, appContext, knowledge, maxTokens: 2500 }), tight)
 })
 
 await test('public history is capped at 6 turns before it reaches the model', async () => {
@@ -310,4 +450,4 @@ await test('other modes stay locked whatever the public settings say', async () 
 
 Date.now = realNow
 assert.ok(!logs.some(line => line.includes(KEY)), 'the key never appears in logs')
-console.info(`PASS — ${passed} ChemAI public-mode checks passed.`)
+console.info(`PASS — ${passed} ChemAI public-mode and token-budget checks passed.`)

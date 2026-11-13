@@ -1,7 +1,7 @@
 import { retrieveChemKnowledge } from './_knowledge.js'
 import { answerGuard } from './_chemFacts.js'
 import { safetyGate } from './_chemSafety.js'
-import { checkShared, consumeBudget, consumeWindow, costBudgetConfigured, dailyLimit } from './_limits.js'
+import { checkShared, consumeBudget, consumeWindow, costBudgetConfigured, dailyLimit, peekTokens, reserveTokens, settleTokens, sharedControls, windowKey } from './_limits.js'
 import { APP_VERSION } from '../../src/appMeta.js'
 import { chemAIAccess, accessDenied, accessMode, malformedEnvNames } from './_access.js'
 
@@ -41,17 +41,25 @@ const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b'
 const GROQ_MODELS = Object.freeze(['openai/gpt-oss-120b', 'openai/gpt-oss-20b'])
 const GROQ_MAX_ATTEMPTS = 3
 // openai/gpt-oss-120b counts its (hidden) reasoning inside the completion budget.
-const GROQ_MAX_COMPLETION_TOKENS = 4096
-// Public (anonymous) mode starting limits; each has a server variable (see chargeChat).
-const PUBLIC_DAILY_PER_CLIENT = 5
-const PUBLIC_COOLDOWN_SECONDS = 10
+// Output cap, reasoning included. With the input cap below one request reserves at most
+// 4100 tokens, inside Groq's 8K tokens/minute for this model (Developer tier).
+const GROQ_MAX_COMPLETION_TOKENS = 1600
+// Daily use is limited by tokens, not by a number of questions. Starting values, each with
+// a server variable of the same name prefixed CHEMAI_ (see tokenBuckets).
+const TOKENS_PER_CLIENT_DAY = 20_000
+const TOKENS_PER_NETWORK_DAY = 60_000 // one address may hold several learners (a school)
+const TOKENS_GLOBAL_DAY = 100_000 // Groq allows 200K/day for this model
+const TOKENS_GLOBAL_MINUTE = 6_000 // Groq allows 8K/minute
+// Spam protection only (public mode); the token budgets above are the real quota.
+const PUBLIC_COOLDOWN_SECONDS = 3
 const PUBLIC_REQUESTS_PER_MINUTE = 20 // site-wide, below Groq's 30 RPM for openai/gpt-oss-120b
 const PUBLIC_MAX_HISTORY_ITEMS = 6
 // Estimated input budget (system + user turn). Groq counts prompt + max_completion_tokens
 // against the per-minute token limit (8K on the Developer tier), so input must stay bounded.
-const DEFAULT_MAX_INPUT_TOKENS = 3600
-// Vietnamese with diacritics tokenises densely; 2.5 chars/token over-estimates on purpose.
-export const estimateTokens = value => Math.ceil(String(value).length / 2.5)
+const DEFAULT_MAX_INPUT_TOKENS = 2500
+// Used only before a call (reservation, input cap). After a call the provider's own usage
+// numbers replace it. 3 chars/token is on the safe side for Vietnamese chemistry text.
+export const estimateTokens = value => Math.ceil(String(value).length / 3)
 const clampInt = (value, fallback, min, max) => Math.min(max, Math.max(min, positiveInt(value, fallback)))
 const accessOptions = env => ({ provider: chatProvider(env) || 'none', publicRoute: true, release: APP_VERSION })
 // 498 = Groq flex-tier capacity exceeded.
@@ -847,19 +855,23 @@ const groqRetryable = result => GROQ_TRANSIENT_STATUS.has(result.upstream.status
 // Same model each attempt; every extra attempt is charged to the shared budget first.
 async function requestGroqResilient({ env, body, signal, beforeRetry }) {
   let lastResult = null
+  // 'status': the provider answered with an error; 'network': no answer, outcome unknown.
+  let previous = 'status'
   for (let index = 0; index < GROQ_MAX_ATTEMPTS; index += 1) {
-    if (index > 0 && !(await beforeRetry())) break
+    if (index > 0 && !(await beforeRetry(previous))) break
     let result
     try {
       result = { ...await requestGroq({ env, body, signal }), attemptCount: index + 1, fallbackUsed: false }
     }
     catch (error) {
       if (signal?.aborted || index >= GROQ_MAX_ATTEMPTS - 1) throw error
+      previous = 'network'
       console.warn('[ChemAI] Groq network error, retrying', error?.name || 'Error', `attempt=${index + 1}/${GROQ_MAX_ATTEMPTS}`)
       await sleep(retryDelay(index), signal)
       continue
     }
     lastResult = result
+    previous = 'status'
     if (result.upstream.ok || !groqRetryable(result) || index >= GROQ_MAX_ATTEMPTS - 1) return result
     // A second 429 means the account limit, not a burst: stop.
     if (result.upstream.status === 429 && index >= 1) return result
@@ -905,7 +917,7 @@ export async function onRequestGet(context) {
   const access = await chemAIAccess(request, env, accessOptions(env))
   // `authenticated` only for a verified Access identity that is not on the allowlist.
   if (!access.allowed) return json({ ok: true, service: 'ChemAI', release: APP_VERSION, access: false, configured: false, ...(access.reason === 'NOT_APPROVED' ? { authenticated: true } : {}) })
-  return chatStatus(context)
+  return chatStatus(context, await clientQuota(request, env))
 }
 
 export async function onRequestPost(context) {
@@ -916,11 +928,21 @@ export async function onRequestPost(context) {
 }
 
 // Ungated pipeline below: reachable over HTTP only through the access checks above.
-export function chatStatus(context) {
+// The learner's own token budget for today (Groq only); read-only.
+async function clientQuota(request, env) {
+  if (!groqConfigured(env) || !providerModelAllowed(env) || !sharedControls(env).strictBudget) return null
+  const session = await readSession(request, env)
+  const bucket = tokenBuckets(env, { session: session || 'none', network: 'none' })[0]
+  const used = session ? await peekTokens(env, bucket) : 0
+  return { limit: bucket.limit, remaining: Math.max(0, bucket.limit - (used ?? 0)) }
+}
+
+export function chatStatus(context, quota = null) {
   const { env } = context
   const configured = providerConfigured(env) && providerModelAllowed(env)
 
   return json({
+    ...(quota ? { quota } : {}),
     ok: true,
     access: true,
     configured,
@@ -1103,8 +1125,13 @@ async function providerChat({ request, env, requestId, started, colo, provider, 
   try {
     const limits = await chargeChat({ env, requestId, colo, provider, model, ip, publicMode })
     if (limits instanceof Response) return limits
-    const call = provider === 'groq' ? groqCall : geminiCall
-    return await call({ env, requestId, started, colo, model, message, body, chatLimit: limits.chatLimit, publicMode })
+    if (provider !== 'groq') return await geminiCall({ env, requestId, started, colo, model, message, body, chatLimit: limits.chatLimit })
+    // Token budgets follow a server-signed anonymous session plus the network address.
+    const known = await readSession(request, env)
+    const session = known || newSessionId()
+    const response = await groqCall({ env, requestId, started, colo, model, message, body, chatLimit: limits.chatLimit, publicMode, client: { session, network: dailyClientKey(ip) } })
+    if (!known) response.headers.append('Set-Cookie', await sessionCookie(env, session))
+    return response
   }
   finally {
     inFlightKeys.delete(duplicateKey)
@@ -1115,9 +1142,9 @@ async function providerChat({ request, env, requestId, started, colo, provider, 
 // Public mode adds a per-client cooldown and a site-wide per-minute cap, and uses its own
 // (lower) per-client daily limit. All counters live in CHEMAI_BUDGET; the client key is the
 // network address seen by Cloudflare, never anything the browser sends.
-//   CHEMAI_PUBLIC_COOLDOWN_SECONDS (10) · CHEMAI_PUBLIC_REQUESTS_PER_MINUTE (20)
-//   CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT (5) · CHEMAI_DAILY_LIMIT_PER_CLIENT (40, other modes)
-//   CHEMAI_DAILY_LIMIT[_CHAT] (200, site-wide, all modes)
+//   CHEMAI_PUBLIC_COOLDOWN_SECONDS (3) · CHEMAI_PUBLIC_REQUESTS_PER_MINUTE (20)
+//   CHEMAI_DAILY_LIMIT_PER_CLIENT (40 questions, Gemini only)
+//   CHEMAI_DAILY_LIMIT[_CHAT] (200 upstream calls, site-wide, all modes)
 async function chargeChat({ env, requestId, colo, provider, model, ip, publicMode = false }) {
   const client = dailyClientKey(ip)
   if (publicMode) {
@@ -1135,10 +1162,10 @@ async function chargeChat({ env, requestId, colo, provider, model, ip, publicMod
       return errorResponse('AI_BUSY', 'ChemAI đang nhận nhiều câu hỏi cùng lúc. Hãy thử lại sau ít phút.', 503, requestId, { 'Retry-After': String(minute.retryAfter) })
     }
   }
-  const clientLimit = publicMode
-    ? positiveInt(env.CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT, PUBLIC_DAILY_PER_CLIENT)
-    : positiveInt(env.CHEMAI_DAILY_LIMIT_PER_CLIENT, 40)
-  const perClient = await consumeBudget(env, { scope: `chat-client:${client}`, limit: clientLimit })
+  // Groq: no per-client question count; its daily quota is the token budget in groqCall.
+  const perClient = provider === 'groq'
+    ? { allowed: true }
+    : await consumeBudget(env, { scope: `chat-client:${client}`, limit: positiveInt(env.CHEMAI_DAILY_LIMIT_PER_CLIENT, 40) })
   if (!perClient.allowed) {
     logRequest({ requestId, provider, status: 429, quota: `client:${perClient.code}`, model, colo })
     return perClient.code === 'DAILY_BUDGET_EXHAUSTED'
@@ -1169,7 +1196,7 @@ async function chargeChat({ env, requestId, colo, provider, model, ip, publicMod
 }
 
 // Shared tail of both providers: provider text → validated JSON → chemistry guard → response.
-function structuredAnswer({ outputText, message, knowledge, trace, started, finishReason, meta }) {
+function structuredAnswer({ outputText, message, knowledge, trace, started, finishReason, meta, extra = {} }) {
   let structured
   try {
     structured = JSON.parse(cleanStructuredText(outputText))
@@ -1191,7 +1218,8 @@ function structuredAnswer({ outputText, message, knowledge, trace, started, fini
     answer: guarded.answer,
     actions: normalizeActions(structured.actions),
     suggestions: normalizeSuggestions(structured.suggestions),
-    meta: { ...meta, corrections: guarded.findings.length }
+    meta: { ...meta, corrections: guarded.findings.length },
+    ...extra
   })
 }
 
@@ -1221,15 +1249,97 @@ function callFailed({ error, controller, requestId, provider, model, colo, charg
   )
 }
 
-async function groqCall({ env, requestId, started, colo, model, message, body, chatLimit, publicMode = false }) {
+// ---- Anonymous session and token budgets ------------------------------------------------
+// The session id is random and signed by the server (HMAC); it holds no personal data and
+// a browser cannot mint or alter one. Clearing the cookie gives a new session, which is why
+// the network bucket also applies.
+const SESSION_COOKIE = 'chemai_sid'
+const newSessionId = () => crypto.randomUUID().replace(/-/g, '')
+const hex = bytes => [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0')).join('')
+
+async function sessionKey(env) {
+  const secret = String(env.CHEMAI_SESSION_SECRET || env.GROQ_API_KEY || '')
+  if (!secret) return null
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify'])
+}
+const sessionMessage = id => new TextEncoder().encode(`chemai-session-v1:${id}`)
+
+async function sessionCookie(env, id) {
+  const signature = hex(await crypto.subtle.sign('HMAC', await sessionKey(env), sessionMessage(id)))
+  return `${SESSION_COOKIE}=${id}.${signature}; Path=/api; Max-Age=2592000; HttpOnly; Secure; SameSite=Strict`
+}
+
+// Verified session id from the cookie, or null.
+export async function readSession(request, env) {
+  const match = /(?:^|;\s*)chemai_sid=([0-9a-f]{32})\.([0-9a-f]{64})(?:;|$)/.exec(request.headers.get('Cookie') || '')
+  if (!match) return null
+  try {
+    const key = await sessionKey(env)
+    const signature = Uint8Array.from(match[2].match(/../g), pair => parseInt(pair, 16))
+    return key && await crypto.subtle.verify('HMAC', key, signature, sessionMessage(match[1])) ? match[1] : null
+  }
+  catch {
+    return null
+  }
+}
+
+// Order matters: the first bucket is the one shown to the learner.
+function tokenBuckets(env, { session, network }, now = Date.now()) {
+  const day = new Date(now).toISOString().slice(0, 10)
+  return [
+    { name: 'client', scope: `tokens-session:${session}`, limit: positiveInt(env.CHEMAI_TOKENS_PER_CLIENT_DAY, TOKENS_PER_CLIENT_DAY), day },
+    { name: 'network', scope: `tokens-network:${network}`, limit: positiveInt(env.CHEMAI_TOKENS_PER_NETWORK_DAY, TOKENS_PER_NETWORK_DAY), day },
+    { name: 'day', scope: 'tokens', limit: positiveInt(env.CHEMAI_TOKENS_GLOBAL_DAY, TOKENS_GLOBAL_DAY), day },
+    { name: 'minute', scope: 'tokens-minute', limit: positiveInt(env.CHEMAI_TOKENS_GLOBAL_MINUTE, TOKENS_GLOBAL_MINUTE), day: windowKey(60, now) }
+  ]
+}
+
+function tokenRefusal(outcome, requestId) {
+  if (outcome.bucket === 'client' || outcome.bucket === 'network') {
+    return errorResponse('AI_TOKEN_LIMIT', 'Bạn đã dùng hết ngân sách token ChemAI của hôm nay. Hãy quay lại vào ngày mai.', 429, requestId, { 'Retry-After': '3600' })
+  }
+  if (outcome.bucket === 'minute') {
+    return errorResponse('AI_BUSY', 'ChemAI đang nhận nhiều câu hỏi cùng lúc. Hãy thử lại sau khoảng một phút.', 503, requestId, { 'Retry-After': '60' })
+  }
+  return errorResponse('AI_BUDGET_LIMITED', 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.', 429, requestId, { 'Retry-After': '60' })
+}
+
+async function groqCall({ env, requestId, started, colo, model, message, body, chatLimit, publicMode = false, client }) {
   const knowledge = retrieveChemKnowledge(message, sanitizeContext(body?.context))
   const { history, appContext, trimmed, inputTokens } = fitInput({
     message,
     history: sanitizeHistory(body?.history).slice(publicMode ? -PUBLIC_MAX_HISTORY_ITEMS : 0),
     appContext: pruneEmpty(sanitizeContext(body?.context)) || {},
     knowledge,
-    maxTokens: clampInt(env.CHEMAI_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS, 2500, 32000)
+    maxTokens: clampInt(env.CHEMAI_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS, 1500, 32000)
   })
+  const maxInput = clampInt(env.CHEMAI_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS, 1500, 32000)
+  // Still too long after the safe cuts: ask the learner to shorten it; never cut the problem itself.
+  if (inputTokens > maxInput) {
+    logRequest({ requestId, provider: 'groq', model, colo, status: 413, code: 'AI_INPUT_TOO_LARGE', inputTokensEstimate: inputTokens })
+    return errorResponse('AI_INPUT_TOO_LARGE', 'Câu hỏi quá dài so với giới hạn của ChemAI. Hãy rút gọn đề bài hoặc tách thành nhiều câu hỏi.', 413, requestId)
+  }
+  const maxCompletion = clampInt(env.GROQ_MAX_COMPLETION_TOKENS, GROQ_MAX_COMPLETION_TOKENS, 256, 8192)
+  // One attempt can cost at most this much; every attempt reserves it before the call.
+  const perAttempt = inputTokens + maxCompletion
+  const buckets = tokenBuckets(env, client)
+  const reservation = await reserveTokens(env, { buckets, tokens: perAttempt })
+  if (!reservation.allowed) {
+    logRequest({ requestId, provider: 'groq', model, colo, status: 429, quota: `tokens:${reservation.bucket || reservation.code}` })
+    return tokenRefusal(reservation, requestId)
+  }
+  // Accounting for an attempt that reports no usage:
+  //   provider answered with an error  → 0 tokens (nothing was generated or billed to us)
+  //   no answer at all (network, timeout) → the input estimate (it may have been processed)
+  // An attempt with usage is charged exactly usage.total_tokens (reasoning included).
+  let held = perAttempt // reservation of the attempt in progress
+  let carried = 0 // tokens already settled for earlier attempts of this request
+  let clientUsed = reservation.used.client
+  let last = null // tokens of the final attempt, once known
+  const quotaAfter = (usage, unknownOutcome = false) => {
+    last = Number.isInteger(usage?.total_tokens) ? usage.total_tokens : (unknownOutcome ? inputTokens : 0)
+    return { limit: buckets[0].limit, remaining: Math.max(0, buckets[0].limit - (clientUsed - held + last)), used: carried + last }
+  }
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort('timeout'), 52000)
   let charged = 1
@@ -1238,11 +1348,23 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
     const result = await requestGroqResilient({
       env,
       signal: controller.signal,
-      body: groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort: normalizeThinkingLevel(env.GROQ_REASONING_EFFORT), maxCompletionTokens: clampInt(env.GROQ_MAX_COMPLETION_TOKENS, GROQ_MAX_COMPLETION_TOKENS, 512, 8192) }),
-      beforeRetry: async () => {
+      body: groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort: normalizeThinkingLevel(env.GROQ_REASONING_EFFORT), maxCompletionTokens: maxCompletion }),
+      // A retry needs both a call unit and a fresh token reservation, or it does not happen.
+      beforeRetry: async previous => {
         const outcome = await consumeBudget(env, { scope: 'chat', limit: chatLimit })
-        if (outcome.allowed) charged += 1
-        return outcome.allowed
+        if (!outcome.allowed) return false
+        // Close the books on the failed attempt, then reserve the next one in full.
+        const spent = previous === 'network' ? inputTokens : 0
+        await settleTokens(env, { buckets, reserved: held, actual: spent })
+        carried += spent
+        clientUsed += spent - held
+        held = 0
+        const more = await reserveTokens(env, { buckets, tokens: perAttempt })
+        if (!more.allowed) return false
+        held = perAttempt
+        clientUsed = more.used.client
+        charged += 1
+        return true
       }
     })
     const { upstream, payload, rawText } = result
@@ -1257,8 +1379,11 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
       budgetUnits: charged,
       inputTokensEstimate: inputTokens,
       ...(trimmed.length ? { trimmed } : {}),
-      ...(usage ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, reasoningTokens: usage.completion_tokens_details?.reasoning_tokens ?? null } : {})
+      ...(usage ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, reasoningTokens: usage.completion_tokens_details?.reasoning_tokens ?? null, totalTokens: usage.total_tokens } : {})
     }
+    const quota = quotaAfter(usage)
+    trace.tokensReserved = perAttempt
+    trace.tokensCharged = quota.used
 
     if (!upstream.ok) {
       const failure = groqFailure(result)
@@ -1297,7 +1422,8 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
       trace,
       started,
       finishReason,
-      meta: metaFor(knowledge, { modelVersion: payload?.model }, model, result, 'Groq')
+      meta: metaFor(knowledge, { modelVersion: payload?.model }, model, result, 'Groq'),
+      extra: { quota: { limit: quota.limit, remaining: quota.remaining }, usage: usage ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, totalTokens: usage.total_tokens } : null }
     })
   }
   catch (error) {
@@ -1305,6 +1431,8 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
   }
   finally {
     clearTimeout(timeout)
+    if (last === null) quotaAfter(null, held > 0)
+    if (held || last) await settleTokens(env, { buckets, reserved: held, actual: last })
   }
 }
 

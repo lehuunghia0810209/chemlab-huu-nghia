@@ -181,6 +181,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           <span>Enter để gửi · Shift + Enter xuống dòng</span>
           <span id="chemai-count">0/${MAX_INPUT_LENGTH}</span>
         </div>
+        <p id="chemai-quota" class="chemai-quota" hidden></p>
       </form>
 
       <footer class="chemai-footer">
@@ -202,6 +203,28 @@ export function initChemAI({ version = APP_VERSION } = {}) {
   const contextLabel = root.querySelector('#chemai-context-label')
   const serviceBadge = root.querySelector('#chemai-service-badge')
   const lockedEl = root.querySelector('#chemai-locked')
+  const quotaEl = root.querySelector('#chemai-quota')
+
+  // Display only: the server holds and enforces the budget.
+  function showQuota(quota) {
+    const known = Number.isFinite(quota?.limit) && Number.isFinite(quota?.remaining)
+    quotaEl.hidden = !known
+    if (!known) return
+    const format = value => Math.max(0, Math.round(value)).toLocaleString('vi-VN')
+    quotaEl.dataset.state = quota.remaining > 0 ? 'ok' : 'empty'
+    quotaEl.textContent = quota.remaining > 0
+      ? `Bạn còn ${format(quota.remaining)} / ${format(quota.limit)} token hôm nay.`
+      : `Bạn đã dùng hết ${format(quota.limit)} token của hôm nay. Hãy quay lại vào ngày mai.`
+  }
+
+  async function refreshQuota() {
+    try {
+      const response = await fetch('/api/chat', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+      showQuota((await response.json())?.quota)
+    }
+    catch {
+    }
+  }
   const mobileMedia = window.matchMedia('(max-width: 767px)')
 
   function syncVisualViewport() {
@@ -250,6 +273,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       const data = await response.json()
 
       setAccess(data?.access === true)
+      showQuota(data?.quota)
       if (!accessGranted) {
         lockedEl.textContent = data?.authenticated === true ? NOT_APPROVED_COPY : LOCKED_COPY
         serviceBadge.title = ''
@@ -579,6 +603,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
       renderMessages()
       renderActions(Array.isArray(data.actions) ? data.actions : [])
       renderSuggestions()
+      if (data.quota) showQuota(data.quota)
       providerName = data?.meta?.provider || providerName
       serviceBadge.title = data?.meta?.model ? `${providerName} · ${data.meta.model}` : providerName
       setServiceState('online', providerName)
@@ -626,6 +651,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'AI_EMPTY_RESPONSE',
           'AI_COOLDOWN',
           'AI_INPUT_TOO_LARGE',
+          'AI_BUDGET_LIMITED',
           'AI_REQUEST_FAILED',
           'AI_OVERLOADED',
           'AI_BUSY',
@@ -641,8 +667,12 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'AI_MODEL_UNAVAILABLE',
           // Daily limits: retrying today cannot help either.
           'AI_DAILY_LIMIT',
-          'AI_CLIENT_LIMIT'
+          'AI_CLIENT_LIMIT',
+          'AI_TOKEN_LIMIT'
         ])
+
+        // Failed calls can still spend or refund tokens: re-read the budget from the server.
+        if (!quotaEl.hidden) refreshQuota()
 
         if (configurationCodes.has(error?.code)) {
           setServiceState('setup', 'Tạm ngưng')

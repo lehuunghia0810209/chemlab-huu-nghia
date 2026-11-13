@@ -91,11 +91,79 @@ export async function consumeBudget(env, { scope, limit, cost = 1, now = new Dat
 // A short fixed window (cooldown, per-minute cap) on the same exact counter. The deployed
 // QuotaCounter only accepts a YYYY-MM-DD "day", so the window index is written in that shape.
 // shortcut: fixed window, two requests can straddle a boundary; a sliding cooldown needs a QuotaCounter change and redeploy.
+export function windowKey(seconds, now = Date.now()) {
+  const index = String(Math.floor(now / 1000 / seconds) % 1e8).padStart(8, '0')
+  return `${index.slice(0, 4)}-${index.slice(4, 6)}-${index.slice(6)}`
+}
+
 export async function consumeWindow(env, { scope, seconds, limit, now = Date.now() }) {
-  const second = Math.floor(now / 1000)
-  const index = String(Math.floor(second / seconds) % 1e8).padStart(8, '0')
-  const outcome = await consumeBudget(env, { scope, limit, day: `${index.slice(0, 4)}-${index.slice(4, 6)}-${index.slice(6)}` })
-  return { ...outcome, retryAfter: seconds - second % seconds }
+  const outcome = await consumeBudget(env, { scope, limit, day: windowKey(seconds, now) })
+  return { ...outcome, retryAfter: seconds - Math.floor(now / 1000) % seconds }
+}
+
+// ---- Token budgets (exact Durable Object only) ----------------------------------------
+// A bucket is { name, scope, limit, day }. Tokens are reserved before a provider call and
+// the unused part is refunded afterwards, so concurrent requests can never overspend.
+async function counter(env, path, bucket, body) {
+  const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(budgetName(env, bucket.scope)))
+  const response = await stub.fetch(`https://chemai-quota/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ day: bucket.day, ...body })
+  })
+  if (!response.ok) throw new Error('quota counter refused the call')
+  return response.json()
+}
+
+// Tokens used so far. The counter has no read call: a consume larger than the limit is
+// always refused and reports the current count without changing it.
+export async function peekTokens(env, bucket) {
+  if (!sharedControls(env).strictBudget) return null
+  try {
+    const outcome = await counter(env, 'consume', bucket, { limit: bucket.limit, cost: bucket.limit + 1 })
+    return Number.isInteger(outcome?.used) ? outcome.used : null
+  }
+  catch {
+    return null
+  }
+}
+
+async function giveBack(env, buckets, units) {
+  if (units < 1) return
+  await Promise.all(buckets.map(bucket => counter(env, 'refund', bucket, { units }).catch(() => null)))
+}
+
+// All buckets or none. Refused → { allowed: false, bucket } (name of the bucket that is full).
+export async function reserveTokens(env, { buckets, tokens }) {
+  if (!sharedControls(env).strictBudget) return { allowed: false, code: 'BUDGET_NOT_CONFIGURED' }
+  const taken = []
+  const used = {}
+  try {
+    for (const bucket of buckets) {
+      const outcome = await counter(env, 'consume', bucket, { limit: bucket.limit, cost: tokens })
+      if (outcome?.allowed !== true) {
+        await giveBack(env, taken, tokens)
+        return { allowed: false, code: 'TOKEN_BUDGET_EXHAUSTED', bucket: bucket.name, used: outcome?.used ?? null }
+      }
+      taken.push(bucket)
+      used[bucket.name] = outcome.used
+    }
+  }
+  catch {
+    await giveBack(env, taken, tokens)
+    return { allowed: false, code: 'LIMITER_UNAVAILABLE' }
+  }
+  return { allowed: true, used }
+}
+
+// reserved − actual goes back; actual above the reservation is recorded as real usage
+// (limit lifted for that one write so the count stays true). Best effort: a failed refund
+// only leaves the budget more conservative.
+export async function settleTokens(env, { buckets, reserved, actual }) {
+  if (actual < reserved) return giveBack(env, buckets, reserved - actual)
+  if (actual > reserved) {
+    await Promise.all(buckets.map(bucket => counter(env, 'consume', bucket, { limit: Number.MAX_SAFE_INTEGER, cost: actual - reserved }).catch(() => null)))
+  }
 }
 
 // Returns over-reserved units. Best effort: a failed refund only leaves the

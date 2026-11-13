@@ -6,9 +6,16 @@ CHEMAI_PROVIDER=groq
 GROQ_API_KEY=your_groq_api_key_here
 GROQ_MODEL=openai/gpt-oss-120b
 GROQ_REASONING_EFFORT=low
-# Optional token limits (defaults: 4096 output incl. reasoning, 3600 estimated input)
-# GROQ_MAX_COMPLETION_TOKENS=4096
-# CHEMAI_MAX_INPUT_TOKENS=3600
+# Token limits (defaults shown). One request reserves at most input + output tokens.
+# GROQ_MAX_COMPLETION_TOKENS=1600
+# CHEMAI_MAX_INPUT_TOKENS=2500
+# Daily use is limited by tokens, not by a number of questions (exact CHEMAI_BUDGET counter).
+# CHEMAI_TOKENS_PER_CLIENT_DAY=20000
+# CHEMAI_TOKENS_PER_NETWORK_DAY=60000
+# CHEMAI_TOKENS_GLOBAL_DAY=100000
+# CHEMAI_TOKENS_GLOBAL_MINUTE=6000
+# Signs the anonymous session cookie; when unset the provider key is used as the HMAC key.
+# CHEMAI_SESSION_SECRET=
 
 # Public (anonymous) mode. CHEMAI_ACCESS_MODE=public alone opens nothing: it also needs
 # CHEMAI_PUBLIC_APPROVAL="<provider>:<release>" (owner's record that the provider's terms
@@ -16,8 +23,8 @@ GROQ_REASONING_EFFORT=low
 # Durable Object binding. Leave unset until an approved release.
 # CHEMAI_PUBLIC_APPROVAL=
 # CHEMAI_PUBLIC_HOSTS=
-# CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT=5
-# CHEMAI_PUBLIC_COOLDOWN_SECONDS=10
+# Spam protection only:
+# CHEMAI_PUBLIC_COOLDOWN_SECONDS=3
 # CHEMAI_PUBLIC_REQUESTS_PER_MINUTE=20
 # CHEMAI_DAILY_LIMIT=200
 

@@ -120,7 +120,7 @@ await test('success: OpenAI-compatible request, key only in Authorization, guard
   assert.equal(call.body.reasoning_effort, 'low')
   assert.equal(call.body.include_reasoning, false)
   assert.equal(call.body.stream, false)
-  assert.equal(call.body.max_completion_tokens, 4096)
+  assert.equal(call.body.max_completion_tokens, 1600)
   assert.equal('reasoning_format' in call.body, false, 'not supported by gpt-oss')
   assert.equal('max_tokens' in call.body, false, 'deprecated field')
   assert.equal(result.payload.ok, true)
