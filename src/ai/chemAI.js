@@ -624,6 +624,8 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'GROQ_BAD_REQUEST',
           'GROQ_OVERLOADED',
           'AI_EMPTY_RESPONSE',
+          'AI_COOLDOWN',
+          'AI_INPUT_TOO_LARGE',
           'AI_REQUEST_FAILED',
           'AI_OVERLOADED',
           'AI_BUSY',

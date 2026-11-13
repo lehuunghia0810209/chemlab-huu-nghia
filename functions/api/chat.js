@@ -1,9 +1,9 @@
 import { retrieveChemKnowledge } from './_knowledge.js'
 import { answerGuard } from './_chemFacts.js'
 import { safetyGate } from './_chemSafety.js'
-import { checkShared, consumeBudget, costBudgetConfigured, dailyLimit } from './_limits.js'
+import { checkShared, consumeBudget, consumeWindow, costBudgetConfigured, dailyLimit } from './_limits.js'
 import { APP_VERSION } from '../../src/appMeta.js'
-import { chemAIAccess, accessDenied, malformedEnvNames } from './_access.js'
+import { chemAIAccess, accessDenied, accessMode, malformedEnvNames } from './_access.js'
 
 const DEFAULT_MODEL = 'gemini-3.8-flash'
 const DEFAULT_FALLBACK_MODELS = Object.freeze([
@@ -42,6 +42,18 @@ const GROQ_MODELS = Object.freeze(['openai/gpt-oss-120b', 'openai/gpt-oss-20b'])
 const GROQ_MAX_ATTEMPTS = 3
 // openai/gpt-oss-120b counts its (hidden) reasoning inside the completion budget.
 const GROQ_MAX_COMPLETION_TOKENS = 4096
+// Public (anonymous) mode starting limits; each has a server variable (see chargeChat).
+const PUBLIC_DAILY_PER_CLIENT = 5
+const PUBLIC_COOLDOWN_SECONDS = 10
+const PUBLIC_REQUESTS_PER_MINUTE = 20 // site-wide, below Groq's 30 RPM for openai/gpt-oss-120b
+const PUBLIC_MAX_HISTORY_ITEMS = 6
+// Estimated input budget (system + user turn). Groq counts prompt + max_completion_tokens
+// against the per-minute token limit (8K on the Developer tier), so input must stay bounded.
+const DEFAULT_MAX_INPUT_TOKENS = 3600
+// Vietnamese with diacritics tokenises densely; 2.5 chars/token over-estimates on purpose.
+export const estimateTokens = value => Math.ceil(String(value).length / 2.5)
+const clampInt = (value, fallback, min, max) => Math.min(max, Math.max(min, positiveInt(value, fallback)))
+const accessOptions = env => ({ provider: chatProvider(env) || 'none', publicRoute: true, release: APP_VERSION })
 // 498 = Groq flex-tier capacity exceeded.
 const GROQ_TRANSIENT_STATUS = new Set([408, 429, 498, 500, 502, 503, 504])
 
@@ -378,6 +390,60 @@ ACTION
   return base
     .replace('\n\nACTION\n', () => `\n\n${ACCURACY_RULES}\n\n${PRACTICAL_SAFETY}\n\nACTION\n`)
     .replace('\n- Không viết HTML.\n', () => `\n${MATH_RULES}\n- answer nằm trong chuỗi JSON nên mọi dấu \ của LaTeX phải viết đôi.\n- Không viết HTML.\n`)
+}
+
+// Lossless clean-up of typed text: invisible characters, runs of spaces, 3+ blank lines.
+// Digits, symbols, units and line structure are untouched.
+export function compactText(value) {
+  return String(value).replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/[ \t]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+// Drops null / '' / [] / {} recursively: they carry no information for the model.
+export function pruneEmpty(value) {
+  if (Array.isArray(value)) {
+    const items = value.map(pruneEmpty).filter(item => item !== undefined)
+    return items.length ? items : undefined
+  }
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value).map(([key, item]) => [key, pruneEmpty(item)]).filter(([, item]) => item !== undefined)
+    return entries.length ? Object.fromEntries(entries) : undefined
+  }
+  return value === null || value === '' ? undefined : value
+}
+
+// Keeps the request inside the input budget, deterministically. Never cut: the question,
+// the retrieved ChemLab knowledge (built from the full context beforehand) and the structured
+// interface state (element, chemFlow, learning, lab). Cut, in order, only while over budget:
+// scraped screen text to 800 chars → oldest history turns (the last question/answer pair
+// stays) → scraped screen text and progress entirely → the remaining history.
+export function fitInput({ message, history, appContext, knowledge, maxTokens }) {
+  const trimmed = []
+  const seen = new Set()
+  let kept = history.map(item => ({ ...item, content: compactText(item.content) })).filter(item => {
+    const key = `${item.role}
+${item.content}`
+    if (!item.content || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  if (kept.length < history.length) trimmed.push('history-duplicates')
+  // Address-bar hash and app version say nothing about chemistry.
+  let { hash, version, ...context } = appContext
+  const size = () => estimateTokens(systemInstructions()) + estimateTokens(buildInteractionInput({ message, history: kept, appContext: context, knowledge }))
+  const before = kept.length
+  if (size() > maxTokens && String(context.visibleText || '').length > 800) {
+    context = { ...context, visibleText: context.visibleText.slice(0, 800) }
+    trimmed.push('screen-text:800')
+  }
+  while (size() > maxTokens && kept.length > 2) kept = kept.slice(1)
+  if (size() > maxTokens && (context.visibleText || context.progress)) {
+    const { visibleText, progress, ...rest } = context
+    context = rest
+    trimmed.push('screen-text:0')
+  }
+  if (size() > maxTokens) kept = []
+  if (kept.length < before) trimmed.push(`history-oldest:${before - kept.length}`)
+  return { history: kept, appContext: context, trimmed, inputTokens: size() }
 }
 
 function buildInteractionInput({ message, history, appContext, knowledge }) {
@@ -737,14 +803,15 @@ async function requestGeminiResilient({
 
 // Same system rules and the same single data-labelled user turn as Gemini, so history and
 // ChemLab context stay reference data, never instructions.
-export function groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort }) {
+export function groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort, maxCompletionTokens = GROQ_MAX_COMPLETION_TOKENS }) {
   return {
     model,
     messages: [
       { role: 'system', content: systemInstructions() },
       { role: 'user', content: buildInteractionInput({ message, history, appContext, knowledge }) }
     ],
-    max_completion_tokens: GROQ_MAX_COMPLETION_TOKENS,
+    // Reasoning tokens count against this cap too.
+    max_completion_tokens: maxCompletionTokens,
     reasoning_effort: reasoningEffort,
     include_reasoning: false,
     response_format: { type: 'json_object' },
@@ -810,6 +877,8 @@ export function groqFailure(result) {
   const status = result.upstream.status
   if (status === 401 || status === 403) return { code: 'GROQ_AUTH_FAILED', status: 502, message: UNAVAILABLE }
   if (status === 404) return { code: 'AI_MODEL_UNAVAILABLE', status: 502, message: UNAVAILABLE }
+  // Prompt + output cap above the account's per-minute token limit: a retry cannot help.
+  if (status === 413) return { code: 'AI_INPUT_TOO_LARGE', status: 413, message: 'Câu hỏi hoặc đoạn hội thoại quá dài. Hãy hỏi ngắn gọn hơn hoặc bắt đầu cuộc trò chuyện mới.' }
   if (status === 429) return { code: 'RATE_LIMITED', status: 429, message: 'Dịch vụ AI đang nhận quá nhiều yêu cầu. ChemAI đã tự thử lại; hãy chờ một lúc rồi thử tiếp.' }
   if (status === 498 || status === 503) return { code: 'GROQ_OVERLOADED', status: 503, message: 'Dịch vụ AI đang quá tải. ChemAI đã tự thử lại nhưng chưa thành công. Hãy thử lại sau ít phút.' }
   if (groqRetryable(result)) return { code: 'AI_UPSTREAM_ERROR', status: 502, message: 'Dịch vụ AI đang tạm thời không phản hồi. Hãy thử lại.' }
@@ -833,7 +902,7 @@ function metaFor(knowledge, payload, model, reliability = {}, provider = 'Gemini
 // Public status: unauthorised callers learn only that ChemAI is locked (no provider, model or config).
 export async function onRequestGet(context) {
   const { request, env } = context
-  const access = await chemAIAccess(request, env, { provider: chatProvider(env) || 'none' })
+  const access = await chemAIAccess(request, env, accessOptions(env))
   // `authenticated` only for a verified Access identity that is not on the allowlist.
   if (!access.allowed) return json({ ok: true, service: 'ChemAI', release: APP_VERSION, access: false, configured: false, ...(access.reason === 'NOT_APPROVED' ? { authenticated: true } : {}) })
   return chatStatus(context)
@@ -841,7 +910,7 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
-  const access = await chemAIAccess(request, env, { provider: chatProvider(env) || 'none' })
+  const access = await chemAIAccess(request, env, accessOptions(env))
   if (!access.allowed) return accessDenied(access.reason, 'chat')
   return chatHandler(context)
 }
@@ -855,7 +924,8 @@ export function chatStatus(context) {
     ok: true,
     access: true,
     configured,
-    configWarnings: malformedEnvNames(env),
+    // Anonymous visitors get no configuration detail.
+    configWarnings: accessMode(env) === 'public' ? [] : malformedEnvNames(env),
     service: 'ChemAI',
     provider: PROVIDER_LABEL[chatProvider(env)] || null,
     release: APP_VERSION,
@@ -992,7 +1062,7 @@ export async function chatHandler(context) {
     )
   }
 
-  const message = text(body?.message, MAX_MESSAGE_LENGTH)
+  const message = compactText(text(body?.message, MAX_MESSAGE_LENGTH))
   if (!message) {
     return json(
       {
@@ -1018,7 +1088,9 @@ async function providerChat({ request, env, requestId, started, colo, provider, 
   }
 
   const ip = clientRateKey(request)
-  const duplicateKey = `${ip}\n${message}`
+  const publicMode = accessMode(env) === 'public'
+  // Anonymous visitors: one question in flight per client, whatever its text.
+  const duplicateKey = publicMode ? dailyClientKey(ip) : `${ip}\n${message}`
   if (inFlightKeys.has(duplicateKey)) {
     logRequest({ ...trace, status: 409, code: 'DUPLICATE_REQUEST' })
     return errorResponse('DUPLICATE_REQUEST', 'ChemAI đang trả lời câu hỏi này. Hãy chờ một chút.', 409, requestId)
@@ -1029,10 +1101,10 @@ async function providerChat({ request, env, requestId, started, colo, provider, 
   }
   inFlightKeys.add(duplicateKey)
   try {
-    const limits = await chargeChat({ env, requestId, colo, provider, model, ip })
+    const limits = await chargeChat({ env, requestId, colo, provider, model, ip, publicMode })
     if (limits instanceof Response) return limits
     const call = provider === 'groq' ? groqCall : geminiCall
-    return await call({ env, requestId, started, colo, model, message, body, chatLimit: limits.chatLimit })
+    return await call({ env, requestId, started, colo, model, message, body, chatLimit: limits.chatLimit, publicMode })
   }
   finally {
     inFlightKeys.delete(duplicateKey)
@@ -1040,8 +1112,33 @@ async function providerChat({ request, env, requestId, started, colo, provider, 
 }
 
 // Per-client and site-wide daily budgets, charged once per request before any provider call.
-async function chargeChat({ env, requestId, colo, provider, model, ip }) {
-  const perClient = await consumeBudget(env, { scope: `chat-client:${dailyClientKey(ip)}`, limit: positiveInt(env.CHEMAI_DAILY_LIMIT_PER_CLIENT, 40) })
+// Public mode adds a per-client cooldown and a site-wide per-minute cap, and uses its own
+// (lower) per-client daily limit. All counters live in CHEMAI_BUDGET; the client key is the
+// network address seen by Cloudflare, never anything the browser sends.
+//   CHEMAI_PUBLIC_COOLDOWN_SECONDS (10) · CHEMAI_PUBLIC_REQUESTS_PER_MINUTE (20)
+//   CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT (5) · CHEMAI_DAILY_LIMIT_PER_CLIENT (40, other modes)
+//   CHEMAI_DAILY_LIMIT[_CHAT] (200, site-wide, all modes)
+async function chargeChat({ env, requestId, colo, provider, model, ip, publicMode = false }) {
+  const client = dailyClientKey(ip)
+  if (publicMode) {
+    const seconds = clampInt(env.CHEMAI_PUBLIC_COOLDOWN_SECONDS, PUBLIC_COOLDOWN_SECONDS, 1, 3600)
+    const cooldown = await consumeWindow(env, { scope: `chat-cooldown:${client}`, seconds, limit: 1 })
+    if (!cooldown.allowed) {
+      logRequest({ requestId, provider, status: 429, quota: `cooldown:${cooldown.code}`, model, colo })
+      return cooldown.code === 'DAILY_BUDGET_EXHAUSTED'
+        ? errorResponse('AI_COOLDOWN', `Hãy chờ khoảng ${cooldown.retryAfter} giây rồi gửi câu hỏi tiếp theo.`, 429, requestId, { 'Retry-After': String(cooldown.retryAfter) })
+        : errorResponse('AI_BUDGET_LIMITED', 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.', 429, requestId, { 'Retry-After': '60' })
+    }
+    const minute = await consumeWindow(env, { scope: 'chat-minute', seconds: 60, limit: clampInt(env.CHEMAI_PUBLIC_REQUESTS_PER_MINUTE, PUBLIC_REQUESTS_PER_MINUTE, 1, 1000) })
+    if (!minute.allowed) {
+      logRequest({ requestId, provider, status: 503, quota: `minute:${minute.code}`, model, colo })
+      return errorResponse('AI_BUSY', 'ChemAI đang nhận nhiều câu hỏi cùng lúc. Hãy thử lại sau ít phút.', 503, requestId, { 'Retry-After': String(minute.retryAfter) })
+    }
+  }
+  const clientLimit = publicMode
+    ? positiveInt(env.CHEMAI_PUBLIC_DAILY_LIMIT_PER_CLIENT, PUBLIC_DAILY_PER_CLIENT)
+    : positiveInt(env.CHEMAI_DAILY_LIMIT_PER_CLIENT, 40)
+  const perClient = await consumeBudget(env, { scope: `chat-client:${client}`, limit: clientLimit })
   if (!perClient.allowed) {
     logRequest({ requestId, provider, status: 429, quota: `client:${perClient.code}`, model, colo })
     return perClient.code === 'DAILY_BUDGET_EXHAUSTED'
@@ -1124,10 +1221,15 @@ function callFailed({ error, controller, requestId, provider, model, colo, charg
   )
 }
 
-async function groqCall({ env, requestId, started, colo, model, message, body, chatLimit }) {
-  const history = sanitizeHistory(body?.history)
-  const appContext = sanitizeContext(body?.context)
-  const knowledge = retrieveChemKnowledge(message, appContext)
+async function groqCall({ env, requestId, started, colo, model, message, body, chatLimit, publicMode = false }) {
+  const knowledge = retrieveChemKnowledge(message, sanitizeContext(body?.context))
+  const { history, appContext, trimmed, inputTokens } = fitInput({
+    message,
+    history: sanitizeHistory(body?.history).slice(publicMode ? -PUBLIC_MAX_HISTORY_ITEMS : 0),
+    appContext: pruneEmpty(sanitizeContext(body?.context)) || {},
+    knowledge,
+    maxTokens: clampInt(env.CHEMAI_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS, 2500, 32000)
+  })
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort('timeout'), 52000)
   let charged = 1
@@ -1136,7 +1238,7 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
     const result = await requestGroqResilient({
       env,
       signal: controller.signal,
-      body: groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort: normalizeThinkingLevel(env.GROQ_REASONING_EFFORT) }),
+      body: groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort: normalizeThinkingLevel(env.GROQ_REASONING_EFFORT), maxCompletionTokens: clampInt(env.GROQ_MAX_COMPLETION_TOKENS, GROQ_MAX_COMPLETION_TOKENS, 512, 8192) }),
       beforeRetry: async () => {
         const outcome = await consumeBudget(env, { scope: 'chat', limit: chatLimit })
         if (outcome.allowed) charged += 1
@@ -1153,7 +1255,9 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
       upstreamStatus: upstream.status,
       attempts: result.attemptCount,
       budgetUnits: charged,
-      ...(usage ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens } : {})
+      inputTokensEstimate: inputTokens,
+      ...(trimmed.length ? { trimmed } : {}),
+      ...(usage ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, reasoningTokens: usage.completion_tokens_details?.reasoning_tokens ?? null } : {})
     }
 
     if (!upstream.ok) {

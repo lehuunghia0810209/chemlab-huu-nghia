@@ -183,9 +183,13 @@ await test('retries are charged to the shared daily budget and stop when it is s
   assert.equal(result.payload.code, 'AI_UPSTREAM_ERROR')
 })
 
-await test('404 → AI_MODEL_UNAVAILABLE, 400/413/422 → GROQ_BAD_REQUEST, none retried', async () => {
+await test('404 → AI_MODEL_UNAVAILABLE, 413 → AI_INPUT_TOO_LARGE, 400/422 → GROQ_BAD_REQUEST, none retried', async () => {
+  const tooLarge = await ask([groqError(413, 'Request too large for model, TPM limit 8000')])
+  assert.equal(tooLarge.status, 413)
+  assert.equal(tooLarge.payload.code, 'AI_INPUT_TOO_LARGE')
+  assert.equal(tooLarge.calls, 1)
   assert.equal((await ask([groqError(404, 'The model does not exist', 'model_not_found')])).payload.code, 'AI_MODEL_UNAVAILABLE')
-  for (const status of [400, 413, 422]) {
+  for (const status of [400, 422]) {
     const result = await ask([groqError(status, 'bad')])
     assert.equal(result.payload.code, 'GROQ_BAD_REQUEST', String(status))
     assert.equal(result.calls, 1)

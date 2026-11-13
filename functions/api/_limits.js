@@ -56,9 +56,8 @@ export async function checkShared(env, { key, scope, limit, cost = 1, now = new 
 // One budget unit = one upstream Gemini call. Endpoints that retry call this
 // again before every extra attempt, so retries cannot exceed the daily budget.
 // cost > 1 charges several units at once (Workers AI: estimated Neurons).
-export async function consumeBudget(env, { scope, limit, cost = 1, now = new Date() }) {
+export async function consumeBudget(env, { scope, limit, cost = 1, now = new Date(), day = now.toISOString().slice(0, 10) }) {
   const controls = sharedControls(env)
-  const day = now.toISOString().slice(0, 10)
   if (controls.strictBudget) {
     try {
       const stub = env.CHEMAI_BUDGET.get(env.CHEMAI_BUDGET.idFromName(budgetName(env, scope)))
@@ -87,6 +86,16 @@ export async function consumeBudget(env, { scope, limit, cost = 1, now = new Dat
   }
   else return { allowed: false, code: 'BUDGET_NOT_CONFIGURED' }
   return { allowed: true, controls }
+}
+
+// A short fixed window (cooldown, per-minute cap) on the same exact counter. The deployed
+// QuotaCounter only accepts a YYYY-MM-DD "day", so the window index is written in that shape.
+// shortcut: fixed window, two requests can straddle a boundary; a sliding cooldown needs a QuotaCounter change and redeploy.
+export async function consumeWindow(env, { scope, seconds, limit, now = Date.now() }) {
+  const second = Math.floor(now / 1000)
+  const index = String(Math.floor(second / seconds) % 1e8).padStart(8, '0')
+  const outcome = await consumeBudget(env, { scope, limit, day: `${index.slice(0, 4)}-${index.slice(4, 6)}-${index.slice(6)}` })
+  return { ...outcome, retryAfter: seconds - second % seconds }
 }
 
 // Returns over-reserved units. Best effort: a failed refund only leaves the

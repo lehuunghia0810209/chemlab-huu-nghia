@@ -7,12 +7,20 @@
 //   internal_testing  verified + approved identity, only on hosts in CHEMAI_INTERNAL_HOSTS
 //                     (never on a production host)
 //   approved_users    verified identity listed in CHEMAI_APPROVED_EMAILS
-//   student_access    refused in code: opening ChemAI to students needs a code change
-//                     after the provider-terms review and owner approval, not a flag
+//   student_access    refused in code (legacy name, kept so an old flag stays locked)
+//   public            anonymous visitors may ask, chat route only. The flag alone opens
+//                     nothing; every condition below must hold, else locked:
+//                       CHEMAI_PUBLIC_APPROVAL = "<provider>:<release>" — the owner's record
+//                         that this provider's terms allow the real audience, for this exact
+//                         release; a new release or another provider needs a new approval
+//                       CHEMAI_PUBLIC_HOSTS lists the request host
+//                       CHEMAI_BUDGET (exact Durable Object budget) is bound
 // Required with internal_testing / approved_users: CF_ACCESS_TEAM_DOMAIN
 // (https://<team>.cloudflareaccess.com), CF_ACCESS_AUD, CHEMAI_APPROVED_EMAILS.
 
-export const ACCESS_MODES = Object.freeze(['disabled', 'internal_testing', 'approved_users', 'student_access'])
+import { sharedControls } from './_limits.js'
+
+export const ACCESS_MODES = Object.freeze(['disabled', 'internal_testing', 'approved_users', 'student_access', 'public'])
 export const LOCKED_MESSAGE = 'ChemAI đang được hoàn thiện và kiểm định. Tính năng hiện chưa được mở cho học sinh.'
 // Production hosts can never run internal_testing, whatever CHEMAI_INTERNAL_HOSTS says.
 const PRODUCTION_HOSTS = new Set(['chemlab-edulab.pages.dev'])
@@ -88,12 +96,20 @@ function hostOf(request) {
 }
 
 // { allowed, mode, reason }. reason is for server logs only; never shown to users.
-export async function chemAIAccess(request, env, { provider = null } = {}) {
+// publicRoute: only the chat route passes true; release: the running app version.
+export async function chemAIAccess(request, env, { provider = null, publicRoute = false, release = '' } = {}) {
   const mode = accessMode(env)
   const deny = reason => ({ allowed: false, mode, reason })
   if (mode === 'disabled') return deny('MODE_DISABLED')
   if (mode === 'student_access') return deny('STUDENT_ACCESS_LOCKED')
   const host = hostOf(request)
+  if (mode === 'public') {
+    if (!publicRoute) return deny('PUBLIC_ROUTE_CLOSED')
+    if (!provider || !release || String(env.CHEMAI_PUBLIC_APPROVAL || '').trim() !== `${provider}:${release}`) return deny('PUBLIC_NOT_APPROVED')
+    if (!list(env.CHEMAI_PUBLIC_HOSTS).includes(host)) return deny('HOST_NOT_PUBLIC')
+    if (!sharedControls(env).strictBudget) return deny('PUBLIC_NEEDS_EXACT_BUDGET')
+    return { allowed: true, mode, reason: 'OK' }
+  }
   if (mode === 'internal_testing' && (PRODUCTION_HOSTS.has(host) || !list(env.CHEMAI_INTERNAL_HOSTS).includes(host))) return deny('HOST_NOT_INTERNAL')
   // Gemini and Groq terms both require users aged 18+ and exclude consumer use; until that
   // review is done, any AI provider runs only in isolated internal testing.
