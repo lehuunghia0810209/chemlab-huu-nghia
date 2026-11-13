@@ -75,14 +75,14 @@ const statusResponse = onRequestGet({
 const statusPayload = await statusResponse.json()
 assert.equal(statusResponse.status, 200)
 assert.equal(statusPayload.configured, false)
-assert.equal(statusPayload.provider, 'Gemini')
+assert.equal(statusPayload.provider, 'Groq')
 assert.equal(statusPayload.model, null)
 // A key stored under " GEMINI_API_KEY" (leading space) is never read: still not configured.
 assert.equal((await onRequestGet({ env: { ' GEMINI_API_KEY': 'x', CHEMAI_BUDGET: {} } }).json()).configured, false)
 // Only free-tier, documented models: anything else is refused before a call.
-assert.equal((await onRequestGet({ env: { GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-2.5-pro' } }).json()).configured, false)
-assert.equal((await onRequestGet({ env: { GEMINI_API_KEY: 'k' } }).json()).model, 'gemini-3.8-flash')
-assert.equal((await onRequestGet({ env: { GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-3.6-flash' } }).json()).model, 'gemini-3.6-flash')
+assert.equal((await onRequestGet({ env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-2.5-pro' } }).json()).configured, false)
+assert.equal((await onRequestGet({ env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k' } }).json()).model, 'gemini-3.8-flash')
+assert.equal((await onRequestGet({ env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-3.6-flash' } }).json()).model, 'gemini-3.6-flash')
 assert.equal(statusPayload.release, APP_VERSION)
 
 const noKeyResponse = await onRequestPost({
@@ -685,7 +685,7 @@ const answerJSON = answer => JSON.stringify({ answer, actions: [], suggestions: 
     const body = JSON.parse(init.body)
     return Response.json(new URL(url).pathname === '/refund' ? refund(states.get(id), body) : consume(states.get(id), body))
   } }) }
-  const env = { GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: exactBudget, CHEMAI_DAILY_LIMIT_PER_CLIENT: '1' }
+  const env = { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: exactBudget, CHEMAI_DAILY_LIMIT_PER_CLIENT: '1' }
   try {
     const ask = () => onRequestPost({ request: makeRequest({ message: `H2O là gì? ${calls}` }, { 'CF-Connecting-IP': '198.51.100.230' }), env })
     assert.equal((await ask()).status, 200)
@@ -697,7 +697,7 @@ const answerJSON = answer => JSON.stringify({ answer, actions: [], suggestions: 
     const gate = new Promise(resolve => { release = resolve })
     calls = 0
     globalThis.fetch = async () => { calls += 1; await gate; return geminiSuccess() }
-    const dupEnv = { GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: budget() }
+    const dupEnv = { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: budget() }
     const same = () => onRequestPost({ request: makeRequest({ message: 'Fe có hóa trị mấy?' }, { 'CF-Connecting-IP': '198.51.100.231' }), env: dupEnv })
     const first = same()
     await new Promise(resolve => setTimeout(resolve, 20))

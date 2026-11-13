@@ -135,7 +135,11 @@ expect('Gemini auth uses x-goog-api-key header', api.includes("'x-goog-api-key':
 expect('Gemini JSON response mode is enabled', api.includes("responseMimeType: 'application/json'") && api.includes('BẮT BUỘC chỉ trả về một JSON object hợp lệ'))
 expect('Gemini reasoning level is configurable', api.includes('GEMINI_THINKING_LEVEL') && api.includes("new Set(['low', 'medium', 'high'])"))
 expect('Gemini request is stateless', api.includes('contents: [') && !api.includes('previous_interaction_id'))
-expect('OpenAI backend references are gone from active AI code', !/OPENAI_|api\.openai\.com|gpt-/.test(activeAIText))
+// The old direct OpenAI backend stays removed. gpt-oss is an open-weight model served by Groq,
+// allowed only as a Groq model id.
+expect('OpenAI backend references are gone from active AI code', !/OPENAI_|api\.openai\.com/.test(activeAIText) && !/gpt-/.test(activeAIText.replace(/openai\/gpt-oss-(?:120b|20b)/g, '')))
+expect('Groq adapter uses the OpenAI-compatible chat completions endpoint', api.includes("'https://api.groq.com/openai/v1/chat/completions'") && api.includes("response_format: { type: 'json_object' }"))
+expect('Groq key is read only from the server secret', api.includes('env.GROQ_API_KEY') && !/GROQ_API_KEY|api\.groq\.com|gsk_/.test([aiJs, aiContext].join('\n')))
 expect('example secrets contain placeholders only', devVars.includes('GEMINI_API_KEY=your_gemini_api_key_here'))
 expect('ChemAI system language is Vietnamese', api.includes('Luôn trò chuyện, giải thích và hướng dẫn bằng tiếng Việt'))
 expect('chemical notation rule is explicit', api.includes('Giữ nguyên ký hiệu nguyên tố, công thức hóa học, phương trình phản ứng'))

@@ -34,13 +34,43 @@ function positiveInt(value, fallback) {
   return Number.isInteger(number) && number > 0 ? number : fallback
 }
 
-// Gemini is ChemAI's only provider. Only the exact secret name is read: a variable named
-// " GEMINI_API_KEY" (leading space) is ignored, so the server stays fail-closed.
-// CHEMAI_PROVIDER stays a kill switch: any value other than "gemini" turns ChemAI off.
-export function geminiConfigured(env) {
-  const provider = env?.CHEMAI_PROVIDER
-  return Boolean(env?.GEMINI_API_KEY) && (provider === undefined || String(provider).toLowerCase() === 'gemini')
+// Groq (OpenAI-compatible chat completions) is the primary provider. Checked against
+// console.groq.com/docs on 2026-11-13: openai/gpt-oss-120b, 131k context, reasoning_effort low|medium|high.
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b'
+const GROQ_MODELS = Object.freeze(['openai/gpt-oss-120b', 'openai/gpt-oss-20b'])
+const GROQ_MAX_ATTEMPTS = 3
+// openai/gpt-oss-120b counts its (hidden) reasoning inside the completion budget.
+const GROQ_MAX_COMPLETION_TOKENS = 4096
+// 498 = Groq flex-tier capacity exceeded.
+const GROQ_TRANSIENT_STATUS = new Set([408, 429, 498, 500, 502, 503, 504])
+
+// CHEMAI_PROVIDER picks exactly one provider and doubles as a kill switch:
+// unset or "groq" → Groq, "gemini" → Gemini, anything else (e.g. "off") → ChemAI off.
+// There is no automatic fallback between providers.
+export function chatProvider(env) {
+  const value = String(env?.CHEMAI_PROVIDER ?? 'groq').trim().toLowerCase()
+  return value === 'groq' || value === 'gemini' ? value : null
 }
+
+// Only the exact secret names are read: " GEMINI_API_KEY" or " GROQ_API_KEY" (leading space)
+// are ignored, so the server stays fail-closed.
+export function geminiConfigured(env) {
+  return Boolean(env?.GEMINI_API_KEY) && chatProvider(env) === 'gemini'
+}
+
+export function groqConfigured(env) {
+  return Boolean(env?.GROQ_API_KEY) && chatProvider(env) === 'groq'
+}
+
+export function groqModel(env) {
+  return String(env?.GROQ_MODEL || DEFAULT_GROQ_MODEL).trim()
+}
+
+const PROVIDER_LABEL = Object.freeze({ groq: 'Groq', gemini: 'Gemini' })
+const providerConfigured = env => groqConfigured(env) || geminiConfigured(env)
+const providerModel = env => chatProvider(env) === 'gemini' ? geminiModel(env) : groqModel(env)
+const providerModelAllowed = env => chatProvider(env) === 'gemini' ? geminiModelAllowed(env) : GROQ_MODELS.includes(groqModel(env))
 
 // IPv6 clients share a /64 for the per-client daily limit (one household or phone network).
 export function dailyClientKey(ip) {
@@ -396,6 +426,7 @@ export function providerError(payload, rawText = '') {
 export function redact(value, max = 300) {
   return String(value ?? '')
     .replace(/AIza[\w-]{10,}/g, '[redacted]')
+    .replace(/gsk_[\w-]{10,}/g, '[redacted]')
     .replace(/\b(key|token|authorization|bearer)\b\s*[=:]?\s*[^\s,;&]+/gi, '$1=[redacted]')
     .slice(0, max)
 }
@@ -411,7 +442,7 @@ export function preconditionReason(message) {
 
 // One structured line per request for Cloudflare logs. No key, headers, IP or conversation text.
 function logRequest(entry) {
-  const line = JSON.stringify({ event: 'chemai.chat', apiVersion: 'v1beta', ...entry })
+  const line = JSON.stringify({ event: 'chemai.chat', apiVersion: entry.provider === 'groq' ? 'openai-v1' : 'v1beta', ...entry })
   if (entry.status >= 500 || entry.upstreamStatus >= 400) console.error(line)
   else console.log(line)
 }
@@ -704,6 +735,88 @@ async function requestGeminiResilient({
   return lastResult
 }
 
+// Same system rules and the same single data-labelled user turn as Gemini, so history and
+// ChemLab context stay reference data, never instructions.
+export function groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort }) {
+  return {
+    model,
+    messages: [
+      { role: 'system', content: systemInstructions() },
+      { role: 'user', content: buildInteractionInput({ message, history, appContext, knowledge }) }
+    ],
+    max_completion_tokens: GROQ_MAX_COMPLETION_TOKENS,
+    reasoning_effort: reasoningEffort,
+    include_reasoning: false,
+    response_format: { type: 'json_object' },
+    stream: false
+  }
+}
+
+export async function requestGroq({ env, body, signal }) {
+  const upstream = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.GROQ_API_KEY}`
+    },
+    body: JSON.stringify(body),
+    signal
+  })
+  const rawText = await upstream.text()
+  let payload = null
+  try {
+    payload = rawText ? JSON.parse(rawText) : null
+  }
+  catch {
+    payload = null
+  }
+  return { upstream, rawText, payload, model: body.model }
+}
+
+// Groq reports a model reply that broke JSON mode as 400 json_validate_failed: a new sample can fix it.
+const groqRetryable = result => GROQ_TRANSIENT_STATUS.has(result.upstream.status) ||
+  (result.upstream.status === 400 && providerError(result.payload).code === 'json_validate_failed')
+
+// Same model each attempt; every extra attempt is charged to the shared budget first.
+async function requestGroqResilient({ env, body, signal, beforeRetry }) {
+  let lastResult = null
+  for (let index = 0; index < GROQ_MAX_ATTEMPTS; index += 1) {
+    if (index > 0 && !(await beforeRetry())) break
+    let result
+    try {
+      result = { ...await requestGroq({ env, body, signal }), attemptCount: index + 1, fallbackUsed: false }
+    }
+    catch (error) {
+      if (signal?.aborted || index >= GROQ_MAX_ATTEMPTS - 1) throw error
+      console.warn('[ChemAI] Groq network error, retrying', error?.name || 'Error', `attempt=${index + 1}/${GROQ_MAX_ATTEMPTS}`)
+      await sleep(retryDelay(index), signal)
+      continue
+    }
+    lastResult = result
+    if (result.upstream.ok || !groqRetryable(result) || index >= GROQ_MAX_ATTEMPTS - 1) return result
+    // A second 429 means the account limit, not a burst: stop.
+    if (result.upstream.status === 429 && index >= 1) return result
+    const delay = retryDelay(index, result.upstream.headers.get('Retry-After'))
+    if (delay === null) return result
+    console.warn('[ChemAI] Groq transient error, retrying', result.upstream.status, `attempt=${index + 1}/${GROQ_MAX_ATTEMPTS}`)
+    await sleep(delay, signal)
+  }
+  if (!lastResult) throw new Error('Groq request không tạo được kết quả upstream.')
+  return lastResult
+}
+
+// Maps a failed Groq response to ChemAI's codes. Learner messages never name the provider.
+export function groqFailure(result) {
+  const status = result.upstream.status
+  if (status === 401 || status === 403) return { code: 'GROQ_AUTH_FAILED', status: 502, message: UNAVAILABLE }
+  if (status === 404) return { code: 'AI_MODEL_UNAVAILABLE', status: 502, message: UNAVAILABLE }
+  if (status === 429) return { code: 'RATE_LIMITED', status: 429, message: 'Dịch vụ AI đang nhận quá nhiều yêu cầu. ChemAI đã tự thử lại; hãy chờ một lúc rồi thử tiếp.' }
+  if (status === 498 || status === 503) return { code: 'GROQ_OVERLOADED', status: 503, message: 'Dịch vụ AI đang quá tải. ChemAI đã tự thử lại nhưng chưa thành công. Hãy thử lại sau ít phút.' }
+  if (groqRetryable(result)) return { code: 'AI_UPSTREAM_ERROR', status: 502, message: 'Dịch vụ AI đang tạm thời không phản hồi. Hãy thử lại.' }
+  if (status >= 400 && status < 500) return { code: 'GROQ_BAD_REQUEST', status: 502, message: UNAVAILABLE }
+  return { code: 'AI_UPSTREAM_ERROR', status: 502, message: 'Dịch vụ AI đang tạm thời không phản hồi. Hãy thử lại.' }
+}
+
 function metaFor(knowledge, payload, model, reliability = {}, provider = 'Gemini') {
   return {
     provider,
@@ -720,7 +833,7 @@ function metaFor(knowledge, payload, model, reliability = {}, provider = 'Gemini
 // Public status: unauthorised callers learn only that ChemAI is locked (no provider, model or config).
 export async function onRequestGet(context) {
   const { request, env } = context
-  const access = await chemAIAccess(request, env, { provider: 'gemini' })
+  const access = await chemAIAccess(request, env, { provider: chatProvider(env) || 'none' })
   // `authenticated` only for a verified Access identity that is not on the allowlist.
   if (!access.allowed) return json({ ok: true, service: 'ChemAI', release: APP_VERSION, access: false, configured: false, ...(access.reason === 'NOT_APPROVED' ? { authenticated: true } : {}) })
   return chatStatus(context)
@@ -728,7 +841,7 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context
-  const access = await chemAIAccess(request, env, { provider: 'gemini' })
+  const access = await chemAIAccess(request, env, { provider: chatProvider(env) || 'none' })
   if (!access.allowed) return accessDenied(access.reason, 'chat')
   return chatHandler(context)
 }
@@ -736,7 +849,7 @@ export async function onRequestPost(context) {
 // Ungated pipeline below: reachable over HTTP only through the access checks above.
 export function chatStatus(context) {
   const { env } = context
-  const configured = geminiConfigured(env) && geminiModelAllowed(env)
+  const configured = providerConfigured(env) && providerModelAllowed(env)
 
   return json({
     ok: true,
@@ -744,9 +857,9 @@ export function chatStatus(context) {
     configured,
     configWarnings: malformedEnvNames(env),
     service: 'ChemAI',
-    provider: 'Gemini',
+    provider: PROVIDER_LABEL[chatProvider(env)] || null,
     release: APP_VERSION,
-    model: configured ? geminiModel(env) : null
+    model: configured ? providerModel(env) : null
   })
 }
 
@@ -791,8 +904,8 @@ export async function chatHandler(context) {
     )
   }
 
-  // Fail closed: no Gemini key → no model call.
-  if (!geminiConfigured(env)) {
+  // Fail closed: no key for the selected provider → no model call.
+  if (!providerConfigured(env)) {
     return json(
       {
         ok: false,
@@ -806,11 +919,12 @@ export async function chatHandler(context) {
   const requestId = crypto.randomUUID()
   const started = Date.now()
   const colo = request.cf?.colo || null
-  const model = geminiModel(env)
+  const provider = chatProvider(env)
+  const model = providerModel(env)
 
-  // Only models known to have a free tier (no paid-only model, ever).
-  if (!geminiModelAllowed(env)) {
-    logRequest({ requestId, provider: 'gemini', status: 503, code: 'AI_MODEL_NOT_ALLOWED', model, colo })
+  // Only allowlisted models: a mistyped variable cannot move ChemAI onto another (paid) model.
+  if (!providerModelAllowed(env)) {
+    logRequest({ requestId, provider, status: 503, code: 'AI_MODEL_NOT_ALLOWED', model, colo })
     return json(
       {
         ok: false,
@@ -890,13 +1004,13 @@ export async function chatHandler(context) {
     )
   }
 
-  return geminiChat({ request, env, requestId, started, colo, model, message, body })
+  return providerChat({ request, env, requestId, started, colo, provider, model, message, body })
 }
 
 // Protections ahead of the budget: fixed text for dangerous
 // requests, one running copy of a question, a cap on concurrent calls.
-async function geminiChat({ request, env, requestId, started, colo, model, message, body }) {
-  const trace = { requestId, provider: 'gemini', model, colo }
+async function providerChat({ request, env, requestId, started, colo, provider, model, message, body }) {
+  const trace = { requestId, provider, model, colo }
   const unsafe = safetyGate(message)
   if (unsafe) {
     logRequest({ ...trace, status: 200, code: 'SAFETY_GATE', category: unsafe.category, durationMs: Date.now() - started })
@@ -915,28 +1029,32 @@ async function geminiChat({ request, env, requestId, started, colo, model, messa
   }
   inFlightKeys.add(duplicateKey)
   try {
-    return await geminiCall({ env, requestId, started, colo, model, message, body, ip })
+    const limits = await chargeChat({ env, requestId, colo, provider, model, ip })
+    if (limits instanceof Response) return limits
+    const call = provider === 'groq' ? groqCall : geminiCall
+    return await call({ env, requestId, started, colo, model, message, body, chatLimit: limits.chatLimit })
   }
   finally {
     inFlightKeys.delete(duplicateKey)
   }
 }
 
-async function geminiCall({ env, requestId, started, colo, model, message, body, ip }) {
+// Per-client and site-wide daily budgets, charged once per request before any provider call.
+async function chargeChat({ env, requestId, colo, provider, model, ip }) {
   const perClient = await consumeBudget(env, { scope: `chat-client:${dailyClientKey(ip)}`, limit: positiveInt(env.CHEMAI_DAILY_LIMIT_PER_CLIENT, 40) })
   if (!perClient.allowed) {
-    logRequest({ requestId, provider: 'gemini', status: 429, quota: `client:${perClient.code}`, model, colo })
+    logRequest({ requestId, provider, status: 429, quota: `client:${perClient.code}`, model, colo })
     return perClient.code === 'DAILY_BUDGET_EXHAUSTED'
       ? errorResponse('AI_CLIENT_LIMIT', 'Bạn đã dùng hết số câu hỏi ChemAI cho hôm nay. Hãy quay lại vào ngày mai.', 429, requestId, { 'Retry-After': '3600' })
       : errorResponse('AI_BUDGET_LIMITED', 'ChemAI đã dùng hết hạn mức hôm nay hoặc bộ giới hạn tạm thời không sẵn sàng. Hãy thử lại sau.', 429, requestId, { 'Retry-After': '60' })
   }
 
   // Budget is charged only for valid requests: one unit per upstream call. The default stays low
-  // because Google's free daily limit is per project and shown only in AI Studio.
+  // (below Groq's 1K requests/day for openai/gpt-oss-120b and Gemini's per-project free limit).
   const chatLimit = dailyLimit(env, 'chat', DEFAULT_GEMINI_DAILY_CALLS)
   const shared = await checkShared(env, { key: ip, scope: 'chat', limit: chatLimit })
   if (!shared.allowed) {
-    logRequest({ requestId, status: 429, quota: shared.code, model, colo })
+    logRequest({ requestId, provider, status: 429, quota: shared.code, model, colo })
     return json(
       {
         ok: false,
@@ -950,7 +1068,143 @@ async function geminiCall({ env, requestId, started, colo, model, message, body,
       { 'Retry-After': '60' }
     )
   }
+  return { chatLimit }
+}
 
+// Shared tail of both providers: provider text → validated JSON → chemistry guard → response.
+function structuredAnswer({ outputText, message, knowledge, trace, started, finishReason, meta }) {
+  let structured
+  try {
+    structured = JSON.parse(cleanStructuredText(outputText))
+  }
+  catch {
+    throw new Error('ChemAI structured output không phải JSON hợp lệ.')
+  }
+
+  const answer = text(structured?.answer, 12000)
+  if (!answer) {
+    throw new Error('ChemAI structured output thiếu answer.')
+  }
+
+  const guarded = answerGuard(answer, { question: message })
+  logRequest({ ...trace, status: 200, finishReason, answerChars: answer.length, guardFindings: guarded.findings.map(item => item.id), termFixes: guarded.termFixes, durationMs: Date.now() - started })
+
+  return json({
+    ok: true,
+    answer: guarded.answer,
+    actions: normalizeActions(structured.actions),
+    suggestions: normalizeSuggestions(structured.suggestions),
+    meta: { ...meta, corrections: guarded.findings.length }
+  })
+}
+
+function callFailed({ error, controller, requestId, provider, model, colo, charged, started }) {
+  const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
+  logRequest({
+    requestId,
+    provider,
+    model,
+    colo,
+    status: 502,
+    code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
+    error: redact(error?.message || error, 200),
+    budgetUnits: charged,
+    durationMs: Date.now() - started
+  })
+  return json(
+    {
+      ok: false,
+      code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
+      requestId,
+      message: timedOut
+        ? 'ChemAI phản hồi quá lâu. Hãy thử lại.'
+        : 'ChemAI gặp lỗi kết nối. Hãy thử lại.'
+    },
+    502
+  )
+}
+
+async function groqCall({ env, requestId, started, colo, model, message, body, chatLimit }) {
+  const history = sanitizeHistory(body?.history)
+  const appContext = sanitizeContext(body?.context)
+  const knowledge = retrieveChemKnowledge(message, appContext)
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort('timeout'), 52000)
+  let charged = 1
+
+  try {
+    const result = await requestGroqResilient({
+      env,
+      signal: controller.signal,
+      body: groqChatBody({ model, message, history, appContext, knowledge, reasoningEffort: normalizeThinkingLevel(env.GROQ_REASONING_EFFORT) }),
+      beforeRetry: async () => {
+        const outcome = await consumeBudget(env, { scope: 'chat', limit: chatLimit })
+        if (outcome.allowed) charged += 1
+        return outcome.allowed
+      }
+    })
+    const { upstream, payload, rawText } = result
+    const usage = payload?.usage
+    const trace = {
+      requestId,
+      provider: 'groq',
+      model,
+      colo,
+      upstreamStatus: upstream.status,
+      attempts: result.attemptCount,
+      budgetUnits: charged,
+      ...(usage ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens } : {})
+    }
+
+    if (!upstream.ok) {
+      const failure = groqFailure(result)
+      const provider = providerError(payload, rawText)
+      const retryAfter = upstream.headers.get('Retry-After')
+      logRequest({ ...trace, status: failure.status, code: failure.code, upstreamCode: provider.code, upstreamMessage: redact(provider.message), durationMs: Date.now() - started })
+      return json(
+        { ok: false, code: failure.code, requestId, providerHttpStatus: upstream.status, attempts: result.attemptCount, fallbackUsed: false, message: failure.message },
+        failure.status,
+        failure.status === 429 && /^\d{1,5}$/.test(retryAfter || '') ? { 'Retry-After': retryAfter } : {}
+      )
+    }
+
+    const choice = payload?.choices?.[0]
+    const finishReason = String(choice?.finish_reason || '')
+    if (finishReason === 'content_filter') {
+      logRequest({ ...trace, status: 422, code: 'AI_BLOCKED', reason: finishReason, durationMs: Date.now() - started })
+      return json({ ok: false, code: 'AI_BLOCKED', message: 'ChemAI không thể xử lý yêu cầu này. Hãy thử diễn đạt theo hướng học tập an toàn hơn.' }, 422)
+    }
+
+    const outputText = typeof choice?.message?.content === 'string' ? choice.message.content.trim() : ''
+    // Out of tokens: the JSON is cut off, and showing a fragment as an answer would mislead.
+    if (finishReason === 'length') {
+      logRequest({ ...trace, status: 502, code: 'AI_INCOMPLETE', finishReason, answerChars: outputText.length, durationMs: Date.now() - started })
+      return errorResponse('AI_INCOMPLETE', 'ChemAI chưa tạo được câu trả lời hoàn chỉnh. Hãy thử hỏi ngắn gọn hơn.', 502, requestId)
+    }
+    if (!outputText) {
+      logRequest({ ...trace, status: 502, code: 'AI_EMPTY_RESPONSE', finishReason, durationMs: Date.now() - started })
+      return errorResponse('AI_EMPTY_RESPONSE', 'ChemAI chưa nhận được câu trả lời. Hãy thử lại.', 502, requestId)
+    }
+
+    return structuredAnswer({
+      outputText,
+      message,
+      knowledge,
+      trace,
+      started,
+      finishReason,
+      meta: metaFor(knowledge, { modelVersion: payload?.model }, model, result, 'Groq')
+    })
+  }
+  catch (error) {
+    return callFailed({ error, controller, requestId, provider: 'groq', model, colo, charged, started })
+  }
+  finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function geminiCall({ env, requestId, started, colo, model, message, body, chatLimit }) {
   const history = sanitizeHistory(body?.history)
   const appContext = sanitizeContext(body?.context)
   const knowledge = retrieveChemKnowledge(message, appContext)
@@ -1095,55 +1349,10 @@ async function geminiCall({ env, requestId, started, colo, model, message, body,
       throw new Error(`Gemini response không có text. finishReason=${finishReason || 'unknown'}`)
     }
 
-    let structured
-    try {
-      structured = JSON.parse(cleanStructuredText(outputText))
-    }
-    catch {
-      throw new Error('ChemAI structured output từ Gemini không phải JSON hợp lệ.')
-    }
-
-    const answer = text(structured.answer, 12000)
-    if (!answer) {
-      throw new Error('ChemAI structured output thiếu answer.')
-    }
-
-    const guarded = answerGuard(answer, { question: message })
-    logRequest({ ...trace, status: 200, finishReason, answerChars: answer.length, guardFindings: guarded.findings.map(item => item.id), termFixes: guarded.termFixes, durationMs: Date.now() - started })
-
-    return json({
-      ok: true,
-      answer: guarded.answer,
-      actions: normalizeActions(structured.actions),
-      suggestions: normalizeSuggestions(structured.suggestions),
-      meta: { ...metaFor(knowledge, payload, activeModel, result), corrections: guarded.findings.length }
-    })
+    return structuredAnswer({ outputText, message, knowledge, trace, started, finishReason, meta: metaFor(knowledge, payload, activeModel, result) })
   }
   catch (error) {
-    const timedOut = controller.signal.aborted || error?.name === 'AbortError' || error === 'timeout'
-
-    logRequest({
-      requestId,
-      model,
-      colo,
-      status: 502,
-      code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
-      error: redact(error?.message || error, 200),
-      budgetUnits: charged,
-      durationMs: Date.now() - started
-    })
-
-    return json(
-      {
-        ok: false,
-        code: timedOut ? 'AI_TIMEOUT' : 'AI_REQUEST_FAILED',
-        requestId,
-        message: timedOut
-          ? 'ChemAI phản hồi quá lâu. Hãy thử lại.'
-          : 'ChemAI gặp lỗi kết nối. Hãy thử lại.'
-      },
-      502
-    )
+    return callFailed({ error, controller, requestId, provider: 'gemini', model, colo, charged, started })
   }
   finally {
     clearTimeout(timeout)

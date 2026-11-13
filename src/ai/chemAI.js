@@ -620,6 +620,10 @@ export function initChemAI({ version = APP_VERSION } = {}) {
           'GEMINI_MODEL_UNAVAILABLE',
           'GEMINI_BAD_REQUEST',
           'GEMINI_OVERLOADED',
+          'GROQ_AUTH_FAILED',
+          'GROQ_BAD_REQUEST',
+          'GROQ_OVERLOADED',
+          'AI_EMPTY_RESPONSE',
           'AI_REQUEST_FAILED',
           'AI_OVERLOADED',
           'AI_BUSY',
@@ -629,6 +633,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         const configurationCodes = new Set([
           'GEMINI_AUTH_FAILED',
           'GEMINI_PRECONDITION_FAILED',
+          'GROQ_AUTH_FAILED',
           'AI_BUDGET_NOT_CONFIGURED',
           'AI_MODEL_NOT_ALLOWED',
           'AI_MODEL_UNAVAILABLE',

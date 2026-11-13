@@ -37,7 +37,7 @@ const budget = () => ({ idFromName: name => name, get: () => ({ fetch: async () 
 const ai = { run: async () => { calls.ai += 1; return { choices: [{ message: { content: 'H₂O là nước.' }, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 5 } } } }
 // Everything a real call would need; only the gate stands in the way.
 const full = (extra = {}) => ({
-  AI: ai, CHEMAI_BUDGET: budget(), GEMINI_API_KEY: 'test-only-not-a-key', CHEMAI_FEEDBACK: 'on',
+  AI: ai, CHEMAI_BUDGET: budget(), CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-not-a-key', CHEMAI_FEEDBACK: 'on',
   CF_ACCESS_TEAM_DOMAIN: team, CF_ACCESS_AUD: aud, CHEMAI_APPROVED_EMAILS: 'teacher@example.org', CHEMAI_INTERNAL_HOSTS: internalHost, ...extra
 })
 const request = (path, { host = 'chemlab-edulab.pages.dev', method = 'POST', headers = {}, body } = {}) => new Request(`https://${host}${path}`, {

@@ -63,7 +63,7 @@ for (const item of cases) {
   // Full answer: a person grades the chemistry and checks for invented data.
   console.log(String(payload.answer || payload.message || '').replace(/^/gm, '     '))
   // No point spending more calls: the next question would fail the same way.
-  if (['AI_DAILY_LIMIT', 'AI_BUDGET_LIMITED', 'AI_CLIENT_LIMIT', 'RATE_LIMITED', 'GEMINI_PRECONDITION_FAILED', 'GEMINI_AUTH_FAILED', 'GEMINI_MODEL_UNAVAILABLE', 'GEMINI_BAD_REQUEST'].includes(payload.code)) { stopped = payload.code; break }
+  if (['AI_DAILY_LIMIT', 'AI_BUDGET_LIMITED', 'AI_CLIENT_LIMIT', 'RATE_LIMITED', 'GEMINI_PRECONDITION_FAILED', 'GEMINI_AUTH_FAILED', 'GEMINI_MODEL_UNAVAILABLE', 'GEMINI_BAD_REQUEST', 'GROQ_AUTH_FAILED', 'GROQ_BAD_REQUEST', 'AI_MODEL_UNAVAILABLE', 'AI_MODEL_NOT_ALLOWED'].includes(payload.code)) { stopped = payload.code; break }
   // An approved run is one model call per question: stop on any retry or fallback.
   if (!item.gate && (attempts !== 1 || payload.meta?.fallbackUsed || payload.fallbackUsed)) {
     stopped = 'a retry or fallback happened; the run was approved for one call per question'

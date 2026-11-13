@@ -340,7 +340,7 @@ function gemini(answer, seen = []) {
   mock.calls = 0
   return mock
 }
-const geminiEnv = (extra = {}) => ({ GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: budget(), ...extra })
+const geminiEnv = (extra = {}) => ({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-only-key', CHEMAI_BUDGET: budget(), ...extra })
 let ip = 0
 async function ask(env, message, fetchMock) {
   const logged = []

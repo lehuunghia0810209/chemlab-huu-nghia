@@ -1,6 +1,6 @@
 // Local Cloudflare runtime check (no cloud resource, no cost, no AI call):
 // `wrangler pages dev dist` (workerd + public/_headers + functions/) with every AI
-// setting present (Gemini, invalid key, feedback on) to prove the 6.5.4
+// setting present (Groq and Gemini invalid keys, feedback on) to prove the 6.5.4
 // access gate holds in the real runtime: headers/routes (staging-smoke), locked
 // status without backend detail, and 403 for chat/feedback in disabled,
 // student_access and approved_users-without-identity modes. The exact daily budget
@@ -50,7 +50,7 @@ const port = async (number, up = true) => {
   throw new Error(`port ${number} did not go ${up ? 'up' : 'down'}`)
 }
 const pages = (bindings = []) => start(`pages (${bindings.join(' ') || 'default access'})`, ['pages', 'dev', 'dist', '--port', '8790', '--compatibility-date=2025-06-01', '--persist-to', path.join(work, 'pages-state'),
-  '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key', '--binding', 'CHEMAI_ACCEPT_APPROX_BUDGET=on',
+  '--binding', 'CHEMAI_FEEDBACK=on', '--binding', 'GEMINI_API_KEY=invalid-local-test-key', '--binding', 'GROQ_API_KEY=invalid-local-test-key', '--binding', 'CHEMAI_ACCEPT_APPROX_BUDGET=on',
   ...bindings.flatMap(item => ['--binding', item])], root)
 
 const base = 'http://localhost:8790'

@@ -47,7 +47,7 @@ function memoryStorage() {
   const map = new Map()
   return { async get(key) { return map.get(key) }, async put(key, value) { map.set(key, structuredClone(value)) } }
 }
-const enabledEnv = (extra = {}) => ({ GEMINI_API_KEY: 'test-key', CHEMAI_FEEDBACK: 'on', CHEMAI_BUDGET: durableBudget(), CHEMAI_LIMITER: limiter(), ...extra })
+const enabledEnv = (extra = {}) => ({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'test-key', CHEMAI_FEEDBACK: 'on', CHEMAI_BUDGET: durableBudget(), CHEMAI_LIMITER: limiter(), ...extra })
 
 const originalFetch = globalThis.fetch
 let fetchCalls = 0
@@ -87,17 +87,17 @@ await test('rubrics are well formed and server-addressable', () => {
 /* Feature gate */
 await test('disabled without flag, key or shared limit', async () => {
   assert.equal(feedbackEnabled({}), false)
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on' }), false, 'no shared limit → disabled')
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_BUDGET: durableBudget() }), false, 'flag off → disabled')
+  assert.equal(feedbackEnabled({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on' }), false, 'no shared limit → disabled')
+  assert.equal(feedbackEnabled({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_BUDGET: durableBudget() }), false, 'flag off → disabled')
   assert.equal(feedbackEnabled(enabledEnv()), true, 'exact Durable Object budget enables')
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_LIMITER: limiter() }), false, 'a per-location rate limiter is not a cost budget')
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv() }), false, 'approximate KV budget needs explicit acceptance')
-  assert.equal(feedbackEnabled({ GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv(), CHEMAI_ACCEPT_APPROX_BUDGET: 'on' }), true, 'KV accepted explicitly')
+  assert.equal(feedbackEnabled({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_LIMITER: limiter() }), false, 'a per-location rate limiter is not a cost budget')
+  assert.equal(feedbackEnabled({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv() }), false, 'approximate KV budget needs explicit acceptance')
+  assert.equal(feedbackEnabled({ CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on', CHEMAI_QUOTA: kv(), CHEMAI_ACCEPT_APPROX_BUDGET: 'on' }), true, 'KV accepted explicitly')
   assert.equal((await (await onRequestGet({ request: new Request('https://chemlab.example/api/feedback'), env: enabledEnv() })).json()).enabled, false, 'gate locked by default even when fully configured')
 })
 await test('disabled endpoint never calls Gemini', async () => {
   mockGemini({})
-  const response = await onRequestPost({ request: request({ rubricId: 'g11-l20-w1', answer }), env: { GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on' } })
+  const response = await onRequestPost({ request: request({ rubricId: 'g11-l20-w1', answer }), env: { CHEMAI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k', CHEMAI_FEEDBACK: 'on' } })
   assert.equal(response.status, 503)
   assert.equal((await response.json()).code, 'FEEDBACK_DISABLED')
   assert.equal(fetchCalls, 0)

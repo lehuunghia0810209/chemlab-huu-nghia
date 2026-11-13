@@ -95,9 +95,9 @@ export async function chemAIAccess(request, env, { provider = null } = {}) {
   if (mode === 'student_access') return deny('STUDENT_ACCESS_LOCKED')
   const host = hostOf(request)
   if (mode === 'internal_testing' && (PRODUCTION_HOSTS.has(host) || !list(env.CHEMAI_INTERNAL_HOSTS).includes(host))) return deny('HOST_NOT_INTERNAL')
-  // Gemini terms exclude services likely used by under-18s; until that review is done,
-  // Gemini runs only in isolated internal testing.
-  if (provider === 'gemini' && mode !== 'internal_testing') return deny('PROVIDER_TERMS_UNVERIFIED')
+  // Gemini and Groq terms both require users aged 18+ and exclude consumer use; until that
+  // review is done, any AI provider runs only in isolated internal testing.
+  if (provider && mode !== 'internal_testing') return deny('PROVIDER_TERMS_UNVERIFIED')
   const approved = list(env.CHEMAI_APPROVED_EMAILS)
   if (!approved.length) return deny('NO_APPROVED_USERS')
   const email = await verifyAccessIdentity(request, env)
