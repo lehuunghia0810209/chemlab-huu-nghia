@@ -28,12 +28,20 @@ export function renderMathInto(katex, node) {
   // Vietnamese decimal comma: in math mode "0,1" is punctuation + thin space ("0, 1").
   // shortcut: a digit-comma-digit pair like (1,2) is also read as a decimal; fine for chemistry answers.
   const prepared = tex.replace(/(\d),(?=\d)/g, '$1{,}')
+  const options = { ...OPTIONS, displayMode: node.dataset.display === '1' }
   try {
-    katex.render(prepared, node, { ...OPTIONS, displayMode: node.dataset.display === '1' })
+    katex.render(prepared, node, options)
   }
   catch {
-    node.classList.add('chemai-math--raw')
-    node.textContent = tex
+    // Models write units as \text{g·mol^{-1}}; ^ is invalid inside \text. Only after a
+    // failure: move the exponent out (\text{g·mol}^{-1}) and try once more.
+    try {
+      katex.render(prepared.replace(/\\text\{([^{}^]*)\^(\{[^{}]*\}|[^{}])\}/g, '\\text{$1}^$2'), node, options)
+    }
+    catch {
+      node.classList.add('chemai-math--raw')
+      node.textContent = tex
+    }
   }
 }
 

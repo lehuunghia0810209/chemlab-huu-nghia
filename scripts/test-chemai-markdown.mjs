@@ -38,6 +38,16 @@ const typeset = (tex, display = false) => {
   return element
 }
 
+test('6.6.3: an exponent inside \\text (a unit like g·mol⁻¹) still typesets; broken math stays raw', () => {
+  for (const tex of ['M = 98\\ \\text{g·mol^{-1}}', 'M = 98\\ \\text{g\\,mol^{-1}}', '98\\ \\text{g mol^-}']) {
+    const element = typeset(tex)
+    assert.deepEqual(element.classList.added, [], tex)
+    assert.match(element.innerHTML, /katex/, tex)
+  }
+  assert.match(typeset('m = 49\\ \\text{g}').innerHTML, /katex/, 'valid units untouched')
+  assert.deepEqual(typeset('\\frac{1}{').classList.added, ['chemai-math--raw'])
+})
+
 test('delimiters: $…$, $$…$$, \\(…\\), \\[…\\]', () => {
   assert.deepEqual(maths('a $n = \\frac{m}{M}$ b'), ['I:n = \\frac{m}{M}'])
   assert.deepEqual(maths('$$C_M = \\frac{n}{V}$$'), ['D:C_M = \\frac{n}{V}'])
