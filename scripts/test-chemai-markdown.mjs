@@ -2,7 +2,7 @@
 // KaTeX runs here with the same options as the browser (mathRender.js).
 import assert from 'node:assert/strict'
 import katex from 'katex'
-import { markdownToHTML, extractMath, undoubleBackslashes } from '../src/ai/markdown.js'
+import { markdownToHTML, extractMath, undoubleBackslashes, isEquation } from '../src/ai/markdown.js'
 import { renderMathInto } from '../src/ai/mathRender.js'
 
 let passed = 0
@@ -231,6 +231,39 @@ test('6.6.3: fragments seen on the phone, delimiters missing or broken', () => {
   // \nu and \neq are commands, never newlines.
   assert.equal(learnerView(String.raw`$\nu \neq 0$`).raw, 0)
   assert.match(learnerView(String.raw`$\nu \neq 0$`).spans[0].innerHTML, /katex/)
+})
+
+// 6.6.4: real Production 6.6.3 answers (Fe + O2, NH3), verbatim. Explanations containing an arrow
+// were put in the no-wrap equation box and scrolled sideways on phones.
+const REAL_EQUATIONS = {
+  fe: "**Bước 1:** Đặt hệ số cho Fe là 3 để khớp số Fe ở sản phẩm.\n\n**Bước 2:** Fe₃O₄ có 4 nguyên tử O, do đó cần 2 O₂ (2×2=4) ở phía trái.\n\n**Phương trình cân bằng:** 3 Fe + 2 O₂ → Fe₃O₄",
+  nh3: "**Bước 1:** Viết công thức thô: N₂ + H₂ → NH₃.\n\n**Bước 2:** Đếm nguyên tử mỗi nguyên tố ở hai vế.\n- N: 2 (trái) → 1 (phải). Cần nhân hệ số NH₃ lên 2 để có 2 N ở phải.\n- H: 2 (trái) → 3×2 = 6 (phải). Cần 6 H ở trái, nên nhân H₂ lên 3.\n\n**Bước 3:** Gán hệ số: N₂ + 3 H₂ → 2 NH₃.\n\n**Bước 4:** Kiểm tra lại:\n- N: 2 (trái) = 2 (phải).\n- H: 3×2 = 6 (trái) = 2×3 = 6 (phải).\n\n**Phương trình đã cân bằng:**\nN₂ + 3 H₂ → 2 NH₃.\n\n**Lý thuyết (≈150 từ):**\nPhản ứng Haber‑Bosch là phản ứng tổng hợp ammonia (NH₃) từ nitơ (N₂) và hydrogen (H₂) dưới nhiệt độ cao và áp suất lớn, thường có xúc tác sắt. Nó là phản ứng tổng hợp trực tiếp, theo nguyên tắc bảo toàn khối lượng: số nguyên tử mỗi nguyên tố phải bằng ở hai vế. Khi cân bằng, ta đầu tiên viết công thức thô, sau đó điều chỉnh hệ số sao cho số nguyên tử N và H đồng đều. Đối với N₂, mỗi phân tử cung cấp 2 nguyên tử N; vì NH₃ chứa 1 N, nên cần 2 mol NH₃ để sử dụng hết 1 mol N₂. Từ đó tính số mol H₂ cần: mỗi NH₃ cần 3 H, nên 2 NH₃ yêu cầu 6 H, tương đương 3 mol H₂. Phản ứng này là phản ứng giảm (N₂ nhận điện tử) và là nguồn cung cấp ammonia quan trọng trong nông nghiệp. \n\n**An toàn:** N₂ và H₂ là khí không màu, không độc; H₂ rất dễ cháy. Thực hiện trong phòng thí nghiệm có thông gió, dùng găng tay, kính bảo hộ và tránh tia lửa.",
+  nh3Steps: "**Bước 1**: Viết công thức phản ứng chưa cân bằng: N₂ + H₂ → NH₃.\n**Bước 2**: Cân bằng nitơ: N₂ → 2 NH₃ ⇒ cần 2 NH₃ ở vế sản phẩm, do đó hệ số của N₂ là 1.\n**Bước 3**: Cân bằng hydrogen: 2 NH₃ chứa 6 H, nên cần 3 H₂ ở vế phản ứng.\n**Phương trình cân bằng**: N₂ + 3 H₂ → 2 NH₃.\n**Đáp số**: Hệ số tỉ lệ 1 : 3 : 2, đơn vị mol."
+}
+const boxes = html => [...html.matchAll(/<div class="chemai-equation">(.*?)<\/div>/g)].map(match => match[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')) // the model uses U+202F narrow spaces
+const VIETNAMESE_TEXT = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i
+
+test('6.6.4: only the equation itself goes in the equation box; explanations wrap as text', () => {
+  assert.deepEqual(boxes(markdownToHTML(REAL_EQUATIONS.fe)), ['3 Fe + 2 O₂ → Fe₃O₄'])
+  assert.deepEqual(boxes(markdownToHTML(REAL_EQUATIONS.nh3)), ['N₂ + H₂ → NH₃.', 'N₂ + 3 H₂ → 2 NH₃.', 'N₂ + 3 H₂ → 2 NH₃.'])
+  assert.deepEqual(boxes(markdownToHTML(REAL_EQUATIONS.nh3Steps)), ['N₂ + H₂ → NH₃.', 'N₂ + 3 H₂ → 2 NH₃.'])
+  for (const answer of Object.values(REAL_EQUATIONS)) {
+    for (const box of boxes(markdownToHTML(answer))) assert.ok(!VIETNAMESE_TEXT.test(box), box)
+  }
+  // The label of a labelled equation stays a paragraph above the box.
+  assert.match(markdownToHTML(REAL_EQUATIONS.fe), /<p><strong>Phương trình cân bằng:<\/strong><\/p><div class="chemai-equation">3\sFe/)
+  // An explanation with an arrow is a paragraph.
+  assert.match(markdownToHTML(REAL_EQUATIONS.nh3Steps), /<p><strong>Bước 2<\/strong>: Cân bằng nitơ: N₂\s→\s2\sNH₃\s⇒\scần/)
+  for (const line of ['2KMnO₄ + 16HCl → 2KCl + 2MnCl₂ + 5Cl₂ + 8H₂O', 'Ca(OH)₂ + CO₂ → CaCO₃↓ + H₂O', 'N₂ + 3H₂ ⇌ 2NH₃', 'Fe + 2HCl → FeCl₂ + H₂↑']) assert.ok(isEquation(line), line)
+  for (const line of ['Cân bằng nitơ: N₂ → 2 NH₃ ⇒ cần 2 NH₃', 'N: 2 (trái) → 1 (phải)', 'Fe reacts with oxygen → Fe3O4']) assert.ok(!isEquation(line), line)
+})
+
+test('6.6.4: a fenced block of Vietnamese explanation is text; real code stays a code box', () => {
+  const prose = "```\nBước 1: viết N₂ + H₂ → NH₃\nBước 2: cân bằng H, nhân H₂ với 3\n```"
+  assert.doesNotMatch(markdownToHTML(prose), /<pre>/)
+  assert.match(markdownToHTML(prose), /Bước 2: cân bằng H/)
+  const code = "```python\nmass = 0.5 * 98  # khối lượng\n```"
+  assert.match(markdownToHTML(code), /<pre><code>mass = 0.5 \* 98/)
 })
 
 console.log(`PASS — ${passed} ChemAI rendering checks passed.`)

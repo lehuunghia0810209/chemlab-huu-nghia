@@ -495,6 +495,21 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     saveSession(messages)
   }
 
+  // A question that got no answer leaves the history (and the saved session): the next
+  // attempt, by "Thử lại" or by sending again, shows it once and never sends it twice.
+  // Its bubble stays on screen next to the error until the next render; the text goes back
+  // into the empty input so nothing is lost.
+  function forgetUnanswered(question) {
+    const last = messages.at(-1)
+    if (last?.role !== 'user' || last.content !== question) return
+    messages = messages.slice(0, -1)
+    saveSession(messages)
+    if (!input.value) {
+      input.value = question
+      autoResize()
+    }
+  }
+
   function resetConversation() {
     if (pending && controller) controller.abort()
     messages = []
@@ -608,6 +623,7 @@ export function initChemAI({ version = APP_VERSION } = {}) {
     }
     catch (error) {
       removeThinking()
+      forgetUnanswered(question)
 
       if (request.signal.reason === 'timeout') {
         lastFailedQuestion = question

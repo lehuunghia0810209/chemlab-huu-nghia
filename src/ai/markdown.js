@@ -149,6 +149,17 @@ export function undoubleBackslashes(source) {
   return doubled && !single ? source.replace(/\\\\/g, '\\') : source
 }
 
+// Formulas, coefficients, + and an arrow, optional state symbols and conditions; no prose.
+// \u0000n\u0000 is a math placeholder (a coefficient like 13/2 typeset by KaTeX).
+const EQUATION_CHARS = /^[\s\dA-Za-z₀-₉⁰-⁹⁺⁻()[\]+=→⇌↔⟶↑↓·.,°/\u0000-]+$/
+export function isEquation(line) {
+  const value = line.trim()
+  return /[→⇌↔⟶]/.test(value) && /[A-Z]/.test(value) && EQUATION_CHARS.test(value) && !/[a-z]{3,}/.test(value)
+}
+
+// Vietnamese letters with diacritics: a fence around them without a language is prose, not code.
+const VIETNAMESE = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i
+
 export function markdownToHTML(markdown) {
   // A lone \n (not \nu, \neq, nor the n after a \\ line break) is a newline the model escaped twice.
   const source = undoubleBackslashes(String(markdown ?? '').replace(/\r\n/g, '\n').replace(/(?<!\\)\\n(?![A-Za-z])/g, '\n').replace(/\u0000/g, '').trim())
@@ -159,7 +170,13 @@ export function markdownToHTML(markdown) {
 
   blocks.forEach((block, index) => {
     if (index % 2 === 1) {
+      const language = block.match(/^(\w+)\n/)?.[1]
       const cleaned = block.replace(/^\w+\n/, '').trim()
+      // Models fence explanations too; only real code keeps the scrolling code box.
+      if ((!language || /^(text|plaintext|markdown|md)$/i.test(language)) && VIETNAMESE.test(cleaned)) {
+        html.push(markdownToHTML(cleaned))
+        return
+      }
       html.push(`<pre><code>${escapeHTML(cleaned)}</code></pre>`)
       return
     }
@@ -219,12 +236,15 @@ export function markdownToHTML(markdown) {
         continue
       }
 
-      const equationLike =
-        /(?:→|⇌|↔)/.test(line) &&
-        /[A-Z][A-Za-z₀-₉⁺⁻²³⁴⁵⁶⁷⁸⁹()\[\]]*/.test(line)
-
-      if (equationLike) {
+      // Only the equation itself goes in the equation box; "label: equation" keeps the label as
+      // text above it, and an explanation that merely contains an arrow stays a paragraph.
+      if (isEquation(line)) {
         html.push(`<div class="chemai-equation">${inline(line)}</div>`)
+        continue
+      }
+      const labelled = line.match(/^(.*[:：](?:\*\*|__)?)\s*(.+)$/)
+      if (labelled && isEquation(labelled[2])) {
+        html.push(`<p>${inline(labelled[1])}</p><div class="chemai-equation">${inline(labelled[2])}</div>`)
         continue
       }
 

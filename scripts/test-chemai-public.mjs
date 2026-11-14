@@ -3,7 +3,7 @@
 // reconciliation, bypass attempts, input fitting and that the other modes are untouched.
 // No real network call is possible.
 import assert from 'node:assert/strict'
-import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody, groqRules, questionComplexity, focusContext, focusKnowledge, slimKnowledge } from '../functions/api/chat.js'
+import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody, groqRules, questionComplexity, focusContext, focusKnowledge, slimKnowledge, speciesIn } from '../functions/api/chat.js'
 import { onRequestPost as feedbackPost } from '../functions/api/feedback.js'
 import { APP_VERSION } from '../src/appMeta.js'
 
@@ -413,8 +413,14 @@ await test('prompt: fixed cacheable core, then only the rules the question needs
   assert.match(rules('Cho NaOH vào CuSO4, nêu hiện tượng.'), /Hiện tượng và dữ kiện/)
   assert.match(rules('Tính thể tích khí H2 ở đkc khi cho 5,6 g Fe tác dụng với HCl dư.'), /24,79 L\/mol[\s\S]*tỉ số n\/hệ số/)
   assert.match(rules('Gọi tên CH3COOC2H5 (ester).'), /methyl/)
-  // Nothing recognised, or a short follow-up: every rule is sent.
-  for (const all of [rules('Giúp mình với'), groqRules('Tính tiếp đi', true)]) assert.equal(all.split('\n').length - 1, 8)
+  // Nothing recognised: every rule is sent.
+  for (const all of [rules('Giúp mình với'), groqRules('Giải thích thêm đi', '')]) assert.equal(all.split('\n').length - 1, 8)
+  // 6.6.4: a short follow-up is read with the previous question, not given all eight rules.
+  const followUp = groqRules('Tính khối lượng NH3 tạo thành từ 2 mol N2.', 'Tại sao phản ứng này cần xúc tác?')
+  assert.match(followUp, /Bài tính/)
+  assert.match(followUp, /Phương trình/)
+  assert.ok(followUp.split('\n').length - 1 < 8, followUp)
+  assert.match(groqRules('Còn chất nào dư?', 'Cho 5,6 g Fe vào dung dịch chứa 0,3 mol HCl'), /tỉ số n\/hệ số/)
   assert.ok(!rules('Axit là gì?').includes('Bài tính'), 'Vietnamese letters do not trigger ASCII word rules')
 })
 
@@ -447,6 +453,22 @@ await test('6.6.2: only sections that carry something; reactions only for reacti
   assert.equal(user('Axit là gì?'), 'CÂU HỎI HIỆN TẠI:\n\nAxit là gì?', 'no empty history, context or knowledge blocks')
   const withData = groqChatBody({ model: 'm', message: 'q', history: [{ role: 'user', content: 'a' }], appContext: { view: 'lab', lab: {} }, knowledge, reasoningEffort: 'low' }).messages[2].content
   for (const label of ['LỊCH SỬ:', 'CÂU HỎI HIỆN TẠI:', 'CHEMLAB CONTEXT:', 'CHEMLAB KNOWLEDGE:']) assert.ok(withData.includes(label), label)
+})
+
+await test('6.6.4: knowledge keeps only reactions of the substances asked about; lessons only when asked', () => {
+  assert.deepEqual([...speciesIn('Cân bằng phương trình: Fe + O2 → Fe3O4')], ['Fe', 'O2', 'Fe3O4'])
+  assert.deepEqual([...speciesIn('Ba(OH)₂ + H₂SO₄ → BaSO₄↓ + 2H₂O')], ['Ba(OH)2', 'H2SO4', 'BaSO4', 'H2O'])
+  assert.deepEqual([...speciesIn('Cân bằng phản ứng tổng hợp NH3 từ N2 và H2.')], ['NH3', 'N2', 'H2'], 'Vietnamese words are not formulas')
+  // The real Production case: Fe + O2 brought H₂O₂ decompositions and three lesson titles.
+  const fe = { elements: [{ symbol: 'Fe' }], reactions: [{ equation: '2H₂O₂ → 2H₂O + O₂↑' }, { equation: '5H₂O₂ + 2MnO₄⁻ + 6H⁺ → 5O₂↑ + 2Mn²⁺ + 8H₂O' }], lessons: [{ title: 'Cấu tạo của bảng tuần hoàn' }], substances: [{ formula: 'Fe3O4', color: 'đen' }] }
+  assert.deepEqual(focusKnowledge(fe, 'Cân bằng phương trình: Fe + O2 → Fe3O4'), { elements: fe.elements, substances: fe.substances })
+  // The reaction actually asked about stays, with its precipitate colour.
+  const cu = { reactions: [{ equation: 'CuSO₄ + 2NaOH → Cu(OH)₂↓ + Na₂SO₄', solids: [{ formula: 'Cu(OH)2', color: 'xanh lam' }] }, { equation: 'HCl + NaOH → NaCl + H₂O' }] }
+  assert.deepEqual(focusKnowledge(cu, 'Cho dung dịch NaOH vào dung dịch CuSO4, nêu hiện tượng.').reactions, [cu.reactions[0]])
+  // A question naming one substance keeps its reactions; naming none keeps them all.
+  assert.equal(focusKnowledge(cu, 'NaOH tác dụng với những chất nào?').reactions.length, 2)
+  assert.equal(focusKnowledge(cu, 'Tại sao phản ứng này tạo kết tủa?').reactions.length, 2)
+  assert.deepEqual(focusKnowledge(fe, 'Mình nên học bài nào về Fe?').lessons, fe.lessons)
 })
 
 await test('cached prompt tokens are reported and not charged', async () => {

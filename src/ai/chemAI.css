@@ -304,7 +304,7 @@
 .chemai-answer pre { overflow:auto; margin:10px 0 0; padding:12px; border:1px solid var(--border-subtle); border-radius:12px; background:var(--bg-sunken); }
 .chemai-answer pre code { padding:0; border:0; background:transparent; }
 .chemai-answer blockquote { margin:10px 0 0; padding:8px 11px; border-left:3px solid var(--chemai-accent); color:var(--text-secondary); background:color-mix(in oklab, var(--accent) 9%, transparent); }
-.chemai-equation { overflow-x:auto; margin:10px 0 0; padding:10px 12px; border:1px solid color-mix(in oklab, var(--accent) 33%, transparent); border-radius:12px; color:var(--accent-text); background:var(--surface-1); font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace; font-size:13.5px; line-height:1.6; white-space:nowrap; }
+.chemai-equation { overflow-x:auto; margin:10px 0 0; padding:10px 12px; border:1px solid color-mix(in oklab, var(--accent) 33%, transparent); border-radius:12px; color:var(--accent-text); background:var(--surface-1); font-family:"Cascadia Code","SFMono-Regular",Consolas,monospace; font-size:13.5px; line-height:1.6; white-space:normal; overflow-wrap:anywhere; }
 
 /* Math (KaTeX, typeset by mathRender.js). Colour follows the theme; long display formulas scroll inside their box, never the page. */
 .chemai-math { color:inherit; }

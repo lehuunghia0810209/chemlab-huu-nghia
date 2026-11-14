@@ -539,14 +539,56 @@ async function chemAIMathJourney(browser, baseURL) {
 }
 
 // /api/chat is stubbed (no Pages Functions under vite preview, never a real Gemini call).
+// 6.6.4: a real Production answer (NH₃, Groq) plus a long equation. Explanations with an arrow
+// used to sit in the no-wrap equation box and scroll sideways on phones.
+const EQUATION_ANSWER = "**Bước 1**: Viết công thức phản ứng chưa cân bằng: N₂ + H₂ → NH₃.\n**Bước 2**: Cân bằng nitơ: N₂ → 2 NH₃ ⇒ cần 2 NH₃ ở vế sản phẩm, do đó hệ số của N₂ là 1.\n**Bước 3**: Cân bằng hydrogen: 2 NH₃ chứa 6 H, nên cần 3 H₂ ở vế phản ứng.\n**Phương trình cân bằng**: N₂ + 3 H₂ → 2 NH₃.\n**Đáp số**: Hệ số tỉ lệ 1 : 3 : 2, đơn vị mol.\n\nPhương trình dài để thử xuống dòng:\n2KMnO₄ + 16HCl → 2KCl + 2MnCl₂ + 5Cl₂ + 8H₂O"
+
+async function chemAIEquationLayout(browser, baseURL) {
+  for (const width of [320, 375, 390, 440]) {
+    const { context, page, errors } = await newPage(browser, { width, height: 760, theme: width % 2 ? 'dark' : 'light' })
+    await context.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(route.request().method() === 'GET'
+      ? { ok: true, access: true, configured: true, model: 'stub' }
+      : { ok: true, answer: EQUATION_ANSWER, actions: [], suggestions: [], meta: { model: 'stub' } }) }))
+    errors.length = 0
+    await openView(page, baseURL, 'home')
+    await page.click('.app-topbar__ai')
+    await page.waitForSelector('.chemai-root.is-open #chemai-input')
+    await page.fill('#chemai-input', 'Cân bằng phản ứng tổng hợp NH3 từ N2 và H2.')
+    await page.keyboard.press('Enter')
+    await page.waitForSelector('.chemai-equation')
+    const layout = await page.evaluate(() => {
+      const answer = document.querySelector('.chemai-message.assistant:not(.thinking) .chemai-answer')
+      const boxes = [...answer.querySelectorAll('.chemai-equation')]
+      const panel = document.querySelector('.chemai-panel').getBoundingClientRect()
+      return {
+        boxes: boxes.map(box => box.textContent.trim()),
+        scrolling: boxes.filter(box => box.scrollWidth > box.clientWidth + 1).length,
+        outside: [...answer.querySelectorAll('*')].filter(node => node.getBoundingClientRect().right > panel.right + 1).length,
+        proseInBox: boxes.filter(box => /[àáảãạăâđèéẻẽẹêìíỉĩịòóỏõọôơùúủũụưỳýỷỹỵ]/i.test(box.textContent)).length,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+      }
+    })
+    record(`ChemAI ${width}: explanations wrap as text; only equations are boxed and none scrolls sideways`,
+      layout.boxes.length === 3 && layout.scrolling === 0 && layout.proseInBox === 0 && layout.outside === 0 && layout.overflow <= 1, JSON.stringify(layout))
+    record(`console clean in ChemAI equation layout ${width}`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+}
+
 async function chemAIErrorJourney(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
   const replies = [
     [503, { ok: false, code: 'GEMINI_PRECONDITION_FAILED', reason: 'REGION_NOT_SUPPORTED', message: 'ChemAI tạm thời chưa khả dụng do điều kiện sử dụng dịch vụ AI phía máy chủ.' }],
     [503, { ok: false, code: 'GEMINI_OVERLOADED', message: 'Gemini đang quá tải.' }],
-    [200, { ok: true, answer: 'Nước là H₂O.', actions: [], suggestions: [], meta: { model: 'stub' } }]
+    [200, { ok: true, answer: 'Nước là H₂O.', actions: [], suggestions: [], meta: { model: 'stub' } }],
+    // 6.6.4: the Production case behind "the NH₃ question shown three times".
+    [503, { ok: false, code: 'AI_BUSY', message: 'ChemAI đang nhận nhiều câu hỏi cùng lúc. Hãy thử lại sau khoảng một phút.' }],
+    [502, { ok: false, code: 'GROQ_BAD_REQUEST', message: 'ChemAI tạm thời chưa khả dụng.' }],
+    [200, { ok: true, answer: 'N₂ + 3H₂ ⇌ 2NH₃', actions: [], suggestions: [], meta: { model: 'stub' } }]
   ]
+  const posted = []
   await context.route('**/api/chat', route => {
+    if (route.request().method() === 'POST') posted.push(route.request().postDataJSON())
     const [status, body] = route.request().method() === 'GET' ? [200, { ok: true, access: true, configured: true, model: 'stub' }] : replies.shift()
     return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   })
@@ -568,7 +610,25 @@ async function chemAIErrorJourney(browser, baseURL) {
   await page.click('[data-ai-retry]')
   await page.waitForFunction(() => /Nước là H₂O/.test(document.querySelector('#chemai-messages').textContent))
   const kept = await page.evaluate(() => document.querySelectorAll('.chemai-message.user').length)
-  record('ChemAI: an overload error offers retry, retry answers, and the conversation is kept', retryable && kept >= 2, `retry ${retryable}, user messages ${kept}`)
+  // The question was sent three times (error, error, retry) but asked once: one bubble.
+  record('ChemAI: an overload error offers retry, retry answers, and the question appears once', retryable && kept === 1, `retry ${retryable}, user messages ${kept}`)
+
+  // Busy → "Thử lại" → provider error → send again → answer: one bubble, no duplicate in the history sent.
+  const question = 'Cân bằng phản ứng tổng hợp NH3 từ N2 và H2.'
+  await ask(question)
+  const afterBusy = await page.evaluate(() => ({ input: document.querySelector('#chemai-input').value, bubbles: document.querySelectorAll('.chemai-message.user').length }))
+  await page.click('[data-ai-retry]')
+  await page.waitForFunction(() => !document.querySelector('#chemai-input').disabled && !document.querySelector('#chemai-thinking'))
+  await page.click('#chemai-send') // the question is back in the input: tap send again
+  await page.waitForFunction(() => /2NH₃/.test(document.querySelector('#chemai-messages').textContent))
+  const state = await page.evaluate(question => ({
+    bubbles: [...document.querySelectorAll('.chemai-message.user')].filter(node => node.textContent.includes(question)).length,
+    saved: (() => { try { return Object.values(sessionStorage).concat(Object.values(localStorage)).join('').split(question).length - 1 } catch { return -1 } })()
+  }), question)
+  const last = posted.at(-1)
+  const sentCopies = [...last.history.map(item => item.content), last.message].filter(content => content === question).length
+  record('ChemAI: a failed question goes back to the input and leaves the history', afterBusy.input === question && afterBusy.bubbles === 2, JSON.stringify(afterBusy))
+  record('ChemAI: busy → retry → error → resend shows the question once and sends it once', state.bubbles === 1 && sentCopies === 1 && state.saved <= 1 && posted.length === 6, JSON.stringify({ ...state, sentCopies, requests: posted.length }))
   record('console clean in the ChemAI error journey', errors.every(item => /Failed to load resource/.test(item)), errors.join(' | '))
   await context.close()
 }
@@ -1494,6 +1554,7 @@ const suites = [
   ['pwa upgrade', 'pwa', (browser, url) => pwaUpgradeJourneys(browser, url, { newPage, record })],
   ['chemai phone', 'ai', chemAIPhoneCheck],
   ['chemai errors', 'ai', chemAIErrorJourney],
+  ['chemai equations', 'ai', chemAIEquationLayout],
   ['chemai math', 'ai', chemAIMathJourney],
   ['ChemAI correction and off state', 'ai', chemAINoticeJourney],
   ['pwa', 'pwa', pwaCheck]

@@ -432,11 +432,14 @@ const GROQ_RULES = Object.freeze([
   { id: 'organic', when: /alkyl|methyl|ethyl|hữu cơ|alkane|alkene|alkyne|ankan|anken|ester|alcohol|ancol|c\d*h\d+/, text: 'Hữu cơ: nhóm alkyl gọi là methyl (CH₃–), ethyl (C₂H₅–)…' }
 ])
 
-// followUp: a short message after earlier turns says little about its own topic.
-export function groqRules(message, followUp = false) {
-  const text = message.toLowerCase()
+// previous: the learner's previous question. A short follow-up says little about its own
+// topic, so it is matched together with that question; nothing recognised → every rule.
+export const previousQuestion = history => history.filter(item => item.role === 'user').at(-1)?.content || ''
+
+export function groqRules(message, previous = '') {
+  const text = `${message}\n${message.length < 60 ? previous : ''}`.toLowerCase()
   const matched = GROQ_RULES.filter(rule => rule.when.test(text))
-  const rules = matched.length && !(followUp && message.length < 60) ? matched : GROQ_RULES
+  const rules = matched.length ? matched : GROQ_RULES
   return `QUY TẮC KIỂM TRA CHO CÂU HỎI NÀY\n${rules.map(rule => `- ${rule.text}`).join('\n')}`
 }
 
@@ -475,11 +478,32 @@ export function focusContext(appContext, message) {
 
 // Retrieved reactions only help when the question is about a reaction; a molar-mass or
 // concentration question keeps the substances (formula, name, acid/base strength, colour).
+// 6.6.4: a reaction is kept only when it contains the substances the question names (two of
+// them when it names two or more): "Fe + O2 → Fe3O4" no longer brings H₂O₂ decompositions
+// that merely share O₂. Lesson titles only when the question is about lessons.
 export function focusKnowledge(knowledge, message) {
+  if (!knowledge || typeof knowledge !== 'object') return knowledge
   const text = message.toLowerCase()
-  if (!knowledge?.reactions || /phương trình|pthh|cân bằng|phản ứng|tác dụng|hiện tượng|kết tủa|trung hòa|điều chế|nhận biết|\+|→|->|=>|dư|hết|hỗn hợp/.test(text)) return knowledge
-  const { reactions, ...rest } = knowledge
+  const { reactions, lessons, ...rest } = knowledge
+  if (lessons && /bài học|bài \d|học bài|lớp \d|chương|ôn tập|nên học|học gì|lộ trình/.test(text)) rest.lessons = lessons
+  if (!reactions || !/phương trình|pthh|cân bằng|phản ứng|tác dụng|hiện tượng|kết tủa|trung hòa|điều chế|nhận biết|\+|→|->|=>|dư|hết|hỗn hợp/.test(text)) return rest
+  const asked = speciesIn(message)
+  const need = Math.min(2, asked.size)
+  const kept = reactions.filter(reaction => {
+    const present = speciesIn(String(reaction?.equation || ''))
+    return [...asked].filter(item => present.has(item)).length >= need
+  })
+  if (kept.length) rest.reactions = kept
   return rest
+}
+
+const SUBSCRIPT = '₀₁₂₃₄₅₆₇₈₉'
+// Formulas written in a text, normalised to ASCII digits without coefficients or charges.
+// A capital letter glued to a Vietnamese letter ("Cân") is a word, not carbon.
+export function speciesIn(value) {
+  const ascii = String(value).replace(/[₀-₉]/g, digit => String(SUBSCRIPT.indexOf(digit)))
+  const found = ascii.match(/(?<![\p{L}\d])\d*((?:[A-Z][a-z]?\d*|\((?:[A-Z][a-z]?\d*)+\)\d*)+)(?![\p{L}])/gu) || []
+  return new Set(found.map(item => item.replace(/^\d+/, '')))
 }
 
 // Groq's user turn: only the sections that carry something. Labels match GROQ_CORE.
@@ -909,7 +933,7 @@ export function groqChatBody({ model, message, history, appContext, knowledge, r
     // Fixed core first (cacheable prefix), then what varies with the question.
     messages: [
       { role: 'system', content: GROQ_CORE },
-      { role: 'system', content: groqRules(message, history.length > 0) },
+      { role: 'system', content: groqRules(message, previousQuestion(history)) },
       { role: 'user', content: groqInput({ message, history, appContext, knowledge }) }
     ],
     // Reasoning tokens count against this cap too.
@@ -1408,13 +1432,13 @@ async function groqCall({ env, requestId, started, colo, model, message, body, c
     appContext: focusContext(pruneEmpty(sanitizeContext(body?.context)) || {}, message),
     knowledge: promptKnowledge,
     maxTokens: clampInt(env.CHEMAI_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS, 1500, 32000),
-    system: `${GROQ_CORE}\n${groqRules(message, allHistory.length > 0)}`
+    system: `${GROQ_CORE}\n${groqRules(message, previousQuestion(allHistory))}`
   })
   const complexity = questionComplexity(message)
   // GROQ_REASONING_EFFORT, when set, fixes the level; otherwise it follows the question.
   const reasoningEffort = env.GROQ_REASONING_EFFORT ? normalizeThinkingLevel(env.GROQ_REASONING_EFFORT) : (complexity === 'simple' ? 'low' : 'medium')
   // Sizes only (characters), never the text itself.
-  const inputChars = { system: GROQ_CORE.length, rules: groqRules(message, allHistory.length > 0).length, question: message.length, knowledge: JSON.stringify(promptKnowledge).length, context: JSON.stringify(appContext).length, history: history.reduce((sum, item) => sum + item.content.length, 0), historyTurns: history.length }
+  const inputChars = { system: GROQ_CORE.length, rules: groqRules(message, previousQuestion(allHistory)).length, question: message.length, knowledge: JSON.stringify(promptKnowledge).length, context: JSON.stringify(appContext).length, history: history.reduce((sum, item) => sum + item.content.length, 0), historyTurns: history.length }
   const maxInput = clampInt(env.CHEMAI_MAX_INPUT_TOKENS, DEFAULT_MAX_INPUT_TOKENS, 1500, 32000)
   // Still too long after the safe cuts: ask the learner to shorten it; never cut the problem itself.
   if (inputTokens > maxInput) {
