@@ -68,7 +68,8 @@ test('broken delimiters fall back to readable math, the rest of the answer survi
 })
 
 test('LaTeX without delimiters is found; Vietnamese prose stays text', () => {
-  assert.deepEqual(maths('Thay số: n = \\frac{5,6}{56} = 0,1 mol.'), ['I:n = \\frac{5,6}{56} = 0,1 mol.'])
+  // 6.6.3: the sentence's full stop is prose, not part of the formula.
+  assert.deepEqual(maths('Thay số: n = \\frac{5,6}{56} = 0,1 mol.'), ['I:n = \\frac{5,6}{56} = 0,1 mol'])
   assert.deepEqual(maths('Ta có \\text{unbalanced{ here'), [])
   assert.deepEqual(maths('Không có công thức nào ở đây.'), [])
 })
@@ -181,6 +182,55 @@ test('6.6.1 rendering set: formulas, fractions, indices, equations, multi-line, 
     assert.ok(!visibleText(html).includes('$'), name)
   }
   assert.match(markdownToHTML(cases['chemical equation'][0]), /chemai-equation/)
+})
+
+// 6.6.3: real Groq answers from Production 6.6.2 (butane, 1 g, 25 °C, 1 bar), verbatim from the API.
+// They mix Unicode formulas with LaTeX, often without $…$, and escape some newlines twice.
+const REAL_BUTANE = [
+  JSON.parse(String.raw`"**ChemLab đối chiếu tự động và thấy điểm cần lưu ý trong câu trả lời bên dưới:**\n- Phương trình 2O₂ → 4CO₂ + 5H₂O chưa cân bằng.\n\n1. Phương trình đốt cháy: C₄H₁₀ + \\frac{13}{2}\\,O₂ → 4\\,CO₂ + 5\\,H₂O\\n2. Số mol butan: $n_{C₄H₁₀}=\\frac{1\\ \\text{g}}{58.12\\ \\text{g·mol^{-1}}}=0.0172\\ \\text{mol}$\\n3. Theo tỉ lệ 1 mol C₄H₁₀ sinh 4 mol CO₂: $n_{CO₂}=0.0172\\times4=0.0688\\ \\text{mol}$\\n4. Thể tích CO₂ ở 25°C, 1 bar: $V=n\\cdot V_m=0.0688\\ \\text{mol}\\times24.79\\ \\text{L·mol^{-1}}=1.70\\ \\text{L}$"`),
+  JSON.parse(String.raw`"1. Khối lượng C₄H₁₀ = 1 g ⇒ n = \\frac{1}{58.12}\\,\\text{mol}=0.0172\\,\\text{mol}. 2. Phản ứng: C₄H₁₀+ \\frac{13}{2}O₂ → 4\\,CO₂+5\\,H₂O, mỗi mol C₄H₁₀ tạo 4\\,mol CO₂ ⇒ n(CO₂)=0.0172×4=0.0688\\,\\text{mol}. 3. Thể tích CO₂ ở 25 °C, 1 bar: V = n·RT/P = 0.0688·0.08314·298 = 1.70\\,\\text{L} ≈ 1.7\\,\\text{L}."`)
+]
+// What the learner sees: every math placeholder typeset by real KaTeX, plus the prose around it.
+const learnerView = answer => {
+  const html = markdownToHTML(answer)
+  const spans = [...html.matchAll(/<span class="chemai-math[^"]*" data-display="(\d)"[^>]*>([^<]*)<\/span>/g)]
+    .map(([, display, tex]) => typeset(tex.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#039;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&'), display === '1'))
+  const prose = html.replace(/<span class="chemai-math[^>]*>[^<]*<\/span>/g, ' ').replace(/<[^>]+>/g, ' ')
+  return { html, spans, raw: spans.filter(span => span.classList.added.includes('chemai-math--raw')).length, prose }
+}
+
+test('6.6.3: real butane answers render with no raw LaTeX and no broken Vietnamese words', () => {
+  for (const [index, answer] of REAL_BUTANE.entries()) {
+    const view = learnerView(answer)
+    assert.equal(view.raw, 0, `answer ${index}: every formula typesets`)
+    assert.ok(!view.prose.includes('\\'), `answer ${index}: no backslash in prose: ${view.prose}`)
+    assert.ok(view.spans.length >= 4, `answer ${index}: formulas found`)
+    for (const word of ['Phản ứng', 'Thể tích', 'CO₂']) if (answer.includes(word)) assert.ok(view.prose.includes(word), `answer ${index}: "${word}" intact`)
+  }
+  // Newlines escaped twice become real list items again.
+  assert.equal((learnerView(REAL_BUTANE[0]).html.match(/<li>/g) || []).length, 5)
+  assert.match(learnerView(REAL_BUTANE[0]).prose, /Số mol butan/)
+})
+
+test('6.6.3: fragments seen on the phone, delimiters missing or broken', () => {
+  const cases = [
+    String.raw`Ta có n=\frac{m}{M} nên m = n·M.`,
+    String.raw`M(C₄H₁₀) = 58 \text{g}\,\text{mol}^{-1}`,
+    String.raw`Đơn vị: \text{g}\,\text{mol}^{-1}; thể tích mol 24,79 L/mol.`,
+    String.raw`Kết quả $V = 1,70\ \text{L}`,
+    String.raw`**Bước 2:** $n_{CO_2} = 4 \times 0,0172 = 0,0688\ \text{mol}$ và 2C₄H₁₀ + 13O₂ → 8CO₂ + 10H₂O`,
+    String.raw`$$n = \frac{m}{M}$$` + '\n' + String.raw`m = 1\ \text{g}`
+  ]
+  for (const answer of cases) {
+    const view = learnerView(answer)
+    assert.equal(view.raw, 0, answer)
+    assert.ok(!view.prose.includes('\\'), `${answer} → ${view.prose}`)
+  }
+  // Equations and subscripts written in Unicode stay text and keep their equation styling.
+  assert.match(learnerView(cases[4]).html, /chemai-equation|8CO₂/)
+  // \nu and \neq are commands, never newlines.
+  assert.equal(learnerView(String.raw`$\nu \neq 0$`).raw, 0)
+  assert.match(learnerView(String.raw`$\nu \neq 0$`).spans[0].innerHTML, /katex/)
 })
 
 console.log(`PASS — ${passed} ChemAI rendering checks passed.`)

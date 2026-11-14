@@ -96,14 +96,34 @@ export function extractMath(source) {
     index += 1
   }
   if (out.includes('\\')) {
-    out = out.replace(COMMAND_RUN, run => {
-      const tex = run.trim()
-      if (!balanced(tex)) return run
-      const lead = run.slice(0, run.indexOf(tex))
-      return `${lead}${token(tex, false)}${run.slice(lead.length + tex.length)}`
+    out = out.replace(COMMAND_RUN, (run, offset, whole) => {
+      const [start, end] = runBounds(run, whole[offset - 1] || '', whole[offset + run.length] || '')
+      const tex = run.slice(start, end)
+      if (!/\\[A-Za-z]/.test(tex) || !balanced(tex)) return run
+      return `${run.slice(0, start)}${token(tex, false)}${run.slice(end)}`
     })
+    // Spacing commands left in prose (4\,CO₂) mean a thin space; nothing else is touched.
+    out = out.replace(/\\[,;:]/g, ' ').replace(/\\!/g, '')
   }
   return { text: out, maths }
+}
+
+// Where the formula inside an undelimited run starts and ends. ASCII letters glued to
+// Vietnamese text or to a formula (Phản, H₂O) are words, not math; sentence punctuation,
+// a stray closing bracket and an inline list number ("… mol. 2.") belong to the prose.
+function runBounds(run, before, after) {
+  let start = 0
+  let end = run.length
+  if (/[\p{L}\p{N}]/u.test(after)) end -= (run.match(/[A-Za-z0-9]+$/) || [''])[0].length
+  if (/[\p{L}\p{N}]/u.test(before)) start += (run.match(/^[A-Za-z0-9]+/) || [''])[0].length
+  for (let changed = true; changed && end > start;) {
+    const tex = run.slice(start, end)
+    const cut = tex.match(/(?<!\\)[.;:](\s+\d+\.)$/)?.[1].length || tex.match(/(\s|(?<!\\)[.,;:])$/)?.[0].length || 0
+    end -= cut
+    changed = cut > 0
+  }
+  while (start < end && /[\s)\].,;:]/.test(run[start])) start += 1
+  return [start, end]
 }
 
 function mathHTML(piece) {
@@ -130,7 +150,8 @@ export function undoubleBackslashes(source) {
 }
 
 export function markdownToHTML(markdown) {
-  const source = undoubleBackslashes(String(markdown ?? '').replace(/\r\n/g, '\n').replace(/\u0000/g, '').trim())
+  // A lone \n (not \nu, \neq, nor the n after a \\ line break) is a newline the model escaped twice.
+  const source = undoubleBackslashes(String(markdown ?? '').replace(/\r\n/g, '\n').replace(/(?<!\\)\\n(?![A-Za-z])/g, '\n').replace(/\u0000/g, '').trim())
   if (!source) return ''
 
   const blocks = source.split(/```/)
