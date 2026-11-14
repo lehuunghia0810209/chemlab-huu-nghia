@@ -183,11 +183,6 @@ export function initChemAI({ version = APP_VERSION } = {}) {
         </div>
         <p id="chemai-quota" class="chemai-quota" hidden></p>
       </form>
-
-      <footer class="chemai-footer">
-        <span>${icon('brain')} ChemAI · trả lời tiếng Việt · công thức và PTHH giữ chuẩn Hóa học</span>
-        <small>ChemAI có thể sai kiến thức. Hãy đối chiếu SGK hoặc hỏi giáo viên.</small>
-      </footer>
     </section>
   `
 

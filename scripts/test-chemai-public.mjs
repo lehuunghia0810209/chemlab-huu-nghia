@@ -3,7 +3,7 @@
 // reconciliation, bypass attempts, input fitting and that the other modes are untouched.
 // No real network call is possible.
 import assert from 'node:assert/strict'
-import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody, groqRules, questionComplexity, focusContext, slimKnowledge } from '../functions/api/chat.js'
+import { onRequestGet, onRequestPost, fitInput, compactText, pruneEmpty, estimateTokens, groqChatBody, groqRules, questionComplexity, focusContext, focusKnowledge, slimKnowledge } from '../functions/api/chat.js'
 import { onRequestPost as feedbackPost } from '../functions/api/feedback.js'
 import { APP_VERSION } from '../src/appMeta.js'
 
@@ -175,23 +175,23 @@ await test('token accounting uses the provider usage: reserve, then refund down 
 
 await test('the client budget stops a learner when tokens run out, without a model call', async () => {
   const env = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '7000' })
-  reply = () => completion(2400)
+  reply = () => completion(2900)
   const first = await send(env)
   const headers = { Cookie: first.cookie }
   advance(70)
-  assert.equal((await send(env, { headers })).status, 200) // 4800 used
+  assert.equal((await send(env, { headers })).status, 200) // 5800 used
   advance(70)
-  const third = await send(env, { headers }) // reservation (input estimate + 1600) > 2200 left
+  const third = await send(env, { headers }) // reservation (input estimate + 1000) > 1200 left
   assert.equal(third.status, 429)
   assert.equal(third.payload.code, 'AI_TOKEN_LIMIT')
   assert.equal(calls.length, 2)
-  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 4800, 'a refused reservation leaves no charge')
-  assert.equal(env.CHEMAI_BUDGET.states.get('budget:tokens').used, 4800)
+  assert.equal(env.CHEMAI_BUDGET.used('budget:tokens-session:'), 5800, 'a refused reservation leaves no charge')
+  assert.equal(env.CHEMAI_BUDGET.states.get('budget:tokens').used, 5800)
 })
 
 await test('a browser cannot reset or raise its budget', async () => {
   const env = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '4000', CHEMAI_TOKENS_PER_NETWORK_DAY: '7000' })
-  reply = () => completion(2400)
+  reply = () => completion(2900)
   const first = await send(env)
   advance(70)
   // Forged or edited cookies are not sessions: the request gets a new one…
@@ -200,7 +200,7 @@ await test('a browser cannot reset or raise its budget', async () => {
   assert.notEqual(forged.cookie, first.cookie)
   assert.match(forged.cookie, /^chemai_sid=/)
   advance(70)
-  // …and clearing cookies does not help: the network bucket (4800 of 7000) cannot fit another reservation.
+  // …and clearing cookies does not help: the network bucket (5800 of 7000) cannot fit another reservation.
   const cleared = await send(env)
   assert.equal(cleared.payload.code, 'AI_TOKEN_LIMIT')
   assert.equal(calls.length, 2)
@@ -235,10 +235,10 @@ await test('site-wide token budgets: per day and per minute', async () => {
   assert.equal(over.payload.code, 'AI_BUDGET_LIMITED')
 
   const minute = publicEnv()
-  reply = () => completion(2000)
-  assert.equal((await send(minute, { ip: '203.0.113.3' })).status, 200) // 2000 of 6000 this minute
+  reply = () => completion(2500)
+  assert.equal((await send(minute, { ip: '203.0.113.3' })).status, 200) // 2500 of 6000 this minute
   advance(5)
-  assert.equal((await send(minute, { ip: '203.0.113.4' })).status, 200) // 4000; the next reservation (~2200) no longer fits
+  assert.equal((await send(minute, { ip: '203.0.113.4' })).status, 200) // 5000; the next reservation (~1600) no longer fits
   advance(5)
   const busy = await send(minute, { ip: '203.0.113.5' })
   assert.equal(busy.status, 503)
@@ -286,7 +286,7 @@ await test('retries: settled and reserved again per attempt, never past the budg
   assert.equal(recovered.payload.quota.remaining, 20000 - 1500 - estimate)
 
   // Not enough budget left for another full reservation: the retry is not made.
-  const tight = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '3000', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' })
+  const tight = publicEnv({ CHEMAI_TOKENS_PER_CLIENT_DAY: '2000', CHEMAI_TOKENS_GLOBAL_MINUTE: '100000' })
   calls.length = 0
   script([() => { throw new TypeError('network down') }, () => completion(1500)])
   const stopped = await send(tight, { ip: '203.0.113.71' })
@@ -353,7 +353,7 @@ await test('cross-origin and oversized requests are refused before any charge', 
 })
 
 await test('a question too long for the input cap is refused with guidance, never silently cut', async () => {
-  const env = publicEnv()
+  const env = publicEnv({ CHEMAI_MAX_INPUT_TOKENS: '1500' })
   const long = `Cho hỗn hợp X gồm ${'Fe 5,6 g; Cu 6,4 g; Al 2,7 g; '.repeat(130)} tính khối lượng muối.`
   const result = await send(env, {}, long.slice(0, 3900))
   assert.equal(result.status, 413)
@@ -434,6 +434,19 @@ await test('context: screen text only when the question points at the screen; st
   // Knowledge for the model: ids and empties go, chemistry stays.
   const slim = pruneEmpty(slimKnowledge({ elements: [], reactions: [{ id: 'h2so4-naoh', equation: 'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O', conditions: {}, solids: [{ formula: 'BaSO4', color: 'trắng' }] }] }))
   assert.deepEqual(slim, { reactions: [{ equation: 'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O', solids: [{ formula: 'BaSO4', color: 'trắng' }] }] })
+})
+
+await test('6.6.2: only sections that carry something; reactions only for reaction questions', () => {
+  const knowledge = { chemicals: [{ formula: 'H₂SO₄', family: 'acid' }], reactions: [{ equation: 'H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O' }] }
+  assert.deepEqual(focusKnowledge(knowledge, 'Khối lượng của 0,5 mol H2SO4 là bao nhiêu gam?'), { chemicals: knowledge.chemicals })
+  for (const question of ['Viết phương trình H2SO4 tác dụng với NaOH', 'H2SO4 + NaOH', 'Cho NaOH vào H2SO4, nêu hiện tượng']) assert.deepEqual(focusKnowledge(knowledge, question), knowledge, question)
+  // A context naming only the view is dropped; structured state stays.
+  assert.deepEqual(focusContext({ view: 'home', viewLabel: 'Tổng quan' }, 'Axit là gì?'), {})
+  assert.deepEqual(focusContext({ view: 'lab', lab: { mixture: 'HCl' } }, 'Axit là gì?'), { view: 'lab', lab: { mixture: 'HCl' } })
+  const user = question => groqChatBody({ model: 'm', message: question, history: [], appContext: {}, knowledge: {}, reasoningEffort: 'low' }).messages[2].content
+  assert.equal(user('Axit là gì?'), 'CÂU HỎI HIỆN TẠI:\n\nAxit là gì?', 'no empty history, context or knowledge blocks')
+  const withData = groqChatBody({ model: 'm', message: 'q', history: [{ role: 'user', content: 'a' }], appContext: { view: 'lab', lab: {} }, knowledge, reasoningEffort: 'low' }).messages[2].content
+  for (const label of ['LỊCH SỬ:', 'CÂU HỎI HIỆN TẠI:', 'CHEMLAB CONTEXT:', 'CHEMLAB KNOWLEDGE:']) assert.ok(withData.includes(label), label)
 })
 
 await test('cached prompt tokens are reported and not charged', async () => {

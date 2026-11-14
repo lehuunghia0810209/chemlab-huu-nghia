@@ -401,37 +401,34 @@ async function chemAINoticeJourney(browser, baseURL) {
     const state = await page.evaluate(() => {
       const box = document.querySelector('#chemai-messages').getBoundingClientRect()
       const head = document.querySelector('.chemai-answer strong').getBoundingClientRect()
-      const notice = document.querySelector('.chemai-footer small')
-      const n = notice.getBoundingClientRect()
-      return { headTop: Math.round(head.top - box.top), inView: head.top >= box.top && head.bottom <= box.bottom, notice: notice.textContent, noticeVisible: n.height > 0 && n.bottom <= innerHeight + 1 && n.right <= innerWidth + 1, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }
+      // 6.6.2: the footer is gone; the composer closes the panel and stays on screen.
+      const panel = document.querySelector('.chemai-panel').getBoundingClientRect()
+      const form = document.querySelector('#chemai-form').getBoundingClientRect()
+      return { headTop: Math.round(head.top - box.top), inView: head.top >= box.top && head.bottom <= box.bottom, footer: Boolean(document.querySelector('.chemai-footer')), composerLast: panel.bottom - form.bottom, composerInView: form.bottom <= innerHeight + 1 && form.right <= innerWidth + 1, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }
     })
     record(`ChemAI ${viewport.width}: a correction on a long answer stays in view`, state.inView, JSON.stringify(state))
-    record(`ChemAI ${viewport.width}: the reliability notice is visible`, state.noticeVisible && /đối chiếu SGK/.test(state.notice) && state.overflow <= 1, JSON.stringify(state))
+    record(`ChemAI ${viewport.width}: no footer; the composer ends the panel inside the screen`, !state.footer && state.composerLast >= -1 && state.composerLast <= 2 && state.composerInView && state.overflow <= 1, JSON.stringify(state))
     const quota = await page.evaluate(() => {
       const line = document.querySelector('#chemai-quota')
       const box = line.getBoundingClientRect()
       return { text: line.textContent, visible: !line.hidden && box.height > 0 && box.right <= innerWidth + 1 && box.bottom <= innerHeight + 1 }
     })
-    // 6.6.1 regressions: long suggestions stay inside their chips and the footer is one column.
+    // 6.6.1 regression: long suggestions stay inside their chips.
     const layout = await page.evaluate(() => {
       const panel = document.querySelector('.chemai-panel').getBoundingClientRect()
       const chips = [...document.querySelectorAll('#chemai-suggestions button')]
       const rects = chips.map(chip => chip.getBoundingClientRect())
       const strip = document.querySelector('#chemai-suggestions').getBoundingClientRect()
       const input = document.querySelector('#chemai-input').getBoundingClientRect()
-      const parts = [...document.querySelector('.chemai-footer').children].map(node => node.getBoundingClientRect()).filter(rect => rect.height > 0)
       return {
         chips: chips.length,
         spill: chips.some(chip => chip.scrollWidth > chip.clientWidth + 1),
         overlap: rects.some((a, i) => rects.some((b, j) => j > i && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)),
         touch: Math.round(Math.min(...rects.map(rect => rect.height))),
-        stripInPanel: strip.left >= panel.left - 1 && strip.right <= panel.right + 1 && strip.bottom <= input.top + 1,
-        footerColumns: new Set(parts.map(rect => Math.round(rect.left))).size,
-        footerInPanel: parts.every(rect => rect.right <= panel.right + 1 && rect.bottom <= innerHeight + 1)
+        stripInPanel: strip.left >= panel.left - 1 && strip.right <= panel.right + 1 && strip.bottom <= input.top + 1
       }
     })
     record(`ChemAI ${viewport.width}: long suggestions do not overlap or spill out of their chips`, layout.chips === 3 && !layout.spill && !layout.overlap && layout.stripInPanel && layout.touch >= (viewport.width < 700 ? 44 : 38), JSON.stringify(layout))
-    record(`ChemAI ${viewport.width}: the footer is a single column inside the panel`, layout.footerColumns === 1 && layout.footerInPanel, JSON.stringify(layout))
     record(`ChemAI ${viewport.width}: the remaining token budget is shown after an answer`, quota.visible && quota.text === 'Bạn còn 17.850 / 20.000 token hôm nay.', JSON.stringify(quota))
     record(`console clean in ChemAI correction flow ${viewport.width}`, errors.length === 0, errors.join(' | '))
     await context.close()
