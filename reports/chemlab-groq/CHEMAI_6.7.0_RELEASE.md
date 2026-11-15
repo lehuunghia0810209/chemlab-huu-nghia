@@ -2,7 +2,7 @@
 
 Date: 2026-11-15 · Branch `feature/chemai-6.7-hybrid` (base `cc03ca6`, main = `6846d41`) ·
 Production today: ChemLab 6.6.4, deployment `12f7fbc8` (rollback target) ·
-Status: **READY EXCEPT LIVE X5 VERIFICATION**
+Status: **READY FOR PRODUCTION RELEASE** (head `2813174` + this report; see the X5 limitation below)
 
 Technical detail and every benchmark stage: `CHEMAI_6.7_HYBRID_ROUTING.md` (§9–§14).
 
@@ -85,12 +85,23 @@ All other live answers of stages 1–4 and 8 valid iron sentences stay clean (ro
 The verified lesson corpus has one hit, the deliberately wrong statement in g10-l21 (`wrong:`
 field), now listed as intended in test-chemai-guard.mjs.
 
-**Pending:** this fix has not met live Groq. Both models still answer X5 unreliably, so a
-re-run will end as Correct or SafeBlocked, not WrongShown — that is what the run must show.
+### RC2 run of X5 (live, 2026-11-15, code `2813174`, 5,029 tokens) — no wrong answer shown
 
-```powershell
-cd D:\EduLab\.worktrees\chemlab-6.7; node scripts/chemai-benchmark.mjs --live --confirm --modes off,hybrid --only X5 --max-tokens 7000 --label "6.7.0 RC2: X5" --out reports/chemlab-groq/benchmark-6.7-rc2-x5.json
-```
+| | Calls | Drafts | Learner saw | Outcome |
+|---|---|---|---|---|
+| off | 120b 1,662 | "Đúng … Fe + Cl₂ → FeCl₂ (cân bằng…)" — wrong | 503 `AI_UNVERIFIED` + FeCl₃ correction | SafeBlocked |
+| hybrid | 20b 1,838 → 120b 1,529 | 20b: "Fe + Cl₂ → FeCl₃; FeCl₂ không thường được hình thành…" (right product, unbalanced); 120b: "Đúng. … Fe + Cl₂ → FeCl₂" — wrong | 503 `AI_UNVERIFIED` + FeCl₃ correction | SafeBlocked |
+
+- WrongShown 0, Correct 0, SafeBlocked 2. A blocked answer is not counted as correct.
+- What the learner reads is the verified fact: "Fe tác dụng với Cl₂ tạo FeCl₃ (2Fe + 3Cl₂ →
+  2FeCl₃), không tạo FeCl₂…". 6.6.4 in Production shows the wrong "Đúng, FeCl₂" answer today.
+- Escalation: one, 20b → 120b, reason `guard` (unbalanced skeleton); both calls charged
+  (3,367 tokens). No third call. No secret in the file.
+- Known limitation, accepted for 6.7.0: 120b answered this question wrongly in 4 of 5 live
+  runs despite the iron rule in the prompt, so X5 is usually blocked and "Thử lại" will often
+  block again. Across all live hybrid rows since withholding exists (16), this is the only
+  blocked one. Here the escalation also replaced a 20b draft that only needed the balanced
+  equation with a wrong 120b answer.
 
 ## Release procedure (next turn)
 
@@ -100,8 +111,7 @@ running 6.6.4 deployment keeps its frozen `groq:6.6.4` and keeps answering, and 
 deployment is built with `groq:6.7.0`. Changing it after the push would lock ChemAI on the new
 deployment until a redeploy.
 
-1. Run the RC2 X5 command above; read both answers and drafts by hand. Stop if FeCl₂ is shown as
-   the product or a wrong answer is displayed.
+1. Confirm the branch head and a clean worktree; `git fetch`; origin/main must still be `6846d41`.
 2. Production variables, names and types only (never values): `GROQ_API_KEY` present,
    `CHEMAI_BUDGET` Durable Object binding present, `CHEMAI_ACCESS_MODE=public`,
    `CHEMAI_PUBLIC_HOSTS` unchanged, `CHEMAI_ROUTING` absent (hybrid is the default) or not `off`.
@@ -124,6 +134,10 @@ deployment until a redeploy.
      `groq:6.6.4`, so it answers immediately; set the variable back before the next 6.6.x deploy.
 
 ## Backlog after 6.7.0 (not blockers)
+
+- X5-type facts: answer Fe + Cl₂ deterministically (engine fact or verified knowledge entry) so the
+  learner gets an answer instead of a blocked notice; when an escalated 120b answer is withheld,
+  consider showing the 20b draft that only needed a correction note.
 
 - Full 56-question live benchmark for a pooled token / cost figure on one code version.
 - Guard: judge unbalanced equations without coefficients in general (today only Fe + Cl₂).
