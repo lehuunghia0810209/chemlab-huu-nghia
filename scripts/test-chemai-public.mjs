@@ -46,6 +46,8 @@ const publicEnv = (extra = {}) => ({
   CHEMAI_ACCESS_MODE: 'public',
   CHEMAI_PUBLIC_APPROVAL: `groq:${APP_VERSION}`,
   CHEMAI_PUBLIC_HOSTS: HOST,
+  // Budgets and public mode on the single-model path (6.6.4); routing: test-chemai-routing.mjs.
+  CHEMAI_ROUTING: 'off',
   ...extra
 })
 const post = (body, { ip = '198.51.100.7', headers = {} } = {}) => new Request(`${origin}/api/chat`, {
@@ -407,6 +409,8 @@ await test('prompt: fixed cacheable core, then only the rules the question needs
 
   const rules = question => groqRules(question)
   assert.match(rules('Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?'), /Bài tính/)
+  // 6.7 (stage 3, P1): the SGK atomic-mass rule must reach the Groq models, not only the Gemini prompt.
+  assert.match(rules('Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.'), /SGK \(H 1, O 16, Na 23, Cl 35,5, Fe 56/)
   assert.doesNotMatch(rules('Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?'), /Vị trí nguyên tố|Khí:|Hữu cơ/)
   assert.match(rules('Cân bằng phương trình: Fe + O2 → Fe3O4'), /đếm lại số nguyên tử/)
   assert.match(rules('Xác định vị trí của K (Z = 19) trong bảng tuần hoàn.'), /Vị trí nguyên tố/)
@@ -414,12 +418,15 @@ await test('prompt: fixed cacheable core, then only the rules the question needs
   assert.match(rules('Tính thể tích khí H2 ở đkc khi cho 5,6 g Fe tác dụng với HCl dư.'), /24,79 L\/mol[\s\S]*tỉ số n\/hệ số/)
   assert.match(rules('Gọi tên CH3COOC2H5 (ester).'), /methyl/)
   // Nothing recognised: every rule is sent.
-  for (const all of [rules('Giúp mình với'), groqRules('Giải thích thêm đi', '')]) assert.equal(all.split('\n').length - 1, 8)
+  for (const all of [rules('Giúp mình với'), groqRules('Giải thích thêm đi', '')]) assert.equal(all.split('\n').length - 1, 9)
+  // 6.7 (stage 2, X5): iron questions get the FeCl₃ fact; others do not.
+  assert.match(rules('Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?'), /FeCl₃/)
+  assert.doesNotMatch(rules('Khối lượng của 0,5 mol H₂SO₄ là bao nhiêu gam?'), /FeCl₃/)
   // 6.6.4: a short follow-up is read with the previous question, not given all eight rules.
   const followUp = groqRules('Tính khối lượng NH3 tạo thành từ 2 mol N2.', 'Tại sao phản ứng này cần xúc tác?')
   assert.match(followUp, /Bài tính/)
   assert.match(followUp, /Phương trình/)
-  assert.ok(followUp.split('\n').length - 1 < 8, followUp)
+  assert.ok(followUp.split('\n').length - 1 < 9, followUp)
   assert.match(groqRules('Còn chất nào dư?', 'Cho 5,6 g Fe vào dung dịch chứa 0,3 mol HCl'), /tỉ số n\/hệ số/)
   assert.ok(!rules('Axit là gì?').includes('Bài tính'), 'Vietnamese letters do not trigger ASCII word rules')
 })

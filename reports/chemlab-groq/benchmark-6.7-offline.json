@@ -1,0 +1,466 @@
+{
+  "mode": "offline",
+  "version": "6.6.4",
+  "summary": {
+    "questions": 56,
+    "engine": 19,
+    "engineShare": "33.9%",
+    "engineCorrect": 19,
+    "routes": {
+      "engine": 19,
+      "20b": 22,
+      "120b": 15
+    },
+    "routingErrors": []
+  },
+  "rows": [
+    {
+      "id": "E1",
+      "category": "element",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "E2",
+      "category": "element",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "E3",
+      "category": "element",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "E4",
+      "category": "element",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "E5",
+      "category": "element",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "E6",
+      "category": "element",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "C1",
+      "category": "configuration",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "C2",
+      "category": "configuration",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "C3",
+      "category": "configuration",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "C4",
+      "category": "configuration",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "C5",
+      "category": "configuration",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "C6",
+      "category": "configuration",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "C7",
+      "category": "configuration",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "C8",
+      "category": "configuration",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "B1",
+      "category": "balancing",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "B2",
+      "category": "balancing",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "B3",
+      "category": "balancing",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "B4",
+      "category": "balancing",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "B5",
+      "category": "balancing",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "B6",
+      "category": "balancing",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "A1",
+      "category": "acid-base",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "A2",
+      "category": "acid-base",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "A3",
+      "category": "acid-base",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "A4",
+      "category": "acid-base",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "A5",
+      "category": "acid-base",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "A6",
+      "category": "acid-base",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "A7",
+      "category": "acid-base",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "M1",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M2",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M3",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M4",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M5",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M6",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M7",
+      "category": "amount",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "engineCorrect": true
+    },
+    {
+      "id": "M8",
+      "category": "amount",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "M9",
+      "category": "amount",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "M10",
+      "category": "amount",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P1",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P2",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P3",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P4",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P5",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P6",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "P7",
+      "category": "multi-step",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "F1",
+      "category": "follow-up",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "F2",
+      "category": "follow-up",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "F3",
+      "category": "follow-up",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "F4",
+      "category": "follow-up",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "F5",
+      "category": "follow-up",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "F6",
+      "category": "follow-up",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "X1",
+      "category": "ambiguous",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "X2",
+      "category": "ambiguous",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "X3",
+      "category": "ambiguous",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "X4",
+      "category": "ambiguous",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "X5",
+      "category": "ambiguous",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    },
+    {
+      "id": "X6",
+      "category": "ambiguous",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "engineCorrect": null
+    }
+  ]
+}

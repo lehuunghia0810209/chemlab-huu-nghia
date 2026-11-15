@@ -1,0 +1,369 @@
+{
+  "mode": "live",
+  "label": "corrected-off vs corrected-hybrid (stage 4)",
+  "version": "6.6.4",
+  "date": "2026-11-15T14:50:33.276Z",
+  "maxTokens": 10000,
+  "spent": 7725,
+  "stopped": "7725 tokens spent; the next pair could need 4325 and --max-tokens is 10000.",
+  "summary": {
+    "off": {
+      "questions": 2,
+      "correct": 2,
+      "accuracy": "100.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 3687,
+      "avgTokens": 1844,
+      "reasoningTokens": 778,
+      "cachedTokens": 768,
+      "avgMs": 1952,
+      "routes": {
+        "engine": 0,
+        "20b": 0,
+        "120b": 2
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [],
+      "wrongShown": [],
+      "withheld": [],
+      "replacedByEngine": [],
+      "usdEstimate": 0.001043,
+      "outcomes": {
+        "Correct": [
+          "B4",
+          "P1"
+        ],
+        "WrongShown": [],
+        "SafeBlocked": [],
+        "ReplacedByEngine": [],
+        "ProviderError": []
+      },
+      "correctRate": "100.0%",
+      "blockRate": "—",
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 0,
+          "correct": 0
+        },
+        "120b": {
+          "n": 2,
+          "correct": 2
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "balancing": {
+          "n": 1,
+          "tokens": 2037,
+          "pass": 1,
+          "ms": 2362,
+          "avgTokens": 2037,
+          "avgMs": 2362
+        },
+        "multi-step": {
+          "n": 1,
+          "tokens": 1650,
+          "pass": 1,
+          "ms": 1541,
+          "avgTokens": 1650,
+          "avgMs": 1541
+        }
+      }
+    },
+    "hybrid": {
+      "questions": 2,
+      "correct": 2,
+      "accuracy": "100.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 4038,
+      "avgTokens": 2019,
+      "reasoningTokens": 1150,
+      "cachedTokens": 0,
+      "avgMs": 1710,
+      "routes": {
+        "engine": 0,
+        "20b": 1,
+        "120b": 1
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [],
+      "wrongShown": [],
+      "withheld": [],
+      "replacedByEngine": [],
+      "usdEstimate": 0.000876,
+      "outcomes": {
+        "Correct": [
+          "B4",
+          "P1"
+        ],
+        "WrongShown": [],
+        "SafeBlocked": [],
+        "ReplacedByEngine": [],
+        "ProviderError": []
+      },
+      "correctRate": "100.0%",
+      "blockRate": "—",
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 1,
+          "correct": 1
+        },
+        "120b": {
+          "n": 1,
+          "correct": 1
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "balancing": {
+          "n": 1,
+          "tokens": 2288,
+          "pass": 1,
+          "ms": 1755,
+          "avgTokens": 2288,
+          "avgMs": 1755
+        },
+        "multi-step": {
+          "n": 1,
+          "tokens": 1750,
+          "pass": 1,
+          "ms": 1665,
+          "avgTokens": 1750,
+          "avgMs": 1665
+        }
+      }
+    },
+    "comparison": {
+      "pairedQuestions": 2,
+      "tokens": {
+        "off": 3687,
+        "hybrid": 4038,
+        "saved": -351,
+        "savedShare": "-9.5%"
+      },
+      "usdEstimate": {
+        "off": 0.001043,
+        "hybrid": 0.000876,
+        "savedShare": "16.0%"
+      },
+      "savedByEngine": 0,
+      "savedByModel": -351,
+      "onlyOffCorrect": [],
+      "onlyHybridCorrect": []
+    }
+  },
+  "results": [
+    {
+      "mode": "off",
+      "id": "B4",
+      "category": "balancing",
+      "question": "Cân bằng phương trình KMnO4 + HCl → KCl + MnCl2 + Cl2 + H2O",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 2362,
+      "usage": {
+        "promptTokens": 1374,
+        "completionTokens": 663,
+        "reasoningTokens": 553,
+        "cachedTokens": 768,
+        "totalTokens": 2037,
+        "charged": 1269,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "promptTokens": 1374,
+            "completionTokens": 663,
+            "totalTokens": 2037
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "**Phương trình cân bằng**\n\n2 KMnO₄ + 16 HCl → 2 KCl + 2 MnCl₂ + 5 Cl₂ + 8 H₂O",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"**Phương trình cân bằng**\\n\\n2 KMnO₄ + 16 HCl → 2 KCl + 2 MnCl₂ + 5 Cl₂ + 8 H₂O\",\"actions\":[],\"suggestions\":[\"Làm thế nào tính khối lượng sản phẩm?\",\"Có thể cân bằng phản ứng này bằng phương pháp ion‑electron?\",\"Phản ứng này sinh khí Cl₂ có nguy cơ gì?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "B4",
+      "category": "balancing",
+      "question": "Cân bằng phương trình KMnO4 + HCl → KCl + MnCl2 + Cl2 + H2O",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 1755,
+      "usage": {
+        "promptTokens": 1374,
+        "completionTokens": 914,
+        "reasoningTokens": 814,
+        "cachedTokens": 0,
+        "totalTokens": 2288,
+        "charged": 2288,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "promptTokens": 1374,
+            "completionTokens": 914,
+            "totalTokens": 2288
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "2 KMnO₄ + 16 HCl → 2 KCl + 2 MnCl₂ + 5 Cl₂ + 8 H₂O",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-20b",
+          "content": "{\"answer\":\"\\n2 KMnO₄ + 16 HCl → 2 KCl + 2 MnCl₂ + 5 Cl₂ + 8 H₂O\",\"actions\":[],\"suggestions\":[\"Bạn có muốn biết phản ứng là oxi hóa?\",\"Bạn cần tính chất của Cl₂ trong phản ứng?\",\"Có câu hỏi nào khác về phản ứng?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "off",
+      "id": "P1",
+      "category": "multi-step",
+      "question": "Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 1541,
+      "usage": {
+        "promptTokens": 1225,
+        "completionTokens": 425,
+        "reasoningTokens": 225,
+        "cachedTokens": 0,
+        "totalTokens": 1650,
+        "charged": 1650,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "promptTokens": 1225,
+            "completionTokens": 425,
+            "totalTokens": 1650
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Phản ứng: Fe + 2 HCl → FeCl₂ + H₂.\n1 mol Fe → 1 mol H₂.\n\nn(Fe) = 5,6 g ÷ 56 g·mol⁻¹ = 0,10 mol → n(H₂) = 0,10 mol.\nV(H₂) tại đkc (25 °C, 1 bar) = n·24,79 L·mol⁻¹ = 0,10 × 24,79 = 2,48 L.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"Phản ứng: Fe + 2 HCl → FeCl₂ + H₂.\\n1 mol Fe → 1 mol H₂.\\n\\nn(Fe) = 5,6 g ÷ 56 g·mol⁻¹ = 0,10 mol → n(H₂) = 0,10 mol.\\nV(H₂) tại đkc (25 °C, 1 bar) = n·24,79 L·mol⁻¹ = 0,10 × 24,79 = 2,48 L.\",\"actions\":[],\"suggestions\":[\"Phản ứng của Fe với H₂SO₄ loãng cho ra gì?\",\"Làm sao tính khối lượng muối FeCl₂ tạo ra?\",\"Nếu HCl không dư, lượng H₂ sẽ bị giới hạn như thế nào?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "P1",
+      "category": "multi-step",
+      "question": "Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 1665,
+      "usage": {
+        "promptTokens": 1225,
+        "completionTokens": 525,
+        "reasoningTokens": 336,
+        "cachedTokens": 0,
+        "totalTokens": 1750,
+        "charged": 1750,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "promptTokens": 1225,
+            "completionTokens": 525,
+            "totalTokens": 1750
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "1. Tính n(Fe): n = m/M = 5,6 g ÷ 56 g·mol⁻¹ = 0,10 mol.\n2. Phản ứng: Fe + 2HCl → FeCl₂ + H₂, tỉ lệ n(H₂)=n(Fe)=0,10 mol.\n3. Thể tích H₂ ở đkc (25 °C, 1 bar): V = n·V_m = 0,10 mol × 24,79 L·mol⁻¹ = 2,48 L.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"1. Tính n(Fe): n = m/M = 5,6 g ÷ 56 g·mol⁻¹ = 0,10 mol.\\n2. Phản ứng: Fe + 2HCl → FeCl₂ + H₂, tỉ lệ n(H₂)=n(Fe)=0,10 mol.\\n3. Thể tích H₂ ở đkc (25 °C, 1 bar): V = n·V_m = 0,10 mol × 24,79 L·mol⁻¹ = 2,48 L.\",\"actions\":[],\"suggestions\":[\"Fe + HCl sinh ra muối gì?\",\"Nếu dùng H₂SO₄ loãng, kết quả sẽ thế nào?\",\"Làm sao xác định lượng HCl cần dùng?\"]}"
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"1b17e5e7-c1e6-4f4b-b068-3af85f33bf6b\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1349,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":562,\"question\":59,\"knowledge\":1196,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1374,\"completionTokens\":663,\"reasoningTokens\":553,\"cachedTokens\":768,\"totalTokens\":2037,\"tokensReserved\":2949,\"tokensCharged\":1269,\"tokensRefunded\":1680,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":77,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2326}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"588a4396-6dc2-401b-a74c-101fc78cac66\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1349,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":562,\"question\":59,\"knowledge\":1196,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1374,\"completionTokens\":914,\"reasoningTokens\":814,\"cachedTokens\":null,\"totalTokens\":2288,\"tokensReserved\":2949,\"tokensCharged\":2288,\"tokensRefunded\":661,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":50,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1753}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"42f52350-7916-45ed-904d-2bf652a1d7fe\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1163,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":735,\"question\":84,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1225,\"completionTokens\":425,\"reasoningTokens\":225,\"cachedTokens\":null,\"totalTokens\":1650,\"tokensReserved\":2763,\"tokensCharged\":1650,\"tokensRefunded\":1113,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":186,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1539}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"ad82ca8b-d6f2-4ed5-beec-5e7a3c91f688\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"multi-step\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1163,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":735,\"question\":84,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1225,\"completionTokens\":525,\"reasoningTokens\":336,\"cachedTokens\":null,\"totalTokens\":1750,\"tokensReserved\":2763,\"tokensCharged\":1750,\"tokensRefunded\":1013,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":204,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1663}"
+  ]
+}

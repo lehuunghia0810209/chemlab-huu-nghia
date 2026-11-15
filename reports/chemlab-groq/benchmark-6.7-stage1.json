@@ -1,0 +1,360 @@
+{
+  "mode": "live",
+  "version": "6.6.4",
+  "date": "2026-11-15T03:26:32.947Z",
+  "maxTokens": 10000,
+  "spent": 7548,
+  "stopped": "7548 tokens spent; the next pair could need 3540 and --max-tokens is 10000.",
+  "summary": {
+    "off": {
+      "questions": 3,
+      "correct": 2,
+      "accuracy": "66.7%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 4666,
+      "avgTokens": 1555,
+      "reasoningTokens": 1211,
+      "cachedTokens": 0,
+      "avgMs": 1868,
+      "routes": {
+        "engine": 0,
+        "20b": 0,
+        "120b": 3
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "P1"
+      ],
+      "errors": [],
+      "byCategory": {
+        "configuration": {
+          "n": 1,
+          "tokens": 1011,
+          "pass": 1,
+          "ms": 1093,
+          "avgTokens": 1011,
+          "avgMs": 1093
+        },
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1732,
+          "pass": 1,
+          "ms": 2185,
+          "avgTokens": 1732,
+          "avgMs": 2185
+        },
+        "multi-step": {
+          "n": 1,
+          "tokens": 1923,
+          "pass": 0,
+          "ms": 2327,
+          "avgTokens": 1923,
+          "avgMs": 2327
+        }
+      }
+    },
+    "hybrid": {
+      "questions": 3,
+      "correct": 2,
+      "accuracy": "66.7%",
+      "zeroTokenShare": "33.3%",
+      "totalTokens": 2882,
+      "avgTokens": 961,
+      "reasoningTokens": 489,
+      "cachedTokens": 0,
+      "avgMs": 1045,
+      "routes": {
+        "engine": 1,
+        "20b": 1,
+        "120b": 1
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "P1"
+      ],
+      "errors": [],
+      "byCategory": {
+        "configuration": {
+          "n": 1,
+          "tokens": 0,
+          "pass": 1,
+          "ms": 306,
+          "avgTokens": 0,
+          "avgMs": 306
+        },
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1265,
+          "pass": 1,
+          "ms": 961,
+          "avgTokens": 1265,
+          "avgMs": 961
+        },
+        "multi-step": {
+          "n": 1,
+          "tokens": 1617,
+          "pass": 0,
+          "ms": 1868,
+          "avgTokens": 1617,
+          "avgMs": 1868
+        }
+      }
+    },
+    "comparison": {
+      "pairedQuestions": 3,
+      "tokens": {
+        "off": 4666,
+        "hybrid": 2882,
+        "saved": 1784,
+        "savedShare": "38.2%"
+      },
+      "onlyOffCorrect": [],
+      "onlyHybridCorrect": []
+    }
+  },
+  "results": [
+    {
+      "mode": "off",
+      "id": "C1",
+      "category": "configuration",
+      "question": "Cấu hình electron của Neon",
+      "expectedRoute": "engine",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1093,
+      "usage": {
+        "promptTokens": 879,
+        "completionTokens": 132,
+        "reasoningTokens": 50,
+        "cachedTokens": 0,
+        "totalTokens": 1011,
+        "charged": 1011,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1011
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Ne: 1s² 2s² 2p⁶, chu kỳ 2, nhóm VIIIA (khí hiếm)."
+    },
+    {
+      "mode": "hybrid",
+      "id": "C1",
+      "category": "configuration",
+      "question": "Cấu hình electron của Neon",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "escalated": false,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 306,
+      "usage": {
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": 0,
+        "reasoningTokens": 0,
+        "charged": 0,
+        "calls": []
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "**Neon (Ne)** — số hiệu nguyên tử Z = 10\n- Cấu hình electron: 1s² 2s² 2p⁶ (viết gọn: [He] 2s² 2p⁶)\n- Số electron mỗi lớp: 2, 8\n- Vị trí: ô 10, chu kì 2, nhóm VIIIA\n- Nguyên tử khối: 20 (SGK làm tròn; giá trị chuẩn 20,18)"
+    },
+    {
+      "mode": "off",
+      "id": "X2",
+      "category": "ambiguous",
+      "question": "Cu có tác dụng với dung dịch HCl không?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 2185,
+      "usage": {
+        "promptTokens": 1001,
+        "completionTokens": 731,
+        "reasoningTokens": 516,
+        "cachedTokens": 0,
+        "totalTokens": 1732,
+        "charged": 1732,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1732
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Cu không phản ứng với dung dịch HCl (ác clô‑hydric) ở điều kiện thường. Cu⁰ không bị oxi hoá bởi H⁺ nên không có khí H₂ sinh ra.\n\n*Lý thuyết*: Theo chuỗi hoạt tính kim loại, Cu nằm dưới H, thế điện tiêu chuẩn E°(Cu²⁺/Cu)=+0,34 V > E°(H⁺/H₂)=0 V, nên phản ứng Cu + 2 H⁺ → Cu²⁺ + H₂ không thuận.\n\n*An toàn*: HCl ăn mòn, dùng găng tay, kính bảo hộ; không thực hiện nếu không có giáo viên giám sát."
+    },
+    {
+      "mode": "hybrid",
+      "id": "X2",
+      "category": "ambiguous",
+      "question": "Cu có tác dụng với dung dịch HCl không?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 961,
+      "usage": {
+        "promptTokens": 1001,
+        "completionTokens": 264,
+        "reasoningTokens": 196,
+        "cachedTokens": 0,
+        "totalTokens": 1265,
+        "charged": 1265,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1265
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Cu không phản ứng với dung dịch HCl;\nkhông có sản phẩm mới, không sinh khí."
+    },
+    {
+      "mode": "off",
+      "id": "P1",
+      "category": "multi-step",
+      "question": "Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 2327,
+      "usage": {
+        "promptTokens": 1107,
+        "completionTokens": 816,
+        "reasoningTokens": 645,
+        "cachedTokens": 0,
+        "totalTokens": 1923,
+        "charged": 1923,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1923
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/2\\.479/"
+        ],
+        "forbidden": []
+      },
+      "answer": "1. Phản ứng: Fe + 2 HCl → FeCl₂ + H₂.\n2. n(Fe) = 5,6 g ÷ 55,845 g·mol⁻¹ = 0,1003 mol.\n3. n(H₂) = n(Fe) = 0,1003 mol → V = 0,1003 × 22,4 L·mol⁻¹ = 2,25 L."
+    },
+    {
+      "mode": "hybrid",
+      "id": "P1",
+      "category": "multi-step",
+      "question": "Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1868,
+      "usage": {
+        "promptTokens": 1107,
+        "completionTokens": 510,
+        "reasoningTokens": 293,
+        "cachedTokens": 0,
+        "totalTokens": 1617,
+        "charged": 1617,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1617
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/2\\.479/"
+        ],
+        "forbidden": []
+      },
+      "answer": "1. Phản ứng: Fe + 2 HCl → FeCl₂ + H₂\n2. Số mol Fe: n = m/M = 5,6 g ÷ 55,845 g·mol⁻¹ = 0,100 mol\n3. Vì tỉ lệ Fe:H₂ = 1:1, n(H₂) = 0,100 mol\n4. Thể tích H₂ ở đkc (0 °C, 1 atm): V = n·22,4 L·mol⁻¹ = 0,100 mol × 22,4 L·mol⁻¹ = 2,24 L"
+    }
+  ],
+  "logs": [
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"713e6732-c570-4486-ac18-c111028e95d5\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":869,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":238,\"question\":26,\"knowledge\":157,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":879,\"completionTokens\":132,\"reasoningTokens\":50,\"cachedTokens\":null,\"totalTokens\":1011,\"tokensReserved\":1869,\"tokensCharged\":1011,\"tokensRefunded\":858,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":49,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1059}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"6d9a74b2-f0ea-4790-8f30-7ba9c2da8f96\",\"provider\":\"groq\",\"model\":\"\",\"colo\":null,\"route\":\"engine\",\"kind\":\"element:configuration\",\"status\":200,\"totalTokens\":0,\"durationMs\":305}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"56ff745c-e441-459b-a9b9-df7dab7090ba\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":989,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":302,\"question\":39,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1001,\"completionTokens\":731,\"reasoningTokens\":516,\"cachedTokens\":null,\"totalTokens\":1732,\"tokensReserved\":2589,\"tokensCharged\":1732,\"tokensRefunded\":857,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":394,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2184}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"65e5cc71-3735-4614-acd1-6c119c44ce1f\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":989,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":302,\"question\":39,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1001,\"completionTokens\":264,\"reasoningTokens\":196,\"cachedTokens\":null,\"totalTokens\":1265,\"tokensReserved\":2589,\"tokensCharged\":1265,\"tokensRefunded\":1324,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":75,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":960}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"3dbc25fc-c550-4b6a-b787-b161962969ac\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1072,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":507,\"question\":84,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1107,\"completionTokens\":816,\"reasoningTokens\":645,\"cachedTokens\":null,\"totalTokens\":1923,\"tokensReserved\":2672,\"tokensCharged\":1923,\"tokensRefunded\":749,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":153,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2326}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"0ba95f28-751b-4ab5-b27d-2007d7fca692\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"multi-step\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1072,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":507,\"question\":84,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1107,\"completionTokens\":510,\"reasoningTokens\":293,\"cachedTokens\":null,\"totalTokens\":1617,\"tokensReserved\":2672,\"tokensCharged\":1617,\"tokensRefunded\":1055,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":229,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1867}"
+  ]
+}

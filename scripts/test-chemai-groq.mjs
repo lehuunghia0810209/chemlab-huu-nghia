@@ -22,7 +22,8 @@ const budget = (chatLimit = Infinity) => {
   }
 }
 const workersAI = { run: async () => { throw new Error('Workers AI must never be called') } }
-const env = (extra = {}) => ({ GROQ_API_KEY: KEY, CHEMAI_BUDGET: budget(), AI: workersAI, GEMINI_API_KEY: 'gemini-test-only', ...extra })
+// The adapter's own behaviour, on the single-model path (6.6.4); routing: test-chemai-routing.mjs.
+const env = (extra = {}) => ({ GROQ_API_KEY: KEY, CHEMAI_BUDGET: budget(), AI: workersAI, GEMINI_API_KEY: 'gemini-test-only', CHEMAI_ROUTING: 'off', ...extra })
 let ipCounter = 1
 const post = body => new Request(`${origin}/api/chat`, {
   method: 'POST',

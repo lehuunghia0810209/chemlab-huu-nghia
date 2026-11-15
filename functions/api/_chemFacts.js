@@ -249,7 +249,16 @@ function equationFindings(text, question) {
     if (/^\d*(Cu|Ag|Au|Pt|Hg) \+ \d*(HCl|H2SO4)$/.test(equation.left) && /(^| )\d*H2( |$)/.test(equation.right)) {
       found.push({ id: 'reaction:no-hydrogen', severity: 'error', note: 'Cu, Ag, Au, Pt và Hg đứng sau H trong dãy hoạt động hóa học nên không đẩy được H₂ khỏi dung dịch acid.' })
     }
+    if (/(^| )\d*Fe( |$)/.test(equation.left) && /(^| )\d*Cl2( |$)/.test(equation.left) && /(^| )\d*FeCl2( |$)/.test(equation.right)) {
+      found.push({ id: 'reaction:fe-cl2', severity: 'error', note: 'Fe tác dụng với Cl₂ tạo FeCl₃ (2Fe + 3Cl₂ → 2FeCl₃), không tạo FeCl₂, vì Cl₂ là chất oxi hóa mạnh. FeCl₂ tạo ra khi Fe tác dụng với dung dịch HCl.' })
+    }
     if (asked.has(key) || /ban đầu|chưa cân bằng|sơ đồ/iu.test(equation.line)) continue
+    // Live stage 3 (X5): both models gave the right product with the bare skeleton Fe + Cl₂ → FeCl₃.
+    // The answer is still shown; this finding puts the balanced equation above it.
+    if (/(^| )\d*Fe( |$)/.test(equation.left) && /(^| )\d*Cl2( |$)/.test(equation.left) && /^\d*FeCl3$/.test(equation.right) && balanced(equation) === false) {
+      found.push({ id: 'balance:fe-cl3', severity: 'error', note: 'Phương trình cân bằng là 2Fe + 3Cl₂ → 2FeCl₃.' })
+      continue
+    }
     // Only an equation that claims to be balanced: with no coefficient it may be a skeleton or
     // shorthand (NaCl → Na + Cl₂), and a false correction costs more than a miss here.
     const species = `${equation.left} + ${equation.right}`.split(' + ')
@@ -259,9 +268,52 @@ function equationFindings(text, question) {
   return found
 }
 
+// ---------------- molar volume against the question's gas conditions ----------------
+
+const MOLAR_VOLUME_NOTE = {
+  'đkc': 'Đề cho đkc (25 °C, 1 bar): thể tích mol khí là 24,79 L/mol, không phải 22,4 L/mol (đktc, 0 °C, 1 atm).',
+  'đktc': 'Đề cho đktc (0 °C, 1 atm): thể tích mol khí là 22,4 L/mol, không phải 24,79 L/mol (đkc, 25 °C, 1 bar).'
+}
+// L·unit/(mol·K) for each pressure unit.
+const GAS_R = { atm: 0.082057, bar: 0.083145, kpa: 8.3145, mmhg: 62.364 }
+
+// The molar volume the question asks for: its own T and P first, then đkc / đktc. null = not stated, or both named.
+export function questionMolarVolume(question) {
+  const text = plainChem(String(question).normalize('NFC'))
+  const temperature = text.match(/(-?\d+(?:\.\d+)?)\s*(?:°\s*C|độ\s*C)(?![A-Za-z])|(\d+(?:\.\d+)?)\s*K(?![A-Za-z])/u)
+  const pressure = text.match(/(\d+(?:\.\d+)?)\s*(atm|bar|kPa|mmHg)(?![A-Za-z])/iu)
+  if (temperature && pressure) {
+    const kelvin = temperature[1] !== undefined ? Number(temperature[1]) + 273.15 : Number(temperature[2])
+    return { value: GAS_R[pressure[2].toLowerCase()] * kelvin / Number(pressure[1]), label: `${temperature[0].trim()}, ${pressure[0].trim()}` }
+  }
+  const standard = /đkc|điều kiện chuẩn/iu.test(text)
+  const stp = /đktc|điều kiện tiêu chuẩn/iu.test(text)
+  if (standard === stp) return null
+  return standard ? { value: 24.79, label: 'đkc' } : { value: 22.4, label: 'đktc' }
+}
+
+// 22,4 or 24,79 used as a factor (× 22,4 · n·22,4 · V/22,4 · 22,4 L/mol × n), not merely quoted.
+const usedAsFactor = (line, number) => new RegExp(`[×x*·/]\\s*${number}(?!\\d)|(?<![\\d.])${number}(?!\\d)\\s*(?:(?:L|l|lít)\\s*(?:[·/]\\s*mol(?:-1|⁻¹)?)?)?\\s*[×x*]`, 'u').test(line)
+
+function molarVolumeFindings(text, question) {
+  const expected = questionMolarVolume(question)
+  if (!expected) return []
+  for (const [number, value] of [['22\\.4', 22.4], ['24\\.79', 24.79]]) {
+    if (Math.abs(value - expected.value) / expected.value <= 0.02) continue
+    // A line naming the condition this value belongs to is a comparison, not the calculation.
+    const comparison = value === 22.4 ? /đktc|tiêu chuẩn/iu : /đkc|điều kiện chuẩn/iu
+    if (lines(text).some(line => usedAsFactor(line, number) && !comparison.test(line))) {
+      const note = MOLAR_VOLUME_NOTE[expected.label] || `Theo đề (${expected.label}), thể tích mol khí là V = RT/P ≈ ${expected.value.toFixed(2).replace('.', ',')} L/mol; lời giải lại dùng ${String(value).replace('.', ',')} L/mol.`
+      return [{ id: 'formula:molar-volume', severity: 'error', note }]
+    }
+  }
+  return []
+}
+
 export function scienceFindings(answer, question = '') {
   const text = stripGuardNote(answer)
-  const all = [...colorFindings(text), ...classificationFindings(text), ...formulaFindings(text), ...equationFindings(text, question)]
+  // molarVolumeFindings last: its question-based note replaces a sentence-based one with the same id.
+  const all = [...colorFindings(text), ...classificationFindings(text), ...formulaFindings(text), ...equationFindings(text, question), ...molarVolumeFindings(text, question)]
   return [...new Map(all.map(item => [item.id, item])).values()]
 }
 

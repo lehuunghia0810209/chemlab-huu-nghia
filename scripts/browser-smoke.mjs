@@ -575,6 +575,57 @@ async function chemAIEquationLayout(browser, baseURL) {
   }
 }
 
+// 6.7: the guard caught Fe + Cl₂ → FeCl₂ and the server withheld the answer (503 AI_UNVERIFIED).
+async function chemAIUnverifiedJourney(browser, baseURL) {
+  for (const width of [320, 390, 768, 1440]) await chemAIUnverified(browser, baseURL, width)
+}
+
+async function chemAIUnverified(browser, baseURL, width) {
+  const { context, page, errors } = await newPage(browser, { width, height: 844, theme: width === 390 ? 'dark' : 'light' })
+  const question = 'Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?'
+  const replies = [
+    [503, { ok: false, code: 'AI_UNVERIFIED', message: 'ChemLab phát hiện lời giải có lỗi nên không hiển thị. Fe tác dụng với Cl₂ tạo FeCl₃ (2Fe + 3Cl₂ → 2FeCl₃), không tạo FeCl₂, vì Cl₂ là chất oxi hóa mạnh. FeCl₂ tạo ra khi Fe tác dụng với dung dịch HCl. Hãy hỏi lại.' }],
+    [200, { ok: true, answer: 'Không. 2Fe + 3Cl₂ → 2FeCl₃.', actions: [], suggestions: [], meta: { model: 'stub' } }]
+  ]
+  const posted = []
+  await context.route('**/api/chat', route => {
+    if (route.request().method() === 'POST') posted.push(route.request().postDataJSON())
+    const [status, body] = route.request().method() === 'GET' ? [200, { ok: true, access: true, configured: true, model: 'stub' }] : replies.shift()
+    return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
+  })
+  errors.length = 0
+  await openView(page, baseURL, 'home')
+  // The topbar button exists on phones only; wide layouts open ChemAI from the sidebar entry.
+  await page.locator('[data-chemai-open]:visible').first().click()
+  await page.waitForSelector('.chemai-root.is-open #chemai-input')
+  await page.fill('#chemai-input', question)
+  await page.keyboard.press('Enter')
+  await page.waitForFunction(() => !document.querySelector('#chemai-input').disabled && !document.querySelector('#chemai-thinking'))
+  const blocked = await page.evaluate(() => {
+    const notice = document.querySelector('.chemai-system-notice')
+    const panel = document.querySelector('.chemai-panel').getBoundingClientRect()
+    return {
+      notice: notice?.textContent.replace(/\s+/g, ' ').trim() || '',
+      inside: notice ? notice.getBoundingClientRect().right <= panel.right + 1 && notice.scrollWidth <= notice.clientWidth + 1 : false,
+      retry: Boolean(document.querySelector('[data-ai-retry]')),
+      answers: document.querySelectorAll('.chemai-message.assistant:not(.thinking)').length,
+      bubbles: document.querySelectorAll('.chemai-message.user').length
+    }
+  })
+  record(`ChemAI ${width}: a withheld answer (AI_UNVERIFIED) shows the correction, no wrong answer, and a retry button`,
+    /không hiển thị/.test(blocked.notice) && /2Fe \+ 3Cl₂ → 2FeCl₃/.test(blocked.notice) && blocked.inside && blocked.retry && blocked.answers === 0 && blocked.bubbles === 1, JSON.stringify(blocked))
+  if (process.env.CHEMLAB_SHOT && width === 390) await page.screenshot({ path: process.env.CHEMLAB_SHOT })
+  await page.click('[data-ai-retry]')
+  await page.waitForFunction(() => /Không\. 2Fe/.test(document.querySelector('#chemai-messages').textContent))
+  const after = await page.evaluate(() => ({ bubbles: document.querySelectorAll('.chemai-message.user').length, notices: document.querySelectorAll('.chemai-system-notice').length }))
+  const last = posted.at(-1)
+  const sentCopies = [...last.history.map(item => item.content), last.message].filter(content => content === question).length
+  record(`ChemAI ${width}: retry after AI_UNVERIFIED answers, with one question bubble and one copy sent`,
+    after.bubbles === 1 && after.notices === 0 && sentCopies === 1 && posted.length === 2, JSON.stringify({ ...after, sentCopies, requests: posted.length }))
+  record(`console clean in the ChemAI withheld-answer journey ${width}`, errors.every(item => /Failed to load resource/.test(item)), errors.join(' | '))
+  await context.close()
+}
+
 async function chemAIErrorJourney(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
   const replies = [
@@ -1554,6 +1605,7 @@ const suites = [
   ['pwa upgrade', 'pwa', (browser, url) => pwaUpgradeJourneys(browser, url, { newPage, record })],
   ['chemai phone', 'ai', chemAIPhoneCheck],
   ['chemai errors', 'ai', chemAIErrorJourney],
+  ['chemai withheld', 'ai', chemAIUnverifiedJourney],
   ['chemai equations', 'ai', chemAIEquationLayout],
   ['chemai math', 'ai', chemAIMathJourney],
   ['ChemAI correction and off state', 'ai', chemAINoticeJourney],

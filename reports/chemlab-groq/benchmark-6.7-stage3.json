@@ -1,0 +1,589 @@
+{
+  "mode": "live",
+  "label": "corrected-off vs corrected-hybrid (stage 3)",
+  "version": "6.6.4",
+  "date": "2026-11-15T14:22:32.928Z",
+  "maxTokens": 15000,
+  "spent": 13541,
+  "stopped": "13541 tokens spent; the next pair could need 3846 and --max-tokens is 15000.",
+  "summary": {
+    "off": {
+      "questions": 4,
+      "correct": 4,
+      "accuracy": "100.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 6628,
+      "avgTokens": 1657,
+      "reasoningTokens": 1679,
+      "cachedTokens": 512,
+      "avgMs": 1861,
+      "routes": {
+        "engine": 0,
+        "20b": 0,
+        "120b": 4
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [],
+      "wrongShown": [],
+      "withheld": [],
+      "replacedByEngine": [],
+      "outcomes": {
+        "Correct": [
+          "A7",
+          "X5",
+          "P1",
+          "F4"
+        ],
+        "WrongShown": [],
+        "SafeBlocked": [],
+        "ReplacedByEngine": [],
+        "ProviderError": []
+      },
+      "correctRate": "100.0%",
+      "blockRate": "—",
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 0,
+          "correct": 0
+        },
+        "120b": {
+          "n": 4,
+          "correct": 4
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "acid-base": {
+          "n": 1,
+          "tokens": 1888,
+          "pass": 1,
+          "ms": 2578,
+          "avgTokens": 1888,
+          "avgMs": 2578
+        },
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1498,
+          "pass": 1,
+          "ms": 1283,
+          "avgTokens": 1498,
+          "avgMs": 1283
+        },
+        "multi-step": {
+          "n": 1,
+          "tokens": 1670,
+          "pass": 1,
+          "ms": 1515,
+          "avgTokens": 1670,
+          "avgMs": 1515
+        },
+        "follow-up": {
+          "n": 1,
+          "tokens": 1572,
+          "pass": 1,
+          "ms": 2069,
+          "avgTokens": 1572,
+          "avgMs": 2069
+        }
+      }
+    },
+    "hybrid": {
+      "questions": 4,
+      "correct": 3,
+      "accuracy": "75.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 6913,
+      "avgTokens": 1728,
+      "reasoningTokens": 1974,
+      "cachedTokens": 768,
+      "avgMs": 1861,
+      "routes": {
+        "engine": 0,
+        "20b": 2,
+        "120b": 2
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "F4"
+      ],
+      "wrongShown": [
+        "F4"
+      ],
+      "withheld": [],
+      "replacedByEngine": [],
+      "outcomes": {
+        "Correct": [
+          "A7",
+          "X5",
+          "P1"
+        ],
+        "WrongShown": [
+          "F4"
+        ],
+        "SafeBlocked": [],
+        "ReplacedByEngine": [],
+        "ProviderError": []
+      },
+      "correctRate": "75.0%",
+      "blockRate": "0.0%",
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 2,
+          "correct": 1
+        },
+        "120b": {
+          "n": 2,
+          "correct": 2
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "acid-base": {
+          "n": 1,
+          "tokens": 1958,
+          "pass": 1,
+          "ms": 2603,
+          "avgTokens": 1958,
+          "avgMs": 2603
+        },
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1469,
+          "pass": 1,
+          "ms": 1024,
+          "avgTokens": 1469,
+          "avgMs": 1024
+        },
+        "multi-step": {
+          "n": 1,
+          "tokens": 1709,
+          "pass": 1,
+          "ms": 2464,
+          "avgTokens": 1709,
+          "avgMs": 2464
+        },
+        "follow-up": {
+          "n": 1,
+          "tokens": 1777,
+          "pass": 0,
+          "ms": 1352,
+          "avgTokens": 1777,
+          "avgMs": 1352
+        }
+      }
+    },
+    "comparison": {
+      "pairedQuestions": 4,
+      "tokens": {
+        "off": 6628,
+        "hybrid": 6913,
+        "saved": -285,
+        "savedShare": "-4.3%"
+      },
+      "onlyOffCorrect": [
+        "F4"
+      ],
+      "onlyHybridCorrect": []
+    }
+  },
+  "results": [
+    {
+      "mode": "off",
+      "id": "A7",
+      "category": "acid-base",
+      "question": "Trộn 100 mL dung dịch HCl 0,1M với 100 mL dung dịch NaOH 0,05M. Tính pH của dung dịch thu được.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 2578,
+      "usage": {
+        "promptTokens": 992,
+        "completionTokens": 896,
+        "reasoningTokens": 601,
+        "cachedTokens": 0,
+        "totalTokens": 1888,
+        "charged": 1888,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1888
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "**Bước 1:** Tính số mol HCl: n(HCl)=0,1 mol L⁻¹ × 0,1 L=0,01 mol.\n**Bước 2:** Tính số mol NaOH: n(NaOH)=0,05 mol L⁻¹ × 0,1 L=0,005 mol.\n**Bước 3:** Phản ứng trung hòa 1:1, NaOH hết, HCl dư: n(H⁺)=0,01 mol‑0,005 mol=0,005 mol.\n**Bước 4:** Nồng độ ion H⁺ trong dung dịch tổng 200 mL=0,2 L: [H⁺]=0,005 mol/0,2 L=0,025 mol L⁻¹.\n**Bước 5:** pH=−log[H⁺]=−log(0,025)≈1,60.\n**Đáp số:** pH≈1,60.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"**Bước 1:** Tính số mol HCl: n(HCl)=0,1 mol L⁻¹ × 0,1 L=0,01 mol.\\n**Bước 2:** Tính số mol NaOH: n(NaOH)=0,05 mol L⁻¹ × 0,1 L=0,005 mol.\\n**Bước 3:** Phản ứng trung hòa 1:1, NaOH hết, HCl dư: n(H⁺)=0,01 mol‑0,005 mol=0,005 mol.\\n**Bước 4:** Nồng độ ion H⁺ trong dung dịch tổng 200 mL=0,2 L: [H⁺]=0,005 mol/0,2 L=0,025 mol L⁻¹.\\n**Bước 5:** pH=−log[H⁺]=−log(0,025)≈1,60.\\n**Đáp số:** pH≈1,60.\",\"actions\":[],\"suggestions\":[\"Nếu tăng nồng độ NaOH thì pH sẽ ra sao?\",\"Làm thế nào tính pOH của dung dịch này?\",\"Có cần cân bằng phương trình phản ứng không?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "A7",
+      "category": "acid-base",
+      "question": "Trộn 100 mL dung dịch HCl 0,1M với 100 mL dung dịch NaOH 0,05M. Tính pH của dung dịch thu được.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 2603,
+      "usage": {
+        "promptTokens": 992,
+        "completionTokens": 966,
+        "reasoningTokens": 727,
+        "cachedTokens": 0,
+        "totalTokens": 1958,
+        "charged": 1958,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1958
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Bước 1: n(HCl)=0,1 M × 0,100 L=0,010 mol.\nBước 2: n(NaOH)=0,05 M × 0,100 L=0,005 mol.\nBước 3: HCl + NaOH → NaCl + H₂O (tỉ lệ 1:1). NaOH là chất giới hạn, dư HCl=0,010‑0,005=0,005 mol.\nBước 4: V_tổng=0,200 L ⇒ [H⁺]=0,005 mol/0,200 L=0,025 M.\nBước 5: pH=−log₁₀(0,025)=1,60.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"Bước 1: n(HCl)=0,1 M × 0,100 L=0,010 mol.\\nBước 2: n(NaOH)=0,05 M × 0,100 L=0,005 mol.\\nBước 3: HCl + NaOH → NaCl + H₂O (tỉ lệ 1:1). NaOH là chất giới hạn, dư HCl=0,010‑0,005=0,005 mol.\\nBước 4: V_tổng=0,200 L ⇒ [H⁺]=0,005 mol/0,200 L=0,025 M.\\nBước 5: pH=−log₁₀(0,025)=1,60.\",\"actions\":[],\"suggestions\":[\"Nếu NaOH có nồng độ 0,2 M thì pH là bao nhiêu?\",\"Làm sao tính pOH của dung dịch này?\",\"Phản ứng trung hòa có sinh nhiệt không?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "off",
+      "id": "X5",
+      "category": "ambiguous",
+      "question": "Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 1283,
+      "usage": {
+        "promptTokens": 1151,
+        "completionTokens": 347,
+        "reasoningTokens": 264,
+        "cachedTokens": 0,
+        "totalTokens": 1498,
+        "charged": 1498,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1498
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Không, Fe phản ứng với Cl₂ cho ra FeCl₃, không phải FeCl₂:\nFe + Cl₂ → FeCl₃.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"Không, Fe phản ứng với Cl₂ cho ra FeCl₃, không phải FeCl₂:\\nFe + Cl₂ → FeCl₃.\",\"actions\":[],\"suggestions\":[\"Fe phản ứng với HCl cho ra chất gì?\",\"Cân bằng phương trình Fe + O₂?\",\"FeCl₃ có tính gì?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "X5",
+      "category": "ambiguous",
+      "question": "Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 1024,
+      "usage": {
+        "promptTokens": 1151,
+        "completionTokens": 318,
+        "reasoningTokens": 212,
+        "cachedTokens": 0,
+        "totalTokens": 1469,
+        "charged": 1469,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1469
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Phản ứng Fe + Cl₂ → FeCl₃, không phải FeCl₂. Fe (sắt) có thể oxi hóa tới +3 khi phản ứng với khí clo, tạo muối sắt(III).",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-20b",
+          "content": "{\"answer\":\"Phản ứng Fe + Cl₂ → FeCl₃, không phải FeCl₂. Fe (sắt) có thể oxi hóa tới +3 khi phản ứng với khí clo, tạo muối sắt(III).\",\"actions\":[],\"suggestions\":[\"Làm thế nào tổng hợp FeCl₂?\",\"Tại sao FeCl₃ được tạo ra khi phản ứng với Cl₂?\",\"Điều kiện nào cho FeCl₂?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "off",
+      "id": "P1",
+      "category": "multi-step",
+      "question": "Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 1515,
+      "usage": {
+        "promptTokens": 1172,
+        "completionTokens": 498,
+        "reasoningTokens": 267,
+        "cachedTokens": 512,
+        "totalTokens": 1670,
+        "charged": 1158,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1670
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "1. Phản ứng: Fe + 2 HCl → FeCl₂ + H₂ ⇌\n2. Số mol Fe: n = m/M = 5,6 g ÷ 55,845 g·mol⁻¹ = 0,100 mol\n3. Từ phương trình, 1 mol Fe cho 1 mol H₂ → n(H₂)=0,100 mol\n4. Thể tích H₂ ở đkc (25 °C, 1 bar): V = n·Vₘ = 0,100 mol × 24,79 L·mol⁻¹ = 2,48 L ≈ **2,5 L**",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"1. Phản ứng: Fe + 2 HCl → FeCl₂ + H₂ ⇌\\n2. Số mol Fe: n = m/M = 5,6 g ÷ 55,845 g·mol⁻¹ = 0,100 mol\\n3. Từ phương trình, 1 mol Fe cho 1 mol H₂ → n(H₂)=0,100 mol\\n4. Thể tích H₂ ở đkc (25 °C, 1 bar): V = n·Vₘ = 0,100 mol × 24,79 L·mol⁻¹ = 2,48 L ≈ **2,5 L**\",\"actions\":[],\"suggestions\":[\"Phản ứng của Fe với H₂SO₄ loãng cho ra gì?\",\"Cách tính thể tích khí ở điều kiện chuẩn 0 °C, 1 atm?\",\"Khối lượng mol của FeCl₂ bằng bao nhiêu?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "P1",
+      "category": "multi-step",
+      "question": "Cho 5,6 g Fe tác dụng hết với dung dịch HCl dư. Tính thể tích khí H2 thu được ở đkc.",
+      "expectedRoute": "120b",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 2464,
+      "usage": {
+        "promptTokens": 1172,
+        "completionTokens": 537,
+        "reasoningTokens": 277,
+        "cachedTokens": 768,
+        "totalTokens": 1709,
+        "charged": 941,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1709
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "**Bước 1:** Tính số mol Fe\n\nn(Fe) = 5,6 g ÷ 55,845 g·mol⁻¹ = 0,1003 mol\n\n**Bước 2:** Phản ứng Fe + 2 HCl → FeCl₂ + H₂, tỉ lệ mol Fe : H₂ = 1 : 1\n\nn(H₂) = n(Fe) = 0,1003 mol\n\n**Bước 3:** Tính thể tích H₂ ở đkc (25 °C, 1 bar, Vₘ = 24,79 L·mol⁻¹)\n\nV(H₂) = n × Vₘ = 0,1003 mol × 24,79 L·mol⁻¹ = 2,49 L",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"**Bước 1:** Tính số mol Fe\\n\\nn(Fe) = 5,6 g ÷ 55,845 g·mol⁻¹ = 0,1003 mol\\n\\n**Bước 2:** Phản ứng Fe + 2 HCl → FeCl₂ + H₂, tỉ lệ mol Fe : H₂ = 1 : 1\\n\\nn(H₂) = n(Fe) = 0,1003 mol\\n\\n**Bước 3:** Tính thể tích H₂ ở đkc (25 °C, 1 bar, Vₘ = 24,79 L·mol⁻¹)\\n\\nV(H₂) = n × Vₘ = 0,1003 mol × 24,79 L·mol⁻¹ = 2,49 L\",\"actions\":[],\"suggestions\":[\"Phản ứng của Fe với H₂SO₄ loãng cho ra gì?\",\"Làm thế nào tính khối lượng muối FeCl₂ tạo ra?\",\"Nếu HCl không dư, H₂ sẽ giảm bao nhiêu?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "off",
+      "id": "F4",
+      "category": "follow-up",
+      "question": "Nếu pha loãng dung dịch đó 10 lần thì pH bằng bao nhiêu?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "Correct",
+      "rateLimitWaits": 0,
+      "ms": 2069,
+      "usage": {
+        "promptTokens": 897,
+        "completionTokens": 675,
+        "reasoningTokens": 547,
+        "cachedTokens": 0,
+        "totalTokens": 1572,
+        "charged": 1572,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1572
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "1. C₂ = 0,01 M ÷ 10 = 0,001 M. 2. pH = -log₁₀[H⁺] = -log₁₀0,001 = 3 → pH = 3.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"1. C₂ = 0,01 M ÷ 10 = 0,001 M. 2. pH = -log₁₀[H⁺] = -log₁₀0,001 = 3 → pH = 3.\",\"actions\":[],\"suggestions\":[\"Làm sao tính pOH của dung dịch này?\",\"Nếu nồng độ HCl là 0,1 M, pH là bao nhiêu?\",\"Pha loãng 100 lần, pH sẽ ra sao?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "F4",
+      "category": "follow-up",
+      "question": "Nếu pha loãng dung dịch đó 10 lần thì pH bằng bao nhiêu?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "WrongShown",
+      "rateLimitWaits": 0,
+      "ms": 1352,
+      "usage": {
+        "promptTokens": 897,
+        "completionTokens": 880,
+        "reasoningTokens": 758,
+        "cachedTokens": 0,
+        "totalTokens": 1777,
+        "charged": 1777,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1777
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/pH(?:[^.;:\\n]|\\.(?=\\d)){0,40}?(?:=|là|bằng|≈|mới|tăng lên) ?3(?![\\d.])/"
+        ],
+        "forbidden": []
+      },
+      "answer": "Bước 1: [H⁺] mới = 0,01 M ÷ 10 = 0,001 M.\nBước 2: pH = –log(0,001) = 3.\nĐáp số cuối cùng: pH = 3.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-20b",
+          "content": "{\"answer\":\"Bước 1: [H⁺] mới = 0,01 M ÷ 10 = 0,001 M.\\nBước 2: pH = –log(0,001) = 3.\\nĐáp số cuối cùng: pH = 3.\",\"actions\":[],\"suggestions\":[\"Tính pH dung dịch HCl 0,001 M?\",\"Cách tính pH khi thêm NaOH?\",\"Tác động của nhiệt độ lên pH axit?\"]}"
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"0cbac842-f05a-452a-9637-90c4d589d740\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":981,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":115,\"question\":95,\"knowledge\":502,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":992,\"completionTokens\":896,\"reasoningTokens\":601,\"cachedTokens\":null,\"totalTokens\":1888,\"tokensReserved\":2581,\"tokensCharged\":1888,\"tokensRefunded\":693,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":386,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2537}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"3e6fb668-a9f7-4e67-ac54-8579244d9ed8\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"multi-step\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":981,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":115,\"question\":95,\"knowledge\":502,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":992,\"completionTokens\":966,\"reasoningTokens\":727,\"cachedTokens\":null,\"totalTokens\":1958,\"tokensReserved\":2581,\"tokensCharged\":1958,\"tokensRefunded\":623,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":271,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2601}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"61f1e9a9-d866-4058-a812-c56bfc9dfd42\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1105,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":636,\"question\":44,\"knowledge\":404,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1151,\"completionTokens\":347,\"reasoningTokens\":264,\"cachedTokens\":null,\"totalTokens\":1498,\"tokensReserved\":2705,\"tokensCharged\":1498,\"tokensRefunded\":1207,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":76,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1282}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"6aa9cb8b-dc8f-4924-a081-0f5b483bff62\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1105,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":636,\"question\":44,\"knowledge\":404,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1151,\"completionTokens\":318,\"reasoningTokens\":212,\"cachedTokens\":null,\"totalTokens\":1469,\"tokensReserved\":2705,\"tokensCharged\":1469,\"tokensRefunded\":1236,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":120,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1022}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"25fe37c8-7713-4d69-af9c-4c06a3fc73b8\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1130,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":636,\"question\":84,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1172,\"completionTokens\":498,\"reasoningTokens\":267,\"cachedTokens\":512,\"totalTokens\":1670,\"tokensReserved\":2730,\"tokensCharged\":1158,\"tokensRefunded\":1572,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":252,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1514}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"dc6c4e84-9817-40b1-bd6b-6c4e10437d5d\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"multi-step\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1130,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":636,\"question\":84,\"knowledge\":440,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1172,\"completionTokens\":537,\"reasoningTokens\":277,\"cachedTokens\":768,\"totalTokens\":1709,\"tokensReserved\":2730,\"tokensCharged\":941,\"tokensRefunded\":1789,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":297,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2462}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"aa3620df-e9f9-4052-b61f-da77ee0b9a33\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":854,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":115,\"question\":56,\"knowledge\":91,\"context\":2,\"history\":74,\"historyTurns\":2,\"historyReceived\":2},\"promptTokens\":897,\"completionTokens\":675,\"reasoningTokens\":547,\"cachedTokens\":null,\"totalTokens\":1572,\"tokensReserved\":2454,\"tokensCharged\":1572,\"tokensRefunded\":882,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":77,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2067}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"7fe5b64e-ecc2-4afc-beb8-1325629a6075\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"short-calculation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":854,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":115,\"question\":56,\"knowledge\":91,\"context\":2,\"history\":74,\"historyTurns\":2,\"historyReceived\":2},\"promptTokens\":897,\"completionTokens\":880,\"reasoningTokens\":758,\"cachedTokens\":null,\"totalTokens\":1777,\"tokensReserved\":2454,\"tokensCharged\":1777,\"tokensRefunded\":677,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":97,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1350}"
+  ]
+}

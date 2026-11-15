@@ -1,0 +1,862 @@
+{
+  "mode": "live",
+  "label": "corrected-off vs corrected-hybrid",
+  "version": "6.6.4",
+  "date": "2026-11-15T13:31:24.390Z",
+  "maxTokens": 20000,
+  "spent": 18511,
+  "stopped": "18511 tokens spent; the next pair could need 3523 and --max-tokens is 20000.",
+  "summary": {
+    "off": {
+      "questions": 8,
+      "correct": 6,
+      "accuracy": "75.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 11679,
+      "avgTokens": 1460,
+      "reasoningTokens": 2416,
+      "cachedTokens": 0,
+      "avgMs": 1739,
+      "routes": {
+        "engine": 0,
+        "20b": 0,
+        "120b": 8
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "M1",
+        "M5"
+      ],
+      "wrongShown": [
+        "M1",
+        "M5"
+      ],
+      "withheld": [],
+      "replacedByEngine": [],
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 0,
+          "correct": 0
+        },
+        "120b": {
+          "n": 8,
+          "correct": 6
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "amount": {
+          "n": 3,
+          "tokens": 4577,
+          "pass": 1,
+          "ms": 5735,
+          "avgTokens": 1526,
+          "avgMs": 1912
+        },
+        "acid-base": {
+          "n": 1,
+          "tokens": 1000,
+          "pass": 1,
+          "ms": 1244,
+          "avgTokens": 1000,
+          "avgMs": 1244
+        },
+        "balancing": {
+          "n": 1,
+          "tokens": 1547,
+          "pass": 1,
+          "ms": 1904,
+          "avgTokens": 1547,
+          "avgMs": 1904
+        },
+        "configuration": {
+          "n": 1,
+          "tokens": 1082,
+          "pass": 1,
+          "ms": 1109,
+          "avgTokens": 1082,
+          "avgMs": 1109
+        },
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1688,
+          "pass": 1,
+          "ms": 1864,
+          "avgTokens": 1688,
+          "avgMs": 1864
+        },
+        "element": {
+          "n": 1,
+          "tokens": 1785,
+          "pass": 1,
+          "ms": 2054,
+          "avgTokens": 1785,
+          "avgMs": 2054
+        }
+      }
+    },
+    "hybrid": {
+      "questions": 8,
+      "correct": 7,
+      "accuracy": "87.5%",
+      "zeroTokenShare": "37.5%",
+      "totalTokens": 6832,
+      "avgTokens": 854,
+      "reasoningTokens": 1381,
+      "cachedTokens": 0,
+      "avgMs": 625,
+      "routes": {
+        "engine": 3,
+        "20b": 5,
+        "120b": 0
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "X5"
+      ],
+      "wrongShown": [
+        "X5"
+      ],
+      "withheld": [],
+      "replacedByEngine": [],
+      "byModel": {
+        "engine": {
+          "n": 3,
+          "correct": 3
+        },
+        "20b": {
+          "n": 5,
+          "correct": 4
+        },
+        "120b": {
+          "n": 0,
+          "correct": 0
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "amount": {
+          "n": 3,
+          "tokens": 1374,
+          "pass": 3,
+          "ms": 1144,
+          "avgTokens": 458,
+          "avgMs": 381
+        },
+        "acid-base": {
+          "n": 1,
+          "tokens": 0,
+          "pass": 1,
+          "ms": 11,
+          "avgTokens": 0,
+          "avgMs": 11
+        },
+        "balancing": {
+          "n": 1,
+          "tokens": 1116,
+          "pass": 1,
+          "ms": 1048,
+          "avgTokens": 1116,
+          "avgMs": 1048
+        },
+        "configuration": {
+          "n": 1,
+          "tokens": 1059,
+          "pass": 1,
+          "ms": 542,
+          "avgTokens": 1059,
+          "avgMs": 542
+        },
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1545,
+          "pass": 0,
+          "ms": 893,
+          "avgTokens": 1545,
+          "avgMs": 893
+        },
+        "element": {
+          "n": 1,
+          "tokens": 1738,
+          "pass": 1,
+          "ms": 1362,
+          "avgTokens": 1738,
+          "avgMs": 1362
+        }
+      }
+    },
+    "comparison": {
+      "pairedQuestions": 8,
+      "tokens": {
+        "off": 11679,
+        "hybrid": 6832,
+        "saved": 4847,
+        "savedShare": "41.5%"
+      },
+      "onlyOffCorrect": [
+        "X5"
+      ],
+      "onlyHybridCorrect": [
+        "M1",
+        "M5"
+      ]
+    }
+  },
+  "results": [
+    {
+      "mode": "off",
+      "id": "M1",
+      "category": "amount",
+      "question": "Khối lượng của 0,5 mol H2SO4 là bao nhiêu?",
+      "expectedRoute": "engine",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1220,
+      "usage": {
+        "promptTokens": 887,
+        "completionTokens": 242,
+        "reasoningTokens": 108,
+        "cachedTokens": 0,
+        "totalTokens": 1129,
+        "charged": 1129,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1129
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/\\b49 ?(?:g|gam)\\b/"
+        ],
+        "forbidden": []
+      },
+      "answer": "M = 2·1,008 + 32,06 + 4·16 = 98,1 g mol⁻¹;\\n m = n × M = 0,5 mol × 98,1 g mol⁻¹ = 49,0 g."
+    },
+    {
+      "mode": "hybrid",
+      "id": "M1",
+      "category": "amount",
+      "question": "Khối lượng của 0,5 mol H2SO4 là bao nhiêu?",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 27,
+      "usage": {
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": 0,
+        "reasoningTokens": 0,
+        "charged": 0,
+        "calls": []
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "M(H₂SO₄) = 2 × 1 + 32 + 4 × 16 = 98 g/mol\n\n**m(H₂SO₄) = n × M = 0,5 × 98 = 49 g**\n\n(Nguyên tử khối làm tròn theo SGK.)"
+    },
+    {
+      "mode": "off",
+      "id": "A1",
+      "category": "acid-base",
+      "question": "Tính pH của dung dịch HCl 0,01M",
+      "expectedRoute": "engine",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1244,
+      "usage": {
+        "promptTokens": 874,
+        "completionTokens": 126,
+        "reasoningTokens": 32,
+        "cachedTokens": 0,
+        "totalTokens": 1000,
+        "charged": 1000,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1000
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "[H⁺] = 0,01 M → pH = -log [H⁺] = -log 0,01 = 2"
+    },
+    {
+      "mode": "hybrid",
+      "id": "A1",
+      "category": "acid-base",
+      "question": "Tính pH của dung dịch HCl 0,01M",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 11,
+      "usage": {
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": 0,
+        "reasoningTokens": 0,
+        "charged": 0,
+        "calls": []
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "HCl là acid mạnh, phân li hoàn toàn: [H⁺] = C = 0,01 M\n\n**pH = −log[H⁺] = −log(0,01) = 2**"
+    },
+    {
+      "mode": "off",
+      "id": "M5",
+      "category": "amount",
+      "question": "Hòa tan 5,85 g NaCl vào nước được 200 mL dung dịch. Tính nồng độ mol của dung dịch.",
+      "expectedRoute": "engine",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 2251,
+      "usage": {
+        "promptTokens": 1042,
+        "completionTokens": 726,
+        "reasoningTokens": 506,
+        "cachedTokens": 0,
+        "totalTokens": 1768,
+        "charged": 1768,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1768
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/0\\.5 ?(?:M|mol\\/L)/"
+        ],
+        "forbidden": []
+      },
+      "answer": "1. Tính khối lượng mol NaCl: M = 22,99 + 35,45 = 58,44 g mol⁻¹.\n2. Tính số mol: n = m ÷ M = 5,85 g ÷ 58,44 g mol⁻¹ = 0,100 mol.\n3. Thể tích dung dịch: V = 200 mL = 0,200 L.\n4. Nồng độ mol: c = n ÷ V = 0,100 mol ÷ 0,200 L = 0,50 mol L⁻¹.\n**Đáp:** c = 0,50 mol L⁻¹"
+    },
+    {
+      "mode": "hybrid",
+      "id": "M5",
+      "category": "amount",
+      "question": "Hòa tan 5,85 g NaCl vào nước được 200 mL dung dịch. Tính nồng độ mol của dung dịch.",
+      "expectedRoute": "engine",
+      "route": "engine",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 8,
+      "usage": {
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "totalTokens": 0,
+        "cachedTokens": 0,
+        "reasoningTokens": 0,
+        "charged": 0,
+        "calls": []
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "V = 200 mL = 0,2 L\n\nn(NaCl) = m/M = 5,85 / 58,5 = 0,1 mol (M = 23 + 35,5 = 58,5 g/mol)\n\n**CM(NaCl) = n/V = 0,1 / 0,2 = 0,5 M**\n\n(Nguyên tử khối làm tròn theo SGK.)"
+    },
+    {
+      "mode": "off",
+      "id": "B2",
+      "category": "balancing",
+      "question": "Cân bằng: Al + O2 → Al2O3",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1904,
+      "usage": {
+        "promptTokens": 1015,
+        "completionTokens": 532,
+        "reasoningTokens": 49,
+        "cachedTokens": 0,
+        "totalTokens": 1547,
+        "charged": 1547,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1547
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "**Bước 1:** Đếm nguyên tử Al và O trên cả hai vế.\n- Trái: Al = 1, O = 2×1 = 2.\n- Phải: Al₂O₃ → Al = 2, O = 3.\n**Bước 2:** Đặt hệ số sao cho số Al và O bằng nhau.\n- Nhân Al phía trái bởi 4 → Al = 4.\n- Nhân O₂ phía trái bởi 3 → O = 3×2 = 6.\n- Nhân Al₂O₃ phía phải bởi 2 → Al = 2×2 = 4, O = 2×3 = 6.\n**Phương trình cân bằng:** 4 Al + 3 O₂ → 2 Al₂O₃\n\n**Lý thuyết (100‑250 từ):**\nTrong phản ứng oxi hoá khử, nhôm (Al) bị oxi hoá thành ion Al³⁺ và oxygen (O₂) bị khử thành O²⁻, tạo thành oxide nhôm Al₂O₃. Để cân bằng phản ứng, số nguyên tử của mỗi nguyên tố phải bằng nhau ở cả hai vế. Vì công thức Al₂O₃ chứa 2 Al và 3 O, ta cần một bội chung để khớp với O₂ (có 2 O mỗi phân tử). Nhân Al bên trái 4 lần và O₂ 3 lần, đồng thời nhân Al₂O₃ 2 lần, ta được tỉ lệ 4 : 3 : 2, đáp ứng yêu cầu cân bằng. Phản ứng này là phản ứng tổng hợp, thường xảy ra ở nhiệt độ cao, tạo ra một chất gốm bền, chịu nhiệt tốt."
+    },
+    {
+      "mode": "hybrid",
+      "id": "B2",
+      "category": "balancing",
+      "question": "Cân bằng: Al + O2 → Al2O3",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1048,
+      "usage": {
+        "promptTokens": 1015,
+        "completionTokens": 101,
+        "reasoningTokens": 31,
+        "cachedTokens": 0,
+        "totalTokens": 1116,
+        "charged": 1116,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1116
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "\\n- 4Al + 3O₂ → 2Al₂O₃\\n"
+    },
+    {
+      "mode": "off",
+      "id": "C6",
+      "category": "configuration",
+      "question": "Viết cấu hình electron của ion Fe³⁺",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1109,
+      "usage": {
+        "promptTokens": 900,
+        "completionTokens": 182,
+        "reasoningTokens": 83,
+        "cachedTokens": 0,
+        "totalTokens": 1082,
+        "charged": 1082,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1082
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Cấu hình electron của Fe³⁺: 1s² 2s² 2p⁶ 3s² 3p⁶ 3d⁵"
+    },
+    {
+      "mode": "hybrid",
+      "id": "C6",
+      "category": "configuration",
+      "question": "Viết cấu hình electron của ion Fe³⁺",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 542,
+      "usage": {
+        "promptTokens": 900,
+        "completionTokens": 159,
+        "reasoningTokens": 73,
+        "cachedTokens": 0,
+        "totalTokens": 1059,
+        "charged": 1059,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1059
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Cấu hình electron ion Fe³⁺: 1s² 2s² 2p⁶ 3s² 3p⁶ 3d⁵"
+    },
+    {
+      "mode": "off",
+      "id": "X5",
+      "category": "ambiguous",
+      "question": "Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1864,
+      "usage": {
+        "promptTokens": 1104,
+        "completionTokens": 584,
+        "reasoningTokens": 476,
+        "cachedTokens": 0,
+        "totalTokens": 1688,
+        "charged": 1688,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1688
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Đúng. Phản ứng: Fe + Cl₂ → FeCl₂ (cân bằng). Trong điều kiện Cl₂ dư, Fe có thể bị oxy hoá tới FeCl₃."
+    },
+    {
+      "mode": "hybrid",
+      "id": "X5",
+      "category": "ambiguous",
+      "question": "Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 893,
+      "usage": {
+        "promptTokens": 1104,
+        "completionTokens": 441,
+        "reasoningTokens": 321,
+        "cachedTokens": 0,
+        "totalTokens": 1545,
+        "charged": 1545,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1545
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/FeCl3/"
+        ],
+        "forbidden": []
+      },
+      "answer": "Phản ứng: Fe + Cl₂ → FeCl₂. Thực tế, Fe bị oxi hóa thành Fe²⁺ và Cl₂ bị khử thành 2Cl⁻. Phản ứng xảy ra khi Fe tiếp xúc với Cl₂ trong điều kiện nhiệt độ phù hợp."
+    },
+    {
+      "mode": "off",
+      "id": "E6",
+      "category": "element",
+      "question": "Nguyên tố nào có tính kim loại mạnh nhất trong chu kì 3?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 2054,
+      "usage": {
+        "promptTokens": 1033,
+        "completionTokens": 752,
+        "reasoningTokens": 648,
+        "cachedTokens": 0,
+        "totalTokens": 1785,
+        "charged": 1785,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1785
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Na (Natri) là nguyên tố có tính kim loại mạnh nhất trong chu kỳ 3 (theo SGK, tính kim loại tăng từ phải sang trái)."
+    },
+    {
+      "mode": "hybrid",
+      "id": "E6",
+      "category": "element",
+      "question": "Nguyên tố nào có tính kim loại mạnh nhất trong chu kì 3?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1362,
+      "usage": {
+        "promptTokens": 1033,
+        "completionTokens": 705,
+        "reasoningTokens": 631,
+        "cachedTokens": 0,
+        "totalTokens": 1738,
+        "charged": 1738,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1738
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Trong chu kì 3, nguyên tố Na (sodium) có tính kim loại mạnh nhất."
+    },
+    {
+      "mode": "off",
+      "id": "M9",
+      "category": "amount",
+      "question": "Có bao nhiêu phân tử trong 0,5 mol CO2?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 2264,
+      "usage": {
+        "promptTokens": 905,
+        "completionTokens": 775,
+        "reasoningTokens": 514,
+        "cachedTokens": 0,
+        "totalTokens": 1680,
+        "charged": 1680,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "totalTokens": 1680
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "**Bước 1:** n = 0,5 mol.\n**Bước 2:** N = n × $N_A$ = 0,5 × $6,022\\times10^{23}\\,\\text{mol}^{-1}$ = $3,011\\times10^{23}$ phân tử.\n**Kết quả:** 0,5 mol CO₂ chứa $3,011\\times10^{23}$ phân tử.\n\n**Lý thuyết:** Mol là đơn vị đo số lượng chất; 1 mol tương đương $N_A = 6,022\\times10^{23}$ thực thể (phân tử, ion, nguyên tử). Công thức $N = n\\times N_A$ cho phép đổi từ mol sang số thực thể. Khi n = 0,5 mol, ta nhân một nửa số Avogadro để được $3,011\\times10^{23}$ phân tử CO₂."
+    },
+    {
+      "mode": "hybrid",
+      "id": "M9",
+      "category": "amount",
+      "question": "Có bao nhiêu phân tử trong 0,5 mol CO2?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "rateLimitWaits": 0,
+      "ms": 1109,
+      "usage": {
+        "promptTokens": 905,
+        "completionTokens": 469,
+        "reasoningTokens": 325,
+        "cachedTokens": 0,
+        "totalTokens": 1374,
+        "charged": 1374,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "totalTokens": 1374
+          }
+        ]
+      },
+      "pass": true,
+      "grade": {
+        "pass": true,
+        "missing": [],
+        "forbidden": []
+      },
+      "answer": "Trong 0,5 mol CO₂ có 3,011×10²³ phân tử.\\n\\nCông thức:\\nN = n × N_A = 0,5 mol × 6,022×10²³ mol⁻¹ = 3,011×10²³ phân tử."
+    }
+  ],
+  "logs": [
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"a34cfb7c-7ac0-488d-8a67-337fdbe7db4a\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":869,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":115,\"question\":42,\"knowledge\":264,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":887,\"completionTokens\":242,\"reasoningTokens\":108,\"cachedTokens\":null,\"totalTokens\":1129,\"tokensReserved\":1869,\"tokensCharged\":1129,\"tokensRefunded\":740,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":89,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1187}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"f0186765-ad62-4ec8-bc94-5a5343570640\",\"provider\":\"groq\",\"model\":\"\",\"colo\":null,\"route\":\"engine\",\"kind\":\"amount:mol->mass\",\"status\":200,\"totalTokens\":0,\"durationMs\":26}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"74341a8c-e5fd-4e6a-8e9a-aee01cd9fc37\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":864,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":115,\"question\":31,\"knowledge\":260,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":874,\"completionTokens\":126,\"reasoningTokens\":32,\"cachedTokens\":null,\"totalTokens\":1000,\"tokensReserved\":1864,\"tokensCharged\":1000,\"tokensRefunded\":864,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":46,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1242}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"cdd1078b-861b-447c-9d47-6b818028c2ee\",\"provider\":\"groq\",\"model\":\"\",\"colo\":null,\"route\":\"engine\",\"kind\":\"ph:strong-acid\",\"status\":200,\"totalTokens\":0,\"durationMs\":10}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"9482463d-7413-4672-90d4-7636a842fecf\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1051,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":409,\"question\":83,\"knowledge\":475,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1042,\"completionTokens\":726,\"reasoningTokens\":506,\"cachedTokens\":null,\"totalTokens\":1768,\"tokensReserved\":2651,\"tokensCharged\":1768,\"tokensRefunded\":883,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":262,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2250}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"9a23d208-ef3d-4f65-8373-2dfb3bbe7fcf\",\"provider\":\"groq\",\"model\":\"\",\"colo\":null,\"route\":\"engine\",\"kind\":\"solution:g->molarity\",\"status\":200,\"totalTokens\":0,\"durationMs\":6}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"cd0dc91d-6ea7-4e06-917f-64d5411ce462\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":975,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":480,\"question\":25,\"knowledge\":233,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1015,\"completionTokens\":532,\"reasoningTokens\":49,\"cachedTokens\":null,\"totalTokens\":1547,\"tokensReserved\":1975,\"tokensCharged\":1547,\"tokensRefunded\":428,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":892,\"guardFindings\":[],\"termFixes\":2,\"durationMs\":1903}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"86669a44-685d-46a1-ad53-161ab2c3c67a\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":975,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":480,\"question\":25,\"knowledge\":233,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1015,\"completionTokens\":101,\"reasoningTokens\":31,\"cachedTokens\":null,\"totalTokens\":1116,\"tokensReserved\":1975,\"tokensCharged\":1116,\"tokensRefunded\":859,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":24,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1047}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"ec9d6f56-7f3e-46cf-9bb1-40f3c70728d3\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":880,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":238,\"question\":35,\"knowledge\":181,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":900,\"completionTokens\":182,\"reasoningTokens\":83,\"cachedTokens\":null,\"totalTokens\":1082,\"tokensReserved\":1880,\"tokensCharged\":1082,\"tokensRefunded\":798,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":51,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1107}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"ed9bdb85-de57-4c8a-a61f-8cb483638ff9\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":880,\"complexity\":\"simple\",\"reasoningEffort\":\"low\",\"maxCompletion\":1000,\"inputChars\":{\"system\":1945,\"rules\":238,\"question\":35,\"knowledge\":181,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":900,\"completionTokens\":159,\"reasoningTokens\":73,\"cachedTokens\":null,\"totalTokens\":1059,\"tokensReserved\":1880,\"tokensCharged\":1059,\"tokensRefunded\":821,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":51,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":540}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"58b49afe-8bef-4939-bb3e-2030f5c3bc42\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1065,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":560,\"question\":44,\"knowledge\":404,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1104,\"completionTokens\":584,\"reasoningTokens\":476,\"cachedTokens\":null,\"totalTokens\":1688,\"tokensReserved\":2665,\"tokensCharged\":1688,\"tokensRefunded\":977,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":100,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1862}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"d2c467fa-5c3a-4bce-92e9-398b34aa9721\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1065,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":560,\"question\":44,\"knowledge\":404,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1104,\"completionTokens\":441,\"reasoningTokens\":321,\"cachedTokens\":null,\"totalTokens\":1545,\"tokensReserved\":2665,\"tokensCharged\":1545,\"tokensRefunded\":1120,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":161,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":891}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"e2b879ee-ae2f-4eff-99aa-0ef9a401894c\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1049,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":615,\"question\":56,\"knowledge\":291,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1033,\"completionTokens\":752,\"reasoningTokens\":648,\"cachedTokens\":null,\"totalTokens\":1785,\"tokensReserved\":2649,\"tokensCharged\":1785,\"tokensRefunded\":864,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":115,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2053}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"de3e4422-05fc-44bc-bd85-f3f1bfd6e0f9\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"short-calculation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1049,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":615,\"question\":56,\"knowledge\":291,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1033,\"completionTokens\":705,\"reasoningTokens\":631,\"cachedTokens\":null,\"totalTokens\":1738,\"tokensReserved\":2649,\"tokensCharged\":1738,\"tokensRefunded\":911,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":65,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1361}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"968f40c4-ae05-44e1-a1bc-1a31a33e6453\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":868,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":290,\"question\":39,\"knowledge\":89,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":905,\"completionTokens\":775,\"reasoningTokens\":514,\"cachedTokens\":null,\"totalTokens\":1680,\"tokensReserved\":2468,\"tokensCharged\":1680,\"tokensRefunded\":788,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":470,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":2262}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"9cbe312e-7f48-48db-9460-90fc75ed9a6b\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"short-calculation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":868,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1945,\"rules\":290,\"question\":39,\"knowledge\":89,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":905,\"completionTokens\":469,\"reasoningTokens\":325,\"cachedTokens\":null,\"totalTokens\":1374,\"tokensReserved\":2468,\"tokensCharged\":1374,\"tokensRefunded\":1094,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":118,\"guardFindings\":[],\"termFixes\":0,\"durationMs\":1107}"
+  ]
+}
