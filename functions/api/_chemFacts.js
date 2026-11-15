@@ -250,7 +250,7 @@ function equationFindings(text, question) {
       found.push({ id: 'reaction:no-hydrogen', severity: 'error', note: 'Cu, Ag, Au, Pt và Hg đứng sau H trong dãy hoạt động hóa học nên không đẩy được H₂ khỏi dung dịch acid.' })
     }
     if (/(^| )\d*Fe( |$)/.test(equation.left) && /(^| )\d*Cl2( |$)/.test(equation.left) && /(^| )\d*FeCl2( |$)/.test(equation.right)) {
-      found.push({ id: 'reaction:fe-cl2', severity: 'error', note: 'Fe tác dụng với Cl₂ tạo FeCl₃ (2Fe + 3Cl₂ → 2FeCl₃), không tạo FeCl₂, vì Cl₂ là chất oxi hóa mạnh. FeCl₂ tạo ra khi Fe tác dụng với dung dịch HCl.' })
+      found.push({ id: 'reaction:fe-cl2', severity: 'error', note: FE_CL2_NOTE })
     }
     if (asked.has(key) || /ban đầu|chưa cân bằng|sơ đồ/iu.test(equation.line)) continue
     // Live stage 3 (X5): both models gave the right product with the bare skeleton Fe + Cl₂ → FeCl₃.
@@ -310,10 +310,26 @@ function molarVolumeFindings(text, question) {
   return []
 }
 
+// Live RC run (X5): 20b concluded FeCl₃ but added, in prose and without an equation, that FeCl₂
+// forms from Fe and Cl₂ under some condition. A sentence is flagged only when it names FeCl₂ as
+// what Fe and Cl₂ produce and carries no negation; acids (Fe + HCl does give FeCl₂) are left alone.
+const FE_CL2_NOTE = 'Fe tác dụng với Cl₂ tạo FeCl₃ (2Fe + 3Cl₂ → 2FeCl₃), không tạo FeCl₂, vì Cl₂ là chất oxi hóa mạnh. FeCl₂ tạo ra khi Fe tác dụng với dung dịch HCl.'
+function ironChlorideProse(text) {
+  for (const sentence of lines(text).join('\n').split(/[.;!?\n]+(?!\d)/)) {
+    if (!/FeCl2/.test(sentence) || /HCl|H2SO4|không|sai|chứ|nhầm/iu.test(sentence)) continue
+    const iron = /(?<![A-Za-z0-9(])Fe(?![A-Za-z0-9(])|(?<!\p{L})sắt(?!\s*\()/iu.test(sentence)
+    const chlorine = /(?<![A-Za-z0-9])Cl2(?![A-Za-z0-9])|(?<!\p{L})clo(?!\p{L})/iu.test(sentence)
+    const produced = /(?:tạo(?: ra| thành)?|sinh ra|thu được|cho(?: ra)?|sản phẩm là) (?:muối )?FeCl2/u.test(sentence)
+      || /FeCl2(?: ?\([^)]*\)+)?[^→]{0,40}?(?:được tạo|tạo ra|tạo thành|sinh ra|hình thành|thu được)[^→]{0,20}?(?:khi|nếu|từ)/u.test(sentence)
+    if (iron && chlorine && produced) return [{ id: 'reaction:fe-cl2', severity: 'error', note: FE_CL2_NOTE }]
+  }
+  return []
+}
+
 export function scienceFindings(answer, question = '') {
   const text = stripGuardNote(answer)
   // molarVolumeFindings last: its question-based note replaces a sentence-based one with the same id.
-  const all = [...colorFindings(text), ...classificationFindings(text), ...formulaFindings(text), ...equationFindings(text, question), ...molarVolumeFindings(text, question)]
+  const all = [...colorFindings(text), ...classificationFindings(text), ...formulaFindings(text), ...ironChlorideProse(text), ...equationFindings(text, question), ...molarVolumeFindings(text, question)]
   return [...new Map(all.map(item => [item.id, item])).values()]
 }
 

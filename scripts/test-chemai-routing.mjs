@@ -340,6 +340,28 @@ await test('X5 replay (stage 3): the unbalanced Fe + Cl₂ → FeCl₃ is shown 
   }
 })
 
+// Real drafts from the 6.7.0 RC live run (X5, 2026-11-15). 120b was withheld live; 20b's prose claim was shown.
+const X5_RC_OFF = 'Đúng, sắt phản ứng với clo tạo FeCl₂ theo phương trình: Fe + Cl₂ → FeCl₂. Tuy nhiên nếu cung cấp đủ Cl₂ hoặc môi trường oxi hoá, có thể tạo FeCl₃.'
+const X5_RC_HYBRID = 'Không, Fe + Cl₂ tạo FeCl₃ (Fe trioxide chloride). FeCl₂ (Fe(II) chloride) được tạo khi Fe phản ứng với Cl₂ trong điều kiện thiếu oxy, nhưng thường là FeCl₃.'
+
+await test('X5 replay (RC): a prose claim that Fe and Cl₂ give FeCl₂ is caught; negations and other iron chemistry are not', async () => {
+  const errors = answer => answerGuard(answer, { question: X5 }).findings.filter(item => item.severity === 'error').map(item => item.id)
+  for (const wrong of [X5_RC_OFF, X5_RC_HYBRID, 'Sắt tác dụng với khí clo tạo ra FeCl₂.', 'Fe phản ứng với Cl₂ thu được muối FeCl₂ màu lục nhạt.']) assert.ok(errors(wrong).includes('reaction:fe-cl2'), wrong)
+  for (const right of ['Không. Fe tác dụng với Cl₂ tạo FeCl₃, không tạo FeCl₂.', 'Fe tác dụng với Cl₂ tạo ra FeCl₂ đúng không? Không, sản phẩm là FeCl₃.', 'FeCl₂ được tạo khi Fe dư tác dụng với FeCl₃.', 'FeCl₂ tạo ra khi Fe tác dụng với dung dịch HCl.', 'FeCl₂ tác dụng với Cl₂ tạo FeCl₃.', 'Sắt cháy trong khí clo tạo FeCl₃; còn FeCl₂ thu được từ Fe và HCl.', 'Phát biểu "Fe + Cl₂ tạo FeCl₂" là sai.']) assert.deepEqual(errors(right), [], right)
+  // hybrid: the 20b draft is re-checked once by 120b; a wrong 120b answer is withheld, a right one is shown.
+  for (const [second, status] of [[X5_RC_OFF, 503], [VALID_IRON, 200]]) {
+    calls.length = 0
+    replies = [reply(X5_RC_HYBRID, { total: 1381 }), reply(second, { total: 1588 })]
+    const { status: got, payload } = await ask(makeEnv(), X5)
+    assert.deepEqual(calls.map(call => call.model), [SMALL_MODEL, LARGE_MODEL])
+    assert.equal(got, status)
+    assert.ok(!JSON.stringify(payload).includes('thiếu oxy'), 'the 20b claim never reaches the learner')
+    if (status === 503) assert.match(payload.message, /2Fe \+ 3Cl₂ → 2FeCl₃/)
+    else assert.equal(payload.answer, VALID_IRON)
+    assert.equal(payload.usage.totalTokens, 2969, 'both calls are charged')
+  }
+})
+
 await test('X5: a correct answer with all three valid iron equations is shown untouched', async () => {
   for (const mode of ['off', 'hybrid']) {
     calls.length = 0

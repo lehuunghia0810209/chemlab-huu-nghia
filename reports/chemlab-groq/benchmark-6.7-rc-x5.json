@@ -1,0 +1,267 @@
+{
+  "mode": "live",
+  "label": "6.7.0 RC: X5",
+  "version": "6.7.0",
+  "date": "2026-11-15T16:11:42.514Z",
+  "maxTokens": 7000,
+  "spent": 2969,
+  "stopped": null,
+  "summary": {
+    "off": {
+      "questions": 1,
+      "correct": 0,
+      "accuracy": "0.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 1588,
+      "avgTokens": 1588,
+      "reasoningTokens": 272,
+      "cachedTokens": 0,
+      "avgMs": 1667,
+      "routes": {
+        "engine": 0,
+        "20b": 0,
+        "120b": 1
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "X5"
+      ],
+      "wrongShown": [],
+      "withheld": [
+        "X5"
+      ],
+      "replacedByEngine": [],
+      "usdEstimate": 0.000411,
+      "outcomes": {
+        "Correct": [],
+        "WrongShown": [],
+        "SafeBlocked": [
+          "X5"
+        ],
+        "ReplacedByEngine": [],
+        "ProviderError": []
+      },
+      "correctRate": "0.0%",
+      "blockRate": "100.0%",
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 0,
+          "correct": 0
+        },
+        "120b": {
+          "n": 1,
+          "correct": 0
+        }
+      },
+      "errors": [
+        "X5: 503 AI_UNVERIFIED"
+      ],
+      "byCategory": {
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1588,
+          "pass": 0,
+          "ms": 1667,
+          "avgTokens": 1588,
+          "avgMs": 1667
+        }
+      }
+    },
+    "hybrid": {
+      "questions": 1,
+      "correct": 0,
+      "accuracy": "0.0%",
+      "zeroTokenShare": "0.0%",
+      "totalTokens": 1381,
+      "avgTokens": 1381,
+      "reasoningTokens": 59,
+      "cachedTokens": 0,
+      "avgMs": 847,
+      "routes": {
+        "engine": 0,
+        "20b": 1,
+        "120b": 0
+      },
+      "escalations": [],
+      "routingErrors": [],
+      "failures": [
+        "X5"
+      ],
+      "wrongShown": [
+        "X5"
+      ],
+      "withheld": [],
+      "replacedByEngine": [],
+      "usdEstimate": 0.000143,
+      "outcomes": {
+        "Correct": [],
+        "WrongShown": [
+          "X5"
+        ],
+        "SafeBlocked": [],
+        "ReplacedByEngine": [],
+        "ProviderError": []
+      },
+      "correctRate": "0.0%",
+      "blockRate": "0.0%",
+      "byModel": {
+        "engine": {
+          "n": 0,
+          "correct": 0
+        },
+        "20b": {
+          "n": 1,
+          "correct": 0
+        },
+        "120b": {
+          "n": 0,
+          "correct": 0
+        }
+      },
+      "errors": [],
+      "byCategory": {
+        "ambiguous": {
+          "n": 1,
+          "tokens": 1381,
+          "pass": 0,
+          "ms": 847,
+          "avgTokens": 1381,
+          "avgMs": 847
+        }
+      }
+    },
+    "comparison": {
+      "pairedQuestions": 1,
+      "tokens": {
+        "off": 1588,
+        "hybrid": 1381,
+        "saved": 207,
+        "savedShare": "13.0%"
+      },
+      "usdEstimate": {
+        "off": 0.000411,
+        "hybrid": 0.000143,
+        "savedShare": "65.2%"
+      },
+      "savedByEngine": 0,
+      "savedByModel": 207,
+      "onlyOffCorrect": [],
+      "onlyHybridCorrect": []
+    }
+  },
+  "results": [
+    {
+      "mode": "off",
+      "id": "X5",
+      "category": "ambiguous",
+      "question": "Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?",
+      "expectedRoute": "llm",
+      "route": "120b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": null,
+      "guardFindings": [
+        "reaction:fe-cl2"
+      ],
+      "status": 503,
+      "code": "AI_UNVERIFIED",
+      "outcome": "SafeBlocked",
+      "rateLimitWaits": 0,
+      "ms": 1667,
+      "usage": {
+        "promptTokens": 1204,
+        "completionTokens": 384,
+        "reasoningTokens": 272,
+        "cachedTokens": 0,
+        "totalTokens": 1588,
+        "charged": 1588,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-120b",
+            "promptTokens": 1204,
+            "completionTokens": 384,
+            "totalTokens": 1588
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "HTTP 503 AI_UNVERIFIED"
+        ],
+        "forbidden": []
+      },
+      "answer": "ChemLab phát hiện lời giải có lỗi nên không hiển thị. Fe tác dụng với Cl₂ tạo FeCl₃ (2Fe + 3Cl₂ → 2FeCl₃), không tạo FeCl₂, vì Cl₂ là chất oxi hóa mạnh. FeCl₂ tạo ra khi Fe tác dụng với dung dịch HCl. Hãy hỏi lại.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-120b",
+          "content": "{\"answer\":\"Đúng, sắt phản ứng với clo tạo FeCl₂ theo phương trình: Fe + Cl₂ → FeCl₂. Tuy nhiên nếu cung cấp đủ Cl₂ hoặc môi trường oxi hoá, có thể tạo FeCl₃.\",\"actions\":[],\"suggestions\":[\"FeCl₂ có tính chất gì?\",\"Làm sao phân biệt FeCl₂ và FeCl₃?\",\"Phản ứng nào tạo FeCl₃ từ Fe và Cl₂?\"]}"
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "id": "X5",
+      "category": "ambiguous",
+      "question": "Fe tác dụng với Cl2 tạo ra FeCl2 đúng không?",
+      "expectedRoute": "llm",
+      "route": "20b",
+      "routeOk": true,
+      "escalated": false,
+      "replaced": null,
+      "escalationReason": null,
+      "escalationRefused": null,
+      "corrections": 0,
+      "guardFindings": [],
+      "status": 200,
+      "code": null,
+      "outcome": "WrongShown",
+      "rateLimitWaits": 0,
+      "ms": 847,
+      "usage": {
+        "promptTokens": 1204,
+        "completionTokens": 177,
+        "reasoningTokens": 59,
+        "cachedTokens": 0,
+        "totalTokens": 1381,
+        "charged": 1381,
+        "calls": [
+          {
+            "model": "openai/gpt-oss-20b",
+            "promptTokens": 1204,
+            "completionTokens": 177,
+            "totalTokens": 1381
+          }
+        ]
+      },
+      "pass": false,
+      "grade": {
+        "pass": false,
+        "missing": [
+          "/2 ?Fe ?\\+ ?3 ?Cl2 ?→ ?2 ?FeCl3/"
+        ],
+        "forbidden": []
+      },
+      "answer": "Không, Fe + Cl₂ tạo FeCl₃ (Fe trioxide chloride). FeCl₂ (Fe(II) chloride) được tạo khi Fe phản ứng với Cl₂ trong điều kiện thiếu oxygen, nhưng thường là FeCl₃.",
+      "drafts": [
+        {
+          "model": "openai/gpt-oss-20b",
+          "content": "{\"answer\":\"Không, Fe + Cl₂ tạo FeCl₃ (Fe trioxide chloride). FeCl₂ (Fe(II) chloride) được tạo khi Fe phản ứng với Cl₂ trong điều kiện thiếu oxy, nhưng thường là FeCl₃.\",\"actions\":[],\"suggestions\":[\"Tại sao FeCl₂ không thường được tạo trong phản ứng trực tiếp với Cl₂?\",\"Điều kiện nào làm Fe chuyển thành FeCl₃?\",\"Các sản phẩm khác khi Fe phản ứng với Cl₂ có?\"]}"
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"e72b47d1-3b37-45d5-8df7-dccd26ffd624\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-120b\",\"colo\":null,\"route\":\"120b\",\"routeReason\":\"fixed\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1138,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":735,\"question\":44,\"knowledge\":404,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1204,\"completionTokens\":384,\"reasoningTokens\":272,\"cachedTokens\":null,\"totalTokens\":1588,\"tokensReserved\":2738,\"tokensCharged\":1588,\"tokensRefunded\":1150,\"status\":503,\"code\":\"AI_UNVERIFIED\",\"withheld\":[\"reaction:fe-cl2\"],\"durationMs\":1634}",
+    "{\"event\":\"chemai.chat\",\"apiVersion\":\"openai-v1\",\"requestId\":\"7a42a586-580d-4864-b90a-993d68bcf0b6\",\"provider\":\"groq\",\"model\":\"openai/gpt-oss-20b\",\"colo\":null,\"route\":\"20b\",\"routeReason\":\"explanation\",\"upstreamStatus\":200,\"attempts\":1,\"budgetUnits\":1,\"inputTokensEstimate\":1138,\"complexity\":\"normal\",\"reasoningEffort\":\"medium\",\"maxCompletion\":1600,\"inputChars\":{\"system\":1989,\"rules\":735,\"question\":44,\"knowledge\":404,\"context\":2,\"history\":0,\"historyTurns\":0,\"historyReceived\":0},\"promptTokens\":1204,\"completionTokens\":177,\"reasoningTokens\":59,\"cachedTokens\":null,\"totalTokens\":1381,\"tokensReserved\":2738,\"tokensCharged\":1381,\"tokensRefunded\":1357,\"status\":200,\"finishReason\":\"stop\",\"answerChars\":156,\"guardFindings\":[],\"termFixes\":1,\"durationMs\":844}"
+  ]
+}

@@ -67,12 +67,29 @@ Token saving comes from the engine share (0 tokens); 20b uses about as many toke
 but costs half per token (list prices 2026-11-15: 120b $0.15 / $0.60, 20b $0.075 / $0.30 per
 1M in / out). Latency: stage 2 1,739 → 625 ms, stage 3 equal, stage 4 1,952 → 1,710 ms.
 
-**Pending:** X5 has not been run live since the iron rule and the `balance:fe-cl3` guard were
-added. Mock replay of the real stage 2 and stage 3 drafts passes. The `AI_UNVERIFIED` path has
-never fired against live Groq (replay and browser only).
+### RC run of X5 (live, 2026-11-15, code `7c1edbf`, 2,969 tokens) — did not pass
+
+| | Route | Draft | Learner saw | Outcome |
+|---|---|---|---|---|
+| off | 120b, 1,588 tok | "Đúng … Fe + Cl₂ → FeCl₂" (wrong) | 503 `AI_UNVERIFIED` with the FeCl₃ correction | SafeBlocked — first time the path fired against live Groq |
+| hybrid | 20b, 1,381 tok | "Không, … tạo FeCl₃ (Fe trioxide chloride). FeCl₂ được tạo khi Fe phản ứng với Cl₂ trong điều kiện thiếu oxy…" | the draft, unchanged | **WrongShown** |
+
+The 20b conclusion (FeCl₃) is right, but it adds a false statement in prose (FeCl₂ from Fe and
+Cl₂ "without oxygen"), a wrong name, and no equation. The guard only read equations, so it saw
+nothing. No escalation, no secret in the file. Neither side counts as correct.
+
+Fix (`_chemFacts.js`, `ironChlorideProse`): a sentence that names FeCl₂ as what Fe and Cl₂
+produce, with no negation and no acid, raises `reaction:fe-cl2`. Replay of both real drafts:
+the 20b draft is re-checked once by 120b; a wrong 120b answer is withheld, a right one shown.
+All other live answers of stages 1–4 and 8 valid iron sentences stay clean (routing 27/27).
+The verified lesson corpus has one hit, the deliberately wrong statement in g10-l21 (`wrong:`
+field), now listed as intended in test-chemai-guard.mjs.
+
+**Pending:** this fix has not met live Groq. Both models still answer X5 unreliably, so a
+re-run will end as Correct or SafeBlocked, not WrongShown — that is what the run must show.
 
 ```powershell
-cd D:\EduLab\.worktrees\chemlab-6.7; node scripts/chemai-benchmark.mjs --live --confirm --modes off,hybrid --only X5 --max-tokens 7000 --label "6.7.0 RC: X5" --out reports/chemlab-groq/benchmark-6.7-rc-x5.json
+cd D:\EduLab\.worktrees\chemlab-6.7; node scripts/chemai-benchmark.mjs --live --confirm --modes off,hybrid --only X5 --max-tokens 7000 --label "6.7.0 RC2: X5" --out reports/chemlab-groq/benchmark-6.7-rc2-x5.json
 ```
 
 ## Release procedure (next turn)
@@ -83,7 +100,7 @@ running 6.6.4 deployment keeps its frozen `groq:6.6.4` and keeps answering, and 
 deployment is built with `groq:6.7.0`. Changing it after the push would lock ChemAI on the new
 deployment until a redeploy.
 
-1. Run the X5 command above; read both answers and drafts by hand. Stop if FeCl₂ is shown as
+1. Run the RC2 X5 command above; read both answers and drafts by hand. Stop if FeCl₂ is shown as
    the product or a wrong answer is displayed.
 2. Production variables, names and types only (never values): `GROQ_API_KEY` present,
    `CHEMAI_BUDGET` Durable Object binding present, `CHEMAI_ACCESS_MODE=public`,
@@ -91,7 +108,8 @@ deployment until a redeploy.
    Save the inventory.
 3. Set `CHEMAI_PUBLIC_APPROVAL=groq:6.7.0` in Production (only that key); diff the inventory.
    Confirm Production 6.6.4 still answers (GET `/api/chat`: `access:true`, `configured:true`).
-4. Merge `feature/chemai-6.7-hybrid` into `main` (fast-forward if possible, no force-push); push.
+4. Push the branch head to `main` as a fast-forward, no force: `git push origin feature/chemai-6.7-hybrid:main`
+   (origin/main `6846d41` is an ancestor of the branch; the local `main` branch is stale at `da21745`, do not push it).
 5. Preview: confirm it is still behind Cloudflare Access (anonymous → 302). Do **not** send AI
    questions to Preview: it shares the `CHEMAI_BUDGET` Durable Object with Production.
 6. Production deployment: record its ID. Check home 200, release 6.7.0, service worker

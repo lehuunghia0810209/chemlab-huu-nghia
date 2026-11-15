@@ -257,7 +257,7 @@ await test('curriculum: the guard stays silent on verified lessons, questions an
   }
   assert.ok(strings.size > 10000, `corpus shrank to ${strings.size}`)
   // Deliberately wrong statements in the material: answer options to reject or errors for learners to spot.
-  const intended = [/^NaOH là base yếu\./, /^HF là acid mạnh nhất/, /^Nylon-6,6 được điều chế bằng phản ứng trùng hợp/]
+  const intended = [/^NaOH là base yếu\./, /^HF là acid mạnh nhất/, /^Nylon-6,6 được điều chế bằng phản ứng trùng hợp/, /^Fe tác dụng với Cl₂ tạo FeCl₂\.$/]
   const alarms = []
   const gated = []
   for (const text of strings) {
