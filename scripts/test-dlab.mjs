@@ -7,6 +7,7 @@ import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
+import { GUIDED } from '../src/dlab/guided.js'
 
 const results = []
 function test(name, fn) {
@@ -460,6 +461,61 @@ test('save format validation and migration', () => {
   assert.ok(validateSave(bad), 'negative amounts rejected')
   assert.equal(migrate(save).schema, 1)
 })
+
+// ── Guided Labs: every lab can be completed through ordinary commands ──
+function runGuided(id, actions) {
+  const sim = createSim(5)
+  const lab = GUIDED.find(g => g.id === id)
+  const roles = lab.setup(sim)
+  const s = () => sim.state
+  const ok = cmd => { const r = sim.dispatch(cmd, { confirmed: true, record: false }); assert.ok(r.ok, `${cmd.type}: ${JSON.stringify(r.verdict)}`); return r }
+  const ctx = { sim, s, roles, ok, o: id => byId(s(), id), find: t => s().objects.find(x => x.type === t) }
+  lab.steps.forEach((step, i) => {
+    actions[i](ctx)
+    let tries = 0
+    while (!step.check(s(), roles) && tries < 600) { sim.runFor(0.5); tries += 1 }
+    assert.ok(step.check(s(), roles), `${id}: step ${i + 1} not reached — ${step.text}`)
+  })
+}
+const dipIn = c => ({ ok, o, sim }) => { const p = ok({ type: 'newLitmus', x: 100 }).id; ok({ type: 'move', id: p, x: o(c(ok)).x, y: surfaceY(o(c(ok))) - 10 }); sim.runFor(1) }
+const grab = (ctx, toolType, reagent, massG, target) => {
+  const t = ctx.find(toolType)
+  ctx.ok({ type: 'move', id: t.id, x: ctx.o(target).x, y: 160 })
+  ctx.ok({ type: 'pick', tool: t.id, reagent, massG })
+  ctx.ok({ type: 'release', tool: t.id })
+}
+test('guided lab: acid–base can be completed', () => runGuided('acid-base', [
+  c => dipIn(() => c.roles.A)(c), c => dipIn(() => c.roles.B)(c), c => dipIn(() => c.roles.C)(c),
+  c => { const d = c.find('dropper'); c.ok({ type: 'move', id: d.id, x: c.o(c.roles.phph).x, y: 10 }); c.ok({ type: 'aspirate', tool: d.id, from: c.roles.phph, mL: 1 }); c.ok({ type: 'move', id: d.id, x: c.o(c.roles.B).x, y: 140 }); c.ok({ type: 'dispense', tool: d.id, drops: 3 }) },
+  c => c.ok({ type: 'pourExact', from: c.roles.acid, to: c.roles.B, mL: 9 })
+]))
+test('guided lab: precipitate can be completed', () => runGuided('precipitate', [
+  c => c.ok({ type: 'pourExact', from: c.roles.naoh, to: c.roles.beaker, mL: 4 }),
+  () => {}, c => c.ok({ type: 'stir', id: c.roles.beaker, amount: 1 }),
+  c => c.ok({ type: 'pourExact', from: c.roles.hcl, to: c.roles.beaker, mL: 15 }),
+  c => grab(c, 'spatula', 'nacl-s', 2, c.roles.water)
+]))
+test('guided lab: metals can be completed', () => runGuided('metals', [
+  c => grab(c, 'tongs', 'fe', 2, c.roles.cu), () => {},
+  c => grab(c, 'tongs', 'zn', 0.5, c.roles.acid),
+  c => grab(c, 'tongs', 'na', 0.1, c.roles.dish), () => {}
+]))
+test('guided lab: electrochemistry can be completed', () => runGuided('electrolysis', [
+  c => c.ok({ type: 'move', id: c.roles.el, x: c.o(c.roles.cell).x, y: 10 }),
+  c => { c.ok({ type: 'wire', from: c.roles.power, to: c.roles.el }); c.ok({ type: 'power', id: c.roles.power, on: true, volts: 6 }) },
+  () => {},
+  c => { grab(c, 'tongs', 'zn', 2, c.roles.zn); grab(c, 'tongs', 'cu', 2, c.roles.cuB) },
+  c => {
+    c.ok({ type: 'link', id: c.roles.bridge, a: c.roles.zn, b: c.roles.cuB })
+    for (const r of ['zn', 'cu']) c.ok({ type: 'wire', from: c.roles.volt, to: c.s().objects.find(x => x.reagent === r).id })
+  }
+]))
+test('guided lab: organic can be completed', () => runGuided('organic', [
+  c => dipIn(() => c.roles.acid)(c),
+  c => grab(c, 'spatula', 'nahco3-s', 0.5, c.roles.acid),
+  c => c.ok({ type: 'pourExact', from: c.roles.oil, to: c.roles.t2, mL: 3 }),
+  c => c.ok({ type: 'pourExact', from: c.roles.eth, to: c.roles.t3, mL: 3 })
+]))
 
 const failed = results.filter(r => !r.pass)
 for (const r of results) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.pass ? '' : `\n      ${r.error}`}`)

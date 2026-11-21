@@ -1,0 +1,186 @@
+// Guided Labs: data only. They place equipment through the same commands as Sandbox and
+// check progress by reading the shared simulation state — no separate animation system.
+import { surfaceY, byId, volumeOf } from './engine/processes.js'
+
+const add = (sim, equipmentType, x, extra = {}) => sim.dispatch({ type: 'add', equipmentType, x, y: extra.y ?? 0, ...extra }, { record: false }).id
+const fill = (sim, id, reagent, mL) => sim.dispatch({ type: 'addReagentTo', id, reagent, mL }, { record: false })
+const obj = (state, id) => byId(state, id)
+const papersIn = (state, cid) => state.objects.filter(o => o.type === 'litmusPaper' && o.seg?.some(s => s.wet > 0.4) && (o.inside === cid || o.touched?.includes(cid)))
+
+export const GUIDED = [
+  {
+    id: 'acid-base',
+    group: 'Axit, bazơ và chất chỉ thị',
+    title: 'Nhận biết dung dịch axit, bazơ, trung tính',
+    goal: 'Dùng giấy quỳ tím và phenolphtalein để xác định ba dung dịch không nhãn A, B, C; sau đó trung hòa dung dịch bazơ.',
+    knowledge: 'Axit làm quỳ tím hóa đỏ, bazơ làm quỳ hóa xanh; phenolphtalein không màu trong axit/trung tính, hồng trong bazơ (pH > 8,2).',
+    equipment: ['3 ống nghiệm trên giá', 'Giấy quỳ tím', 'Ống nhỏ giọt', 'Chai phenolphtalein', 'Chai HCl'],
+    chemicals: ['HCl 0,5 M (A)', 'NaOH 0,5 M (B)', 'NaCl 0,5 M (C)', 'Phenolphtalein'],
+    safety: 'HCl và NaOH ăn mòn: đeo kính, không nếm hay ngửi trực tiếp.',
+    setup(sim) {
+      const rack = add(sim, 'rack', 330)
+      const A = add(sim, 'testTube', 300, { label: 'Ống A' })
+      const B = add(sim, 'testTube', 330, { label: 'Ống B' })
+      const C = add(sim, 'testTube', 360, { label: 'Ống C' })
+      for (const id of [A, B, C]) sim.dispatch({ type: 'move', id, x: obj(sim.state, id).x, y: 0 }, { record: false })
+      fill(sim, A, 'hcl', 8)
+      fill(sim, B, 'naoh', 8)
+      fill(sim, C, 'nacl', 8)
+      const paper = sim.dispatch({ type: 'newLitmus', x: 200 }, { record: false }).id
+      const dropper = add(sim, 'dropper', 470, { y: 140 })
+      const phph = add(sim, 'bottle', 560, { reagent: 'phenolphthalein' })
+      const acid = add(sim, 'bottle', 630, { reagent: 'hcl' })
+      return { rack, A, B, C, paper, dropper, phph, acid }
+    },
+    steps: [
+      { text: 'Nhúng đầu giấy quỳ vào ống A rồi quan sát màu.', target: ['paper', 'A'], check: (s, r) => papersIn(s, r.A).length > 0 },
+      { text: 'Lấy giấy quỳ mới (thư viện → Giấy quỳ tím), nhúng vào ống B.', target: ['B'], check: (s, r) => papersIn(s, r.B).length > 0 },
+      { text: 'Lấy giấy quỳ mới, nhúng vào ống C.', target: ['C'], check: (s, r) => papersIn(s, r.C).length > 0 },
+      { text: 'Hút phenolphtalein bằng ống nhỏ giọt, nhỏ 2–3 giọt vào ống làm quỳ hóa xanh.', target: ['dropper', 'phph', 'B'], check: (s, r) => (obj(s, r.B).contents.indicators.phenolphthalein || 0) > 0 },
+      { text: 'Nhỏ từ từ HCl vào ống B (hút bằng ống nhỏ giọt) đến khi mất màu hồng.', target: ['acid', 'B'], check: (s, r) => (obj(s, r.B).contents.indicators.phenolphthalein || 0) > 0 && obj(s, r.B).pH < 8.2 }
+    ],
+    observe: 'A: quỳ đỏ. B: quỳ xanh, phenolphtalein hồng. C: quỳ không đổi màu. Thêm axit vào B, màu hồng biến mất khi pH < 8,2.',
+    explain: 'HCl phân li tạo H⁺ (pH < 7). NaOH tạo OH⁻ (pH > 7). NaCl là muối của axit mạnh và bazơ mạnh nên trung tính. H⁺ + OH⁻ → H₂O làm pH giảm dần.',
+    conclusion: 'A là axit, B là bazơ, C là muối trung tính. Phản ứng trung hòa tạo nước và muối, tỏa nhiệt.'
+  },
+  {
+    id: 'precipitate',
+    group: 'Kết tủa, hòa tan và kết tinh',
+    title: 'Tạo kết tủa Cu(OH)₂ rồi hòa tan bằng axit',
+    goal: 'Quan sát kết tủa xanh lam hình thành, lắng xuống, rồi tan trong axit; hòa tan muối ăn.',
+    knowledge: 'Cu²⁺ + 2OH⁻ → Cu(OH)₂↓ (xanh lam). Cu(OH)₂ là bazơ không tan, tan trong axit: Cu(OH)₂ + 2H⁺ → Cu²⁺ + 2H₂O.',
+    equipment: ['Cốc 100 mL', 'Ống nhỏ giọt', 'Đũa thủy tinh', 'Chai NaOH, HCl', 'Thìa', 'Cốc nước'],
+    chemicals: ['CuSO₄ 0,5 M', 'NaOH 0,5 M', 'HCl 0,5 M', 'NaCl rắn'],
+    safety: 'Muối đồng độc khi nuốt; NaOH, HCl ăn mòn.',
+    setup(sim) {
+      const beaker = add(sim, 'beaker100', 300, { label: 'Cốc CuSO₄' })
+      fill(sim, beaker, 'cuso4', 20)
+      const naoh = add(sim, 'bottle', 460, { reagent: 'naoh' })
+      const hcl = add(sim, 'bottle', 530, { reagent: 'hcl' })
+      const dropper = add(sim, 'dropper', 400, { y: 150 })
+      const rod = add(sim, 'rod', 220, { y: 60 })
+      const water = add(sim, 'beaker100', 640, { label: 'Cốc nước' })
+      fill(sim, water, 'water', 40)
+      const spatula = add(sim, 'spatula', 720, { y: 120 })
+      return { beaker, naoh, hcl, dropper, rod, water, spatula }
+    },
+    steps: [
+      { text: 'Hút dung dịch NaOH và nhỏ vào cốc CuSO₄ cho tới khi thấy kết tủa xanh lam.', target: ['naoh', 'dropper', 'beaker'], check: (s, r) => (obj(s, r.beaker).contents.precipitates['Cu(OH)2'] || 0) > 2e-4 },
+      { text: 'Để yên (có thể tăng tốc 4×) và quan sát kết tủa lắng xuống đáy.', target: ['beaker'], check: (s, r) => { const v = obj(s, r.beaker).vis.parts; return v.length > 5 && v.filter(p => p.settled).length / v.length > 0.6 } },
+      { text: 'Dùng đũa thủy tinh khuấy: kết tủa lơ lửng trở lại.', target: ['rod', 'beaker'], check: (s, r) => obj(s, r.beaker).vis.stir > 0.3 },
+      { text: 'Nhỏ HCl vào cốc đến khi kết tủa tan hết, dung dịch xanh trong trở lại.', target: ['hcl', 'beaker'], check: (s, r) => s.notes[`ppt-Cu(OH)2-${r.beaker}`] != null && !((obj(s, r.beaker).contents.precipitates['Cu(OH)2'] || 0) > 1e-7) },
+      { text: 'Dùng thìa lấy 2 g muối ăn thả vào cốc nước, khuấy và quan sát muối tan.', target: ['spatula', 'water'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'nacl-s' && o.in === r.water && o.massG < 0.2) }
+    ],
+    observe: 'Kết tủa xanh lam xuất hiện ở chỗ giọt NaOH rơi xuống, lắng dần; khuấy thì lơ lửng. Thêm HCl, kết tủa tan. Muối ăn tan dần, nhanh hơn khi khuấy.',
+    explain: 'Kết tủa tạo thành khi tích nồng độ ion vượt Ksp. Axit làm giảm [OH⁻] nên Cu(OH)₂ tan lại. Khuấy tăng tốc độ khuếch tán nên muối tan nhanh hơn.',
+    conclusion: 'Bazơ không tan tác dụng với axit; độ tan và tốc độ hòa tan phụ thuộc điều kiện.'
+  },
+  {
+    id: 'metals',
+    group: 'Kim loại và phản ứng trong dung dịch',
+    title: 'Kim loại tác dụng với dung dịch muối, axit và nước',
+    goal: 'Quan sát Fe đẩy Cu khỏi dung dịch CuSO₄, Zn tác dụng với axit, Na tác dụng với nước.',
+    knowledge: 'Dãy hoạt động: Na > Mg > Zn > Fe > (H) > Cu > Ag. Kim loại mạnh hơn đẩy kim loại yếu hơn khỏi dung dịch muối; kim loại trước H đẩy H₂ khỏi axit loãng.',
+    equipment: ['2 cốc 100 mL', 'Chậu thủy tinh', 'Kẹp hóa chất', 'Ống nhỏ giọt'],
+    chemicals: ['CuSO₄ 0,5 M', 'HCl 0,5 M', 'Đinh sắt', 'Kẽm viên', 'Natri', 'Phenolphtalein'],
+    safety: 'Natri phản ứng mãnh liệt với nước: chỉ dùng mẩu nhỏ, dùng kẹp, đứng xa.',
+    setup(sim) {
+      const cu = add(sim, 'beaker100', 260, { label: 'CuSO₄' })
+      fill(sim, cu, 'cuso4', 40)
+      const acid = add(sim, 'beaker100', 360, { label: 'HCl' })
+      fill(sim, acid, 'hcl', 40)
+      const dish = add(sim, 'dish', 530, { label: 'Chậu nước' })
+      fill(sim, dish, 'water', 150)
+      fill(sim, dish, 'phenolphthalein', 0.15)
+      const tongs = add(sim, 'tongs', 680, { y: 150 })
+      return { cu, acid, dish, tongs }
+    },
+    steps: [
+      { text: 'Chọn kẹp, lấy đinh sắt và thả vào cốc CuSO₄.', target: ['tongs', 'cu'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'fe' && o.in === r.cu) },
+      { text: 'Chờ (tăng tốc nếu cần) đến khi lớp đồng đỏ bám rõ trên đinh sắt.', target: ['cu'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'fe' && o.in === r.cu && (o.coat.Cu || 0) > 8e-4) },
+      { text: 'Dùng kẹp lấy kẽm viên thả vào cốc HCl, quan sát bọt khí.', target: ['tongs', 'acid'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'zn' && o.in === r.acid) && s.gas.H2 > 2e-5 },
+      { text: 'Dùng kẹp lấy mẩu natri 0,1 g thả vào chậu nước có phenolphtalein.', target: ['tongs', 'dish'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'na' && o.in === r.dish) },
+      { text: 'Quan sát đến khi natri tan hết.', target: ['dish'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'na' && o.in === r.dish && o.massG <= 0) }
+    ],
+    observe: 'Đinh sắt phủ lớp đỏ, dung dịch nhạt màu xanh. Kẽm sủi bọt khí. Natri nổi, chạy trên mặt nước, tan dần; vệt hồng lan ra từ vị trí mẩu natri.',
+    explain: 'Fe + Cu²⁺ → Fe²⁺ + Cu. Zn + 2H⁺ → Zn²⁺ + H₂. 2Na + 2H₂O → 2NaOH + H₂; NaOH làm phenolphtalein hóa hồng. Khí sinh ra không đều đẩy mẩu natri chuyển động.',
+    conclusion: 'Mức độ hoạt động của kim loại quyết định phản ứng xảy ra hay không và mạnh hay yếu.'
+  },
+  {
+    id: 'electrolysis',
+    group: 'Điện phân và điện hóa',
+    title: 'Điện phân dung dịch CuCl₂ và pin Zn–Cu',
+    goal: 'Quan sát đồng bám ở catot, khí clo ở anot; đo suất điện động pin Daniell.',
+    knowledge: 'Điện phân CuCl₂: catot Cu²⁺ + 2e → Cu; anot 2Cl⁻ → Cl₂ + 2e. m(Cu) = A·I·t/(n·F). Pin Zn–Cu: E° = 1,10 V.',
+    equipment: ['Cốc 100 mL', 'Cặp điện cực than chì', 'Nguồn điện một chiều', '2 cốc cho pin', 'Cầu muối', 'Vôn kế'],
+    chemicals: ['CuCl₂ 0,5 M', 'ZnSO₄ 0,5 M', 'CuSO₄ 0,5 M', 'Thanh Zn, dây Cu'],
+    safety: 'Khí Cl₂ độc: chỉ điện phân trong tủ hút, dòng nhỏ, thời gian ngắn.',
+    setup(sim) {
+      const cell = add(sim, 'beaker100', 260, { label: 'CuCl₂' })
+      fill(sim, cell, 'cucl2', 50)
+      const el = add(sim, 'electrodes', 380, { y: 110 })
+      const power = add(sim, 'power', 160)
+      const zn = add(sim, 'beaker100', 520, { label: 'ZnSO₄' })
+      fill(sim, zn, 'znso4', 50)
+      const cuB = add(sim, 'beaker100', 660, { label: 'CuSO₄' })
+      fill(sim, cuB, 'cuso4', 50)
+      const tongs = add(sim, 'tongs', 780, { y: 150 })
+      const bridge = add(sim, 'bridge', 590, { y: 130 })
+      const volt = add(sim, 'voltmeter', 590, { y: 0 })
+      return { cell, el, power, zn, cuB, tongs, bridge, volt }
+    },
+    steps: [
+      { text: 'Kéo cặp điện cực nhúng vào cốc CuCl₂.', target: ['el', 'cell'], check: (s, r) => { const e = obj(s, r.el); const c = obj(s, r.cell); return Math.abs(e.x - c.x) < 20 && e.y < surfaceY(c) - 3 } },
+      { text: 'Chọn nguồn điện, nối dây tới điện cực, đặt 6 V rồi bật nguồn.', target: ['power'], check: (s, r) => (obj(s, r.power).current || 0) > 0 },
+      { text: 'Quan sát 60 giây mô phỏng: đồng bám ở catot (−), bọt khí vàng lục ở anot (+).', target: ['el'], check: (s, r) => (obj(s, r.el).cuDeposit || 0) > 2e-4 },
+      { text: 'Dùng kẹp thả kẽm vào cốc ZnSO₄ và dây đồng vào cốc CuSO₄.', target: ['tongs', 'zn', 'cuB'], check: (s, r) => s.objects.some(o => o.reagent === 'zn' && o.in === r.zn) && s.objects.some(o => o.reagent === 'cu' && o.in === r.cuB) },
+      { text: 'Nối cầu muối giữa hai cốc và nối hai dây vôn kế vào thanh Zn và Cu.', target: ['bridge', 'volt'], check: (s, r) => obj(s, r.volt).reading > 1 }
+    ],
+    observe: 'Catot phủ lớp đồng đỏ, anot sủi bọt khí vàng lục; màu xanh dung dịch nhạt dần. Vôn kế chỉ khoảng 1,10 V.',
+    explain: 'Dòng điện một chiều khử Cu²⁺ ở catot và oxi hóa Cl⁻ ở anot; lượng chất theo định luật Faraday. Pin Zn–Cu biến hóa năng thành điện năng; Zn là cực âm.',
+    conclusion: 'Điện phân dùng điện năng gây phản ứng oxi hóa – khử; pin điện hóa sinh điện năng từ phản ứng oxi hóa – khử.'
+  },
+  {
+    id: 'organic',
+    group: 'Hóa học hữu cơ',
+    title: 'Axit axetic, tính tan và phân lớp chất lỏng',
+    goal: 'Nhận biết tính axit của CH₃COOH, phản ứng với NaHCO₃; so sánh etanol và dầu ăn khi trộn với nước.',
+    knowledge: 'CH₃COOH là axit yếu (Ka = 1,75·10⁻⁵): làm quỳ hóa đỏ, tác dụng với muối cacbonat giải phóng CO₂. Etanol tan vô hạn trong nước; dầu ăn không tan, nhẹ hơn nước nên nổi lên trên.',
+    equipment: ['3 ống nghiệm', 'Giấy quỳ', 'Thìa', 'Chai nước, etanol, dầu ăn'],
+    chemicals: ['CH₃COOH 1 M', 'NaHCO₃ rắn', 'Nước', 'Etanol', 'Dầu ăn'],
+    safety: 'Etanol dễ cháy; axit axetic gây kích ứng mắt.',
+    setup(sim) {
+      const acid = add(sim, 'testTube', 260, { label: 'CH₃COOH' })
+      fill(sim, acid, 'ch3cooh', 8)
+      const t2 = add(sim, 'testTube', 340, { label: 'Ống 2' })
+      fill(sim, t2, 'water', 6)
+      const t3 = add(sim, 'testTube', 400, { label: 'Ống 3' })
+      fill(sim, t3, 'water', 6)
+      const oil = add(sim, 'bottle', 500, { reagent: 'oil' })
+      const eth = add(sim, 'bottle', 570, { reagent: 'ethanol' })
+      const spatula = add(sim, 'spatula', 660, { y: 140 })
+      const paper = sim.dispatch({ type: 'newLitmus', x: 180 }, { record: false }).id
+      return { acid, t2, t3, oil, eth, spatula, paper }
+    },
+    steps: [
+      { text: 'Nhúng giấy quỳ vào ống CH₃COOH.', target: ['paper', 'acid'], check: (s, r) => papersIn(s, r.acid).length > 0 },
+      { text: 'Dùng thìa lấy NaHCO₃ (0,5 g) thả vào ống axit axetic, quan sát bọt khí.', target: ['spatula', 'acid'], check: s => s.gas.CO2 > 1e-5 },
+      { text: 'Rót khoảng 3 mL dầu ăn vào ống 2.', target: ['oil', 't2'], check: (s, r) => (obj(s, r.t2).contents.liquids.oil || 0) > 1 },
+      { text: 'Rót khoảng 3 mL etanol vào ống 3.', target: ['eth', 't3'], check: (s, r) => (obj(s, r.t3).contents.liquids.ethanol || 0) > 1 }
+    ],
+    observe: 'Quỳ hóa đỏ. NaHCO₃ sủi bọt khí không màu. Ống 2 tách hai lớp: dầu vàng nổi trên nước. Ống 3 đồng nhất một lớp.',
+    explain: 'CH₃COOH + NaHCO₃ → CH₃COONa + CO₂ + H₂O. Dầu ăn không phân cực, không tan trong nước và có khối lượng riêng 0,92 g/mL < 1 g/mL. Etanol tạo liên kết hiđro với nước nên tan hoàn toàn.',
+    conclusion: 'Axit hữu cơ có tính axit chung; tính tan phụ thuộc độ phân cực của chất.'
+  }
+]
+
+export function guidedProgress(lab, state, roles) {
+  let done = 0
+  for (const step of lab.steps) {
+    if (step.check(state, roles)) done += 1
+    else break
+  }
+  return done
+}
+
+export { volumeOf }

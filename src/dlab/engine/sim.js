@@ -155,9 +155,16 @@ const COMMANDS = {
     byId(state, id).links = [a, b]
     log(state, `Đặt cầu muối nối ${label(byId(state, a))} và ${label(byId(state, b))}.`, 'action')
   },
-  co2(state, { id, on }) {
-    byId(state, id).co2Feed = Boolean(on)
-    log(state, on ? `Sục khí CO₂ vào ${label(byId(state, id))}.` : 'Ngừng sục CO₂.', 'action')
+  co2(state, { id, target, on }) {
+    const tank = target ? byId(state, id) : null
+    const c = byId(state, target || id)
+    if (tank) {
+      const old = tank.target && byId(state, tank.target)
+      if (old && old !== c) old.co2Feed = false
+      tank.target = on ? c.id : null
+    }
+    c.co2Feed = Boolean(on)
+    log(state, on ? `Sục khí CO₂ vào ${label(c)}.` : 'Ngừng sục CO₂.', 'action')
   },
   remove(state, { id }) {
     const o = byId(state, id)

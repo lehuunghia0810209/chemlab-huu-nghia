@@ -38,7 +38,7 @@ export const isContainer = o => Boolean(o && EQUIPMENT[o.type]?.caps.includes('c
 export const byId = (state, id) => state.objects.find(o => o.id === id)
 
 export function newVisual() {
-  return { field: new Array(GW * GH).fill(0), prev: null, target: null, stir: 0, parts: [], bubbles: [], acc: {} }
+  return { field: new Array(GW * GH).fill(0), base: null, prev: null, target: null, stir: 0, parts: [], bubbles: [], acc: {} }
 }
 
 export function volumeOf(c) {
@@ -128,18 +128,27 @@ function cellAt(u, v) {
   return j * GW + i
 }
 
-function injectTracer(c, u, v, amount) {
+// Tracer for colour mixing. A new discrete addition while the previous one is still mixing "bakes" the
+// current per-cell colours as the new starting point; continuous inflow (pouring, reacting solids) accumulates.
+function injectTracer(state, c, u, v, amount) {
   const vis = c.vis
-  const mean = vis.field.reduce((s, x) => s + x, 0) / vis.field.length
-  // Start a new mixing episode once the previous one has evened out.
-  if (mean > 0) {
-    let max = 0
-    let min = Infinity
-    for (const x of vis.field) { if (x > max) max = x; if (x < min) min = x }
-    if (max - min < 0.04 * mean) { vis.field.fill(0); vis.prev = vis.target }
+  const f = vis.field
+  let sum = 0
+  let max = 0
+  let min = Infinity
+  for (const x of f) { sum += x; if (x > max) max = x; if (x < min) min = x }
+  const mean = sum / f.length
+  if (!(mean > 0) || max - min < 0.04 * mean) {
+    vis.prev = mean > 0 ? vis.target : (vis.displayed || vis.target)
+    vis.base = null
+    f.fill(0)
   }
-  else vis.prev = vis.displayed || vis.target
-  vis.field[cellAt(u, v)] += amount
+  else if (state.t - (vis.lastInject ?? -1) > 0.3) {
+    vis.base = f.map((_, k) => cellColor(c, k, mean))
+    f.fill(0)
+  }
+  vis.lastInject = state.t
+  f[cellAt(u, v)] += amount
 }
 
 // ── Adding material ──────────────────────────────────────────────────────
@@ -163,7 +172,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
     spawnParticles(state, c, key, mol, u, v)
     noteOnce(state, `ppt-${key}-${c.id}`, `Xuất hiện kết tủa ${PRECIPITATES[key].formula} (${PRECIPITATES[key].name}) trong ${label(c)}.`)
   }
-  injectTracer(c, u, v, Math.max(0.2, addVol))
+  injectTracer(state, c, u, v, Math.max(0.2, addVol))
   refreshDerived(c)
   overflow(state, c)
   return { heatJ: result.heatJ, formed: result.formed }
@@ -317,7 +326,7 @@ function stepDissolve(state, s, c, h) {
     s.massG -= dn * M
     for (const [ion, n] of Object.entries(SALT_IONS[key])) c.contents.ions[ion] = (c.contents.ions[ion] || 0) + n * dn
     c.dirty = true
-    injectTracer(c, s.lx / Math.max(1, halfWidthAt(EQUIPMENT[c.type], 0)), 0.05, dn * 400)
+    injectTracer(state, c, s.lx / Math.max(1, halfWidthAt(EQUIPMENT[c.type], 0)), 0.05, dn * 400)
     noteOnce(state, `dissolve-${s.id}`, `${REAGENT_BY_ID[s.reagent].name} đang tan dần trong ${label(c)}.`)
     if (s.massG < 1e-6) { s.massG = 0; noteOnce(state, `dissolved-${s.id}`, `${REAGENT_BY_ID[s.reagent].name} đã tan hết.`) }
   }
@@ -367,7 +376,8 @@ function stepKinetics(state, s, c, h, rad, level) {
     if (rule.driver === 'h') driver = hConc
     else if (rule.driver === 'water') driver = (c.contents.liquids.water || 0) > 0.05 ? 1 : 0
     else driver = (c.contents.ions[rule.driver] || 0) / V
-    if (rule.driver === 'h' && driver < 1e-5) continue
+    // Acid attack on metals is modelled for dilute acids (pH < 3); hydrolysed salt solutions do not count.
+    if (rule.driver === 'h' && driver < 1e-3) continue
     if (!(driver > 0)) continue
     if (rule.nitrateUnsupported && (c.contents.ions['NO3-'] || 0) / V > 0.01 && hConc > 1e-3) {
       c.unsupported = 'Kim loại với HNO₃ không giải phóng H₂ mà tạo NOx — phản ứng này chưa được mô hình hóa.'
@@ -396,7 +406,7 @@ function stepKinetics(state, s, c, h, rad, level) {
       const push = Math.min(80, (xi / h) / 1e-4 * 18)
       s.vx += (rand(state) - 0.5) * push
     }
-    injectTracer(c, u, v, xi * 2000)
+    injectTracer(state, c, u, v, xi * 2000)
     c.dirty = true
     c.activeReactions[rule.id] = state.t
     noteOnce(state, `rx-${rule.id}-${c.id}`, `${rule.equation} — ${rule.observe}`)
@@ -638,30 +648,39 @@ function stepVisual(state, c, h) {
   }
   vis.bubbles = vis.bubbles.filter(b => b.v < 1)
   // Remember what is shown so a new episode starts from the visible colour.
-  if (vis.target && vis.prev) {
-    const mean = f.reduce((s, x) => s + x, 0) / f.length
-    vis.displayed = mean > 0 ? mixRgba(vis.prev, vis.target, Math.min(1, averageT(f, mean))) : vis.target
+  if (vis.target) {
+    const acc = [0, 0, 0, 0]
+    const m = fieldMean(c)
+    for (let k = 0; k < f.length; k += 1) { const col = cellColor(c, k, m); for (let i = 0; i < 4; i += 1) acc[i] += col[i] }
+    vis.displayed = acc.map(x => x / f.length)
   }
-}
-
-function averageT(f, mean) {
-  let s = 0
-  for (const x of f) s += Math.min(1, x / mean)
-  return s / f.length
 }
 
 export function mixRgba(a, b, t) {
   return [0, 1, 2, 3].map(i => a[i] + (b[i] - a[i]) * t)
 }
 
-export function cellColor(c, k) {
+// Local colour: t = local tracer / mean. t ≤ 1 blends towards the mixed colour; t > 1 extrapolates the
+// colour change (low-absorbance Beer–Lambert is ~linear), so a concentrated drop looks stronger at its contact point.
+export function fieldMean(c) {
+  let sum = 0
+  for (const x of c.vis.field) sum += x
+  return sum / c.vis.field.length
+}
+
+export function cellColor(c, k, mean = fieldMean(c)) {
   const vis = c.vis
   const f = vis.field
-  let sum = 0
-  for (const x of f) sum += x
-  const mean = sum / f.length
-  if (!(mean > 0) || !vis.prev) return vis.target
-  return mixRgba(vis.prev, vis.target, Math.min(1, f[k] / mean))
+  const base = vis.base ? vis.base[k] : vis.prev
+  if (!(mean > 0) || !base) return vis.target
+  const t = f[k] / mean
+  if (t <= 1) return mixRgba(base, vis.target, t)
+  const diff = [0, 1, 2].map(i => vis.target[i] - base[i])
+  const span = Math.max(1e-6, ...diff.map(Math.abs))
+  const factor = Math.min(t, Math.max(1, 140 / span))
+  const rgb = diff.map((d, i) => Math.max(0, Math.min(255, base[i] + d * factor)))
+  const alpha = Math.min(0.92, Math.max(0, base[3] + (vis.target[3] - base[3]) * factor) + Math.min(0.5, span * factor / 300))
+  return [...rgb, alpha]
 }
 
 // ── Tools in liquids ─────────────────────────────────────────────────────
@@ -695,6 +714,8 @@ function stepLitmus(state, o, h) {
   const depth = surf - o.y
   if (c && depth > 0 && c.pH != null) {
     o.inside = c.id
+    o.touched = o.touched || []
+    if (!o.touched.includes(c.id)) o.touched.push(c.id)
     o.dipTime = (o.dipTime || 0) + h
     const wick = Math.min(8, 2.5 * Math.sqrt(o.dipTime))
     const target = indicatorColor('litmus', c.pH).slice(0, 3)
@@ -725,7 +746,9 @@ export function stepDrops(state, h) {
   for (const d of state.drops) {
     d.vy -= 9810 * h
     d.y += d.vy * h * 0.12
-    const target = containerBelow(state, d.x, d.y + 30)
+    // The receiving vessel is fixed when the drop leaves the tip (it may fall deep into a narrow tube).
+    if (d.target === undefined) d.target = containerBelow(state, d.x, d.y + 2)?.id || null
+    const target = d.target && byId(state, d.target)
     if (target && d.y <= surfaceY(target)) {
       const tdef = EQUIPMENT[target.type]
       addParcel(state, target, d.parcel, { u: (d.x - target.x) / Math.max(1, halfWidthAt(tdef, innerHeight(tdef))), v: 1 })
@@ -749,7 +772,7 @@ export function stepDrops(state, h) {
         s.vy = 0
         s.vx = 0
         noteOnce(state, `drop-${s.id}`, `Thả ${REAGENT_BY_ID[s.reagent].name} vào ${label(c)}.`, 'info')
-        if (volumeOf(c) > 0) injectTracer(c, 0, 1, 0.1)
+        if (volumeOf(c) > 0) injectTracer(state, c, 0, 1, 0.1)
       }
       else if (s.y <= 0) { s.y = 0; s.vy = 0 }
     }

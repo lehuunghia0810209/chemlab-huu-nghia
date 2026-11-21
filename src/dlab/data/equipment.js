@@ -17,7 +17,8 @@ export const CAPABILITIES = {
   heat: 'Cấp nhiệt',
   power: 'Cấp điện',
   electrode: 'Điện cực',
-  bridge: 'Nối hai dung dịch'
+  bridge: 'Nối hai dung dịch',
+  gas: 'Sục khí'
 }
 
 const glass = { material: 'glass', breakable: true }
@@ -44,6 +45,7 @@ export const EQUIPMENT = {
   electrodes: { name: 'Cặp điện cực than chì', group: 'electro', w: 40, h: 120, caps: ['electrode', 'dip'] },
   bridge: { name: 'Cầu muối (KNO₃)', group: 'electro', w: 120, h: 60, caps: ['bridge'] },
   voltmeter: { name: 'Vôn kế', group: 'electro', w: 70, h: 50, caps: ['measure'], measures: 'voltage' },
+  gasTank: { name: 'Bình khí CO₂ có ống dẫn', group: 'gas', w: 36, h: 100, caps: ['gas'] },
   bottle: { name: 'Chai hóa chất', group: 'stock', w: 46, h: 80, capacityML: 500, shape: 'bottle', depth: 46, caps: ['contain', 'pour'], heatResistant: false, glassMassG: 250, ...glass }
 }
 

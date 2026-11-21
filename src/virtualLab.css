@@ -1154,3 +1154,18 @@
   color: var(--text-muted);
   font-size: var(--text-xs);
 }
+
+.dlab-entry {
+  display: grid;
+  gap: .2rem;
+  margin: 0 0 1rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--interactive, #3b82f6);
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-primary, inherit);
+  text-decoration: none;
+  background: var(--surface-2, transparent);
+}
+.dlab-entry span { color: var(--text-secondary, inherit); font-size: var(--text-sm, .875rem) }
+.dlab-entry:hover { border-color: var(--text-primary, #fff) }
+.dlab-entry:focus-visible { outline: 2px solid var(--focus-ring, #60a5fa); outline-offset: 2px }

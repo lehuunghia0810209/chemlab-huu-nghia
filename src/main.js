@@ -32,7 +32,7 @@ const STORAGE_KEYS = {
 applySavedPreferences()
 
 
-const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab'])
+const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab', 'dlab'])
 
 const VIEW_INFO = {
   home: {
@@ -64,6 +64,12 @@ const VIEW_INFO = {
     nav: 'Thí nghiệm',
     icon: 'lab',
     subtitle: 'Mô phỏng phản ứng · thí nghiệm có hướng dẫn'
+  },
+  dlab: {
+    title: 'Phòng thí nghiệm động 7.0',
+    nav: 'Thí nghiệm',
+    icon: 'lab',
+    subtitle: 'Bản thử nghiệm · mô phỏng theo trạng thái'
   }
 }
 
@@ -81,6 +87,7 @@ const COMMANDS = [
   { group: 'Điều hướng', name: 'Công cụ hóa học', description: 'Mở trung tâm công cụ', icon: 'tools', view: 'tools', keywords: 'cong cu tools chemistry' },
   { group: 'Điều hướng', name: 'Học tập', description: 'Bài học lớp 10–12 và luyện tập', icon: 'learn', view: 'learning', keywords: 'hoc learning quiz mastery bai hoc' },
   { group: 'Điều hướng', name: 'Phòng thí nghiệm', description: 'Mô phỏng phản ứng hóa học', icon: 'lab', view: 'lab', keywords: 'lab thi nghiem laboratory phong' },
+  { group: 'Điều hướng', name: 'Phòng thí nghiệm động 7.0', description: 'Bản thử nghiệm: kéo thả, rót, nhúng quỳ, mô phỏng định lượng', icon: 'lab', view: 'dlab', keywords: 'dynamic lab 7.0 phong thi nghiem dong sandbox guided quy tim' },
   { group: 'Trợ lý', name: 'ChemAI', description: 'Hỏi trợ lý Hóa học theo ngữ cảnh', icon: 'ai', ai: true, keywords: 'ai chemai tro ly hoa hoc hoi dap tutor' },
   { group: 'Công cụ', name: 'Cân bằng PTHH', description: 'Cân bằng phương trình hóa học', icon: 'scale', view: 'tools', tool: 'balancer', keywords: 'can bang pthh equation balancer phuong trinh' },
   { group: 'Công cụ', name: 'Máy tính hóa học', description: 'Mol, nồng độ và khối lượng', icon: 'calculator', view: 'tools', tool: 'calculator', keywords: 'may tinh mol nong do concentration calculator' },
@@ -261,6 +268,10 @@ app.innerHTML = `
         <section id="view-lab" class="app-view" hidden>
           <div id="lab-host"></div>
         </section>
+
+        <section id="view-dlab" class="app-view" hidden>
+          <div id="dlab-host"></div>
+        </section>
       </main>
       <footer class="app-footer">
         <img src="/brand/edulab-logo-96.png" width="24" height="24" alt="EduLab" loading="lazy">
@@ -289,6 +300,7 @@ const periodicRoot = document.querySelector('#periodic-workspace-root')
 const toolsRoot = document.querySelector('#tools')
 const learningHost = document.querySelector('#learning-host')
 const labHost = document.querySelector('#lab-host')
+const dlabHost = document.querySelector('#dlab-host')
 const routeProgress = document.querySelector('#app-route-progress')
 const appStatus = document.querySelector('#app-status')
 
@@ -338,7 +350,8 @@ const routeModules = createRouteModuleLoader({
     periodic: periodicRoot,
     tools: toolsRoot,
     learning: learningHost,
-    lab: labHost
+    lab: labHost,
+    dlab: dlabHost
   },
   drawer,
   safeInit,

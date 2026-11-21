@@ -39,6 +39,12 @@ export function createRouteModuleLoader({
       promise: null,
       host: hosts.lab,
       label: 'Phòng thí nghiệm'
+    },
+    dlab: {
+      status: 'idle',
+      promise: null,
+      host: hosts.dlab,
+      label: 'Phòng thí nghiệm động'
     }
   }
 
@@ -326,6 +332,14 @@ export function createRouteModuleLoader({
         'PHÒNG THÍ NGHIỆM ẢO'
     }
 
+    if (hosts.lab && !hosts.lab.querySelector('.dlab-entry')) {
+      const entry = document.createElement('a')
+      entry.className = 'dlab-entry'
+      entry.href = '#dlab'
+      entry.innerHTML = '<strong>Thử Phòng thí nghiệm động 7.0</strong><span>Bản thử nghiệm: kéo thả dụng cụ, rót theo góc nghiêng, nhúng giấy quỳ, phản ứng định lượng theo thời gian.</span>'
+      hosts.lab.prepend(entry)
+    }
+
     if (guidedResult.status === 'fulfilled') {
       safeInit(
         'Guided Experiments',
@@ -345,11 +359,21 @@ export function createRouteModuleLoader({
     }
   }
 
+  async function loadDynamicLabRoute() {
+    const { initDynamicLab } = await import('./dlab/ui/dlabApp.js')
+    safeInit(
+      'Phòng thí nghiệm động',
+      () => initDynamicLab(hosts.dlab),
+      hosts.dlab
+    )
+  }
+
   const loaders = {
     periodic: loadPeriodicRoute,
     tools: loadToolsRoute,
     learning: loadLearningRoute,
-    lab: loadLabRoute
+    lab: loadLabRoute,
+    dlab: loadDynamicLabRoute
   }
 
   function ensureViewReady(
