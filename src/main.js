@@ -32,7 +32,9 @@ const STORAGE_KEYS = {
 applySavedPreferences()
 
 
-const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab', 'dlab'])
+// 'dlab' (ChemLab 7.0 preview) is routable but not in the main navigation.
+const NAV_VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
+const VALID_VIEWS = new Set([...NAV_VIEWS, 'dlab'])
 
 const VIEW_INFO = {
   home: {
@@ -281,7 +283,7 @@ app.innerHTML = `
     </div>
 
     <nav class="app-bottom-nav" aria-label="Điều hướng chính">
-      ${[...VALID_VIEWS].map(bottomNavButton).join('')}
+      ${NAV_VIEWS.map(bottomNavButton).join('')}
     </nav>
 
     <aside id="element-drawer" aria-hidden="true"></aside>

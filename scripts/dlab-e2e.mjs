@@ -23,7 +23,8 @@ async function newPage(width = 1440, height = 900, touch = false) {
   const errors = []
   page.on('pageerror', e => errors.push(String(e)))
   page.on('console', m => { if (m.type() === 'error' && !/api\/chat|404/.test(m.text())) errors.push(m.text()) })
-  page.on('request', r => { if (/\/api\/(chat|ai|chemai)/.test(r.url())) aiRequests.push(r.url()) })
+  // GET /api/chat is ChemAI's status/quota check (no model call); a POST is a question that spends tokens.
+  page.on('request', r => { if (/\/api\/(chat|ai|chemai)/.test(r.url()) && r.method() !== 'GET') aiRequests.push(`${r.method()} ${r.url()}`) })
   await page.goto(`${base}#dlab`)
   await page.waitForFunction(() => window.ChemLabDynamicLab?.ready, null, { timeout: 30000 })
   await page.evaluate(() => indexedDB.deleteDatabase('chemlab-dynamic-lab'))

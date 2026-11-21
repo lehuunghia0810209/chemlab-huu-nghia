@@ -408,6 +408,10 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await st(page, (L, id) => { L.state.speed = 4; L.dispatch({ type: 'addReagentTo', id, reagent: 'naoh', mL: 10 }) }, ids.A)
     await page.waitForTimeout(3000)
     assert.deepEqual(aiRequests, [], 'no AI requests while simulating')
+    await btn(page, 'Hỏi ChemAI').click()
+    await page.waitForFunction(() => [...document.querySelectorAll('textarea, input')].some(el => el.value.includes('thí nghiệm ảo')), null, { timeout: 15000 })
+    await page.waitForTimeout(1500)
+    assert.deepEqual(aiRequests, [], `opening ChemAI only pre-fills the question: ${aiRequests.join(', ')}`)
   })
 
   await test('M01 điện thoại 390px: thư viện, thao tác, không tràn ngang', async page => {
@@ -454,7 +458,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     }
   })
 
-  await test('P01 hiệu năng khung hình với cảnh bận', async page => {
+  for (const mode of ['high', 'low']) await test(`P01${mode === 'low' ? 'b' : ''} hiệu năng khung hình với cảnh bận (${mode === 'low' ? 'đồ họa tiết kiệm' : 'đồ họa cao'})`, async page => {
+    if (mode === 'low') await btn(page, 'Đồ họa: Cao').click()
     await bench(page, Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`B${i}`, { type: 'beaker100', x: 140 + i * 70, fill: [['cuso4', 40]] }])))
     await page.evaluate(() => {
       const L = window.ChemLabDynamicLab
@@ -476,8 +481,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
       }
       requestAnimationFrame(tick)
     }))
-    await fs.writeFile(`${outDir}/${browserName}-p01-perf.json`, JSON.stringify(r, null, 2))
-    console.log(`      perf ${browserName}: ${r.fps.toFixed(1)} fps, p95 ${r.p95.toFixed(1)} ms, long tasks ${r.longTasks}, particles ${r.particles}`)
+    await fs.writeFile(`${outDir}/${browserName}-p01-${mode}-perf.json`, JSON.stringify(r, null, 2))
+    console.log(`      perf ${browserName} ${mode}: ${r.fps.toFixed(1)} fps, p95 ${r.p95.toFixed(1)} ms, long tasks ${r.longTasks}, particles ${r.particles}`)
     assert.ok(r.fps > 30, `fps ${r.fps}`)
   })
 

@@ -429,7 +429,21 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
       const oil = c.contents.liquids.oil || 0
       const aq = vol - oil
       const aqLevel = levelForVolume(c.type, aq)
-      if (Math.abs(c.angle) < 0.02) {
+      if (Math.abs(c.angle) < 0.02 && ui.quality === 'low') {
+        // Reduced graphics: one fill at the mean colour and fewer particles; chemistry is unchanged.
+        const hw = halfWidthAt(def, 0) + 4
+        const col = c.vis.displayed || c.vis.target || [220, 235, 250, 0.2]
+        ctx.fillStyle = rgba(col, Math.min(0.92, col[3] + 0.05))
+        ctx.fillRect(-hw, -2 - aqLevel, 2 * hw, aqLevel)
+        if (oil > 0.01) { ctx.fillStyle = 'rgba(240,200,60,0.75)'; ctx.fillRect(-hw, -2 - level, 2 * hw, level - aqLevel) }
+        const parts = c.vis.parts
+        for (let k = 0; k < parts.length; k += Math.ceil(parts.length / 40) || 1) {
+          const p = parts[k]
+          ctx.fillStyle = rgba(PRECIPITATES[p.key].color, 0.95)
+          ctx.fillRect(p.u * (halfWidthAt(def, p.v * aqLevel) - 2) - 1.5, -2 - p.v * aqLevel - 1.5, 3, 3)
+        }
+      }
+      else if (Math.abs(c.angle) < 0.02) {
         const hw = halfWidthAt(def, 0) + 4
         const cellW = (2 * hw) / GW
         const cellH = Math.max(0.5, aqLevel / GH)

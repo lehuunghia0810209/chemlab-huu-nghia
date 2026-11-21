@@ -690,11 +690,14 @@ export function stepTools(state, h) {
     if (o.type === 'rod') {
       const c = containerAt(state, o.x, o.y + 1)
       const last = o.last || { x: o.x, y: o.y }
-      const speed = Math.hypot(o.x - last.x, o.y - last.y) / h
+      // Pointer strokes are summed by the controller (back-and-forth within one step must not cancel out).
+      const dist = Math.max(o.stroke || 0, Math.hypot(o.x - last.x, o.y - last.y))
+      o.stroke = 0
       o.last = { x: o.x, y: o.y }
       if (c && o.y < surfaceY(c)) {
-        c.vis.stir = Math.min(1.5, c.vis.stir + Math.min(1, speed / 300) * h * 4)
-        if (speed > 20) noteOnce(state, `stir-${c.id}`, `Khuấy ${label(c)} bằng đũa thủy tinh: dung dịch trộn đều nhanh hơn.`, 'info')
+        // Stirring scales with the path the rod sweeps through the liquid, so it does not depend on frame rate.
+        c.vis.stir = Math.min(1.5, c.vis.stir + dist / 120)
+        if (dist > 0.3) noteOnce(state, `stir-${c.id}`, `Khuấy ${label(c)} bằng đũa thủy tinh: dung dịch trộn đều nhanh hơn.`, 'info')
       }
     }
     if (o.type === 'thermometer' || o.type === 'phMeter') {

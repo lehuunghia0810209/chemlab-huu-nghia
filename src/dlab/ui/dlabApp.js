@@ -281,8 +281,11 @@ export function initDynamicLab(host) {
     const o = byId(sim.state, drag.id)
     if (!o) return
     const [x, y] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
-    o.x = x + drag.dx
-    o.y = Math.max(0, y + drag.dy)
+    const nx = x + drag.dx
+    const ny = Math.max(0, y + drag.dy)
+    if (o.type === 'rod') o.stroke = (o.stroke || 0) + Math.hypot(nx - o.x, ny - o.y)
+    o.x = nx
+    o.y = ny
     drag.moved = true
   })
   const endDrag = async e => {
