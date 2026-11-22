@@ -34,7 +34,7 @@ applySavedPreferences()
 
 // 'dlab' (ChemLab 7.0 preview) is routable but not in the main navigation.
 const NAV_VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
-const VALID_VIEWS = new Set([...NAV_VIEWS, 'dlab'])
+const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab', 'dlab']) // dlab is routable but not in the bottom nav
 
 const VIEW_INFO = {
   home: {

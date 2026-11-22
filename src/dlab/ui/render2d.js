@@ -58,6 +58,18 @@ export function render(ctx, state, view, ui) {
     ctx.bezierCurveTo(ax, ay - 60, bx, by - 80, bx, by)
     ctx.stroke()
   }
+  // Contact shadows: a lifted (held) object casts a fainter, wider shadow, so it reads as "in the hand".
+  for (const o of state.objects) {
+    if (o.in || o.inside) continue
+    const b = bounds(o)
+    const lift = Math.max(0, b.y0)
+    const a = (dark ? 0.35 : 0.16) * Math.max(0.25, 1 - lift / 160)
+    const [sx] = toScreen(view, (b.x0 + b.x1) / 2, 0)
+    ctx.fillStyle = `rgba(15,25,45,${a})`
+    ctx.beginPath()
+    ctx.ellipse(sx, benchSY + 2, ((b.x1 - b.x0) / 2 + 4 + lift * 0.08) * view.zoom, (2.5 + lift * 0.02) * view.zoom, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
   for (const o of state.objects) {
     if (o.type === 'solid' && o.in) continue
     drawObject(ctx, state, view, o, ui)
@@ -546,11 +558,43 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
         if ((mL / step) % 2 === 0 || def.capacityML <= 20) ctx.fillText(String(mL), -x + 6, -y)
       }
     }
-    if (c.condition === 'CRACKED' || c.condition === 'WARNING') {
-      ctx.strokeStyle = c.condition === 'CRACKED' ? 'rgba(255,255,255,0.95)' : 'rgba(255,180,60,0.9)'
-      ctx.lineWidth = 1
+    // Glass sheen: a soft vertical highlight on the left wall.
+    const hwMid = halfWidthAt(def, H * 0.5)
+    const sheen = ctx.createLinearGradient(-hwMid, 0, -hwMid + Math.min(10, hwMid * 0.5), 0)
+    sheen.addColorStop(0, dark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.75)')
+    sheen.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = sheen
+    ctx.fillRect(-hwMid, -H * 0.92, Math.min(10, hwMid * 0.5), H * 0.82)
+    // Damage is shown by colour, shape and a text badge (not colour alone).
+    if (c.condition !== 'NORMAL' && c.condition) {
       const hw = halfWidthAt(def, H * 0.4)
-      ctx.beginPath(); ctx.moveTo(-hw + 2, -H * 0.3); ctx.lineTo(-hw + 9, -H * 0.42); ctx.lineTo(-hw + 5, -H * 0.5); ctx.lineTo(-hw + 12, -H * 0.62); ctx.stroke()
+      if (c.condition === 'WARNING') {
+        ctx.strokeStyle = 'rgba(230,140,20,0.95)'
+        ctx.lineWidth = 2.2
+        glassOutline(ctx, def)
+      }
+      if (c.condition === 'CRACKED' || c.condition === 'UNUSABLE') {
+        ctx.strokeStyle = dark ? 'rgba(255,255,255,0.95)' : 'rgba(30,40,60,0.9)'
+        ctx.lineWidth = 1.1
+        ctx.beginPath()
+        ctx.moveTo(-hw - 1, -H * 0.28); ctx.lineTo(-hw + 8, -H * 0.4); ctx.lineTo(-hw + 4, -H * 0.5); ctx.lineTo(-hw + 13, -H * 0.64); ctx.lineTo(-hw + 9, -H * 0.74)
+        ctx.moveTo(-hw + 8, -H * 0.4); ctx.lineTo(-hw + 17, -H * 0.44); ctx.lineTo(-hw + 22, -H * 0.38)
+        ctx.moveTo(-hw + 4, -H * 0.5); ctx.lineTo(-hw + 1, -H * 0.58)
+        ctx.stroke()
+      }
+      if (c.condition === 'UNUSABLE') {
+        ctx.fillStyle = 'rgba(200,60,60,0.22)'
+        cavityPath(ctx, def)
+        ctx.fill()
+      }
+      const text = { WARNING: '! Cảnh báo', CRACKED: 'Nứt', UNUSABLE: 'Vỡ — không dùng được' }[c.condition]
+      ctx.font = '600 7px "Be Vietnam Pro", sans-serif'
+      ctx.textAlign = 'center'
+      const tw = ctx.measureText(text).width + 8
+      ctx.fillStyle = { WARNING: '#b45309', CRACKED: '#475569', UNUSABLE: '#b91c1c' }[c.condition]
+      roundRect(ctx, -tw / 2, -def.h - 14, tw, 11, 3); ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(text, 0, -def.h - 6)
     }
     if (c.type === 'bottle' && c.label) {
       ctx.fillStyle = dark ? '#f6f8fb' : '#ffffff'
@@ -609,6 +653,7 @@ function glassOutline(ctx, def) {
     if (i === steps) ctx.moveTo(-x - 2, -def.h)
     ctx.lineTo(-x, -y - 2)
   }
+  ctx.lineTo(-halfWidthAt(def, 0) - 2, 0)
   ctx.lineTo(halfWidthAt(def, 0) + 2, 0)
   for (let i = 0; i <= steps; i += 1) {
     const y = H * i / steps

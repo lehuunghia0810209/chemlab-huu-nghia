@@ -57,6 +57,7 @@ function makeObject(state, type, props = {}) {
 // Every command is a plain object; apply() mutates state. dispatch() runs safety first and records undo.
 const COMMANDS = {
   add(state, { equipmentType: type, x = 200, y = 0, reagent, label: name }) {
+    if (!EQUIPMENT[type]) throw new Error(`Không có dụng cụ loại ${type}`)
     const o = makeObject(state, type, { x, y, label: name })
     if (type === 'bottle' && reagent) {
       const r = REAGENT_BY_ID[reagent]
@@ -269,11 +270,21 @@ export function createSim(seed) {
       if (verdict.level === 'warn' && !confirmed) return { ok: false, needsConfirm: true, verdict }
       const fn = COMMANDS[cmd.type]
       if (!fn) throw new Error(`Lệnh không hợp lệ: ${cmd.type}`)
+      const before = snapshot(sim.state)
       if (record) sim.record()
       if (verdict.level === 'warn') log(sim.state, `Cảnh báo an toàn: ${verdict.reasons.join(' ')}`, 'warn')
-      const result = fn(sim.state, cmd) || {}
-      const problem = checkInvariants(sim.state)
-      if (problem) throw new Error(`Vi phạm bất biến: ${problem}`)
+      let result
+      try {
+        result = fn(sim.state, cmd) || {}
+        const problem = checkInvariants(sim.state)
+        if (problem) throw new Error(`Vi phạm bất biến: ${problem}`)
+      }
+      catch (error) {
+        // A failed command leaves no trace: state and undo history return to before it ran.
+        sim.state = restore(before)
+        if (record) sim.history.pop()
+        throw error
+      }
       sim.emit()
       return { ok: true, verdict, ...result }
     },

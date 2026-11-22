@@ -3,7 +3,7 @@
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
 import { IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass } from '../data/materials.js'
 import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS } from '../data/reactions.js'
-import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, emptyContents, scaleContents } from './chemistry.js'
+import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents } from './chemistry.js'
 
 export const ROOM_T = 25
 export const GW = 10
@@ -115,7 +115,9 @@ export function bulkColor(contents, pH) {
 
 export function refreshDerived(c) {
   const V = aqueousLitres(c.contents)
-  c.pH = V > 1e-6 ? -Math.log10(solveH(c.contents.ions, V)) : null
+  const h = V > 1e-6 ? solveH(c.contents.ions, V) : null
+  c.pH = h ? -Math.log10(h) : null
+  c.I = h ? ionicStrength(c.contents.ions, V, h) : 0
   const color = bulkColor(c.contents, c.pH)
   const vis = c.vis
   if (!vis.target) { vis.target = color; vis.prev = color }
@@ -209,7 +211,8 @@ export function settledFraction(c) {
 function spawnParticles(state, c, key, mol, u, v) {
   const n = Math.min(60, Math.max(1, Math.round(mol / PARTICLE_MOL)))
   for (let i = 0; i < n && c.vis.parts.length < MAX_PARTICLES; i += 1) {
-    c.vis.parts.push({ key, u: Math.max(-0.95, Math.min(0.95, u + (rand(state) - 0.5) * 0.4)), v: Math.max(0.02, v - rand(state) * 0.15), settled: false, s: 0.6 + rand(state) * 0.8 })
+    // Grains appear as a cloud along the plume of the added reagent, not on one line.
+    c.vis.parts.push({ key, u: Math.max(-0.95, Math.min(0.95, u + (rand(state) - 0.5) * 1.1)), v: Math.max(0.02, v - rand(state) * 0.55), settled: false, s: 0.6 + rand(state) * 0.8 })
   }
 }
 

@@ -1,0 +1,63 @@
+{
+  "tool": "Lighthouse 12.8.2 (npx), headless Chromium (Playwright chromium-1248)",
+  "server": "vite preview of dist/ on localhost",
+  "date": "2026-11-22",
+  "runs": {
+    "dlab-desktop": {
+      "url": "http://localhost:4610/#dlab",
+      "formFactor": "desktop",
+      "throttling": "simulate",
+      "performance": 99,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "LCP_ms": 607,
+      "FCP_ms": 535,
+      "TBT_ms": 0,
+      "CLS": 0.007,
+      "totalKiB": 286,
+      "lcpElement": "aside#dlab-insp > div.dlab-inspector > div.dlab-empty > p.dlab-hint"
+    },
+    "dlab-mobile": {
+      "url": "http://localhost:4610/#dlab",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "performance": 90,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "LCP_ms": 2943,
+      "FCP_ms": 2525,
+      "TBT_ms": 94,
+      "CLS": 0,
+      "totalKiB": 286,
+      "lcpElement": "div.dlab-shell > header.dlab-header > div.dlab-brand > h2"
+    },
+    "home-desktop": {
+      "url": "http://localhost:4610/",
+      "formFactor": "desktop",
+      "throttling": "simulate",
+      "performance": 100,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "LCP_ms": 500,
+      "FCP_ms": 500,
+      "TBT_ms": 0,
+      "CLS": 0,
+      "totalKiB": 238,
+      "lcpElement": "div.dash > section.dash-hero > div.dash-hero__copy > h1#dash-title"
+    },
+    "home-mobile": {
+      "url": "http://localhost:4610/",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "performance": 96,
+      "accessibility": 100,
+      "bestPractices": 100,
+      "LCP_ms": 2368,
+      "FCP_ms": 2121,
+      "TBT_ms": 0,
+      "CLS": 0,
+      "totalKiB": 238,
+      "lcpElement": "div.dash > section.dash-hero > div.dash-hero__copy > p"
+    }
+  }
+}

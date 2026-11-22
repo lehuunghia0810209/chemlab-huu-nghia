@@ -25,7 +25,8 @@ export const SOURCES = {
 }
 
 // Dissolved species used in the charge balance. z = charge.
-// hydrolysisKa: first hydrolysis step of an aquo metal ion (only step modelled).
+// hydrolysisKa: M^z+ + H2O ⇌ MOH + H+ ; dimerBeta: 2M^z+ + 2H2O ⇌ M2(OH)2 + 2H+ (I = 0, 25 °C).
+// Sources: COST Action 1802 hydrolysis compilation (2024) of Baes & Mesmer 1976 / IUPAC Powell 2007, 2013.
 export const IONS = {
   'Na+': { z: 1, label: 'Na⁺' },
   'K+': { z: 1, label: 'K⁺' },
@@ -33,10 +34,10 @@ export const IONS = {
   'Ba2+': { z: 2, label: 'Ba²⁺' },
   'Ca2+': { z: 2, label: 'Ca²⁺' },
   'Mg2+': { z: 2, label: 'Mg²⁺' },
-  'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 1e-9 },
-  'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.5, color: [70, 140, 230], colorPerM: 1.6 },
-  'Fe2+': { z: 2, label: 'Fe²⁺', hydrolysisKa: 10 ** -9.5, color: [150, 200, 140], colorPerM: 0.8 },
-  'Fe3+': { z: 3, label: 'Fe³⁺', hydrolysisKa: 10 ** -2.19, color: [205, 140, 40], colorPerM: 3 },
+  'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 10 ** -8.96 }, // Powell 2013
+  'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.95, dimerBeta: 10 ** -10.43, color: [70, 140, 230], colorPerM: 1.6 }, // Powell 2007
+  'Fe2+': { z: 2, label: 'Fe²⁺', hydrolysisKa: 10 ** -9.5, color: [150, 200, 140], colorPerM: 0.8 }, // Baes & Mesmer 1976
+  'Fe3+': { z: 3, label: 'Fe³⁺', hydrolysisKa: 10 ** -2.19, color: [205, 140, 40], colorPerM: 3 }, // Baes & Mesmer 1976
   'Cl-': { z: -1, label: 'Cl⁻' },
   'NO3-': { z: -1, label: 'NO₃⁻' },
   'I-': { z: -1, label: 'I⁻' },
@@ -49,7 +50,7 @@ export const IONS = {
 
 // Acid constants at 25 °C (CRC). Contribution to charge balance is solved in chemistry.js.
 export const WEAK = {
-  sulfate: { Ka2: 1.2e-2 },
+  sulfate: { Ka2: 1.0e-2 }, // pKa2 1.99, CRC 84th ed.
   acetate: { Ka: 1.75e-5 },
   ammonia: { Ka: 5.6e-10 },
   carbonate: { Ka1: 4.45e-7, Ka2: 4.69e-11 }

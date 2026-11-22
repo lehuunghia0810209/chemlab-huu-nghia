@@ -4,9 +4,10 @@ import { createSim, SPEEDS, snapshot, restore } from '../engine/sim.js'
 import { EQUIPMENT, CAPABILITIES } from '../data/equipment.js'
 import { REAGENTS, REAGENT_BY_ID, HAZARD_LABELS, IONS, PRECIPITATES, LIQUIDS, INDICATORS, molarMass } from '../data/materials.js'
 import { byId, isContainer, volumeOf, containerAt, containerBelow, surfaceY, label as objLabel } from '../engine/processes.js'
-import { createView, render, toWorld, hit } from './render2d.js'
+import { createView, render, toWorld, hit, bounds } from './render2d.js'
 import { GUIDED } from '../guided.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
+import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const num = (x, d = 2) => Number(x).toLocaleString('vi-VN', { maximumFractionDigits: d })
@@ -64,12 +65,22 @@ export function initDynamicLab(host) {
     canvas.height = Math.round(view.h * view.dpr)
     canvas.style.width = `${view.w}px`
     canvas.style.height = `${view.h}px`
-    if (!ui.fitted && view.w > 0) {
-      view.zoom = Math.max(0.55, Math.min(2, view.w / 520, view.h / 300))
-      view.x = 430
-      ui.fitted = true
-    }
+    if (!ui.userView) fitView()
     draw()
+  }
+
+  // Frame what is on the bench so small things (a sodium piece, precipitate grains) stay visible.
+  // Zooming or panning by hand turns this off until "Vừa khung" is pressed.
+  function fitView() {
+    const objs = sim.state.objects
+    if (!objs.length) { view.zoom = Math.max(0.55, Math.min(2, view.w / 520, view.h / 300)); view.x = 430; view.y = 90; return }
+    let x0 = Infinity, x1 = -Infinity, y1 = 0
+    for (const o of objs) { const b = bounds(o); x0 = Math.min(x0, b.x0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1) }
+    const zx = view.w * 0.9 / Math.max(160, x1 - x0 + 70)
+    const zy = (view.h * 0.8 - 12) / Math.max(120, y1 + 60)
+    view.zoom = Math.max(0.55, Math.min(3, zx, zy))
+    view.x = (x0 + x1) / 2
+    view.y = 90
   }
   new ResizeObserver(resize).observe(stage)
 
@@ -101,7 +112,13 @@ export function initDynamicLab(host) {
   }
   ui.tick = 0
 
-  sim.subscribe(() => { ui.dirty = true; ui.forcePanel = true })
+  ui.objCount = -1
+  sim.subscribe(() => {
+    ui.dirty = true
+    ui.forcePanel = true
+    const n = sim.state.objects.length
+    if (n !== ui.objCount) { ui.objCount = n; if (!ui.userView) { if (drag) ui.fitPending = true; else fitView() } }
+  })
 
   // ── Library ────────────────────────────────────────────────────────
   function paintLibrary() {
@@ -263,37 +280,59 @@ export function initDynamicLab(host) {
     pointers.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
     if (pointers.size === 2) { drag = { pinch: true, zoom: view.zoom, dist: pinchDist() }; return }
     const [x, y] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
-    let o = pick(x, y)
-    if (o?.type === 'solid' && o.in) { select(o.id); o = null; return }
+    const o = pick(x, y)
     if (!o) { drag = { pan: true, sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y }; select(null); return }
+    beginDrag(o, x, y)
+  })
+  // Interaction Controller shared by the 2D canvas and the 3D view: both map the pointer to world
+  // (x, y) on the bench plane and end in the same simulation commands.
+  function beginDrag(o, x, y) {
     select(o.id)
-    if (o.condition === 'UNUSABLE') return
+    if (o.type === 'solid' && o.in) return false
+    if (o.condition === 'UNUSABLE') return false
     sim.record()
     drag = { id: o.id, dx: o.x - x, dy: o.y - y, start: { x: o.x, y: o.y, angle: o.angle }, moved: false }
     if (isContainer(o)) o.held = true
-  })
-  canvas.addEventListener('pointermove', e => {
-    const rect = canvas.getBoundingClientRect()
-    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
-    if (!drag) return
-    if (drag.pinch) { if (pointers.size === 2) view.zoom = clampZoom(drag.zoom * pinchDist() / drag.dist); return }
-    if (drag.pan) { view.x = drag.vx - (e.clientX - drag.sx) / view.zoom; view.y = drag.vy + (e.clientY - drag.sy) / view.zoom; return }
-    const o = byId(sim.state, drag.id)
+    return true
+  }
+  function dragTo(x, y) {
+    const o = drag?.id && byId(sim.state, drag.id)
     if (!o) return
-    const [x, y] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
     const nx = x + drag.dx
     const ny = Math.max(0, y + drag.dy)
     if (o.type === 'rod') o.stroke = (o.stroke || 0) + Math.hypot(nx - o.x, ny - o.y)
     o.x = nx
     o.y = ny
     drag.moved = true
+  }
+  function tiltHeld(deltaY) {
+    const o = drag?.id && byId(sim.state, drag.id)
+    if (!o || !isContainer(o)) return false
+    o.angle = Math.max(-2.2, Math.min(2.2, o.angle + Math.sign(deltaY) * 0.08))
+    return true
+  }
+  async function endObjectDrag() {
+    const d = drag
+    drag = null
+    if (ui.fitPending) { ui.fitPending = false; if (!ui.userView) fitView() }
+    if (d?.id) await finishDrag(d)
+  }
+  canvas.addEventListener('pointermove', e => {
+    const rect = canvas.getBoundingClientRect()
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
+    if (!drag) return
+    if (drag.pinch) { if (pointers.size === 2) { view.zoom = clampZoom(drag.zoom * pinchDist() / drag.dist); ui.userView = true } return }
+    if (drag.pan) { ui.userView = true; view.x = drag.vx - (e.clientX - drag.sx) / view.zoom; view.y = drag.vy + (e.clientY - drag.sy) / view.zoom; return }
+    const [x, y] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
+    dragTo(x, y)
   })
   const endDrag = async e => {
     pointers.delete(e.pointerId)
     if (!drag) return
-    const d = drag
-    drag = null
-    if (d.pan || d.pinch) return
+    if (drag.pan || drag.pinch) { drag = null; return }
+    await endObjectDrag()
+  }
+  async function finishDrag(d) {
     const o = byId(sim.state, d.id)
     if (!o) return
     o.held = false
@@ -314,14 +353,11 @@ export function initDynamicLab(host) {
   canvas.addEventListener('pointercancel', endDrag)
   canvas.addEventListener('wheel', e => {
     e.preventDefault()
-    if (drag?.id) {
-      const o = byId(sim.state, drag.id)
-      if (isContainer(o)) o.angle = Math.max(-2.2, Math.min(2.2, o.angle + Math.sign(e.deltaY) * 0.08))
-      return
-    }
+    if (drag?.id) { tiltHeld(e.deltaY); return }
     const rect = canvas.getBoundingClientRect()
     const [wx, wy] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
     view.zoom = clampZoom(view.zoom * (e.deltaY < 0 ? 1.1 : 0.9))
+    ui.userView = true
     const [nx, ny] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
     view.x += wx - nx
     view.y += wy - ny
@@ -329,7 +365,8 @@ export function initDynamicLab(host) {
   function pinchDist() { const [a, b] = [...pointers.values()]; return Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)) }
   const clampZoom = z => Math.max(0.35, Math.min(4, z))
 
-  canvas.addEventListener('keydown', async e => {
+  canvas.addEventListener('keydown', onKey)
+  async function onKey(e) {
     const o = byId(sim.state, ui.selected)
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); sim.undo(); return }
     if (e.key === ' ' && !o) { e.preventDefault(); togglePause(); return }
@@ -345,7 +382,7 @@ export function initDynamicLab(host) {
     if (e.key === 'Escape' && isContainer(o)) { o.angle = 0; o.held = false; sim.dispatch({ type: 'move', id: o.id, x: o.x, y: o.y }) }
     if (e.key === 'Delete') run({ type: 'remove', id: o.id })
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); primaryAction(o) }
-  })
+  }
 
   function primaryAction(o) {
     if (o.type === 'dropper' || o.type === 'pipette') return run({ type: 'dispense', tool: o.id, drops: 1 })
@@ -432,7 +469,8 @@ export function initDynamicLab(host) {
     if (o.damageReason) h += `<p class="dlab-alert">${esc(o.damageReason)}</p>`
     if (isContainer(o)) {
       const vol = volumeOf(o)
-      h += `<dl class="dlab-kv"><dt>Thể tích</dt><dd>${num(vol, 1)} / ${def.capacityML} mL</dd>${o.pH != null && vol > 0.05 ? `<dt>pH</dt><dd>${num(o.pH, 2)}</dd>` : ''}<dt>Nhiệt độ</dt><dd>${num(o.T, 1)} °C</dd></dl>`
+      h += `<dl class="dlab-kv"><dt>Thể tích</dt><dd>${num(vol, 1)} / ${def.capacityML} mL</dd>${o.pH != null && vol > 0.05 ? `<dt>pH</dt><dd>${num(o.pH, 2)}</dd><dt>Lực ion</dt><dd>${num(o.I || 0, 3)} M</dd>` : ''}<dt>Nhiệt độ</dt><dd>${num(o.T, 1)} °C</dd></dl>`
+      if (o.pH != null && vol > 0.05 && o.I > IDEAL_I_LIMIT) h += `<p class="dlab-note" data-note="ideal">pH tính theo mô hình dung dịch lý tưởng (pH = −lg[H⁺], như SGK). Lực ion ${num(o.I, 2)} M > ${IDEAL_I_LIMIT} M nên pH đo bằng máy thật có thể lệch vài phần mười.</p>`
       if (o.unsupported) h += `<p class="dlab-alert">Chưa có mô hình: ${esc(o.unsupported)} <button type="button" class="dlab-btn dlab-btn--link" data-act="ai">Hỏi ChemAI</button></p>`
       const comp = compositionList(o)
       if (comp.length) h += `<details class="dlab-details"><summary>Định lượng</summary><ul>${comp.map(l => `<li>${l}</li>`).join('')}</ul></details>`
@@ -468,6 +506,9 @@ export function initDynamicLab(host) {
     if (o.type === 'litmusPaper') {
       const wet = (o.seg || []).filter(s => s.wet > 0.4).length
       h += `<p class="dlab-note">${wet ? `${wet}/${def.segments} phần giấy đã ướt.` : 'Giấy khô, màu tím.'}</p><button type="button" class="dlab-btn" data-act="newpaper">Lấy giấy quỳ mới</button><p class="dlab-hint">Kéo giấy xuống để nhúng vào dung dịch; nhúng càng sâu, vùng đổi màu càng dài.</p>`
+      // Alternative to dragging (small screens, keyboard): dip to a chosen depth below the surface.
+      const wetTargets = st.objects.filter(x => isContainer(x) && volumeOf(x) > 0.5 && x.condition !== 'UNUSABLE')
+      if (wetTargets.length) h += `<fieldset class="dlab-act"><legend>Nhúng bằng thông số</legend><div class="dlab-row"><select data-in="dip-to" aria-label="Nhúng vào">${wetTargets.map(x => `<option value="${x.id}">${esc(objLabel(x))}</option>`).join('')}</select></div><div class="dlab-row"><input type="number" class="dlab-in" data-in="dip-mm" min="2" max="60" step="2" value="10" aria-label="Độ sâu nhúng (mm)"><span>mm dưới mặt thoáng</span></div><div class="dlab-row"><button type="button" class="dlab-btn" data-act="dip">Nhúng</button><button type="button" class="dlab-btn" data-act="lift" ${o.inside ? '' : 'disabled'}>Lấy ra</button></div></fieldset>`
     }
     if (o.type === 'thermometer') h += `<dl class="dlab-kv"><dt>Số chỉ</dt><dd>${num(o.reading ?? 25, 1)} °C</dd></dl>`
     if (o.type === 'phMeter') h += `<dl class="dlab-kv"><dt>Số chỉ</dt><dd>${o.reading == null ? '—' : num(o.reading, 2)}</dd></dl><p class="dlab-hint">Máy đo theo mô hình dung dịch lý tưởng ở 25 °C.</p>`
@@ -517,6 +558,15 @@ export function initDynamicLab(host) {
     if (act === 'empty') await run({ type: 'dispense', tool: o.id, mL: 999 })
     if (act === 'pick') await run({ type: 'pick', tool: o.id, reagent: val('solid'), massG: Number(val('mass')) })
     if (act === 'release') await run({ type: 'release', tool: o.id })
+    if (act === 'dip') {
+      const c = byId(sim.state, val('dip-to'))
+      const depth = Math.max(2, Math.min(60, Number(val('dip-mm')) || 10))
+      if (c) await run({ type: 'move', id: o.id, x: c.x, y: Math.max(c.y + 3, surfaceY(c) - depth) })
+    }
+    if (act === 'lift') {
+      const c = byId(sim.state, o.inside)
+      if (c) await run({ type: 'move', id: o.id, x: c.x, y: c.y + EQUIPMENT[c.type].h + 12 })
+    }
     if (act === 'newpaper') { const r = await run({ type: 'newLitmus', x: o.x + 30 }); if (r) select(r.id) }
     if (act === 'burner') await run({ type: 'burner', id: o.id, on: !o.on })
     if (act === 'power') await run({ type: 'power', id: o.id, on: !o.on, volts: Number(val('volts')) })
@@ -568,6 +618,7 @@ export function initDynamicLab(host) {
     if (b.dataset.tb === 'undo') sim.undo()
     if (b.dataset.tb === 'reset') { if (await confirmDialog('Đặt lại thí nghiệm?', ['Bàn thí nghiệm sẽ trở về trạng thái ban đầu. Có thể hoàn tác.'])) sim.reset() }
     if (b.dataset.tb === 'cleanup') sim.dispatch({ type: 'cleanup' })
+    if (b.dataset.tb === 'fit') { ui.userView = false; fitView() }
     draw()
   })
 
@@ -716,14 +767,25 @@ export function initDynamicLab(host) {
     try {
       const { create3dView } = await import('./render3d.js')
       $('.dlab-3d').hidden = false
-      three = create3dView($('.dlab-3d'), { quality: ui.quality, onPick: id => select(id) })
+      three = create3dView($('.dlab-3d'), {
+        quality: ui.quality,
+        onPick: id => select(id),
+        controller: {
+          down: (id, x, y) => { const o = byId(sim.state, id); return o ? beginDrag(o, x, y) : false },
+          move: dragTo,
+          up: endObjectDrag,
+          wheel: tiltHeld,
+          key: onKey,
+          hasSelection: () => !!byId(sim.state, ui.selected)
+        }
+      })
       if (!three) { $('.dlab-3d').hidden = true; return toast('Thiết bị không hỗ trợ WebGL — tiếp tục ở chế độ 2D.') }
       ui.render3d = true
       canvas.hidden = true
       btn.textContent = 'Xem 2D'
       btn.setAttribute('aria-pressed', 'true')
       three.update(sim.state, ui)
-      toast('Chế độ 3D: xoay/phóng to để quan sát; trạng thái thí nghiệm giữ nguyên. Thao tác kéo thả thực hiện ở 2D.')
+      toast('Chế độ 3D: kéo vật để di chuyển, nhấc, nhúng; giữ vật và lăn chuột (hoặc [ ]) để nghiêng, rót. Kéo vùng trống để xoay, lăn chuột để phóng to.')
     }
     catch (err) { toast(`Không tải được 3D: ${err.message}`, 'danger') }
   }
@@ -822,6 +884,9 @@ export function initDynamicLab(host) {
     view: () => ({ ...view }),
     surface: id => surfaceY(byId(sim.state, id)),
     markInitial: () => sim.markInitial(),
+    fit: () => { ui.userView = false; fitView() },
+    selected: () => ui.selected,
+    worldToScreen3d: (x, y) => three?.worldToScreen(x, y) ?? null,
     select,
     toggle3d,
     is3d: () => ui.render3d,
@@ -884,6 +949,7 @@ function template() {
       <button type="button" class="dlab-btn" data-tb="undo">Hoàn tác</button>
       <button type="button" class="dlab-btn" data-tb="reset">Đặt lại</button>
       <button type="button" class="dlab-btn" data-tb="cleanup">Dọn dẹp</button>
+      <button type="button" class="dlab-btn" data-tb="fit" title="Phóng to vừa các dụng cụ trên bàn">Vừa khung</button>
     </footer>
     <dialog class="dlab-dialog"></dialog>
     <div class="dlab-live sr-only" aria-live="polite"></div>

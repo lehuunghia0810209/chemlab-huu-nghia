@@ -1,0 +1,147 @@
+{
+  "env": {
+    "browser": "Chromium 156.0.8078.4",
+    "headless": true,
+    "gpu": "software (SwiftShader) in headless",
+    "viewport": "1440×900",
+    "os": "win32"
+  },
+  "render": {
+    "2D thường (3 cốc)": {
+      "fps": 60,
+      "p95ms": 16.8,
+      "particles": 0
+    },
+    "2D nhiều dụng cụ + hạt (8 cốc)": {
+      "fps": 60,
+      "p95ms": 16.7,
+      "particles": 480
+    },
+    "2D tiết kiệm (8 cốc)": {
+      "fps": 60,
+      "p95ms": 16.7,
+      "particles": 480
+    },
+    "3D thường (3 cốc)": {
+      "fps": 60,
+      "p95ms": 16.7,
+      "particles": 0
+    },
+    "3D nhiều hạt (8 cốc)": {
+      "fps": 47.9,
+      "p95ms": 33.4,
+      "particles": 480
+    },
+    "3D tiết kiệm (8 cốc)": {
+      "fps": 60,
+      "p95ms": 16.7,
+      "particles": 480
+    }
+  },
+  "lazy3d": {
+    "msToCanvas": 455,
+    "files": [
+      {
+        "url": "render3d-Cx-64r8f.js",
+        "kB": 7.7
+      },
+      {
+        "url": "sceneHost-C1iqKWjU.js",
+        "kB": 380.3
+      },
+      {
+        "url": "three.core-CVy_Bt7O.js",
+        "kB": 368.4
+      }
+    ]
+  },
+  "cycles": [
+    {
+      "cycle": 0,
+      "heapMB": 6.05,
+      "listeners": 74,
+      "nodes": 1825,
+      "documents": 1
+    },
+    {
+      "cycle": 1,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 6.14,
+      "listeners": 74,
+      "nodes": 1766,
+      "documents": 1
+    },
+    {
+      "cycle": 2,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 6.29,
+      "listeners": 74,
+      "nodes": 1775,
+      "documents": 1
+    },
+    {
+      "cycle": 3,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 6.37,
+      "listeners": 74,
+      "nodes": 1784,
+      "documents": 1
+    },
+    {
+      "cycle": 4,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 6.47,
+      "listeners": 74,
+      "nodes": 1793,
+      "documents": 1
+    },
+    {
+      "cycle": 5,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 6.58,
+      "listeners": 74,
+      "nodes": 1802,
+      "documents": 1
+    },
+    {
+      "cycle": 6,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 6.97,
+      "listeners": 74,
+      "nodes": 1811,
+      "documents": 1
+    },
+    {
+      "cycle": 7,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 7.04,
+      "listeners": 74,
+      "nodes": 1820,
+      "documents": 1
+    },
+    {
+      "cycle": 8,
+      "rafPerSecWhileAway": 0,
+      "webglCanvases": 0,
+      "dlabShells": 1,
+      "heapMB": 7.15,
+      "listeners": 74,
+      "nodes": 1829,
+      "documents": 1
+    }
+  ]
+}

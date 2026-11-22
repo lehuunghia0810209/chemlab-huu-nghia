@@ -1,4 +1,6 @@
-// Three.js view of the same simulation state (read-only). Lazy-loaded only when the user opens 3D.
+// Three.js view of the same simulation state. Lazy-loaded only when the user opens 3D.
+// It never changes chemistry: pointer input is mapped to bench-plane (x, y) and handed to the shared
+// Interaction Controller in dlabApp.js, which issues the same commands as the 2D canvas.
 import { createSceneHost, disposeObject } from '../../three/sceneHost.js'
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume } from '../data/equipment.js'
 import { PRECIPITATES, REAGENT_BY_ID } from '../data/materials.js'
@@ -6,7 +8,7 @@ import { isContainer, volumeOf, solidRadiusMM, byId } from '../engine/processes.
 
 const S = 0.01 // 1 mm = 0.01 scene units
 
-export function create3dView(container, { quality = 'high', onPick } = {}) {
+export function create3dView(container, { quality = 'high', onPick, controller } = {}) {
   const host = createSceneHost({ container, quality: quality === 'high' ? 'high' : 'low', cameraPosition: { x: 4.3, y: 2.6, z: 6.5 }, label: 'Bàn thí nghiệm 3D — cùng trạng thái với chế độ 2D' })
   if (!host) return null
   const { THREE, scene, camera, controls } = host
@@ -24,7 +26,14 @@ export function create3dView(container, { quality = 'high', onPick } = {}) {
   const bubbleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }), MAX)
   const partMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xffffff }), MAX)
   partMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3)
+  // Pour streams: one unit cylinder per stream, scaled from the lip to the receiving surface.
+  const streamMeshes = []
+  const streamGeo = new THREE.CylinderGeometry(1, 1, 1, 10)
   scene.add(bubbleMesh, partMesh)
+  const selBox = new THREE.Box3()
+  const selHelper = new THREE.Box3Helper(selBox, 0x1d6fd8)
+  selHelper.visible = false
+  scene.add(selHelper)
   const m4 = new THREE.Matrix4()
   const color = new THREE.Color()
 
@@ -56,6 +65,20 @@ export function create3dView(container, { quality = 'high', onPick } = {}) {
       const r = REAGENT_BY_ID[o.reagent]
       g.add(new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshStandardMaterial({ color: new THREE.Color(`rgb(${(r.color || [240, 240, 240]).join(',')})`), roughness: 0.4, metalness: 0.4 })))
     }
+    else if (o.type === 'litmusPaper') {
+      // Paper strip textured from its 28 segment colours, so the wetted zone is visible in 3D too.
+      const tex = document.createElement('canvas')
+      tex.width = 1
+      tex.height = 28
+      const map = new THREE.CanvasTexture(tex)
+      map.magFilter = THREE.NearestFilter
+      map.colorSpace = THREE.SRGBColorSpace
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(def.w * S, def.h * S, 0.2 * S), new THREE.MeshBasicMaterial({ map, toneMapped: false }))
+      mesh.position.y = def.h * S / 2
+      g.add(mesh)
+      g.userData.body = mesh
+      g.userData.paper = { tex, map, key: '' }
+    }
     else {
       const flat = ['burner', 'power', 'voltmeter', 'rack', 'bridge', 'gasTank'].includes(o.type)
       const geo = flat ? new THREE.BoxGeometry(def.w * S, def.h * S, (o.type === 'gasTank' ? def.w : 40) * S) : new THREE.CylinderGeometry(def.w * S / 3, def.w * S / 3, def.h * S, 10)
@@ -74,15 +97,17 @@ export function create3dView(container, { quality = 'high', onPick } = {}) {
     const xs = state.objects.map(o => o.x * S)
     if (!xs.length) return
     const cx = (Math.min(...xs) + Math.max(...xs)) / 2
-    const span = Math.max(1.5, Math.max(...xs) - Math.min(...xs) + 1)
-    camera.position.set(cx, 1.3, span * 1.15 + 1.2)
-    controls.target.set(cx, 0.45, 0)
+    const top = Math.max(...state.objects.map(o => (o.y + (EQUIPMENT[o.type]?.h || 0)) * S))
+    // Leave head-room above the tallest object so a lifted, tilted vessel stays in view while pouring.
+    const span = Math.max(1.5, Math.max(...xs) - Math.min(...xs) + 1, (top + 1.2) * 1.3)
+    camera.position.set(cx, Math.max(1.3, top * 0.9), span * 1.15 + 1.2)
+    controls.target.set(cx, Math.max(0.45, (top + 1.0) / 2), 0)
     controls.update()
     host.setHome(camera.position.clone(), controls.target.clone())
     framed = true
   }
 
-  function update(state) {
+  function update(state, ui = {}) {
     if (!framed) frame(state)
     const alive = new Set()
     let b = 0
@@ -104,9 +129,15 @@ export function create3dView(container, { quality = 'high', onPick } = {}) {
       g.rotation.z = -(o.angle || 0)
       g.children.forEach(ch => { if (ch.userData.offset == null) { ch.userData.offset = true; ch.position.y -= def.h / 2 * S } })
       g.visible = o.condition !== 'UNUSABLE'
-      if (o.type === 'litmusPaper' && o.seg) {
-        const tip = o.seg[0].rgb
-        g.userData.body.material.color.setRGB(tip[0] / 255, tip[1] / 255, tip[2] / 255)
+      if (o.type === 'litmusPaper' && o.seg && g.userData.paper) {
+        const paper = g.userData.paper
+        const key = o.seg.map(x => x.rgb.join(',')).join('|')
+        if (key !== paper.key) {
+          paper.key = key
+          const c2 = paper.tex.getContext('2d')
+          o.seg.forEach((seg, i) => { c2.fillStyle = `rgb(${seg.rgb.map(Math.round).join(',')})`; c2.fillRect(0, 27 - i, 1, 1) })
+          paper.map.needsUpdate = true
+        }
       }
       if (o.type === 'burner') g.userData.body.material.emissive?.setHex(o.on ? 0x662200 : 0)
       if (!isContainer(o)) continue
@@ -140,6 +171,21 @@ export function create3dView(container, { quality = 'high', onPick } = {}) {
         partMesh.setColorAt(p++, color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255))
       }
     }
+    state.streams.forEach((st, i) => {
+      let m = streamMeshes[i]
+      if (!m) { m = new THREE.Mesh(streamGeo, new THREE.MeshBasicMaterial({ transparent: true, toneMapped: false })); scene.add(m); streamMeshes[i] = m }
+      const len = Math.max(0.5, st.y0 - st.y1)
+      const r = Math.max(0.8, Math.min(3.5, Math.sqrt(st.rate) * 0.6))
+      m.visible = true
+      m.scale.set(r * S, len * S, r * S)
+      m.position.set(st.x * S, (st.y1 + len / 2) * S, 0)
+      m.material.color.setRGB(st.color[0] / 255, st.color[1] / 255, st.color[2] / 255)
+      m.material.opacity = Math.max(0.5, st.color[3] ?? 0.5)
+    })
+    for (let i = state.streams.length; i < streamMeshes.length; i += 1) streamMeshes[i].visible = false
+    const sel = ui.selected && nodes.get(ui.selected)
+    selHelper.visible = !!sel && sel.visible
+    if (selHelper.visible) { selBox.setFromObject(sel); selBox.expandByScalar(0.04) }
     bubbleMesh.count = b
     partMesh.count = p
     bubbleMesh.instanceMatrix.needsUpdate = true
@@ -156,24 +202,100 @@ export function create3dView(container, { quality = 'high', onPick } = {}) {
 
   const raycaster = new THREE.Raycaster()
   const ndc = new THREE.Vector2()
-  function onClick(e) {
+  const benchPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0) // all objects stand on z = 0
+  const hitPoint = new THREE.Vector3()
+  function aim(e) {
     const rect = host.canvas.getBoundingClientRect()
     ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1)
     raycaster.setFromCamera(ndc, camera)
-    const hits = raycaster.intersectObjects([...nodes.values()], true)
+  }
+  function pickId(e) {
+    aim(e)
+    const hits = raycaster.intersectObjects([...nodes.values()].filter(n => n.visible), true)
     for (const h of hits) {
       let n = h.object
       while (n && !n.userData.id) n = n.parent
-      if (n) { onPick?.(n.userData.id); return }
+      if (n) return n.userData.id
     }
+    return null
   }
-  host.canvas.addEventListener('click', onClick)
+  // Pointer → world millimetres on the bench plane (same coordinates as the 2D view).
+  function worldAt(e) {
+    aim(e)
+    return raycaster.ray.intersectPlane(benchPlane, hitPoint) ? [hitPoint.x / S, hitPoint.y / S] : null
+  }
+  let dragging = null
+  const canvas = host.canvas
+  canvas.tabIndex = 0
+  function onDown(e) {
+    if (e.button !== 0 || !controller) return
+    const id = pickId(e)
+    if (!id) return // empty space: OrbitControls rotates / pans the camera
+    onPick?.(id)
+    const w = worldAt(e)
+    if (!w || !controller.down(id, w[0], w[1])) return
+    dragging = e.pointerId
+    controls.enabled = false
+    canvas.setPointerCapture(e.pointerId)
+    canvas.focus({ preventScroll: true })
+    e.stopImmediatePropagation()
+  }
+  function onMove(e) {
+    if (dragging === e.pointerId) {
+      const w = worldAt(e)
+      if (w) controller.move(w[0], w[1])
+      return
+    }
+    if (e.pointerType === 'mouse' && !e.buttons) canvas.style.cursor = pickId(e) ? 'grab' : ''
+  }
+  function onUp(e) {
+    if (dragging !== e.pointerId) return
+    dragging = null
+    controls.enabled = true
+    controller.up()
+  }
+  function onWheel(e) {
+    if (dragging == null) return
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    controller.wheel(e.deltaY)
+  }
+  function onKey(e) {
+    // Arrow keys move the selected object (like 2D); without a selection they orbit the camera.
+    if (!controller?.hasSelection()) return
+    e.stopImmediatePropagation()
+    controller.key(e)
+  }
+  canvas.addEventListener('pointerdown', onDown, true)
+  canvas.addEventListener('pointermove', onMove)
+  canvas.addEventListener('pointerup', onUp)
+  canvas.addEventListener('pointercancel', onUp)
+  canvas.addEventListener('wheel', onWheel, { capture: true, passive: false })
+  canvas.addEventListener('keydown', onKey, true)
+  function onClick(e) { const id = pickId(e); if (id) onPick?.(id) }
+  canvas.addEventListener('click', onClick)
 
   return {
     update,
+    // Test/automation hook: screen position of a world point, so 3D journeys can drive real pointer events.
+    worldToScreen(x, y) {
+      const v = new THREE.Vector3(x * S, y * S, 0).project(camera)
+      const rect = canvas.getBoundingClientRect()
+      return { x: rect.left + (v.x + 1) / 2 * rect.width, y: rect.top + (1 - v.y) / 2 * rect.height }
+    },
     setQuality: q => host.setQuality(q === 'high' ? 'high' : 'low'),
     dispose() {
-      host.canvas.removeEventListener('click', onClick)
+      canvas.removeEventListener('click', onClick)
+      canvas.removeEventListener('pointerdown', onDown, true)
+      canvas.removeEventListener('pointermove', onMove)
+      canvas.removeEventListener('pointerup', onUp)
+      canvas.removeEventListener('pointercancel', onUp)
+      canvas.removeEventListener('wheel', onWheel, { capture: true })
+      canvas.removeEventListener('keydown', onKey, true)
+      streamGeo.dispose()
+      streamMeshes.forEach(m => m.material.dispose())
+      selHelper.geometry.dispose()
+      selHelper.material.dispose()
       glassMat.dispose()
       host.dispose()
       nodes.clear()

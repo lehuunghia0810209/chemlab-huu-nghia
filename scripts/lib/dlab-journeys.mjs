@@ -208,6 +208,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await panelBtn(page, 'Rót').click()
     const t = await obj(page, ids.T)
     assert.equal(t.contents.liquids.oil, 20)
+    await wait(page, L => L.state.streams.length === 0) // sample after the pour stream has gone
     await page.waitForTimeout(300)
     const s = await surface(page, ids.T)
     const top = await pixel(page, 300, s - 3)
@@ -499,4 +500,161 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     assert.equal(canvases, 0, 'WebGL canvases removed')
     if (h0 && h1) assert.ok(h1 - h0 < 15e6, `heap grew ${(h1 - h0) / 1e6} MB`)
   })
+
+  // ── 3D interaction: real pointer events on the WebGL canvas, same commands as 2D ──
+  async function open3d(page) {
+    await btn(page, 'Xem 3D').click()
+    await page.locator('.dlab-3d canvas').waitFor({ timeout: 15000 })
+    await page.waitForTimeout(900) // camera damping settles
+  }
+  const s3 = (page, x, y) => st(page, (L, a) => L.worldToScreen3d(a.x, a.y), { x, y })
+  async function drag3d(page, from, to, { hold, steps = 14 } = {}) {
+    const a = await s3(page, from.x, from.y)
+    const b = await s3(page, to.x, to.y)
+    await page.mouse.move(a.x, a.y)
+    await page.mouse.down()
+    await page.mouse.move(b.x, b.y, { steps })
+    if (hold) await hold()
+    await page.mouse.up()
+  }
+
+  const near30 = v => assert.ok(Math.abs(v - 30) < 1e-6, `volume kept: ${v}`)
+  const pose = o => JSON.stringify({ x: o.x, y: o.y, angle: o.angle, contents: o.contents, condition: o.condition })
+
+  await test('T01 3D: chọn vật, khung chọn và inspector', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['cuso4', 40]] }, B: { type: 'beaker100', x: 450 } })
+    await open3d(page)
+    const p = await s3(page, 450, 30)
+    await page.mouse.click(p.x, p.y)
+    await wait(page, (L, id) => L.selected() === id, ids.B)
+    await page.locator('.dlab-inspector', { hasText: 'Thể tích' }).waitFor()
+    await page.screenshot({ path: `${outDir}/${browserName}-t01-3d-select.png` })
+  })
+
+  await test('T02 3D: kéo cốc trên mặt bàn, nhấc lên và đặt xuống', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['water', 30]] } })
+    await open3d(page)
+    let lifted = null
+    await drag3d(page, { x: 300, y: 30 }, { x: 420, y: 110 }, { hold: async () => { lifted = await obj(page, ids.A) } })
+    assert.ok(lifted.y > 40 && Math.abs(lifted.x - 420) < 15, `lifted at ${lifted.x},${lifted.y}`)
+    await page.waitForTimeout(400)
+    const a = await obj(page, ids.A)
+    assert.ok(Math.abs(a.x - 420) < 15 && a.y === 0, `placed at ${a.x},${a.y}`)
+    near30(await st(page, (L, id) => Object.values(L.state.objects.find(o => o.id === id).contents.liquids).reduce((s, v) => s + v, 0), ids.A))
+  })
+
+  await test('T03 3D: nhúng giấy quỳ vào axit', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 400, fill: [['hcl', 60]] } })
+    ids.P = await st(page, L => L.dispatch({ type: 'newLitmus', x: 560 }, { record: false }).id)
+    const s = await surface(page, ids.A)
+    await open3d(page)
+    const p0 = await obj(page, ids.P)
+    await drag3d(page, { x: p0.x, y: p0.y + 50 }, { x: 400, y: s - 14 + 50 }, { hold: () => page.waitForTimeout(1600) })
+    const p = await obj(page, ids.P)
+    assert.ok(p.seg.filter(x => x.wet > 0.5 && redDominant(x.rgb)).length >= 3, 'dipped part red in 3D')
+    assert.ok(p.seg[27].wet === 0, 'top dry')
+    await page.screenshot({ path: `${outDir}/${browserName}-t03-3d-litmus.png` })
+  })
+
+  await test('T04 3D: giữ cốc, lăn chuột để nghiêng và rót', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['naoh', 60]] }, B: { type: 'beaker250', x: 352 } })
+    await open3d(page)
+    await drag3d(page, { x: 300, y: 35 }, { x: 300, y: 155 }, {
+      hold: async () => {
+        for (let i = 0; i < 15; i += 1) await page.mouse.wheel(0, 100)
+        await page.waitForTimeout(2500)
+        await page.screenshot({ path: `${outDir}/${browserName}-t04-3d-pour.png` })
+      }
+    })
+    const r = await st(page, (L, ids) => {
+      const v = o => Object.values(o.contents.liquids).reduce((s, x) => s + x, 0)
+      return { a: v(L.state.objects.find(o => o.id === ids.A)), b: v(L.state.objects.find(o => o.id === ids.B)), spill: L.state.spill.mL }
+    }, ids)
+    assert.ok(r.b > 5, `poured into B: ${r.b}`)
+    assert.ok(Math.abs(r.a + r.b + r.spill - 60) < 1e-6, `conserved ${JSON.stringify(r)}`)
+  })
+
+  await test('T05 3D: xoay camera ở vùng trống không đổi trạng thái; Undo dùng chung', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['water', 30]] } })
+    await open3d(page)
+    await drag3d(page, { x: 300, y: 30 }, { x: 380, y: 30 })
+    await page.waitForTimeout(300)
+    const before = pose(await obj(page, ids.A))
+    const box = await page.locator('.dlab-3d canvas').boundingBox()
+    await page.mouse.move(box.x + 20, box.y + 20)
+    await page.mouse.down()
+    await page.mouse.move(box.x + 160, box.y + 60, { steps: 10 })
+    await page.mouse.up()
+    await page.waitForTimeout(300)
+    assert.equal(pose(await obj(page, ids.A)), before, 'orbit does not touch the simulation')
+    await btn(page, 'Xem 2D').click()
+    await btn(page, 'Hoàn tác').click()
+    assert.ok(Math.abs((await obj(page, ids.A)).x - 300) < 1, 'undo of a 3D move works in 2D')
+  })
+
+  // ── Touch (emulated): real touch events through the DevTools protocol → pointerType "touch".
+  // Chromium only (CDP). This is emulation, not a physical device.
+  async function touch(page) {
+    const cdp = await page.context().newCDPSession(page)
+    const send = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], id) => ({ x, y, id })) })
+    return {
+      async drag(from, to, { steps = 12, hold } = {}) {
+        const a = await screen(page, from.x, from.y)
+        const b = await screen(page, to.x, to.y)
+        await send('touchStart', [[a.x, a.y]])
+        for (let i = 1; i <= steps; i += 1) await send('touchMove', [[a.x + (b.x - a.x) * i / steps, a.y + (b.y - a.y) * i / steps]])
+        if (hold) await hold()
+        await send('touchEnd', [])
+      },
+      async pinch(cx, cy, d0, d1) {
+        await send('touchStart', [[cx - d0, cy], [cx + d0, cy]])
+        for (let i = 1; i <= 8; i += 1) { const d = d0 + (d1 - d0) * i / 8; await send('touchMove', [[cx - d, cy], [cx + d, cy]]) }
+        await send('touchEnd', [])
+      }
+    }
+  }
+  if (browserName === 'chromium') {
+    for (const [w, h] of [[320, 640], [390, 844], [768, 1024]]) {
+      await test(`TC${w} cảm ứng ${w}px: kéo cốc, nhúng quỳ, pinch không đổi trạng thái`, async page => {
+        const t = await touch(page)
+        const ids = await bench(page, { A: { type: 'beaker100', x: 380, fill: [['hcl', 60]] }, B: { type: 'beaker100', x: 520, fill: [['water', 30]] } })
+        await st(page, L => L.fit())
+        await t.drag({ x: 520, y: 30 }, { x: 470, y: 30 })
+        await wait(page, (L, id) => Math.abs(L.state.objects.find(o => o.id === id).x - 470) < 3, ids.B)
+        ids.P = await st(page, L => L.dispatch({ type: 'newLitmus', x: 450 }, { record: false }).id)
+        await st(page, L => L.fit())
+        const s = await surface(page, ids.A)
+        const p0 = await obj(page, ids.P)
+        await t.drag({ x: p0.x, y: p0.y + 50 }, { x: 380, y: s - 12 + 50 }, { hold: () => page.waitForTimeout(1500) })
+        const p = await obj(page, ids.P)
+        assert.ok(p.seg.filter(x => x.wet > 0.5 && redDominant(x.rgb)).length >= 3, 'dipped by touch')
+        const before = await st(page, L => JSON.stringify(L.state.objects.map(o => [o.id, o.x, o.y])))
+        const box = await page.locator('.dlab-canvas').boundingBox()
+        await t.pinch(box.x + box.width / 2, box.y + 40, 30, 70)
+        assert.equal(await st(page, L => JSON.stringify(L.state.objects.map(o => [o.id, o.x, o.y]))), before, 'pinch only zooms the view')
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+        assert.ok(overflow <= 0, `overflow ${overflow}`)
+        await page.screenshot({ path: `${outDir}/${browserName}-tc${w}.png` })
+      }, { width: w, height: h, touch: true })
+    }
+  }
+
+  await test('TC02 nhập thông số thay cho kéo: nhúng quỳ 15 mm rồi lấy ra', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 380, fill: [['naoh', 60]] } })
+    ids.P = await st(page, L => L.dispatch({ type: 'newLitmus', x: 480 }, { record: false }).id)
+    await select(page, ids.P)
+    const drawer = page.getByRole('button', { name: 'Chi tiết', exact: true })
+    if (await drawer.isVisible()) await drawer.click()
+    await page.locator('[data-in="dip-mm"]').fill('15')
+    await panelBtn(page, 'Nhúng').click()
+    await wait(page, (L, id) => L.state.objects.find(o => o.id === id).inside, ids.P)
+    await page.waitForTimeout(1500)
+    await panelBtn(page, 'Lấy ra').click()
+    await wait(page, (L, id) => !L.state.objects.find(o => o.id === id).inside, ids.P)
+    const p = await obj(page, ids.P)
+    const blue = c => c[2] > c[0] + 40
+    const wet = p.seg.filter(x => x.wet > 0.5)
+    assert.ok(wet.length >= 4 && wet.every(x => blue(x.rgb)), `blue zone after dip: ${wet.length}`)
+    assert.ok(p.seg[27].wet === 0, 'top stays dry')
+  }, { width: 390, height: 844, touch: true })
 }

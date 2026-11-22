@@ -2,7 +2,7 @@
 // Expected values are computed independently here (closed-form), not read back from the engine.
 import assert from 'node:assert/strict'
 import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
-import { reagentParcel, mix, pHOf, emptyContents } from '../src/dlab/engine/chemistry.js'
+import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId } from '../src/dlab/engine/processes.js'
@@ -30,6 +30,14 @@ function lab(seed = 1) {
 }
 
 // ── Registry ─────────────────────────────────────────────────────────────
+test('a failing command leaves state and undo history untouched', () => {
+  const l = lab()
+  const before = JSON.stringify(l.s().objects)
+  const hist = l.sim.history.length
+  assert.throws(() => l.sim.dispatch({ type: 'add', equipmentType: 'nope', x: 100 }))
+  assert.equal(JSON.stringify(l.sim.state.objects), before)
+  assert.equal(l.sim.history.length, hist)
+})
 test('molar masses from atomic masses', () => {
   near(molarMass('HCl'), 1.008 + 35.45, 0.01, 'HCl')
   near(molarMass('CuSO4'), 63.546 + 32.06 + 4 * 15.999, 0.02, 'CuSO4')
@@ -53,6 +61,20 @@ test('vessel geometry: level ↔ volume inverse, capacity at rim', () => {
 })
 
 // ── Chemistry (independent closed-form fixtures) ─────────────────────────
+test('H2SO4 0.25 M: second step with Ka2 = 1.0e-2 (CRC)', () => {
+  const C = 0.25, K = 1.0e-2
+  const x = (-(C + K) + Math.sqrt((C + K) ** 2 + 4 * K * C)) / 2
+  near(pHOf(parcel('h2so4', 10)), -Math.log10(C + x), 0.003, 'H2SO4')
+})
+test('CuSO4: pH inside the measured bracket, no false Cu(OH)2, ionic strength flagged', () => {
+  const cu = M => { const c = emptyContents(); c.liquids.water = 100; c.ions['Cu2+'] = M / 10; c.ions.SO4 = M / 10; return c }
+  // Sigma-Aldrich/Merck: 0.1 M CuSO4 pH 4.2 (20 °C); CuSO4·5H2O 50 g/L (≈0.2 M) pH 3.7–4.5 (25 °C)
+  for (const M of [0.1, 0.2]) { const p = pHOf(cu(M)); assert.ok(p >= 3.7 && p <= 4.6, `CuSO4 ${M} M pH ${p}`) }
+  const c = cu(0.5)
+  assert.deepEqual(equilibrate(c), {}, 'no Cu(OH)2 from a clear 0.5 M stock')
+  const V = aqueousLitres(c)
+  near(ionicStrength(c.ions, V, solveH(c.ions, V)), 0.5 * (0.5 * 4 + 0.5 * 4), 0.05, 'I of 0.5 M CuSO4')
+})
 test('pH strong acid / base', () => {
   near(pHOf(parcel('hcl', 10)), -Math.log10(0.5), 0.005, 'HCl 0.5 M')
   near(pHOf(parcel('naoh', 10)), 14 + Math.log10(0.5), 0.005, 'NaOH 0.5 M')
@@ -240,6 +262,36 @@ test('Fe + CuSO4: copper coats the nail mole-for-mole', () => {
   rel(fe.coat.Cu, reacted, 1e-4, 'Cu deposit')
   rel(A.contents.ions['Fe2+'], reacted, 1e-4, 'Fe2+')
   rel(A.contents.ions['Cu2+'] + reacted, 0.02, 1e-6, 'Cu balance')
+})
+test('every metal/solid rule conserves stoichiometry (Zn, Fe + acid; Zn + Cu²⁺; Cu + Ag⁺; CaCO₃ + acid)', () => {
+  const cases = [
+    { solid: 'zn', m: 0.5, sol: 'hcl', gives: { 'Zn2+': 1 }, h2: 1 },
+    { solid: 'fe', m: 2, sol: 'hcl', gives: { 'Fe2+': 1 }, h2: 1 },
+    { solid: 'zn', m: 0.5, sol: 'cuso4', gives: { 'Zn2+': 1 }, coat: { Cu: 1 }, lost: { 'Cu2+': 1 } },
+    { solid: 'cu', m: 1, sol: 'agno3', gives: { 'Cu2+': 1 }, coat: { Ag: 2 }, lost: { 'Ag+': 2 } },
+    { solid: 'caco3', m: 1, sol: 'hcl', gives: { 'Ca2+': 1 } }
+  ]
+  for (const k of cases) {
+    const l = makeLab()
+    const A = l.put('beaker100', 200)
+    l.fill(A, k.sol, 40)
+    const before = { ...A.contents.ions }
+    const s = dropSolid(l, A, k.solid, k.m)
+    l.sim.runFor(60)
+    const xi = (k.m - s.massG) / molarMass(R(k.solid).formula)
+    assert.ok(xi > 1e-5, `${k.solid}+${k.sol} reacted`)
+    for (const [ion, n] of Object.entries(k.gives)) rel(A.contents.ions[ion] - (before[ion] || 0), n * xi, 1e-4, `${k.solid}+${k.sol} ${ion}`)
+    for (const [ion, n] of Object.entries(k.lost || {})) rel(before[ion] - A.contents.ions[ion], n * xi, 1e-4, `${k.solid}+${k.sol} −${ion}`)
+    for (const [m, n] of Object.entries(k.coat || {})) rel(s.coat[m], n * xi, 1e-4, `${k.solid}+${k.sol} coat ${m}`)
+    if (k.h2) rel(l.s().gas.H2, k.h2 * xi, 1e-4, `${k.solid}+${k.sol} H2`)
+  }
+})
+test('hydroxide precipitates: Fe(OH)3, Fe(OH)2, Mg(OH)2 take the limiting reagent', () => {
+  for (const [salt, key, q] of [['fecl3', 'Fe(OH)3', 3], ['feso4', 'Fe(OH)2', 2], ['mgcl2', 'Mg(OH)2', 2]]) {
+    const a = parcel(salt, 10) // 0.2 M → 2 mmol metal
+    mix(a, parcel('naoh', 4 * q + 2)) // 0.5 M, OH⁻ in excess of q·2 mmol
+    rel(a.precipitates[key], 2e-3, 2e-3, key)
+  }
 })
 test('unsupported and non-reactions do not invent results', () => {
   const l = makeLab()

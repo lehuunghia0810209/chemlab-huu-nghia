@@ -33,6 +33,15 @@ function weakCharge(kind, C, h) {
   return 0
 }
 
+// Free aquo-ion concentration of a hydrolysing metal with total C at [H⁺] = h.
+// Mass balance C = x(1 + K1/h) + 2·β22·x²/h² is a quadratic in x.
+function freeMetal(info, C, h) {
+  const b = 1 + info.hydrolysisKa / h
+  if (!info.dimerBeta) return C / b
+  const a = 2 * info.dimerBeta / (h * h)
+  return 2 * C / (b + Math.sqrt(b * b + 4 * a * C))
+}
+
 function chargeAt(h, conc) {
   let sum = h - KW / h
   for (const [ion, c] of conc) {
@@ -40,7 +49,10 @@ function chargeAt(h, conc) {
     if (info.weak) sum += weakCharge(info.weak, c, h)
     else {
       sum += info.z * c
-      if (info.hydrolysisKa) sum -= c * info.hydrolysisKa / (info.hydrolysisKa + h)
+      if (info.hydrolysisKa) {
+        const x = freeMetal(info, c, h)
+        sum -= x * info.hydrolysisKa / h + (info.dimerBeta ? 2 * info.dimerBeta * x * x / (h * h) : 0)
+      }
     }
   }
   return sum
@@ -61,6 +73,29 @@ export function solveH(ions, litres) {
   return 10 ** ((lo + hi) / 2)
 }
 
+// Ionic strength I = ½Σc·z² (mol/L) at the solved [H⁺]. Hydrolysed metal ions are counted at full charge.
+// Above IDEAL_I_LIMIT the ideal model (activity = concentration) can be off by a few tenths of a pH unit.
+export const IDEAL_I_LIMIT = 0.1
+export function ionicStrength(ions, litres, h) {
+  if (!(litres > 0)) return 0
+  let twoI = h + KW / h
+  for (const [ion, mol] of Object.entries(ions)) {
+    const info = IONS[ion]
+    const c = mol / litres
+    if (!info || !(c > 0)) continue
+    if (!info.weak) { twoI += c * info.z * info.z; continue }
+    if (info.weak === 'sulfate') { const f = WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h); twoI += c * (4 * f + (1 - f)) }
+    else if (info.weak === 'acetate') twoI += c * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
+    else if (info.weak === 'ammonia') twoI += c * h / (h + WEAK.ammonia.Ka)
+    else if (info.weak === 'carbonate') {
+      const w = WEAK.carbonate
+      const D = h * h + w.Ka1 * h + w.Ka1 * w.Ka2
+      twoI += c * (w.Ka1 * h + 4 * w.Ka1 * w.Ka2) / D
+    }
+  }
+  return twoI / 2
+}
+
 export function pHOf(contents) {
   const V = aqueousLitres(contents)
   if (V < 1e-6) return null
@@ -73,7 +108,7 @@ export function freeConc(ion, contents, h, V) {
   const C = (contents.ions[ion] || 0) / V
   const info = IONS[ion]
   if (!info) return 0
-  if (info.hydrolysisKa) return C * h / (info.hydrolysisKa + h)
+  if (info.hydrolysisKa) return freeMetal(info, C, h)
   if (info.weak === 'sulfate') return C * WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h)
   if (info.weak === 'carbonate') {
     const w = WEAK.carbonate
