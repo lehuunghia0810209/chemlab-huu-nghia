@@ -33,7 +33,7 @@ S01–S25, M01, R01, A01, P01/P01b, P02 (như trước) và mới:
 | T02 | 3D: kéo cốc trên bàn, nhấc lên (y > 40 mm), đặt xuống (y = 0), thể tích giữ nguyên | PASS ×3 |
 | T03 | 3D: nhúng giấy quỳ vào HCl → phần ngập đỏ, phần trên khô | PASS ×3 |
 | T04 | 3D: giữ cốc + lăn chuột → nghiêng, rót sang cốc khác, bảo toàn A + B + đổ = 60 mL | PASS ×3 |
-| T05 | 3D: kéo vùng trống chỉ xoay camera (state không đổi); Undo thao tác 3D trong 2D | PASS ×3 |
+| T05 | 3D: kéo vùng trống chỉ xoay camera (state không đổi); Ctrl+Z trong 3D hoàn tác thao tác 3D; về 2D giữ nguyên | PASS ×3 |
 | TC320 / TC390 / TC768 | Cảm ứng giả lập (CDP `Input.dispatchTouchEvent`, `hasTouch`, `isMobile`): kéo cốc, nhúng quỳ bằng ngón tay, pinch chỉ đổi khung nhìn, không tràn ngang | PASS (Chromium) |
 | TC02 | Thay cho kéo: "Nhúng bằng thông số" 15 mm vào NaOH → vùng xanh, "Lấy ra", phần trên khô (390 px) | PASS ×3 |
 

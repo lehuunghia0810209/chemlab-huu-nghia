@@ -262,7 +262,7 @@ export function create3dView(container, { quality = 'high', onPick, controller }
   }
   function onKey(e) {
     // Arrow keys move the selected object (like 2D); without a selection they orbit the camera.
-    if (!controller?.hasSelection()) return
+    if (!controller || (!controller.hasSelection() && e.key.startsWith('Arrow'))) return
     e.stopImmediatePropagation()
     controller.key(e)
   }

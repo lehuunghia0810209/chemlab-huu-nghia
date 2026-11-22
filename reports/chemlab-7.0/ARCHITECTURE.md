@@ -23,9 +23,9 @@ Nhánh `feature/chemlab-7.0-dynamic-laboratory`, worktree `D:\EduLab\.worktrees\
 | `engine/sim.js` | Simulation Core: trạng thái, lệnh, lịch sử Undo (40 snapshot), Reset, clock, bất biến, kiểm kê nguyên tố |
 | `persistence.js` | IndexedDB (`chemlab-dynamic-lab`), schema v1, kiểm tra dữ liệu khi mở, autosave |
 | `guided.js` | 5 bài Guided Lab dạng dữ liệu, kiểm tra tiến độ bằng cách đọc trạng thái |
-| `ui/dlabApp.js` | Workspace + Interaction Controller (kéo thả, nghiêng, phím tắt, inspector, hộp thoại an toàn, lưu/mở, Guided, ChemAI theo yêu cầu) |
+| `ui/dlabApp.js` | Workspace + Interaction Controller dùng chung cho 2D và 3D (`beginDrag` / `dragTo` / `tiltHeld` / `finishDrag` / `onKey`), tự căn khung (`fitView`, nút “Vừa khung”), inspector (gồm “Nhúng bằng thông số”, lực ion), hộp thoại an toàn, lưu/mở, Guided, ChemAI theo yêu cầu |
 | `ui/render2d.js` | Renderer Canvas 2D (chỉ đọc) |
-| `ui/render3d.js` | Renderer Three.js (chỉ đọc), tải lười khi bấm “Xem 3D”, giải phóng GPU khi đóng |
+| `ui/render3d.js` | Renderer Three.js, tải lười khi bấm “Xem 3D”. Không đổi hóa học: chiếu tia con trỏ lên mặt phẳng bàn z = 0 → tọa độ thế giới (mm) giống 2D → gọi Interaction Controller (cùng lệnh `move`/`tilt`… qua `sim.dispatch`). Chọn vật (raycast), Box3Helper, giấy quỳ có texture 28 đoạn, dòng rót; OrbitControls chỉ hoạt động khi kéo vùng trống. `dispose()` gỡ listener, geometry, material, texture, renderer |
 
 ## Tích hợp vào ChemLab
 
@@ -43,3 +43,9 @@ Nhánh `feature/chemlab-7.0-dynamic-laboratory`, worktree `D:\EduLab\.worktrees\
 ## Biểu diễn trực quan (tách khỏi định lượng)
 
 Màu dung dịch = màu khối (từ thành phần + pH) trộn với trường tracer 10×14 (khuếch tán, khuấy tăng hệ số). Hạt kết tủa, bọt khí là trạng thái hình ảnh có giới hạn số lượng; lượng chất định lượng không phụ thuộc số hạt.
+
+## Bổ sung phiên hoàn thiện Phase 5 (2026-11-22)
+
+- **Hóa học:** cân bằng điện tích thêm dime Cu₂(OH)₂²⁺ (`freeMetal` giải cân bằng khối lượng bậc hai); `ionicStrength()` tính I = ½Σcz² và lưu vào `c.I` trong `refreshDerived`; hằng `IDEAL_I_LIMIT = 0.1` M quyết định cảnh báo trên inspector.
+- **Lệnh nguyên tử:** `dispatch` chụp snapshot trước lệnh; nếu lệnh ném lỗi hoặc vi phạm bất biến thì khôi phục state và bỏ mục Undo vừa ghi.
+- **Bằng chứng tái lập:** `scripts/dlab-visual-audit.mjs <nhãn>` (ảnh các thí nghiệm chính), `scripts/dlab-perf-audit.mjs` (FPS 2D/3D, chi phí tải lười 3D, vòng đời tài nguyên qua CDP).

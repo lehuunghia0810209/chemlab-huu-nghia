@@ -587,9 +587,12 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await page.mouse.up()
     await page.waitForTimeout(300)
     assert.equal(pose(await obj(page, ids.A)), before, 'orbit does not touch the simulation')
+    await st(page, L => L.select(null))
+    await page.locator('.dlab-3d canvas').focus()
+    await page.keyboard.press('Control+z')
+    assert.ok(Math.abs((await obj(page, ids.A)).x - 300) < 1, 'Ctrl+Z in 3D undoes the 3D move')
     await btn(page, 'Xem 2D').click()
-    await btn(page, 'Hoàn tác').click()
-    assert.ok(Math.abs((await obj(page, ids.A)).x - 300) < 1, 'undo of a 3D move works in 2D')
+    assert.ok(Math.abs((await obj(page, ids.A)).x - 300) < 1, 'state kept after returning to 2D')
   })
 
   // ── Touch (emulated): real touch events through the DevTools protocol → pointerType "touch".
