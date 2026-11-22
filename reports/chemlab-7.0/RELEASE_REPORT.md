@@ -13,9 +13,9 @@ Lý do chưa RELEASE READY (tiêu chí không bị nới):
 | Mục | Giá trị |
 |---|---|
 | Nhánh | `feature/chemlab-7.0-dynamic-laboratory` (push với refspec tường minh; `main` không đổi = `8ce6f35`) |
-| Commit ứng dụng | `4f89127` (commit tài liệu sau đó chỉ đổi `reports/`) |
-| Cloudflare Pages | check-run "Cloudflare Pages" = success, "Deploy successful" cho `4f89127` |
-| Preview URL (theo commit) | https://65f0a1a1.chemlab-edulab.pages.dev |
+| Commit ứng dụng cuối | `d91ba3c` (trước đó `4f89127` → Preview `65f0a1a1`). Commit sau `d91ba3c` chỉ sửa `reports/` |
+| Cloudflare Pages | check-run "Cloudflare Pages" = completed/success cho `4f89127` và `d91ba3c` |
+| Preview URL (theo commit `d91ba3c`) | https://c42ef4de.chemlab-edulab.pages.dev |
 | Branch Preview URL | https://feature-chemlab-7-0-dynamic.chemlab-edulab.pages.dev (luôn trỏ commit mới nhất của nhánh) |
 | Cloudflare Access | Cả hai URL trả 302 → `chemlab-edulab-pages.cloudflareaccess.com/cdn-cgi/access/login/…` (không gửi thông tin đăng nhập) |
 | Production | `https://chemlab-edulab.pages.dev/` trả 200, hiển thị 6.7.0 — không bị ảnh hưởng |
@@ -51,7 +51,7 @@ Quyết định trong phiên này: **giữ version 6.7.0 trên nhánh** (Preview
 ## 4. Rollback
 
 - Production hiện tại 6.7.0 = deployment `e1d7dc13` (commit `8ce6f35`). Rollback: Cloudflare Pages → "Rollback to this deployment" `e1d7dc13`, rồi đặt lại `CHEMAI_PUBLIC_APPROVAL=groq:6.7.0`.
-- Mã: `git revert` các commit 7.0 (`dab9857`, `30e41b0`, `b379911`, `4f89127` và commit tài liệu) — `src/dlab/` là thư mục riêng; ngoài `src/main.js` (route), `src/routeModuleLoader.js` (thẻ lối vào), `src/virtualLab.css`, `package.json` (script) không có tệp cũ nào bị sửa.
+- Mã: `git revert` các commit 7.0 (`dab9857`, `30e41b0`, `b379911`, `4f89127`, `d91ba3c` và commit tài liệu) — `src/dlab/` là thư mục riêng; ngoài `src/main.js` (route), `src/routeModuleLoader.js` (thẻ lối vào), `src/virtualLab.css`, `package.json` (script) không có tệp cũ nào bị sửa.
 - Dữ liệu: Dynamic Lab dùng IndexedDB riêng `chemlab-dynamic-lab`; không đụng tiến độ học tập/`localStorage` hiện có.
 
 ## 5. Tương tác 3D đã hỗ trợ (cùng Interaction Controller và Simulation Core với 2D)
@@ -121,4 +121,4 @@ Mở `https://feature-chemlab-7-0-dynamic.chemlab-edulab.pages.dev/#dlab`.
 | D31 Scientific validation | **PARTIAL** | SCIENTIFIC_VALIDATION.md | đối chiếu nguồn, 41 unit | PENDING EXPERT REVIEW §8 |
 | D32 Automated tests | PASS | | 41 unit; E2E 40/37/37 | Touch CDP chỉ Chromium |
 | D33 Không regression | PASS | | `check` + `check:browser` 448/448 | |
-| D34 Preview + rollback | **PARTIAL** | Preview deployed, Access 302, rollback sẵn | check-run success `4f89127` | Chưa ai kiểm tra nội dung Preview (cần đăng nhập Access) |
+| D34 Preview + rollback | **PARTIAL** | Preview deployed, Access 302, rollback sẵn | check-run success `d91ba3c` → `c42ef4de` | Chưa ai kiểm tra nội dung Preview (cần đăng nhập Access) |
