@@ -5,7 +5,7 @@ import { emptyContents, reagentParcel, totalVolumeML, elementInventory } from '.
 import { assess } from './safety.js'
 import {
   byId, isContainer, newVisual, refreshDerived, stepContainer, stepElectro, stepTools, stepDrops,
-  addParcel, transfer, takeFrom, containerAt, containerBelow, surfaceY, log, label, volumeOf, ROOM_T
+  addParcel, transfer, takeFrom, containerAt, containerBelow, surfaceY, log, label, volumeOf, ROOM_T, solidRadiusMM
 } from './processes.js'
 
 export const SCHEMA = 1
@@ -49,6 +49,11 @@ function makeObject(state, type, props = {}) {
   if (type === 'burner') { o.on = false; o.power = def.powerW }
   if (type === 'power') { o.on = false; o.volts = 4 }
   if (type === 'tongs' || type === 'spatula') o.load = null
+  // Vessels get a letter (A, B, C…) so identical cups can be told apart; it never changes afterwards.
+  if (def?.caps.includes('contain') && type !== 'bottle' && !o.code) {
+    const used = new Set(state.objects.map(x => x.code))
+    o.code = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].find(l => !used.has(l))
+  }
   state.objects.push(o)
   return o
 }
@@ -115,17 +120,39 @@ const COMMANDS = {
     }
     log(state, mL ? `Xả ${fmt(amount)} mL từ ${label(t)}.` : `Nhỏ ${drops} giọt từ ${label(t)}.`, 'action')
   },
+  // A held solid is a real object on the bench (`holder` = the tool), so 2D, 3D, labels and undo all see it.
   pick(state, { tool, reagent, massG }) {
     const t = byId(state, tool)
-    t.load = { reagent, massG }
+    const s = makeObject(state, 'solid', { reagent, massG, mass0: massG, x: t.x, y: t.y, in: null, holder: t.id, lx: 0, ly: 0, vx: 0, vy: 0, coat: {} })
+    t.load = { reagent, massG, id: s.id }
     log(state, `${label(t)} lấy ${fmt(massG)} g ${REAGENT_BY_ID[reagent].name}.`, 'action')
+    return { id: s.id }
+  },
+  // Grab an existing piece (e.g. a nail already in a beaker): same object, chemistry (mass, coat) kept.
+  grab(state, { tool, id }) {
+    const t = byId(state, tool)
+    const s = byId(state, id)
+    const from = s.in && byId(state, s.in)
+    s.in = null
+    s.holder = t.id
+    s.vx = 0
+    s.vy = 0
+    t.load = { reagent: s.reagent, massG: s.massG, id: s.id }
+    log(state, `Dùng ${label(t)} gắp ${REAGENT_BY_ID[s.reagent].name}${from ? ` ra khỏi ${label(from)}` : ''}.`, 'action')
+    return { id: s.id }
   },
   release(state, { tool }) {
     const t = byId(state, tool)
     if (!t.load) return
     const r = REAGENT_BY_ID[t.load.reagent]
-    const c = containerBelow(state, t.x, t.y + 40)
-    const s = makeObject(state, 'solid', { reagent: r.id, massG: t.load.massG, mass0: t.load.massG, x: t.x, y: Math.max(t.y, c ? c.y + EQUIPMENT[c.type].h + 4 : 0), in: null, lx: 0, ly: 0, vx: 0, vy: 0, coat: {} })
+    // Tip inside a vessel: the piece goes straight in; above one: it falls in; elsewhere: onto the bench.
+    const inside = containerAt(state, t.x, t.y + 1)
+    const c = inside || containerBelow(state, t.x, t.y + 40)
+    let s = t.load.id && byId(state, t.load.id)
+    if (!s) s = makeObject(state, 'solid', { reagent: r.id, massG: t.load.massG, mass0: t.load.massG, in: null, lx: 0, ly: 0, vx: 0, vy: 0, coat: {} }) // saves from before held pieces were objects
+    Object.assign(s, { holder: null, x: t.x, y: c ? Math.max(t.y, c.y + EQUIPMENT[c.type].h + 4) : 0, vx: 0, vy: 0 })
+    if (inside) Object.assign(s, { in: inside.id, lx: t.x - inside.x, ly: Math.max(0, t.y - inside.y) })
+    if (!c) log(state, `Đặt ${r.name} lên bàn.`, 'action')
     t.load = null
     return { id: s.id }
   },
@@ -170,6 +197,8 @@ const COMMANDS = {
   remove(state, { id }) {
     const o = byId(state, id)
     if (!o) return
+    for (const s of state.objects) if (s.holder === id) { s.holder = null; s.y = 0 } // a removed tool lets go of its piece
+    for (const t of state.objects) if (t.load?.id === id) t.load = null
     state.objects = state.objects.filter(x => x.id !== id && !(x.type === 'solid' && x.in === id))
     state.wires = state.wires.filter(w => w.from !== id && w.to !== id)
     log(state, `Cất ${label(o)}.`, 'action')
@@ -279,6 +308,7 @@ export function createSim(seed) {
       let result
       try {
         result = fn(sim.state, cmd) || {}
+        carry(sim.state)
         const problem = checkInvariants(sim.state)
         if (problem) throw new Error(`Vi phạm bất biến: ${problem}`)
       }
@@ -356,8 +386,27 @@ export function stepOnce(state) {
   for (const o of state.objects) if (isContainer(o)) stepContainer(state, o, H)
   stepElectro(state, H)
   stepTools(state, H)
+  carry(state)
   state.t += H
   state.step += 1
+}
+
+// World position of solid pieces: a held piece sits between the tool's tips; a piece in a vessel
+// follows the vessel. Renderers, hit tests and labels then all read the same o.x / o.y.
+export function carry(state) {
+  for (const s of state.objects) {
+    if (s.type !== 'solid') continue
+    if (s.holder) {
+      const t = byId(state, s.holder)
+      if (!t || t.load?.id !== s.id) { s.holder = null; continue }
+      s.x = t.x
+      s.y = Math.max(0, t.y - solidRadiusMM(s))
+    }
+    else if (s.in) {
+      const c = byId(state, s.in)
+      if (c) { s.x = c.x + s.lx; s.y = c.y + s.ly }
+    }
+  }
 }
 
 // Invariants: no negative amounts anywhere; returns a message or null.

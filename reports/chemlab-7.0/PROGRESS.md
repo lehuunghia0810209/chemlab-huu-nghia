@@ -20,6 +20,18 @@ Cập nhật: 2026-11-23 (UX rescue & 3D redesign, xem `UX_RESCUE_REPORT.md`). P
 
 Bố cục "bàn trước, điều khiển sau", thanh thao tác theo ngữ cảnh, tìm kiếm thư viện, bảng Quan sát (đang diễn ra / kết luận / an toàn, nhật ký gộp), hướng dẫn nhanh, khung phóng to 2D, 3D dựng lại (thủy tinh, mặt thoáng ngang, bóng, vòng chọn, camera giới hạn, Góc mặc định/Vừa khung, tự chuyển Tiết kiệm khi không có GPU). Sửa lỗi hộp thoại liên tiếp làm không thả được natri. Test: 45 unit, E2E 47/44/44, 448/448. Chưa push. Chi tiết và giới hạn: `UX_RESCUE_REPORT.md`.
 
+## Phiên 2026-11-24 — Guided Lab: kẹp, thời gian chờ, nhãn 3D
+
+Nghiệm thu của chủ sở hữu (Preview 7a0c804): không gắp được đinh sắt ra khỏi cốc, chờ lâu ở 4×, kẹp hiện "Natri 0,1 g", khó phân biệt vật trong 3D. Đã tái hiện bằng chuột thật trên 7a0c804 và sửa tận gốc:
+- Lệnh `grab` mới; vật được kẹp là đối tượng thật (`holder`).
+- Vùng bấm khớp hình vẽ, vật nhỏ được ưu tiên trong cả 2D và 3D.
+- Lớp phủ không còn chặn chuột.
+- Kẹp và thìa đưa ra đúng chất và khối lượng theo bước.
+- Thanh bước Guided có "Tua đến hiện tượng", chạy chính mô hình.
+- Nhãn lấy từ trạng thái mô phỏng, dùng chung cho 2D và 3D.
+
+Thời gian chờ lâu là do đinh 0,1 g, hệ quả của khối lượng mặc định sai; tốc độ 4× vẫn đúng. Chi tiết, bằng chứng trước/sau và giới hạn: `GUIDED_TONGS_REPORT.md`. Chưa push.
+
 ## Còn lại / blocker
 
 1. Chuyên gia duyệt SCIENTIFIC_VALIDATION §8 (D31).

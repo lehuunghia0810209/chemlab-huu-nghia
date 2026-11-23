@@ -1,0 +1,118 @@
+{
+  "label": "after",
+  "base": "http://localhost:5173/",
+  "steps": [
+    {
+      "name": "guided lab started",
+      "ok": true,
+      "guided": {
+        "id": "metals",
+        "done": 0,
+        "total": 5
+      }
+    },
+    {
+      "name": "tongs selected: default solid offered",
+      "ok": true,
+      "solid": "fe",
+      "mass": "2",
+      "text": "Kẹp hóa chất Gắp chất rắn Lấy Natri (mẩu) Magie (dải) Kẽm (viên) Đinh sắt (theo bài) Dây đồng Đá vôi (CaCO₃) g Lấy Chi tiết"
+    },
+    {
+      "name": "mass offered for the nail",
+      "ok": true,
+      "massShown": "2"
+    },
+    {
+      "name": "nail is in the CuSO₄ beaker",
+      "ok": true,
+      "massG": 1.998187944047238,
+      "in": "o1"
+    },
+    {
+      "name": "copper coat step completes at 4×",
+      "ok": true,
+      "realSeconds": 4.7,
+      "simSeconds": 18.7,
+      "ratio": 3.99
+    },
+    {
+      "name": "click the nail with the tongs selected → grabbed",
+      "ok": true,
+      "holder": "o4",
+      "in": null,
+      "selected": "o4"
+    },
+    {
+      "name": "nail put down on the bench by dragging the tongs",
+      "ok": true,
+      "x": 140,
+      "y": 0,
+      "coatCu": 0.0009437753987401149,
+      "coatKept": true
+    },
+    {
+      "name": "undo reverses the last gesture (put-down → held again)",
+      "ok": true,
+      "in": null,
+      "holder": "o4"
+    },
+    {
+      "name": "\"Đặt lên bàn\" button puts the held nail on the bench",
+      "ok": true,
+      "x": 410,
+      "y": 0
+    },
+    {
+      "name": "next step: tongs offer zinc",
+      "ok": true,
+      "solid": "zn",
+      "mass": "0.5",
+      "selected": "o4",
+      "tongs": {
+        "x": 432,
+        "y": 0,
+        "load": null
+      }
+    },
+    {
+      "name": "zinc step completes",
+      "ok": true,
+      "done": 3
+    },
+    {
+      "name": "3D labels name vessels by contents",
+      "ok": true,
+      "labels": [
+        "Cốc A — CuSO₄ + FeSO₄",
+        "Cốc B — ZnCl₂ + HCl · có Kẽm (Zn)",
+        "Kẹp hóa chất",
+        "Đinh sắt (Fe) · có lớp Cu bám",
+        "Chậu C — Nước + phenolphtalein"
+      ]
+    },
+    {
+      "name": "3D: tongs selected, click the nail → grabbed",
+      "ok": true,
+      "holder": "o4"
+    },
+    {
+      "name": "switch to 2D while holding: same piece, still held, no duplicate",
+      "ok": true,
+      "holder": "o4",
+      "nails": 1
+    },
+    {
+      "name": "no ChemAI request",
+      "ok": true,
+      "requests": 0
+    },
+    {
+      "name": "no console errors",
+      "ok": true,
+      "console": []
+    }
+  ],
+  "console": [],
+  "requests": []
+}

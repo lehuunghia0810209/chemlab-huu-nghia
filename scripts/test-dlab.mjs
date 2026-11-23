@@ -5,11 +5,12 @@ import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materia
 import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
-import { volumeOf, surfaceY, byId } from '../src/dlab/engine/processes.js'
+import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
 import { GUIDED } from '../src/dlab/guided.js'
 import { observe, mergeRepeats, indicatorReading } from '../src/dlab/ui/observations.js'
 import { libraryItems, searchLibrary } from '../src/dlab/ui/library.js'
+import { objectTitle, contentsName } from '../src/dlab/ui/labels.js'
 
 const results = []
 function test(name, fn) {
@@ -616,6 +617,155 @@ test('guided lab: organic can be completed', () => runGuided('organic', [
   c => c.ok({ type: 'pourExact', from: c.roles.oil, to: c.roles.t2, mL: 3 }),
   c => c.ok({ type: 'pourExact', from: c.roles.eth, to: c.roles.t3, mL: 3 })
 ]))
+
+// ── Tongs: grabbing an existing piece (regression: the nail could not be taken out of the beaker) ──
+function nailIn(l, beaker, massG = 2) {
+  const nail = dropSolid(l, beaker, 'fe', massG)
+  l.sim.runFor(1)
+  return byId(l.sim.state, nail.id)
+}
+test('grab: piece out of an empty vessel and out of a solution; same object, chemistry kept', () => {
+  const l = lab()
+  const dry = l.put('beaker100', 200)
+  const wet = l.put('beaker100', 320)
+  l.fill(wet, 'cuso4', 40)
+  for (const c of [dry, wet]) {
+    const nail = nailIn(l, c)
+    assert.equal(nail.in, c.id)
+    if (c === wet) l.sim.runFor(20)
+    const before = { massG: nail.massG, coat: { ...nail.coat }, mass0: nail.mass0 }
+    const tongs = l.put('tongs', c.x + 80, { y: 0 })
+    const r = l.sim.dispatch({ type: 'grab', tool: tongs.id, id: nail.id })
+    assert.ok(r.ok, JSON.stringify(r.verdict))
+    const held = byId(l.sim.state, nail.id)
+    assert.equal(held.in, null)
+    assert.equal(held.holder, tongs.id)
+    assert.equal(byId(l.sim.state, tongs.id).load.id, nail.id)
+    assert.deepEqual({ massG: held.massG, coat: held.coat, mass0: held.mass0 }, before, 'grabbing does not change the chemistry')
+    if (c === wet) assert.ok((held.coat.Cu || 0) > 1e-4, 'reacted nail keeps its copper coat')
+    // The held piece follows the tool, and stops reacting while out of the liquid.
+    l.sim.dispatch({ type: 'move', id: tongs.id, x: 600, y: 100 })
+    assert.equal(byId(l.sim.state, nail.id).x, 600)
+    const m = byId(l.sim.state, nail.id).massG
+    l.sim.runFor(5)
+    assert.equal(byId(l.sim.state, nail.id).massG, m)
+    // Released over the bench: on the bench, not floating; released over a vessel: falls in.
+    l.sim.dispatch({ type: 'release', tool: tongs.id })
+    assert.deepEqual([byId(l.sim.state, nail.id).y, byId(l.sim.state, nail.id).in, byId(l.sim.state, nail.id).holder], [0, null, null])
+    l.sim.dispatch({ type: 'remove', id: nail.id })
+  }
+})
+test('grab: refused when used up, powder in solution, sodium reacting, or tongs already full', () => {
+  const l = lab()
+  const A = l.put('beaker250', 200)
+  l.fill(A, 'water', 100)
+  const nail = nailIn(l, A)
+  const tongs = l.put('tongs', 400, { y: 0 })
+  byId(l.sim.state, nail.id).massG = 0
+  let r = l.sim.dispatch({ type: 'grab', tool: tongs.id, id: nail.id })
+  assert.equal(r.verdict.level, 'block')
+  assert.match(r.verdict.reasons.join(' '), /phản ứng hết/)
+  const salt = dropSolid(l, A, 'nacl-s', 2)
+  l.sim.runFor(0.5)
+  r = l.sim.dispatch({ type: 'grab', tool: tongs.id, id: salt.id })
+  assert.equal(r.verdict.level, 'block', 'powder in solution cannot be picked back')
+  const na = l.put('dish', 600)
+  l.fill(na, 'water', 150)
+  const piece = dropSolid(l, na, 'na', 0.1)
+  l.sim.runFor(0.5)
+  r = l.sim.dispatch({ type: 'grab', tool: tongs.id, id: piece.id })
+  assert.equal(r.verdict.level, 'block', 'sodium reacting in water is not picked out')
+  const B = l.put('beaker100', 800)
+  const zn = nailIn(l, B, 1)
+  const full = l.put('tongs', 820, { y: 0 })
+  l.sim.dispatch({ type: 'pick', tool: full.id, reagent: 'cu', massG: 1 })
+  r = l.sim.dispatch({ type: 'grab', tool: full.id, id: zn.id })
+  assert.equal(r.verdict.level, 'block', 'tongs holding something must let go first')
+})
+test('grab: one undo step back into the vessel; element inventory conserved through grab and release', () => {
+  const l = lab()
+  const A = l.put('beaker100', 200)
+  l.fill(A, 'cuso4', 40)
+  const nail = nailIn(l, A)
+  l.sim.runFor(10)
+  const inv0 = benchInventory(l.sim.state)
+  const tongs = l.put('tongs', 300, { y: 0 })
+  const inv1 = benchInventory(l.sim.state)
+  l.sim.dispatch({ type: 'grab', tool: tongs.id, id: nail.id })
+  const inv2 = benchInventory(l.sim.state)
+  for (const k of Object.keys(inv0)) { rel(inv1[k], inv0[k], 1e-9, `inventory ${k} before grab`); rel(inv2[k], inv0[k], 1e-9, `inventory ${k} while held`) }
+  l.sim.undo()
+  assert.equal(byId(l.sim.state, nail.id).in, A.id, 'undo puts the nail back in the beaker')
+  assert.equal(byId(l.sim.state, tongs.id).load, null)
+  // Removing the tongs while holding lets go of the piece instead of leaving it attached to nothing.
+  l.sim.dispatch({ type: 'grab', tool: tongs.id, id: nail.id })
+  l.sim.dispatch({ type: 'remove', id: tongs.id })
+  const left = byId(l.sim.state, nail.id)
+  assert.deepEqual([left.holder, left.y], [null, 0])
+  assert.equal(checkInvariants(l.sim.state), null)
+})
+test('pick from stock creates the held piece as a real object; old saves without it still release', () => {
+  const l = lab()
+  const A = l.put('beaker100', 200)
+  const t = l.put('tongs', 200, { y: 150 })
+  const r = l.sim.dispatch({ type: 'pick', tool: t.id, reagent: 'zn', massG: 0.5 })
+  assert.equal(byId(l.sim.state, r.id).holder, t.id)
+  l.sim.dispatch({ type: 'release', tool: t.id })
+  l.sim.runFor(1)
+  assert.equal(byId(l.sim.state, r.id).in, A.id)
+  const t2 = byId(l.sim.state, t.id)
+  t2.load = { reagent: 'zn', massG: 0.3 } // shape of a held load in saves made before this change
+  const rel2 = l.sim.dispatch({ type: 'release', tool: t.id })
+  l.sim.runFor(1)
+  assert.equal(byId(l.sim.state, rel2.id).in, A.id)
+  assert.equal(byId(l.sim.state, rel2.id).massG, 0.3)
+})
+test('labels: vessel letters, names follow the contents, unknown-solution lab hides them', () => {
+  const l = lab()
+  const A = l.put('beaker100', 200)
+  const B = l.put('beaker100', 300)
+  assert.deepEqual([label(byId(l.sim.state, A.id)), label(byId(l.sim.state, B.id))], ['Cốc A', 'Cốc B'])
+  assert.equal(objectTitle(l.sim.state, A), 'Cốc A — trống')
+  l.fill(A, 'cuso4', 20)
+  assert.equal(objectTitle(l.sim.state, A), 'Cốc A — CuSO₄')
+  l.fill(A, 'hcl', 10)
+  assert.equal(objectTitle(l.sim.state, A), 'Cốc A — CuSO₄ + HCl')
+  l.sim.dispatch({ type: 'pourExact', from: A.id, to: B.id, mL: 10 })
+  assert.equal(objectTitle(l.sim.state, B), 'Cốc B — CuSO₄ + HCl', 'label moves with the liquid, not with the place')
+  const nail = dropSolid(l, byId(l.sim.state, A.id), 'fe', 2)
+  l.sim.runFor(30)
+  assert.match(objectTitle(l.sim.state, byId(l.sim.state, A.id)), /FeSO₄|FeCl₂/, 'reaction product appears in the name')
+  assert.match(objectTitle(l.sim.state, byId(l.sim.state, A.id)), /có Đinh sắt \(Fe\)/, 'a small piece is named on its vessel')
+  assert.match(objectTitle(l.sim.state, byId(l.sim.state, nail.id)), /^Đinh sắt \(Fe\) · có lớp Cu bám/)
+  const sim = createSim(2)
+  const roles = GUIDED.find(g => g.id === 'acid-base').setup(sim)
+  assert.equal(objectTitle(sim.state, byId(sim.state, roles.A), { hideContents: true }), 'Ống A')
+  assert.equal(GUIDED.find(g => g.id === 'acid-base').hideContents, true)
+  assert.equal(contentsName({ contents: { liquids: { water: 150, ethanol: 0.14 }, ions: {}, indicators: { phenolphthalein: 0.15 }, precipitates: {} } }), 'Nước + phenolphtalein', 'trace solvent of the indicator is not named')
+})
+test('guided steps: each has a completion sign and help; waiting steps can be fast-forwarded by the model', () => {
+  for (const lab of GUIDED) {
+    for (const step of lab.steps) {
+      assert.ok(step.done && step.help, `${lab.id}: “${step.text}” needs done + help`)
+      for (const n of step.need || []) assert.ok(REAGENT_BY_ID[n.reagent]?.kind === 'solid' && n.massG <= REAGENT_BY_ID[n.reagent].maxMass, `${lab.id}: need ${n.reagent}`)
+    }
+  }
+  // Fast-forward = running the same simulation until the step's own check passes (as the UI does).
+  const sim = createSim(3)
+  const lab = GUIDED.find(g => g.id === 'metals')
+  const roles = lab.setup(sim)
+  const t = byId(sim.state, roles.tongs)
+  sim.dispatch({ type: 'move', id: t.id, x: byId(sim.state, roles.cu).x, y: 160 })
+  sim.dispatch({ type: 'pick', tool: t.id, reagent: 'fe', massG: 0.1 }) // the small nail the old default produced
+  sim.dispatch({ type: 'release', tool: t.id })
+  sim.runFor(1)
+  assert.ok(lab.steps[0].check(sim.state, roles))
+  assert.ok(lab.steps[1].wait(sim.state, roles), 'the copper step is a waiting step')
+  const t0 = sim.state.t
+  while (!lab.steps[1].check(sim.state, roles) && sim.state.t - t0 < 600) sim.runFor(2)
+  assert.ok(lab.steps[1].check(sim.state, roles), 'reached by running the model, not by changing constants')
+  assert.ok(sim.state.t - t0 > 200, `a 0.1 g nail really needs minutes of simulated time (${(sim.state.t - t0).toFixed(0)} s)`)
+})
 
 const failed = results.filter(r => !r.pass)
 for (const r of results) console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.pass ? '' : `\n      ${r.error}`}`)

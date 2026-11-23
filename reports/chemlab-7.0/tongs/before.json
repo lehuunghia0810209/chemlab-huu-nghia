@@ -1,0 +1,81 @@
+{
+  "label": "before",
+  "base": "http://localhost:5173/",
+  "steps": [
+    {
+      "name": "guided lab started",
+      "ok": true,
+      "guided": {
+        "id": "metals",
+        "done": 0,
+        "total": 5
+      }
+    },
+    {
+      "name": "tongs selected: default solid offered",
+      "ok": false,
+      "solid": "na",
+      "mass": "0.1",
+      "text": "Kẹp hóa chất Gắp chất rắn Natri (mẩu) Magie (dải) Kẽm (viên) Đinh sắt Dây đồng Đá vôi (CaCO₃) g Lấy Chi tiết"
+    },
+    {
+      "name": "mass offered for the nail",
+      "ok": false,
+      "massShown": "0.1"
+    },
+    {
+      "name": "nail is in the CuSO₄ beaker",
+      "ok": true,
+      "massG": 0.0999093959436949,
+      "in": "o1"
+    },
+    {
+      "name": "copper coat step completes at 4×",
+      "ok": false,
+      "realSeconds": 90.1,
+      "simSeconds": 360.6,
+      "ratio": 4
+    },
+    {
+      "name": "click the nail with the tongs selected → grabbed",
+      "ok": false,
+      "holder": null,
+      "in": "o1",
+      "selected": "o1"
+    },
+    {
+      "name": "drag the nail out directly",
+      "ok": false,
+      "in": "o1",
+      "holder": null
+    },
+    {
+      "name": "next step: tongs offer zinc",
+      "ok": false,
+      "solid": "na",
+      "mass": "0.1"
+    },
+    {
+      "name": "zinc step completes",
+      "ok": true,
+      "done": 3
+    },
+    {
+      "name": "3D labels name vessels by contents",
+      "ok": false,
+      "labels": []
+    },
+    {
+      "name": "no ChemAI request",
+      "ok": true,
+      "requests": 0
+    },
+    {
+      "name": "no console errors",
+      "ok": true,
+      "console": []
+    }
+  ],
+  "console": [],
+  "requests": []
+}

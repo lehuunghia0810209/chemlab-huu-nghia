@@ -757,7 +757,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   await test('U05 thanh thao tác theo ngữ cảnh và bảng Quan sát gộp nhật ký', async page => {
     const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['water', 30]] } })
     await select(page, ids.A)
-    await page.locator('.dlab-actionbar', { hasText: 'Cốc thủy tinh 100 mL' }).waitFor()
+    await page.locator('.dlab-actionbar', { hasText: 'Cốc A' }).waitFor() // vessels are named with a letter since the label rework
     for (let i = 0; i < 3; i += 1) await st(page, L => L.dispatch({ type: 'cleanup' }))
     await st(page, L => { L.state.spill.mL = 2; L.dispatch({ type: 'cleanup' }) })
     const journal = await st(page, L => L.state.log.filter(e => e.text.startsWith('Dọn bàn')).length)
@@ -775,7 +775,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     const p = await st(page, (L, id) => { const o = L.state.objects.find(x => x.id === id); return L.worldToScreen3d(o.x, o.y + 30) }, ids.B)
     await page.mouse.move(p.x, p.y)
     await page.mouse.move(p.x + 1, p.y)
-    await page.locator('.dlab-3d-tip', { hasText: 'Bình tam giác' }).waitFor()
+    await page.locator('.dlab-label.is-hover', { hasText: 'Bình tam giác' }).waitFor() // hover label (shared 2D/3D overlay)
     await page.mouse.click(p.x, p.y)
     assert.equal(await st(page, L => L.selected()), ids.B)
     await btn(page, 'Vừa khung').click()
@@ -799,5 +799,206 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     for (const name of ['Hoàn tác', 'Đặt lại', 'Vừa khung', 'Tạm dừng']) assert.ok(await btn(page, name).isVisible(), `${name} reachable`)
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     assert.ok(overflow <= 1, `no horizontal scroll: ${overflow}`)
+  }, { width: 390, height: 844, touch: true })
+
+  // ── Tongs, guided strip, labels (ChemLab 7.0 guided-lab fix): real mouse input only ──
+  const nailId = page => st(page, L => L.state.objects.find(o => o.type === 'solid' && o.reagent === 'fe')?.id)
+  async function nailInBeaker(page, fill) {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill }, K: { type: 'tongs', x: 470 } })
+    await st(page, (L, ids) => {
+      const a = L.state.objects.find(o => o.id === ids.A)
+      L.dispatch({ type: 'move', id: ids.K, x: a.x, y: 160 }, { record: false })
+      L.dispatch({ type: 'pick', tool: ids.K, reagent: 'fe', massG: 2 }, { record: false })
+      L.dispatch({ type: 'release', tool: ids.K }, { record: false })
+      L.dispatch({ type: 'move', id: ids.K, x: 470, y: 0 }, { record: false })
+    }, ids)
+    ids.N = await nailId(page)
+    await wait(page, (L, id) => L.state.objects.find(o => o.id === id).in, ids.N)
+    // With CuSO₄ the first reaction opens the "Quan sát" panel and the bench re-frames: wait for that.
+    if (fill.length) await page.locator('.dlab-now').first().waitFor()
+    return ids
+  }
+  // The bench re-frames when a drawer opens (first reaction opens "Quan sát") or the action bar changes
+  // height; click only once the view has settled, as a person would.
+  async function settled(page) {
+    let prev = ''
+    for (let i = 0; i < 20; i += 1) {
+      const v = JSON.stringify(await st(page, L => { const v = L.view(); return [v.x, v.y, v.zoom, v.ox] }))
+      if (v === prev) return
+      prev = v
+      await page.waitForTimeout(120)
+    }
+  }
+  const clickWorld = async (page, x, y) => { await settled(page); const p = await screen(page, x, y); await page.mouse.click(p.x, p.y); await page.waitForTimeout(150) }
+
+  await test('G01 kẹp: chọn kẹp → bấm đinh trong dung dịch → kéo ra bàn → thả; hóa học giữ nguyên; hoàn tác', async page => {
+    const ids = await nailInBeaker(page, [['cuso4', 40]])
+    await st(page, L => L.state.objects.find(o => o.type === 'solid').coat.Cu = 9e-4) // as after reacting: the coat must survive
+    await clickWorld(page, 470, 60)
+    assert.equal(await st(page, L => L.selected()), ids.K, 'tongs selected')
+    await page.locator('.dlab-label.is-grab', { hasText: 'Đinh sắt' }).waitFor() // grabbable piece is marked
+    await page.locator('.dlab-actionbar [data-qa-in="piece"]').waitFor() // the bench re-frames when the bar changes height
+    await page.waitForTimeout(300)
+    await clickWorld(page, 300, 16) // the middle of the nail standing in the beaker
+    let n = await obj(page, ids.N)
+    assert.equal(n.holder, ids.K, 'clicking the nail with the tongs grabs it')
+    assert.equal(n.in, null)
+    const coatAtGrab = n.coat.Cu
+    assert.ok(coatAtGrab >= 9e-4, 'coat from the reaction is carried with the nail')
+    const k = await obj(page, ids.K)
+    const up = await dragWorld(page, { x: k.x, y: k.y + 60 }, { x: 150, y: 70 })
+    await up()
+    await page.waitForTimeout(300)
+    n = await obj(page, ids.N)
+    assert.deepEqual([n.in, n.holder, n.y], [null, null, 0], 'nail lies on the bench')
+    assert.equal(n.coat.Cu, coatAtGrab, 'copper coat kept; no reaction out of the liquid')
+    await btn(page, 'Hoàn tác').click()
+    await btn(page, 'Hoàn tác').click()
+    n = await obj(page, ids.N)
+    assert.equal(n.in, ids.A, 'two undo steps: put-down, then the grab')
+  })
+
+  await test('G02 kéo đinh ra trực tiếp (không chọn kẹp trước): dùng kẹp trên bàn; bình rỗng', async page => {
+    const ids = await nailInBeaker(page, [])
+    const up = await dragWorld(page, { x: 300, y: 16 }, { x: 150, y: 80 })
+    let n = await obj(page, ids.N)
+    assert.equal(n.holder, ids.K, 'dragging the nail picks it up with the free tongs')
+    await up()
+    await page.waitForTimeout(300)
+    n = await obj(page, ids.N)
+    assert.deepEqual([n.in, n.holder, n.y], [null, null, 0])
+    assert.equal(await st(page, L => L.state.objects.filter(o => o.type === 'tongs').length), 1, 'no extra tongs created')
+  })
+
+  await test('G03 thanh thao tác: "Gắp ra, đặt lên bàn"; vật đã phản ứng hết không gắp được', async page => {
+    const ids = await nailInBeaker(page, [['cuso4', 40]])
+    await clickWorld(page, 300, 16)
+    assert.equal(await st(page, L => L.selected()), ids.N, 'the nail itself can be selected inside the beaker')
+    await btn(page, 'Gắp ra, đặt lên bàn').click()
+    await page.waitForTimeout(300)
+    let n = await obj(page, ids.N)
+    assert.deepEqual([n.in, n.holder, n.y], [null, null, 0])
+    // A piece used up by reaction is not offered and cannot be grabbed.
+    await st(page, (L, id) => { L.state.objects.find(o => o.id === id).massG = 0 }, ids.N)
+    await select(page, ids.K)
+    await page.waitForTimeout(200)
+    assert.equal(await page.locator('[data-qa-in="piece"]').count(), 0, 'nothing to grab is offered')
+    await clickWorld(page, n.x, 3)
+    n = await obj(page, ids.N)
+    assert.equal(n.holder ?? null, null)
+  })
+
+  await test('G04 3D: gắp đinh bằng chuột, chuyển 2D vẫn đang kẹp (không nhân bản), thả trong 2D', async page => {
+    const ids = await nailInBeaker(page, [['cuso4', 40]])
+    await btn(page, 'Xem 3D').click()
+    await page.locator('.dlab-3d canvas').waitFor()
+    await page.waitForTimeout(900)
+    const at3 = (x, y) => st(page, (L, a) => L.worldToScreen3d(a[0], a[1]), [x, y])
+    let p = await at3(470, 60)
+    await page.mouse.click(p.x, p.y)
+    await page.waitForTimeout(200)
+    assert.equal(await st(page, L => L.selected()), ids.K, 'thin tongs can be clicked in 3D')
+    const n0 = await obj(page, ids.N)
+    p = await at3(n0.x, n0.y + 10)
+    await page.mouse.click(p.x, p.y)
+    await page.waitForTimeout(200)
+    assert.equal((await obj(page, ids.N)).holder, ids.K, 'nail grabbed in 3D (not the beaker around it)')
+    await page.screenshot({ path: `${outDir}/${browserName}-g04-3d-held.png` })
+    await btn(page, 'Xem 2D').click()
+    await page.waitForTimeout(300)
+    const n = await obj(page, ids.N)
+    assert.equal(n.holder, ids.K, 'still held after switching to 2D')
+    assert.equal(await st(page, L => L.state.objects.filter(o => o.reagent === 'fe').length), 1, 'no duplicate')
+    await btn(page, 'Đặt lên bàn').click()
+    await page.waitForTimeout(200)
+    assert.deepEqual([(await obj(page, ids.N)).holder ?? null, (await obj(page, ids.N)).y], [null, 0])
+  })
+
+  await test('G05 Guided Lab kim loại: thanh bước, kẹp gợi ý đúng chất, tốc độ 4× thật, tua đến hiện tượng', async page => {
+    await btn(page, 'Có hướng dẫn').click()
+    await page.locator('.dlab-choice', { hasText: 'Kim loại' }).click()
+    const strip = page.locator('.dlab-gstrip')
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
+    assert.match(await strip.innerText(), /Hoàn thành khi:/)
+    const roles = await st(page, L => { const b = L.state.objects.filter(o => o.type === 'beaker100'); return { cu: b[0].id, tongs: L.state.objects.find(o => o.type === 'tongs').id } })
+    const k = await obj(page, roles.tongs)
+    await clickWorld(page, k.x, k.y + 60)
+    assert.equal(await page.locator('[data-qa-in="solid"]').inputValue(), 'fe', 'step 1 needs the nail: tongs offer it')
+    assert.equal(await page.locator('[data-qa-in="mass"]').inputValue(), '2')
+    await page.locator('[data-qa-in="solid"]').selectOption('na')
+    assert.equal(await page.locator('[data-qa-in="mass"]').inputValue(), '0.1', 'each solid gets its own mass')
+    await page.locator('[data-qa-in="solid"]').selectOption('fe')
+    assert.equal(await page.locator('[data-qa-in="mass"]').inputValue(), '2')
+    await btn(page, 'Lấy').click()
+    await page.locator('[data-qa-in="to"]').selectOption(roles.cu)
+    await btn(page, 'Thả').click()
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 2/5' }).waitFor({ timeout: 10000 })
+    // 4× really runs the model 4× faster than real time.
+    await btn(page, '4×').click()
+    const [s0, r0] = await st(page, L => [L.state.t, performance.now()])
+    await page.waitForTimeout(1500)
+    const [s1, r1] = await st(page, L => [L.state.t, performance.now()])
+    const ratio = (s1 - s0) / ((r1 - r0) / 1000)
+    assert.ok(ratio > 3.2 && ratio < 4.4, `simulated/real time at 4× = ${ratio.toFixed(2)}`)
+    assert.match(await page.locator('.dlab-time').innerText(), /Mô phỏng \d+:\d\d/)
+    // Make the wait long on purpose (a small nail), then jump to the phenomenon.
+    await st(page, L => { const n = L.state.objects.find(o => o.reagent === 'fe'); n.massG = 0.1; n.mass0 = 0.1; n.coat = {} })
+    await btn(page, '1×').click()
+    await page.locator('[data-gs="ffwd"]').click()
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 3/5' }).waitFor({ timeout: 30000 })
+    await page.locator('.dlab-toast', { hasText: 'thời gian mô phỏng' }).waitFor()
+    const coat = await st(page, L => L.state.objects.find(o => o.reagent === 'fe').coat.Cu)
+    assert.ok(coat > 8e-4, `copper really deposited by the model: ${coat}`)
+    assert.equal(await page.locator('[data-gs="ffwd"]').count(), 0, 'no fast-forward on an action step')
+    await page.locator('[data-gs="help"]').click()
+    await page.locator('.dlab-ghelp', { hasText: 'Kẽm' }).waitFor()
+  })
+
+  await test('G06 nhãn: theo thành phần thật, đổi khi rót, không chặn thao tác, ẩn được', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['cuso4', 40]] }, B: { type: 'beaker100', x: 430, fill: [['hcl', 30]] } })
+    await page.locator('.dlab-label', { hasText: 'Cốc A — CuSO₄' }).waitFor()
+    await page.locator('.dlab-label', { hasText: 'Cốc B — HCl' }).waitFor()
+    await st(page, (L, ids) => { L.dispatch({ type: 'pourExact', from: ids.B, to: ids.A, mL: 10 }) }, ids)
+    await page.locator('.dlab-label', { hasText: 'Cốc A — CuSO₄ + HCl' }).waitFor()
+    // A click on the label goes through to the object under it.
+    const box = await page.locator('.dlab-label', { hasText: 'Cốc A' }).boundingBox()
+    const a = await obj(page, ids.A)
+    const top = await screen(page, a.x, a.y + 60)
+    await page.mouse.click(top.x, Math.max(top.y, box.y + box.height + 2))
+    assert.equal(await st(page, L => L.selected()), ids.A)
+    // Labels in 3D come from the same state and stay inside the view.
+    await btn(page, 'Xem 3D').click()
+    await page.locator('.dlab-3d canvas').waitFor()
+    await page.waitForTimeout(900)
+    const cv = await page.locator('.dlab-3d canvas').boundingBox()
+    const lb = await page.locator('.dlab-label', { hasText: 'Cốc B — HCl' }).boundingBox()
+    assert.ok(lb && lb.x >= cv.x - 1 && lb.x + lb.width <= cv.x + cv.width + 1, '3D label inside the canvas')
+    await page.screenshot({ path: `${outDir}/${browserName}-g06-3d-labels.png` })
+    for (const mode of ['Khi chọn', 'Ẩn']) {
+      await page.locator('[data-tb="labels"]').click()
+      assert.match(await page.locator('[data-tb="labels"]').innerText(), new RegExp(mode))
+    }
+    assert.equal(await page.locator('.dlab-labels').isVisible(), false, 'labels can be hidden to watch the reaction')
+    await page.locator('[data-tb="labels"]').click()
+  })
+
+  await test('G07 điện thoại 390 px: thanh bước gọn, gắp bằng nút, không cuộn ngang', async page => {
+    await btn(page, 'Có hướng dẫn').click()
+    await page.locator('.dlab-choice', { hasText: 'Kim loại' }).click()
+    await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
+    const h = (await page.locator('.dlab-gstrip').boundingBox()).height
+    assert.ok(h < 170, `strip height ${h}`)
+    const roles = await st(page, L => ({ cu: L.state.objects.find(o => o.type === 'beaker100').id, tongs: L.state.objects.find(o => o.type === 'tongs').id }))
+    await select(page, roles.tongs)
+    await btn(page, 'Lấy').click()
+    await page.locator('[data-qa-in="to"]').selectOption(roles.cu)
+    await btn(page, 'Thả').click()
+    const n = await wait(page, (L, id) => L.state.objects.some(o => o.reagent === 'fe' && o.in === id), roles.cu).then(() => nailId(page))
+    await select(page, n)
+    await btn(page, 'Gắp ra, đặt lên bàn').click()
+    await wait(page, (L, id) => { const o = L.state.objects.find(x => x.id === id); return !o.in && !o.holder && o.y === 0 }, n)
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    assert.ok(overflow <= 1, `no horizontal scroll: ${overflow}`)
+    await page.screenshot({ path: `${outDir}/${browserName}-g07-phone.png` })
   }, { width: 390, height: 844, touch: true })
 }

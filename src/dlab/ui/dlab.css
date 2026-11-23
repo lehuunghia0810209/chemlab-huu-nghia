@@ -21,7 +21,8 @@
 .dlab-shell {
   position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  /* header · guided step strip (collapses when hidden) · bench */
+  grid-template-rows: auto auto minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   height: calc(100dvh - var(--topbar-h, 60px) - 2rem);
@@ -42,6 +43,34 @@
   padding: 8px 14px;
   border-bottom: 1px solid var(--dlab-line);
 }
+.dlab-header { grid-row: 1 }
+.dlab-stage { grid-row: 3 }
+
+/* ── Guided step strip: above the bench, never over it ── */
+.dlab-gstrip { grid-row: 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 14px; padding: 6px 14px; border-bottom: 1px solid var(--dlab-line); background: var(--dlab-float); font-size: var(--text-sm, .875rem) }
+.dlab-gstrip[hidden] { display: none }
+.dlab-gstrip-main { grid-column: 1; display: flex; align-items: baseline; gap: 10px; min-width: 0 }
+.dlab-gstep { flex: none; padding: 1px 8px; border-radius: 999px; background: var(--dlab-accent); color: #fff; font-weight: 600; font-size: var(--text-xs, .8125rem); font-variant-numeric: tabular-nums }
+.dlab-gstep.is-done { background: var(--success, #16a34a) }
+.dlab-gtask { margin: 0; font-weight: 600 }
+.dlab-gmeta { grid-column: 1; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 0; color: var(--dlab-muted); font-size: var(--text-xs, .8125rem) }
+.dlab-gmeta b { color: var(--dlab-text); font-weight: 600 }
+.dlab-gacts { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px }
+.dlab-gacts .dlab-btn { gap: 6px }
+.dlab-gacts .dlab-ico { width: 16px; height: 16px }
+.dlab-ghelp { grid-column: 1 / -1; margin: 0; padding: 6px 10px; border-left: 3px solid var(--dlab-accent); background: var(--dlab-panel); font-size: var(--text-xs, .8125rem) }
+
+/* ── Object labels: overlay anchored to world points; never takes pointer input ── */
+.dlab-labels { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden }
+.dlab-labels[hidden] { display: none }
+.dlab-label { position: absolute; left: 0; top: 0; max-width: 22rem; padding: 2px 8px; border: 1px solid var(--dlab-line); border-radius: 6px; background: var(--dlab-float); color: var(--dlab-text); font-size: var(--text-xs, .8125rem); line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; will-change: transform }
+.dlab-label[hidden] { display: none }
+.dlab-label.is-hover { border-color: var(--dlab-accent) }
+.dlab-label.is-sel, .dlab-label.is-held { border-color: var(--dlab-accent); background: var(--dlab-accent); color: #fff; font-weight: 600; z-index: 1 }
+.dlab-label.is-grab { border-style: dashed; border-color: var(--dlab-accent) }
+.dlab--dragging .dlab-label:not(.is-held):not(.is-sel) { opacity: .35 }
+.dlab-bar-sep { width: 1px; align-self: stretch; background: var(--dlab-line) }
+
 .dlab-brand h2 { margin: 0; font-size: var(--text-md, 1rem); line-height: 1.2 }
 .dlab-kicker { display: block; margin: 0; font-size: var(--text-xs, .8125rem); color: var(--dlab-muted); letter-spacing: .02em }
 .dlab-head-actions { display: flex; align-items: center; gap: 8px; margin-left: auto }
@@ -282,7 +311,7 @@
 }
 .dlab-dock .dlab-btn { min-height: 36px; padding: 0 .6rem }
 .dlab-speeds .dlab-btn { padding: 0 .45rem; font-variant-numeric: tabular-nums }
-.dlab-time { font-variant-numeric: tabular-nums; color: var(--dlab-muted); min-width: 4.6rem; text-align: center; font-size: var(--text-sm, .875rem) }
+.dlab-time { font-variant-numeric: tabular-nums; color: var(--dlab-muted); min-width: 6.8rem; white-space: nowrap; text-align: center; font-size: var(--text-sm, .875rem) }
 .dlab-dock-sep { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--dlab-line) }
 
 /* Onboarding coach */
@@ -310,7 +339,9 @@
 .dlab--dragging .dlab-actionbar, .dlab--dragging .dlab-drawer, .dlab--dragging .dlab-fab, .dlab--dragging .dlab-dock, .dlab--dragging .dlab-loupe { pointer-events: none; opacity: .35 }
 
 /* Magnifier inset (2D) and 3D hover label */
-.dlab-loupe { position: absolute; z-index: 5; right: var(--dlab-gap); bottom: 70px; margin: 0; width: 260px; padding: 6px; border: 1px solid var(--dlab-line); border-radius: var(--radius-md, 12px); background: var(--dlab-float); box-shadow: var(--dlab-shadow) }
+.dlab-loupe { position: absolute; z-index: 5; right: var(--dlab-gap); bottom: 70px; margin: 0; width: 260px; padding: 6px; border: 1px solid var(--dlab-line); border-radius: var(--radius-md, 12px); background: var(--dlab-float); box-shadow: var(--dlab-shadow); pointer-events: none }
+/* the inset only shows; clicks reach the bench objects under it (only its close button is a control) */
+.dlab-loupe [data-loupe-close] { pointer-events: auto }
 .dlab--show-side .dlab-loupe { right: calc(var(--dlab-side-w) + 2 * var(--dlab-gap)) }
 .dlab-loupe canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 8px }
 .dlab-loupe figcaption { margin-top: 4px; font-size: var(--text-xs, .8125rem); color: var(--dlab-muted); text-align: center }
@@ -335,6 +366,7 @@
   color: var(--text-inverse, #f8fafc);
   font-size: var(--text-sm, .875rem);
   box-shadow: var(--dlab-shadow);
+  pointer-events: none; /* a message, not a control: clicks reach the bench objects under it */
 }
 .dlab-toast[data-kind='danger'] { background: var(--dlab-danger); color: #fff }
 
@@ -359,6 +391,7 @@
 @media (max-width: 1099px) {
   .dlab-shell { height: calc(100dvh - var(--topbar-h, 60px) - var(--bottom-nav-h, 64px) - 1.5rem); min-height: 520px; margin-bottom: calc(var(--bottom-nav-h, 64px) + .5rem) }
   .dlab-header { gap: 8px; padding: 6px 10px }
+  .dlab-gstrip { padding: 6px 10px }
   .dlab-brand .dlab-kicker { display: none }
   .dlab-drawer { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 64%; border-radius: 16px 16px 0 0; z-index: 12 }
   .dlab--show-lib .dlab-lib, .dlab--show-side .dlab-side { display: flex }
@@ -393,6 +426,9 @@
   .dlab-bar-head > .dlab-ico { display: none }
   .dlab-tilt input { width: 80px }
   .dlab-coach { top: 8px; padding: 10px 12px }
+  .dlab-gstrip { grid-template-columns: minmax(0, 1fr) }
+  .dlab-gacts { grid-column: 1; grid-row: auto; justify-content: flex-start }
+  .dlab-label { max-width: 14rem }
   .dlab-loupe { width: 150px; bottom: 60px }
 }
 

@@ -2,7 +2,7 @@
 // level: ok | warn (needs confirmation, explained) | block (outside the safe educational model).
 import { EQUIPMENT } from '../data/equipment.js'
 import { REAGENT_BY_ID } from '../data/materials.js'
-import { byId, containerBelow, isContainer, volumeOf, label } from './processes.js'
+import { byId, containerAt, containerBelow, isContainer, volumeOf, label } from './processes.js'
 
 const verdict = (level, reasons) => ({ level, reasons })
 
@@ -20,11 +20,24 @@ export function assess(state, cmd) {
       if (r.id === 'na') warn.push('Natri phản ứng mãnh liệt với nước, sinh khí H₂ dễ cháy và NaOH ăn mòn. Không cầm bằng tay; giữ khoảng cách; đeo kính bảo hộ.')
       break
     }
+    case 'grab': {
+      const tool = byId(state, cmd.tool)
+      const s = byId(state, cmd.id)
+      if (!tool || !s || s.type !== 'solid') { block.push('Không tìm thấy vật cần gắp.'); break }
+      const r = REAGENT_BY_ID[s.reagent]
+      if (tool.type !== 'tongs') block.push('Mẩu chất rắn được gắp bằng kẹp hóa chất.')
+      else if (tool.load) block.push(`${label(tool)} đang giữ ${REAGENT_BY_ID[tool.load.reagent].name} — thả vật đó trước.`)
+      if (!(s.massG > 0)) block.push(`${r.name} đã phản ứng hết, không còn gì để gắp.`)
+      else if (r.tool !== 'tongs') block.push(`${r.name} là chất bột/tinh thể, đã vào dung dịch thì không gắp lại được bằng kẹp.`)
+      else if (r.id === 'na' && s.in) block.push('Không gắp mẩu natri đang phản ứng ra khỏi nước. Đứng xa và để natri phản ứng hết.')
+      if (s.holder && s.holder !== cmd.tool) block.push('Vật đang được dụng cụ khác giữ.')
+      break
+    }
     case 'release': {
       const tool = byId(state, cmd.tool)
       if (!tool?.load) break
       const r = REAGENT_BY_ID[tool.load.reagent]
-      const c = containerBelow(state, tool.x, tool.y + 40)
+      const c = containerAt(state, tool.x, tool.y + 1) || containerBelow(state, tool.x, tool.y + 40)
       if (r.id === 'na' && c) {
         if (c.type === 'testTube' || c.type === 'cylinder') block.push(`Không thả natri vào ${EQUIPMENT[c.type].name}: miệng hẹp làm khí và nhiệt dồn lại. Dùng chậu hoặc cốc rộng chứa nhiều nước.`)
         if (c.pH != null && c.pH < 4) block.push('Natri với dung dịch axit phản ứng quá mãnh liệt — nằm ngoài phạm vi an toàn của phòng thí nghiệm ảo.')

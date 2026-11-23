@@ -1,6 +1,6 @@
 // ChemLab 7.0 Dynamic Laboratory — workspace UI and interaction controller.
 import './dlab.css'
-import { createSim, SPEEDS, snapshot, restore } from '../engine/sim.js'
+import { createSim, SPEEDS, snapshot, restore, carry } from '../engine/sim.js'
 import { EQUIPMENT, CAPABILITIES } from '../data/equipment.js'
 import { REAGENTS, REAGENT_BY_ID, HAZARD_LABELS, IONS, PRECIPITATES, LIQUIDS, INDICATORS, molarMass } from '../data/materials.js'
 import { byId, isContainer, volumeOf, containerAt, containerBelow, surfaceY, label as objLabel } from '../engine/processes.js'
@@ -8,6 +8,7 @@ import { createView, render, toWorld, toScreen, hit, bounds } from './render2d.j
 import { icon, iconFor } from './icons.js'
 import { LIB_TABS, TOOLS, libraryItems, searchLibrary } from './library.js'
 import { observe } from './observations.js'
+import { objectTitle, solidName } from './labels.js'
 import { GUIDED } from '../guided.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
 import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
@@ -86,7 +87,7 @@ export function initDynamicLab(host) {
     view.y = 90
     if (!objs.length) { view.zoom = Math.max(0.6, Math.min(2.2, freeW / 420, view.h / 300)); view.x = 430; return }
     let x0 = Infinity, x1 = -Infinity, y1 = 0
-    for (const o of objs) { const b = bounds(o); x0 = Math.min(x0, b.x0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1) }
+    for (const o of objs) { const b = bounds(o, sim.state); x0 = Math.min(x0, b.x0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1) }
     const zx = freeW * 0.88 / Math.max(160, x1 - x0 + 50)
     const zy = (view.h * 0.8 - top) / Math.max(110, y1 + 60) // head-room: a vessel lifted to pour stays in view
     view.zoom = Math.max(0.55, Math.min(3, zx, zy))
@@ -138,6 +139,17 @@ export function initDynamicLab(host) {
     loupeView.x = target.x
     loupeView.y = target.y + def.h / 2 + 90 - (0.3 * size) / loupeView.zoom
     if (loupeView.zoom / view.zoom < 1.5) { loupe.hidden = true; return } // the bench view is already close enough
+    // Never cover what is on the bench: when the inset would hide an object, leave it out.
+    const lr = loupe.getBoundingClientRect()
+    const cr = canvas.getBoundingClientRect()
+    const covers = st.objects.some(o => {
+      if (o.type === 'solid' && o.in) return false
+      const b = bounds(o, st)
+      const [x0, y0] = toScreen(view, b.x0, b.y1)
+      const [x1, y1] = toScreen(view, b.x1, b.y0)
+      return cr.left + x1 > lr.left && cr.left + x0 < lr.right && cr.top + y1 > lr.top && cr.top + y0 < lr.bottom
+    })
+    if (covers) { loupe.hidden = true; return }
     render(loupeCtx, st, loupeView, { ...ui, selected: null, hover: null, held: null, highlight: [] })
     loupe.querySelector('.dlab-loupe-x').textContent = `×${num(loupeView.zoom / view.zoom, 1)}`
   }
@@ -145,8 +157,11 @@ export function initDynamicLab(host) {
 
   function draw() {
     ui.theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+    const selTool = byId(sim.state, ui.selected)
+    ui.grabbable = selTool?.type === 'tongs' && !selTool.load ? sim.state.objects.filter(grabbable).map(o => o.id) : []
     if (!ui.render3d) { render(ctx, sim.state, view, ui); drawLoupe() }
     else loupe.hidden = true
+    paintLabels()
     paintToolbar()
     if (++ui.tick % 6 === 0 || ui.forcePanel) { paintInspector(); paintObservations(); paintGuided(); paintActions(); ui.forcePanel = false }
   }
@@ -314,23 +329,32 @@ export function initDynamicLab(host) {
     ui.selected = id
     ui.forcePanel = true
     const o = byId(sim.state, id)
-    if (o) announce(`Đã chọn ${objLabel(o)}`)
+    if (o) announce(`Đã chọn ${o.type === 'solid' ? solidName(o) : objLabel(o)}`)
+    if (o?.type === 'tongs' && !o.load) once('chemlab-dlab-tip-tongs', () => toast('Kẹp hóa chất: bấm vào mẩu chất rắn có viền nét đứt để gắp, kéo kẹp tới cốc hoặc ra bàn rồi thả chuột để đặt xuống. Các nút trên thanh phía trên làm được việc tương tự.'))
     draw()
+  }
+  function once(key, fn) {
+    let seen = false
+    try { seen = localStorage.getItem(key) === '1'; localStorage.setItem(key, '1') } catch {}
+    if (!seen) fn()
   }
 
   // ── Canvas interaction ─────────────────────────────────────────────
   const pointers = new Map()
   let drag = null
   function pick(x, y) {
-    const objs = sim.state.objects
+    const st = sim.state
+    const objs = st.objects
+    // Small pieces win over the vessel around them (a nail in a beaker would otherwise be unreachable);
+    // their target is at least ~12 px on screen whatever the zoom. A held piece is picked via its tool.
+    const pad = Math.max(3, 12 / view.zoom)
     for (let i = objs.length - 1; i >= 0; i -= 1) {
       const o = objs[i]
-      if (o.type === 'solid' && o.in) {
-        const c = byId(sim.state, o.in)
-        if (c && Math.hypot(c.x + o.lx - x, c.y + o.ly + 4 - y) < 8) return o
-        continue
-      }
-      if (hit(o, x, y)) return o
+      if (o.type === 'solid' && !o.holder && o.massG > 0 && hit(o, x, y, st, pad)) return o
+    }
+    for (let i = objs.length - 1; i >= 0; i -= 1) {
+      const o = objs[i]
+      if (o.type !== 'solid' && hit(o, x, y)) return o
     }
     return null
   }
@@ -348,6 +372,14 @@ export function initDynamicLab(host) {
   // Interaction Controller shared by the 2D canvas and the 3D view: both map the pointer to world
   // (x, y) on the bench plane and end in the same simulation commands.
   function beginDrag(o, x, y) {
+    const prev = byId(sim.state, ui.selected)
+    if (o.type === 'solid' && o.holder) o = byId(sim.state, o.holder) || o
+    if (o.type === 'solid' && grabbable(o)) {
+      // Tongs already chosen: this click grabs the piece. Otherwise select it; dragging it then
+      // picks it up with a free pair of tongs, the way it is done on a real bench.
+      if (prev?.type === 'tongs' && !prev.load) return startGrab(prev, o, x, y)
+      if (o.in) { select(o.id); drag = { grabPending: o.id, sx: x, sy: y }; host.classList.add('dlab--dragging'); return true }
+    }
     select(o.id)
     if (o.type === 'solid' && o.in) return false
     if (o.condition === 'UNUSABLE') return false
@@ -359,6 +391,14 @@ export function initDynamicLab(host) {
     return true
   }
   function dragTo(x, y) {
+    if (drag?.grabPending) {
+      if (Math.hypot(x - drag.sx, y - drag.sy) < 4) return
+      const s = byId(sim.state, drag.grabPending)
+      drag = null
+      const tongs = freeTongs(s)
+      if (!s || !tongs || !startGrab(tongs, s, x, y)) host.classList.remove('dlab--dragging')
+      return
+    }
     const o = drag?.id && byId(sim.state, drag.id)
     if (!o) return
     const nx = x + drag.dx
@@ -367,6 +407,63 @@ export function initDynamicLab(host) {
     o.x = nx
     o.y = ny
     drag.moved = true
+    carry(sim.state) // a held piece follows the tool even while the simulation is paused
+  }
+
+  // Pieces tongs can pick up: real objects that still exist (not used up) and are not held already.
+  function grabbable(s) {
+    return s?.type === 'solid' && !s.holder && s.massG > 0 && REAGENT_BY_ID[s.reagent].tool === 'tongs' && !(s.reagent === 'na' && s.in) // reacting sodium stays put
+  }
+  // Tongs to use: the selected pair if empty, else a free pair on the bench, else a new pair (not recorded
+  // separately: it belongs to the same undo step as the grab).
+  function freeTongs(near) {
+    const sel = byId(sim.state, ui.selected)
+    if (sel?.type === 'tongs' && !sel.load) return sel
+    const free = sim.state.objects.filter(o => o.type === 'tongs' && !o.load).sort((a, b) => Math.abs(a.x - near.x) - Math.abs(b.x - near.x))[0]
+    return free || byId(sim.state, sim.dispatch({ type: 'add', equipmentType: 'tongs', x: near.x + 30, y: 0 }, { record: false }).id)
+  }
+  // Grab `s` with `tongs` (one undo step), lift it just above the rim, and keep dragging the tongs if a
+  // pointer is down (x, y given). Returns false, with the reason shown, when the grab is not allowed.
+  function startGrab(tongs, s, x = null, y = null) {
+    const from = s.in && byId(sim.state, s.in)
+    sim.record()
+    const r = sim.dispatch({ type: 'grab', tool: tongs.id, id: s.id }, { record: false })
+    if (!r.ok) {
+      sim.history.pop()
+      toast(`Không gắp được: ${r.verdict.reasons.join(' ')}`, 'danger')
+      select(s.id)
+      return false
+    }
+    tongs.x = s.x
+    tongs.y = from ? from.y + EQUIPMENT[from.type].h + 8 : s.y + 12
+    carry(sim.state)
+    select(tongs.id)
+    announce(`Kẹp đang giữ ${solidName(s)}`)
+    if (x == null) return true
+    // moved: false — a plain click keeps the piece held above the rim; only a drag carries it elsewhere.
+    drag = { id: tongs.id, dx: tongs.x - x, dy: tongs.y - y, start: { x: tongs.x, y: tongs.y, angle: 0 }, moved: false, recorded: true }
+    ui.held = tongs.id
+    host.classList.add('dlab--dragging')
+    return true
+  }
+  // A clear spot on the bench near x (no vessel underneath), for putting a piece down.
+  function benchSpot(x, skip) {
+    const st = sim.state
+    const clear = p => !containerAt(st, p, 1) && !containerBelow(st, p, 40) && !st.objects.some(o => o.id !== skip && o.type !== 'solid' && Math.abs(o.x - p) < (EQUIPMENT[o.type]?.w || 10) / 2 + 14)
+    for (let d = 40; d < 400; d += 10) for (const p of [x + d, x - d]) if (clear(p)) return p
+    return x + 60
+  }
+  // Put what the tongs hold on the bench (same release command as dropping into a vessel).
+  async function putDown(tongs) {
+    const s = tongs.load?.id && byId(sim.state, tongs.load.id)
+    const at = benchSpot(tongs.x, tongs.id)
+    sim.record()
+    sim.dispatch({ type: 'move', id: tongs.id, x: at, y: 0 }, { record: false })
+    const r = await run({ type: 'release', tool: tongs.id }, { record: false })
+    if (!r) { sim.history.pop(); return null }
+    sim.dispatch({ type: 'move', id: tongs.id, x: at + 22, y: 0 }, { record: false })
+    if (s) select(s.id)
+    return r
   }
   function tiltHeld(deltaY) {
     const o = drag?.id && byId(sim.state, drag.id)
@@ -375,6 +472,7 @@ export function initDynamicLab(host) {
     return true
   }
   async function endObjectDrag() {
+    if (drag?.grabPending) { drag = null; host.classList.remove('dlab--dragging'); return }
     const d = drag
     drag = null
     ui.held = null
@@ -412,15 +510,20 @@ export function initDynamicLab(host) {
     o.held = false
     const wasTilted = o.angle !== 0
     if (isContainer(o)) o.angle = 0
-    if (!d.moved && !wasTilted) { sim.history.pop(); return }
+    if (!d.moved && !wasTilted) { if (!d.recorded) sim.history.pop(); return }
     const r = sim.dispatch({ type: 'move', id: o.id, x: o.x, y: o.y }, { record: false })
     if (r.needsConfirm) {
       if (await confirmDialog('Cảnh báo an toàn', r.verdict.reasons)) sim.dispatch({ type: 'move', id: o.id, x: o.x, y: o.y }, { record: false, confirmed: true })
       else Object.assign(o, d.start)
     }
     else if (!r.ok) { Object.assign(o, d.start); toast(r.verdict.reasons.join(' '), 'danger'); settleBack(o) }
-    // A loaded tool released over a container drops its solid in.
-    if ((o.type === 'tongs' || o.type === 'spatula') && o.load && containerBelow(sim.state, o.x, o.y + 40)) await run({ type: 'release', tool: o.id }, { record: false })
+    // A loaded tool released over (or in) a container drops its solid in; tongs let go over the bench
+    // put the piece down on the bench.
+    if ((o.type === 'tongs' || o.type === 'spatula') && o.load && (containerBelow(sim.state, o.x, o.y + 40) || containerAt(sim.state, o.x, o.y + 1))) await run({ type: 'release', tool: o.id }, { record: false })
+    else if (o.type === 'tongs' && o.load) {
+      const s = byId(sim.state, o.load.id)
+      if (await run({ type: 'release', tool: o.id }, { record: false })) { sim.dispatch({ type: 'move', id: o.id, x: o.x + 22, y: 0 }, { record: false }); if (s) select(s.id) }
+    }
     // A tool let go in mid-air (not in or over a vessel) comes to rest on the bench instead of floating.
     if (TOOLS.includes(o.type) && o.y > 0 && !o.load && !containerAt(sim.state, o.x, o.y + 1) && !containerBelow(sim.state, o.x, o.y + 40)) sim.dispatch({ type: 'move', id: o.id, x: o.x, y: 0 }, { record: false })
   }
@@ -709,14 +812,14 @@ export function initDynamicLab(host) {
     else {
       bar.dataset.kind = o.type
       const r = o.type === 'solid' || o.stock ? REAGENT_BY_ID[o.reagent] : null
-      const name = o.type === 'solid' ? r.name : objLabel(o)
+      const name = o.type === 'solid' ? solidName(o) : objLabel(o)
       const head = `<div class="dlab-bar-head">${iconFor(r ? { reagentDef: r } : { type: o.type })}<div><strong>${esc(name)}</strong><span>${esc(summary(o))}</span></div></div>`
       patch(bar, `${head}<div class="dlab-bar-acts">${quickActions(o)}<button type="button" class="dlab-btn dlab-btn--ghost" data-qa="details">Chi tiết</button></div>`)
     }
     if (bar.offsetHeight !== before) reframe()
   }
   function summary(o) {
-    if (o.type === 'solid') return `${num(o.massG, 3)} g${o.in ? ` · trong ${objLabel(byId(sim.state, o.in))}` : ''}`
+    if (o.type === 'solid') return o.massG <= 0 ? 'Đã phản ứng hết' : `${num(o.massG, 3)} g${o.holder ? ' · đang được kẹp giữ' : o.in ? ` · trong ${objLabel(byId(sim.state, o.in))}` : ' · trên bàn'}`
     if (isContainer(o)) {
       const v = volumeOf(o)
       if (o.condition === 'UNUSABLE') return 'Hỏng — không dùng được'
@@ -724,7 +827,7 @@ export function initDynamicLab(host) {
       return `${num(v, 1)} mL${o.pH != null ? ` · pH ${num(o.pH, 1)}` : ''} · ${num(o.T, 0)} °C`
     }
     if (o.type === 'dropper' || o.type === 'pipette') { const v = volumeOf({ contents: o.contents }); return v > 0 ? `Đang chứa ${num(v, 2)} mL` : 'Đang trống' }
-    if ((o.type === 'tongs' || o.type === 'spatula') && o.load) return `Đang giữ ${num(o.load.massG, 3)} g ${REAGENT_BY_ID[o.load.reagent].name}`
+    if ((o.type === 'tongs' || o.type === 'spatula') && o.load) { const p = byId(sim.state, o.load.id); return `Đang giữ ${p ? solidName(p) : REAGENT_BY_ID[o.load.reagent].name} · ${num(p ? p.massG : o.load.massG, 3)} g` }
     if (o.type === 'thermometer') return `${num(o.reading ?? 25, 1)} °C`
     if (o.type === 'phMeter') return o.reading == null ? 'Nhúng vào dung dịch để đo' : `pH ${num(o.reading, 2)}`
     if (o.type === 'litmusPaper') return o.inside ? 'Đang nhúng' : 'Nhúng vào dung dịch để thử'
@@ -732,8 +835,8 @@ export function initDynamicLab(host) {
   }
   function quickActions(o) {
     if (o.condition === 'UNUSABLE') return '<button type="button" class="dlab-btn dlab-btn--accent" data-qa="replace">Lấy dụng cụ mới</button>'
-    if (o.type === 'solid') return ''
     const targets = vessels(o.x, o.id)
+    if (o.type === 'solid') return pieceActions(o, targets)
     const sel = (k, list, label) => (list.length ? `<select data-qa-in="${k}" aria-label="${label}">${opt(list)}</select>` : '')
     if (isContainer(o)) {
       const vol = volumeOf(o)
@@ -749,13 +852,22 @@ export function initDynamicLab(host) {
     const wet = targets.filter(c => volumeOf(c) > 0.5)
     if (o.type === 'dropper' || o.type === 'pipette') {
       const vol = volumeOf({ contents: o.contents })
-      if (vol <= 0) return wet.length ? `<span class="dlab-bar-label">Hút từ</span>${sel('from', wet, 'Hút từ')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="suck">Hút ${o.type === 'dropper' ? '1 mL' : '5 mL'}</button>` : '<span class="dlab-bar-note">Chưa có dung dịch để hút.</span>'
+      // Sources include reagent bottles: a dropper is filled from the stock bottle (phenolphthalein, HCl…).
+      const sources = sim.state.objects.filter(c => isContainer(c) && c.condition !== 'UNUSABLE' && volumeOf(c) > 0.5).sort((a, b) => Math.abs(a.x - o.x) - Math.abs(b.x - o.x))
+      if (vol <= 0) return sources.length ? `<span class="dlab-bar-label">Hút từ</span>${sel('from', sources, 'Hút từ')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="suck">Hút ${o.type === 'dropper' ? '1 mL' : '5 mL'}</button>` : '<span class="dlab-bar-note">Chưa có dung dịch để hút.</span>'
       return `<span class="dlab-bar-label">Nhỏ vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop1">1 giọt</button><button type="button" class="dlab-btn" data-qa="drop5">5 giọt</button>`
     }
     if (o.type === 'tongs' || o.type === 'spatula') {
-      if (o.load) return `<span class="dlab-bar-label">Thả vào</span>${sel('to', targets, 'Thả vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop-solid">Thả</button>`
+      if (o.load) return `<span class="dlab-bar-label">Thả vào</span>${sel('to', targets, 'Thả vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop-solid">Thả</button>${o.type === 'tongs' ? '<button type="button" class="dlab-btn" data-qa="put-down">Đặt lên bàn</button>' : ''}`
+      let h = ''
+      // Tongs: pieces already on the bench or in a vessel can be picked up again, chosen by name and place.
+      const pieces = o.type === 'tongs' ? sim.state.objects.filter(grabbable) : []
+      if (pieces.length) h += `<span class="dlab-bar-label">Gắp</span><select data-qa-in="piece" aria-label="Vật cần gắp">${pieces.map(p => `<option value="${p.id}">${esc(pieceWhere(p))}</option>`).join('')}</select><button type="button" class="dlab-btn dlab-btn--accent" data-qa="grab">Gắp</button><span class="dlab-bar-sep" aria-hidden="true"></span>`
       const solids = REAGENTS.filter(r => r.kind === 'solid' && r.tool === o.type)
-      return `<select data-qa-in="solid" aria-label="Chất rắn">${solids.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><input type="number" class="dlab-in" data-qa-in="mass" min="0.01" step="0.05" value="${solids[0]?.defaultMass ?? 1}" aria-label="Khối lượng (g)"><span class="dlab-bar-label">g</span><button type="button" class="dlab-btn dlab-btn--accent" data-qa="pick">Lấy</button>`
+      const pickR = REAGENT_BY_ID[solidChoice(o.type)] || solids[0]
+      const why = ui.solidChoice?.[o.type] ? '' : guidedNeed(o.type) ? ' (theo bài)' : ''
+      h += `<span class="dlab-bar-label">${pieces.length ? 'Lấy mới' : 'Lấy'}</span><select data-qa-in="solid" aria-label="Chất rắn">${solids.map(r => `<option value="${r.id}"${r.id === pickR.id ? ' selected' : ''}>${esc(r.name)}${r.id === pickR.id ? why : ''}</option>`).join('')}</select><input type="number" class="dlab-in" data-qa-in="mass" min="0.01" step="0.05" value="${massFor(pickR)}" aria-label="Khối lượng (g)"><span class="dlab-bar-label">g</span><button type="button" class="dlab-btn${pieces.length ? '' : ' dlab-btn--accent'}" data-qa="pick">Lấy</button>`
+      return h
     }
     if (o.type === 'litmusPaper' || o.type === 'thermometer' || o.type === 'phMeter') {
       if (o.inside) return '<button type="button" class="dlab-btn dlab-btn--accent" data-qa="lift">Lấy ra</button>'
@@ -765,6 +877,34 @@ export function initDynamicLab(host) {
     if (o.type === 'rod') return wet.length ? `<span class="dlab-bar-label">Khuấy</span>${sel('to', wet, 'Khuấy cốc')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="stir-in">Khuấy</button>` : ''
     if (o.type === 'burner') return `<button type="button" class="dlab-btn dlab-btn--accent" data-qa="burner">${o.on ? 'Tắt bếp' : 'Bật bếp'}</button>`
     return ''
+  }
+  function pieceWhere(p) {
+    const c = p.in && byId(sim.state, p.in)
+    return `${solidName(p)} · ${num(p.massG, 2)} g · ${c ? `trong ${objLabel(c)}` : 'trên bàn'}`
+  }
+  // Actions for a piece of solid: pick it up / take it out with tongs, or why it cannot be.
+  function pieceActions(o, targets) {
+    const r = REAGENT_BY_ID[o.reagent]
+    if (!(o.massG > 0)) return '<span class="dlab-bar-note">Đã phản ứng hết — không còn gì để gắp.</span>'
+    if (o.holder) return `<span class="dlab-bar-label">Thả vào</span>${targets.length ? `<select data-qa-in="to" aria-label="Thả vào">${opt(targets)}</select>` : ''}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop-solid">Thả</button><button type="button" class="dlab-btn" data-qa="put-down">Đặt lên bàn</button>`
+    if (r.tool !== 'tongs') return o.in ? '<span class="dlab-bar-note">Chất bột/tinh thể đã cho vào dung dịch — không lấy lại được.</span>' : ''
+    if (o.reagent === 'na' && o.in) return '<span class="dlab-bar-note">Natri đang phản ứng — đứng xa, không gắp ra.</span>'
+    if (o.in) return '<button type="button" class="dlab-btn dlab-btn--accent" data-qa="take-out">Gắp ra, đặt lên bàn</button><button type="button" class="dlab-btn" data-qa="grab-piece">Gắp lên</button>'
+    return `<button type="button" class="dlab-btn dlab-btn--accent" data-qa="grab-piece">Gắp lên</button>${targets.length ? `<span class="dlab-bar-label">hoặc thả vào</span><select data-qa-in="to" aria-label="Thả vào">${opt(targets)}</select><button type="button" class="dlab-btn" data-qa="piece-into">Thả</button>` : ''}`
+  }
+  // Which solid the tool's "Lấy" offers: what the student chose last, else what the current guided step
+  // needs (and is not on the bench yet), else the first in the list.
+  function guidedNeed(toolType) {
+    const step = ui.guided && ui.guided.lab.steps[ui.guided.done.length]
+    const need = (step?.need || []).filter(n => REAGENT_BY_ID[n.reagent].tool === toolType)
+    return need.find(n => !sim.state.objects.some(o => o.type === 'solid' && o.reagent === n.reagent && o.massG > 0)) || need[0] || null
+  }
+  function solidChoice(toolType) {
+    return ui.solidChoice?.[toolType] || guidedNeed(toolType)?.reagent || null
+  }
+  function massFor(r) {
+    const need = guidedNeed(r.tool)
+    return need?.reagent === r.id ? need.massG : r.defaultMass
   }
   const qa = k => bar.querySelector(`[data-qa-in="${k}"]`)?.value
   bar.addEventListener('click', async e => {
@@ -789,11 +929,28 @@ export function initDynamicLab(host) {
       const p = above(t)
       if (await run({ type: 'move', id: o.id, x: p.x, y: p.y })) await run({ type: 'dispense', tool: o.id, drops: act === 'drop1' ? 1 : 5 })
     }
-    if (act === 'pick') await run({ type: 'pick', tool: o.id, reagent: qa('solid'), massG: Number(qa('mass')) })
+    if (act === 'pick') {
+      const reagent = qa('solid')
+      if (await run({ type: 'pick', tool: o.id, reagent, massG: Number(qa('mass')) })) { o.y = Math.max(o.y, 40); carry(sim.state) }
+      ui.solidChoice = { ...ui.solidChoice, [o.type]: reagent }
+    }
+    // The piece's own buttons act through the tongs holding it.
+    const tool = o.type === 'solid' && o.holder ? byId(sim.state, o.holder) : o
     if (act === 'drop-solid' && t) {
-      if (await run({ type: 'move', id: o.id, x: t.x, y: t.y + EQUIPMENT[t.type].h + 30 }) && await run({ type: 'release', tool: o.id })) {
+      if (await run({ type: 'move', id: tool.id, x: t.x, y: t.y + EQUIPMENT[t.type].h + 30 }) && await run({ type: 'release', tool: tool.id })) {
         const p = beside(t)
-        sim.dispatch({ type: 'move', id: o.id, x: p.x, y: 0 }, { record: false })
+        sim.dispatch({ type: 'move', id: tool.id, x: p.x, y: 0 }, { record: false })
+        select(t.id)
+      }
+    }
+    if (act === 'put-down') await putDown(tool)
+    if (act === 'grab') { const p = byId(sim.state, qa('piece')); if (p) startGrab(o, p) }
+    if (act === 'grab-piece') { const k = freeTongs(o); if (k) startGrab(k, o) }
+    if (act === 'take-out') { const k = freeTongs(o); if (k && startGrab(k, o)) await putDown(k) }
+    if (act === 'piece-into' && t) {
+      const k = freeTongs(o)
+      if (k && startGrab(k, o) && await run({ type: 'move', id: k.id, x: t.x, y: t.y + EQUIPMENT[t.type].h + 30 }) && await run({ type: 'release', tool: k.id })) {
+        sim.dispatch({ type: 'move', id: k.id, x: beside(t).x, y: 0 }, { record: false })
         select(t.id)
       }
     }
@@ -804,6 +961,13 @@ export function initDynamicLab(host) {
   })
   // "Nghiêng tay": hold the vessel above the chosen receiver and tilt it with the slider — the same
   // tilt the mouse wheel or [ ] keys give, so how much pours is still decided by the simulation.
+  bar.addEventListener('change', e => {
+    if (!e.target.matches('[data-qa-in="solid"]')) return
+    const r = REAGENT_BY_ID[e.target.value]
+    const m = bar.querySelector('[data-qa-in="mass"]')
+    if (r && m) m.value = massFor(r) // each solid has its own sensible amount (a nail is 2 g, sodium 0.1 g)
+    ui.solidChoice = { ...ui.solidChoice, [r.tool]: r.id }
+  })
   bar.addEventListener('input', e => {
     if (!e.target.matches('[data-qa-in="tilt"]')) return
     const o = byId(sim.state, ui.selected)
@@ -834,10 +998,67 @@ export function initDynamicLab(host) {
     ui.forcePanel = true
   }
 
+  // ── Labels: 2D overlay anchored to world points (2D canvas or 3D camera), from the simulation state ──
+  const labelBox = $('.dlab-labels')
+  const LABEL_MODES = { all: 'Tất cả', auto: 'Khi chọn', off: 'Ẩn' }
+  try { ui.labels = LABEL_MODES[localStorage.getItem('chemlab-dlab-labels')] ? localStorage.getItem('chemlab-dlab-labels') : 'all' } catch { ui.labels = 'all' }
+  const labelEls = new Map()
+  function paintLabels() {
+    const st = sim.state
+    labelBox.hidden = ui.labels === 'off'
+    if (labelBox.hidden) return
+    const box = stage.getBoundingClientRect()
+    const cv = (ui.render3d ? $('.dlab-3d canvas') : canvas)?.getBoundingClientRect()
+    if (!cv) return
+    const project = ui.render3d
+      ? (x, y) => three?.worldToScreen(x, y)
+      : (x, y) => { const [sx, sy] = toScreen(view, x, y); return { x: cv.left + sx, y: cv.top + sy } }
+    const hide = ui.guided?.lab.hideContents
+    const items = []
+    for (const o of st.objects) {
+      if (o.type === 'solid' && (o.holder || !(o.massG > 0))) continue // a held piece is named on its tool
+      const sel = ui.selected === o.id
+      const hov = ui.hover === o.id
+      const held = ui.held === o.id
+      const grab = ui.grabbable?.includes(o.id)
+      // Pieces inside a vessel are listed in the vessel's label; their own label appears on demand.
+      const wanted = sel || hov || held || grab || (ui.labels === 'all' && !(o.type === 'solid' && o.in))
+      if (!wanted) continue
+      const b = bounds(o, st)
+      const p = project(o.type === 'solid' ? (b.x0 + b.x1) / 2 : o.x, b.y1 + 4)
+      if (!p || p.x < cv.left || p.x > cv.right || p.y < cv.top || p.y > cv.bottom) continue
+      const text = `${objectTitle(st, o, { hideContents: hide })}${grab && !sel ? ' · bấm để gắp' : ''}`
+      items.push({ id: o.id, text, x: p.x - box.left, y: p.y - box.top, rank: held ? 0 : sel ? 1 : hov ? 2 : grab ? 3 : 4, cls: held ? 'is-held' : sel ? 'is-sel' : hov ? 'is-hover' : grab ? 'is-grab' : '' })
+    }
+    // Most important first; a label that would overlap a placed one moves up, and is dropped if it still collides.
+    items.sort((a, b) => a.rank - b.rank || b.y - a.y)
+    const placed = []
+    const seen = new Set()
+    for (const it of items) {
+      let el = labelEls.get(it.id)
+      if (!el) { el = document.createElement('span'); el.className = 'dlab-label'; labelBox.appendChild(el); labelEls.set(it.id, el) }
+      if (el.textContent !== it.text) { el.textContent = it.text; el.dataset.w = '' }
+      if (el.className !== `dlab-label ${it.cls}`.trim()) el.className = `dlab-label ${it.cls}`.trim()
+      const w = Number(el.dataset.w) || (el.dataset.w = el.offsetWidth) || it.text.length * 7
+      const h = 22
+      // Keep the whole label inside the view: near an edge it slides inward along the edge.
+      it.x = Math.min(Math.max(it.x, cv.left - box.left + w / 2 + 4), cv.right - box.left - w / 2 - 4)
+      let y = it.y
+      const hits = yy => placed.some(r => Math.abs(r.x - it.x) < (r.w + w) / 2 + 4 && Math.abs(r.y - yy) < h)
+      for (let k = 0; k < 4 && hits(y); k += 1) y -= h + 2
+      if (hits(y) && it.rank > 1) { el.hidden = true; seen.add(it.id); continue }
+      placed.push({ x: it.x, y, w })
+      el.hidden = false
+      el.style.transform = `translate(${Math.round(it.x - w / 2)}px, ${Math.round(y - h)}px)`
+      seen.add(it.id)
+    }
+    for (const [id, el] of labelEls) if (!seen.has(id)) { el.remove(); labelEls.delete(id) }
+  }
+
   // ── Toolbar ────────────────────────────────────────────────────────
   function paintToolbar() {
     const st = sim.state
-    const tText = `t = ${fmtTime(st.t)}`
+    const tText = `Mô phỏng ${fmtTime(st.t)}`
     if (ui.tText !== tText) { ui.tText = tText; $('.dlab-time').textContent = tText } // avoid repainting the dock every frame
     const play = $('[data-tb="play"]')
     const label = st.paused ? 'Tiếp tục' : 'Tạm dừng'
@@ -859,8 +1080,21 @@ export function initDynamicLab(host) {
     if (b.dataset.tb === 'reset') { if (await confirmDialog('Đặt lại thí nghiệm?', ['Bàn thí nghiệm sẽ trở về trạng thái ban đầu. Có thể hoàn tác.'])) sim.reset() }
     if (b.dataset.tb === 'fit') { ui.userView = false; fitView(); three?.fit?.(insets()) }
     if (b.dataset.tb === 'home3d') three?.home?.()
+    if (b.dataset.tb === 'labels') {
+      ui.labels = { all: 'auto', auto: 'off', off: 'all' }[ui.labels]
+      try { localStorage.setItem('chemlab-dlab-labels', ui.labels) } catch {}
+      syncLabelButton()
+      announce(`Nhãn: ${LABEL_MODES[ui.labels]}`)
+    }
     draw()
   })
+
+  function syncLabelButton() {
+    const b = $('[data-tb="labels"]')
+    b.querySelector('span').textContent = `Nhãn: ${LABEL_MODES[ui.labels]}`
+    b.setAttribute('aria-label', `Nhãn tên vật: ${LABEL_MODES[ui.labels]} (bấm để đổi)`)
+  }
+  syncLabelButton()
 
   // ── Header, drawers and menu ─────────────────────────────────────
   function openSide(tab) {
@@ -924,6 +1158,7 @@ export function initDynamicLab(host) {
     ui.mode = 'sandbox'
     ui.guided = null
     ui.highlight = []
+    paintStrip(null)
     sim.load(restore(snapshot(seedSandbox())))
     sim.markInitial()
     setModeButtons()
@@ -949,29 +1184,35 @@ export function initDynamicLab(host) {
   async function openGuidedPicker() {
     const choice = await choiceDialog('Chọn bài thực hành có hướng dẫn', GUIDED.map(g => ({ value: g.id, title: g.title, sub: g.group })))
     if (!choice) return
-    const lab = GUIDED.find(g => g.id === choice)
-    const s = createSim(Date.now() >>> 0)
+    beginGuided(GUIDED.find(g => g.id === choice), Date.now() >>> 0)
+  }
+  function beginGuided(lab, seed) {
+    const s = createSim(seed)
     const roles = lab.setup(s)
     s.state.log = []
     sim.load(restore(snapshot(s.state)))
     sim.markInitial()
     ui.mode = 'guided'
     ui.guided = { lab, roles, done: [], finished: false }
+    ui.selected = null
+    ui.solidChoice = {}
     setModeButtons()
     openSide('obs')
     ui.forcePanel = true
+    return roles
   }
   function paintGuided() {
     const box = $('.dlab-guided')
     const g = ui.guided
-    if (!g) { box.hidden = true; ui.highlight = []; return }
+    if (!g) { box.hidden = true; ui.highlight = []; paintStrip(null); return }
     box.hidden = false
     const st = sim.state
     const idx = g.done.length
-    if (idx < g.lab.steps.length && g.lab.steps[idx].check(st, g.roles)) { g.done.push(st.t); announce(`Hoàn thành bước ${idx + 1}`) }
+    if (idx < g.lab.steps.length && g.lab.steps[idx].check(st, g.roles)) { g.done.push(st.t); ui.solidChoice = {}; announce(`Hoàn thành bước ${idx + 1}`) }
     const current = g.done.length
     const step = g.lab.steps[current]
     ui.highlight = step ? (step.target || []).map(r => g.roles[r]).filter(Boolean) : []
+    paintStrip(g, step, current)
     const key = `${g.lab.id}|${current}|${g.collapsed}`
     if (box.dataset.key === key) return
     box.dataset.key = key
@@ -987,11 +1228,65 @@ export function initDynamicLab(host) {
       <div class="dlab-meter" aria-hidden="true"><span style="width:${Math.round(100 * Math.min(current, g.lab.steps.length) / g.lab.steps.length)}%"></span></div>`}
       <div class="dlab-row"><button type="button" class="dlab-btn dlab-btn--ghost" data-g="exit">Thoát bài</button></div>`
   }
+  // Step strip above the bench: step n/N, the task, the objects to use, how completion is recognised,
+  // help on request, and — for steps that are only waiting — a jump to the next phenomenon.
+  const strip = $('.dlab-gstrip')
+  function paintStrip(g, step, current) {
+    if (!g) { if (!strip.hidden) { strip.hidden = true; requestAnimationFrame(resize) } return }
+    const st = sim.state
+    const total = g.lab.steps.length
+    let html
+    if (!step) {
+      html = `<div class="dlab-gstrip-main"><span class="dlab-gstep is-done">Hoàn thành ${total}/${total}</span><p class="dlab-gtask">${esc(g.lab.title)} — xem hiện tượng, giải thích và kết luận ở bảng Quan sát.</p></div><div class="dlab-gacts"><button type="button" class="dlab-btn dlab-btn--accent" data-gs="result">Xem kết quả</button></div>`
+    }
+    else {
+      const names = (step.target || []).map(r => byId(st, g.roles[r])).filter(Boolean).map(o => objectTitle(st, o, { hideContents: g.lab.hideContents }))
+      const canWait = step.wait?.(st, g.roles)
+      html = `<div class="dlab-gstrip-main"><span class="dlab-gstep">Bước ${current + 1}/${total}</span><p class="dlab-gtask">${esc(step.text)}</p></div>
+        <p class="dlab-gmeta">${names.length ? `<span><b>Thao tác với:</b> ${esc(names.join('; '))}</span>` : ''}${step.done ? `<span><b>Hoàn thành khi:</b> ${esc(step.done)}</span>` : ''}</p>
+        <div class="dlab-gacts">${canWait ? `<button type="button" class="dlab-btn dlab-btn--accent" data-gs="ffwd" ${ui.ffwd ? 'disabled' : ''}>${icon('forward')}<span>${ui.ffwd ? `Đang tua… ${fmtTime(st.t - ui.ffwd.t0)}` : 'Tua đến hiện tượng'}</span></button>` : ''}<button type="button" class="dlab-btn dlab-btn--ghost" data-gs="help" aria-expanded="${Boolean(ui.stripHelp)}">Gợi ý</button><button type="button" class="dlab-btn dlab-btn--ghost" data-gs="lesson">Bài học</button></div>
+        ${ui.stripHelp && step.help ? `<p class="dlab-ghelp">${esc(step.help)}</p>` : ''}`
+    }
+    const wasHidden = strip.hidden
+    strip.hidden = false
+    patch(strip, html)
+    if (wasHidden) requestAnimationFrame(resize)
+  }
+  strip.addEventListener('click', e => {
+    const b = e.target.closest('[data-gs]')
+    if (!b || !ui.guided) return
+    if (b.dataset.gs === 'help') ui.stripHelp = !ui.stripHelp
+    if (b.dataset.gs === 'lesson' || b.dataset.gs === 'result') openSide('obs')
+    if (b.dataset.gs === 'ffwd') fastForward()
+    ui.forcePanel = true
+  })
+  // Run the real simulation forward (in slices, so the page stays responsive) until the current step's
+  // own completion check passes, or 10 simulated minutes. Nothing is drawn that the model did not compute.
+  async function fastForward(limit = 600) {
+    const g = ui.guided
+    const step = g?.lab.steps[g.done.length]
+    if (!step?.wait?.(sim.state, g.roles) || ui.ffwd) return false
+    const t0 = sim.state.t
+    ui.ffwd = { t0 }
+    let ok = false
+    while (sim.state.t - t0 < limit && ui.guided === g) {
+      if (step.check(sim.state, g.roles)) { ok = true; break }
+      sim.runFor(2)
+      ui.forcePanel = true
+      await new Promise(r => requestAnimationFrame(r))
+    }
+    ui.ffwd = null
+    ui.forcePanel = true
+    const dt = fmtTime(sim.state.t - t0)
+    toast(ok ? `Đã tua ${dt} thời gian mô phỏng. Mọi thay đổi do mô hình tính, không phải hình minh họa.` : `Đã tua ${dt} mô phỏng nhưng chưa đạt điều kiện. ${step.help || ''}`, ok ? 'info' : 'warn')
+    return ok
+  }
+
   $('.dlab-guided').addEventListener('click', e => {
     const b = e.target.closest('[data-g]')
     if (!b || !ui.guided) return
     if (b.dataset.g === 'collapse') ui.guided.collapsed = !ui.guided.collapsed
-    if (b.dataset.g === 'exit') { ui.guided = null; ui.mode = 'sandbox'; setModeButtons() }
+    if (b.dataset.g === 'exit') { ui.guided = null; ui.mode = 'sandbox'; setModeButtons(); paintStrip(null) }
     ui.forcePanel = true
   })
 
@@ -1059,7 +1354,7 @@ export function initDynamicLab(host) {
         onPick: id => select(id),
         onHover: id => { ui.hover = id },
         insets: () => insets(),
-        describe: id => { const o = byId(sim.state, id); return !o ? '' : o.type === 'solid' ? REAGENT_BY_ID[o.reagent].name : objLabel(o) },
+        describe: id => { const o = byId(sim.state, id); return o ? objectTitle(sim.state, o, { hideContents: ui.guided?.lab.hideContents }) : '' },
         controller: {
           down: (id, x, y) => { const o = byId(sim.state, id); return o ? beginDrag(o, x, y) : false },
           move: dragTo,
@@ -1231,7 +1526,9 @@ export function initDynamicLab(host) {
     toggle3d,
     is3d: () => ui.render3d,
     guided: () => (ui.guided ? { id: ui.guided.lab.id, done: ui.guided.done.length, total: ui.guided.lab.steps.length } : null),
-    startGuided: id => { const lab = GUIDED.find(g => g.id === id); const s = createSim(1); const roles = lab.setup(s); s.state.log = []; sim.load(restore(snapshot(s.state))); sim.markInitial(); ui.mode = 'guided'; ui.guided = { lab, roles, done: [] }; setModeButtons(); openSide('obs'); return roles },
+    startGuided: id => beginGuided(GUIDED.find(g => g.id === id), 1),
+    fastForward: limit => fastForward(limit),
+    labels: () => [...labelEls.values()].filter(el => !el.hidden).map(el => el.textContent),
     save: name => saveExperiment({ name, state: sim.state }),
     list: () => listExperiments(),
     load: async id => { const s = await loadExperiment(id); sim.load(s.state); return true },
@@ -1280,9 +1577,11 @@ function template() {
         <button type="button" class="dlab-btn dlab-btn--accent" data-hd="ai">Hỏi ChemAI</button>
       </div>
     </header>
+    <section class="dlab-gstrip" hidden aria-label="Bước hướng dẫn hiện tại" aria-live="polite"></section>
     <main class="dlab-stage">
       <canvas class="dlab-canvas" tabindex="0" role="application" aria-label="Bàn thí nghiệm. Chọn một vật để thấy thao tác ở thanh phía trên. Phím tắt: mũi tên di chuyển, [ ] nghiêng, Enter thao tác chính, Ctrl+Z hoàn tác, Space tạm dừng."></canvas>
       <div class="dlab-3d" hidden></div>
+      <div class="dlab-labels" aria-hidden="true"></div>
       <div class="dlab-actionbar" role="toolbar" aria-label="Thao tác với vật đang chọn"></div>
       <button type="button" class="dlab-btn dlab-fab dlab-fab--lib" data-hd="lib" aria-controls="dlab-lib">${icon('library')}<span>Thư viện</span></button>
       <button type="button" class="dlab-btn dlab-fab dlab-fab--side" data-hd="side" aria-controls="dlab-insp">${icon('panel')}<span>Quan sát</span></button>
@@ -1310,11 +1609,12 @@ function template() {
       <footer class="dlab-dock" aria-label="Điều khiển mô phỏng">
         <button type="button" class="dlab-btn" data-tb="play" aria-pressed="false">${icon('pause')}<span>Tạm dừng</span></button>
         <div class="dlab-seg dlab-speeds" role="group" aria-label="Tốc độ mô phỏng">${speeds}</div>
-        <span class="dlab-time" aria-live="off">t = 0:00</span>
+        <span class="dlab-time" aria-live="off" title="Thời gian trong mô phỏng, không phải thời gian thực. Ở 4×, mỗi giây thực bằng 4 giây mô phỏng.">Mô phỏng 0:00</span>
         <span class="dlab-dock-sep" aria-hidden="true"></span>
         <button type="button" class="dlab-btn" data-tb="undo">${icon('undo')}<span>Hoàn tác</span></button>
         <button type="button" class="dlab-btn" data-tb="reset">${icon('reset')}<span>Đặt lại</span></button>
         <button type="button" class="dlab-btn" data-tb="fit" title="Đưa toàn bộ dụng cụ vào khung nhìn">${icon('fit')}<span>Vừa khung</span></button>
+        <button type="button" class="dlab-btn" data-tb="labels">${icon('tag')}<span>Nhãn: Tất cả</span></button>
         <button type="button" class="dlab-btn" data-tb="home3d" hidden title="Đưa camera 3D về góc nhìn mặc định">${icon('home')}<span>Góc mặc định</span></button>
       </footer>
       <figure class="dlab-loupe" hidden><canvas aria-hidden="true"></canvas><figcaption>Phóng to vùng phản ứng <span class="dlab-loupe-x"></span></figcaption><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-loupe-close aria-label="Ẩn khung phóng to">${icon('close')}</button></figure>

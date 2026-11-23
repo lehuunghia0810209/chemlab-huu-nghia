@@ -198,8 +198,11 @@ export function spill(state, parcel) {
   state.spill.mL += vol
 }
 
+const SHORT = { beaker100: 'Cốc', beaker250: 'Cốc', testTube: 'Ống nghiệm', flask: 'Bình tam giác', cylinder: 'Ống đong', dish: 'Chậu', evaporating: 'Bát sứ' }
 export function label(o) {
-  return o.label || EQUIPMENT[o.type]?.name || o.type
+  if (o.label) return o.label
+  if (o.code && SHORT[o.type]) return `${SHORT[o.type]} ${o.code}`
+  return EQUIPMENT[o.type]?.name || o.type
 }
 
 export function settledFraction(c) {

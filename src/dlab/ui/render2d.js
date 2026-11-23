@@ -62,7 +62,7 @@ export function render(ctx, state, view, ui) {
   // Contact shadows: a lifted (held) object casts a fainter, wider shadow, so it reads as "in the hand".
   for (const o of state.objects) {
     if (o.in || o.inside) continue
-    const b = bounds(o)
+    const b = bounds(o, state)
     const lift = Math.max(0, b.y0)
     const a = (dark ? 0.35 : 0.16) * Math.max(0.25, 1 - lift / 160)
     const [sx] = toScreen(view, (b.x0 + b.x1) / 2, 0)
@@ -89,14 +89,22 @@ export function render(ctx, state, view, ui) {
     const held = ui.held === o.id
     const hover = ui.hover === o.id && !sel
     const hl = ui.highlight?.includes(o.id)
-    if (!sel && !hl && !hover) continue
-    const b = bounds(o)
+    const grab = ui.grabbable?.includes(o.id) && !sel
+    if (!sel && !hl && !hover && !grab) continue
+    const b = bounds(o, state)
     const [x0, y0] = toScreen(view, b.x0, b.y1)
     const [x1, y1] = toScreen(view, b.x1, b.y0)
     const accent = dark ? [124, 196, 255] : [29, 111, 216]
     ctx.save()
     roundRect(ctx, x0 - 7, y0 - 7, x1 - x0 + 14, y1 - y0 + 14, 10)
-    if (hl && !sel) {
+    if (grab && !hover) {
+      // Pieces the selected tongs can pick up: dashed, so they read as "available", not "selected".
+      ctx.setLineDash([4, 4])
+      ctx.strokeStyle = rgba(accent, 0.85)
+      ctx.lineWidth = 2
+      ctx.stroke()
+    }
+    else if (hl && !sel) {
       ctx.setLineDash([6, 5])
       ctx.strokeStyle = '#e09a00'
       ctx.lineWidth = 2.5
@@ -151,11 +159,26 @@ export function anchor(state, o, target = false) {
   return { x: o.x, y: o.y + (def?.h || 20) * (target ? 1 : 0.7) }
 }
 
-export function bounds(o) {
+// World box of a solid piece exactly as drawn (inside a vessel a nail is a long thin bar, not a dot),
+// so hit tests and halos match what the student sees. o.x / o.y are kept in sync by the engine (carry).
+export function solidBox(state, s) {
+  const r = REAGENT_BY_ID[s.reagent]
+  const c = s.in && state && byId(state, s.in)
+  if (!c) { const rad = Math.max(2.5, solidRadiusMM(s)); return { x0: s.x - rad, x1: s.x + rad, y0: s.y, y1: s.y + 2 * rad } }
+  const def = EQUIPMENT[c.type]
+  const H = innerHeight(def)
+  if (r.shape === 'cylinder') { const len = Math.min(H * 0.8, 10 + s.massG * 12); return { x0: s.x - 2, x1: s.x + 2, y0: c.y + 2, y1: c.y + 2 + len } }
+  if (r.shape === 'ribbon') { const len = Math.min(H * 0.7, 12 + Math.sqrt(s.massG / (s.mass0 || s.massG)) * 30); return { x0: s.x - 1, x1: s.x + 1, y0: s.y + 2, y1: s.y + 2 + len } }
+  if (r.shape === 'powder') { const hw = Math.min(halfWidthAt(def, 0) - 2, 4 + Math.sqrt(s.massG) * 6); return { x0: s.x - hw, x1: s.x + hw, y0: c.y + 2, y1: c.y + 2 + Math.max(1, Math.sqrt(s.massG) * 2.2) } }
+  const rad = Math.max(1.6, solidRadiusMM(s))
+  return { x0: s.x - rad, x1: s.x + rad, y0: s.y + 2, y1: s.y + 2 + 2 * rad }
+}
+
+export function bounds(o, state) {
   const def = EQUIPMENT[o.type]
   if (o.type === 'solid') {
-    const r = Math.max(3, solidRadiusMM(o)) + 2
-    return { x0: o.x - r, x1: o.x + r, y0: o.y, y1: o.y + 2 * r }
+    const b = solidBox(state, o)
+    return { x0: b.x0 - 2, x1: b.x1 + 2, y0: b.y0, y1: b.y1 + 2 }
   }
   const w = def.w
   const hgt = def.h
@@ -169,20 +192,21 @@ export function bounds(o) {
   return { x0: Math.min(...corners.map(c => c[0])), x1: Math.max(...corners.map(c => c[0])), y0: Math.min(...corners.map(c => c[1])), y1: Math.max(...corners.map(c => c[1])) }
 }
 
-// Hit test in object-local coordinates (handles tilt).
-export function hit(o, x, y) {
+// Hit test in object-local coordinates (handles tilt). pad: extra margin (world mm) for small pieces,
+// set by the caller from the zoom so a 3 mm sodium piece is still a finger-sized target on screen.
+export function hit(o, x, y, state = null, pad = 4) {
   const def = EQUIPMENT[o.type]
   if (o.type === 'solid') {
-    const r = Math.max(4, solidRadiusMM(o)) + 4
-    return Math.hypot(x - o.x, y - (o.y + r)) < r + 4
+    const b = solidBox(state, o)
+    return x >= b.x0 - pad && x <= b.x1 + pad && y >= b.y0 - pad && y <= b.y1 + pad
   }
   const cx = o.x
   const cy = o.y + def.h / 2
   const a = o.angle
   const lx = (x - cx) * Math.cos(a) - (y - cy) * Math.sin(a)
   const ly = (x - cx) * Math.sin(a) + (y - cy) * Math.cos(a)
-  const pad = def.w < 20 ? 8 : 2
-  return Math.abs(lx) <= def.w / 2 + pad && Math.abs(ly) <= def.h / 2 + 2
+  const side = def.w < 20 ? 8 : 2
+  return Math.abs(lx) <= def.w / 2 + side && Math.abs(ly) <= def.h / 2 + 2
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -290,7 +314,7 @@ function drawObject(ctx, state, view, o, ui) {
           ctx.fillStyle = dark ? '#c9d3e0' : '#6b7a90'
           ctx.beginPath(); ctx.ellipse(0, -4, 5, 3, 0, 0, Math.PI * 2); ctx.fill()
         }
-        if (o.load) {
+        if (o.load && !o.load.id) { // older saves: the piece is not an object of its own
           const r = REAGENT_BY_ID[o.load.reagent]
           ctx.fillStyle = rgba(r.color || [240, 240, 240])
           ctx.beginPath(); ctx.arc(0, -3, Math.max(2.5, Math.cbrt(o.load.massG / r.density) * 6), 0, Math.PI * 2); ctx.fill()

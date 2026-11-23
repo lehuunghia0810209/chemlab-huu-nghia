@@ -12,7 +12,7 @@ import { isContainer, volumeOf, solidRadiusMM, byId, GW, GH, cellColor, fieldMea
 const S = 0.01 // 1 mm = 0.01 scene units
 const MAX = 600
 
-export function create3dView(container, { quality = 'high', onPick, onHover, controller, insets, describe } = {}) {
+export function create3dView(container, { quality = 'high', onPick, onHover, controller, insets } = {}) {
   const high = quality === 'high'
   const host = createSceneHost({ container, quality: high ? 'high' : 'low', cameraPosition: { x: 4.3, y: 2.2, z: 6.5 }, fov: 38, label: 'Bàn thí nghiệm 3D — cùng trạng thái với chế độ 2D' })
   if (!host) return null
@@ -452,10 +452,6 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   let lastState = null
   let framed = false
   let lastSel = null
-  const tip = document.createElement('div')
-  tip.className = 'dlab-3d-tip'
-  tip.hidden = true
-  container.appendChild(tip)
 
   function update(state, ui = {}) {
     lastState = state
@@ -589,7 +585,6 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         }
       }
     }
-    updateTip(ui)
     host.requestRender()
   }
 
@@ -653,22 +648,6 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     }
   }
 
-  function updateTip(ui) {
-    // While dragging, the label says what is being held; otherwise it names the object under the pointer.
-    const id = ui.held || (dragging == null ? ui.hover : null)
-    const n = id && nodes.get(id)
-    if (!n || !describe) { tip.hidden = true; return }
-    const def = lastState && EQUIPMENT[lastState.objects.find(o => o.id === id)?.type]
-    v3.setFromMatrixPosition(n.matrixWorld)
-    v3.y += (def ? def.h / 2 + 12 : 12) * S
-    v3.project(camera)
-    tip.hidden = false
-    tip.textContent = ui.held ? `Đang cầm: ${describe(id)}` : describe(id)
-    tip.dataset.held = ui.held ? '1' : ''
-    tip.style.left = `${(v3.x + 1) / 2 * host.canvas.clientWidth}px`
-    tip.style.top = `${(1 - v3.y) / 2 * host.canvas.clientHeight}px`
-  }
-
   function remove(node) {
     for (const extra of [node.userData.shadow, node.userData.ring, node.userData.body?.userData?.liq?.surface]) {
       if (!extra) continue
@@ -702,13 +681,36 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   }
   function pickId(e) {
     aim(e)
-    const hits = raycaster.intersectObjects([...nodes.values()].filter(n => n.visible), true)
-    for (const h of hits) {
+    const ids = []
+    for (const h of raycaster.intersectObjects([...nodes.values()].filter(n => n.visible), true)) {
       let n = h.object
       while (n && !n.userData.id) n = n.parent
-      if (n) return n.userData.id
+      if (n && !ids.includes(n.userData.id)) ids.push(n.userData.id)
     }
-    return null
+    const objs = lastState?.objects || []
+    const obj = id => objs.find(o => o.id === id)
+    // The ray meets the beaker wall before the nail inside it, and slips between the two arms of the
+    // tongs: pieces of solid come first, and a piece or a thin tool within ~14 px on screen counts as hit.
+    const rect = canvas.getBoundingClientRect()
+    const toPx = (x, y) => { v3.set(x * S, y * S, 0).project(camera); return [rect.left + (v3.x + 1) / 2 * rect.width, rect.top + (1 - v3.y) / 2 * rect.height] }
+    const segDist = (a, b) => {
+      const [ax, ay] = a
+      const [bx, by] = b
+      const t = Math.max(0, Math.min(1, ((e.clientX - ax) * (bx - ax) + (e.clientY - ay) * (by - ay)) / Math.max(1e-6, (bx - ax) ** 2 + (by - ay) ** 2)))
+      return Math.hypot(ax + t * (bx - ax) - e.clientX, ay + t * (by - ay) - e.clientY)
+    }
+    let near = null
+    let best = 14
+    for (const o of objs) {
+      if (!nodes.get(o.id)?.visible || isContainer(o)) continue
+      if (o.type === 'solid' && (o.holder || !(o.massG > 0))) continue
+      const h = o.type === 'solid' ? 2 * Math.max(1.2, solidRadiusMM(o)) : EQUIPMENT[o.type].h
+      const d = segDist(toPx(o.x, o.y), toPx(o.x, o.y + h)) - (o.type === 'solid' ? 4 : 0) // pieces win ties
+      if (d < best) { best = d; near = o.id }
+    }
+    const id = ids.find(i => obj(i)?.type === 'solid') || near || ids.find(i => !isContainer(obj(i) || {})) || ids[0] || null
+    const o = obj(id)
+    return o?.type === 'solid' && o.holder ? o.holder : id
   }
   function worldAt(e) {
     aim(e)
@@ -719,11 +721,13 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   canvas.tabIndex = 0
   function onDown(e) {
     if (e.button !== 0 || !controller) return
+    handled = false
     const id = pickId(e)
     if (!id) return // empty space: OrbitControls rotates / pans the camera
-    onPick?.(id)
+    // The controller decides first (with empty tongs selected, a click on a piece grabs it), then selects.
     const w = worldAt(e)
-    if (!w || !controller.down(id, w[0], w[1])) return
+    if (!w || !controller.down(id, w[0], w[1])) { onPick?.(id); return } // not draggable: select; OrbitControls may still orbit
+    handled = true // the click that follows this press must not re-select what is now under the cursor
     dragging = e.pointerId
     controls.enabled = false
     canvas.setPointerCapture(e.pointerId)
@@ -785,7 +789,12 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   canvas.addEventListener('pointerleave', onLeave)
   canvas.addEventListener('wheel', onWheel, { capture: true, passive: false })
   canvas.addEventListener('keydown', onKey, true)
-  function onClick(e) { const id = pickId(e); if (id) onPick?.(id) }
+  let handled = false
+  function onClick(e) {
+    if (handled) { handled = false; return }
+    const id = pickId(e)
+    if (id) onPick?.(id)
+  }
   canvas.addEventListener('click', onClick)
   const ro = new ResizeObserver(() => { applyViewOffset(insets?.() || lastInsets); host.requestRender() })
   ro.observe(container)
@@ -821,7 +830,6 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       ringGeo.dispose()
       for (const m of shared) { m.map?.dispose(); m.dispose() }
       envTex?.dispose()
-      tip.remove()
       host.dispose() // disposes remaining scene geometry/materials, renderer and controls
     }
   }

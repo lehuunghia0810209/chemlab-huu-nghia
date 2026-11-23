@@ -37,6 +37,8 @@ const P = {
   reset: '<path d="M4 4v6h6"/><path d="M5 15a8 8 0 1 0 2-8.5L4 10"/>',
   fit: '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
   home: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
+  forward: '<path d="M4 6l8 6-8 6zM12 6l8 6-8 6z"/>',
   panel: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>',
   library: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>'
 }
