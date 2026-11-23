@@ -4,7 +4,10 @@ import { createSim, SPEEDS, snapshot, restore } from '../engine/sim.js'
 import { EQUIPMENT, CAPABILITIES } from '../data/equipment.js'
 import { REAGENTS, REAGENT_BY_ID, HAZARD_LABELS, IONS, PRECIPITATES, LIQUIDS, INDICATORS, molarMass } from '../data/materials.js'
 import { byId, isContainer, volumeOf, containerAt, containerBelow, surfaceY, label as objLabel } from '../engine/processes.js'
-import { createView, render, toWorld, hit, bounds } from './render2d.js'
+import { createView, render, toWorld, toScreen, hit, bounds } from './render2d.js'
+import { icon, iconFor } from './icons.js'
+import { LIB_TABS, TOOLS, libraryItems, searchLibrary } from './library.js'
+import { observe } from './observations.js'
 import { GUIDED } from '../guided.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
 import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
@@ -13,49 +16,52 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const num = (x, d = 2) => Number(x).toLocaleString('vi-VN', { maximumFractionDigits: d })
 const sub = f => String(f || '').replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join('')).replace(/\^?(\d?)([+-])$/, '$1$2')
 
-const LIB_TABS = [
-  { id: 'equipment', label: 'Dụng cụ' },
-  { id: 'solution', label: 'Dung dịch' },
-  { id: 'liquid', label: 'Chất lỏng' },
-  { id: 'solid', label: 'Chất rắn' },
-  { id: 'gas', label: 'Chất khí' },
-  { id: 'indicator', label: 'Chỉ thị' },
-  { id: 'measure', label: 'Đo & điện' }
-]
-const EQUIP_TAB = { glass: 'equipment', support: 'equipment', transfer: 'equipment', tool: 'equipment', stock: null, measure: 'measure', heat: 'measure', electro: 'measure', gas: 'gas' }
-
-function libraryItems() {
-  const items = []
-  for (const [type, def] of Object.entries(EQUIPMENT)) {
-    const tab = EQUIP_TAB[def.group]
-    if (!tab) continue
-    items.push({ key: `eq:${type}`, tab, name: def.name, sub: def.capacityML ? `${def.capacityML} mL` : (def.caps || []).map(c => ({ dip: 'nhúng', stir: 'khuấy', grab: 'gắp', scoop: 'xúc', measure: 'đo', heat: 'cấp nhiệt', power: 'cấp điện', aspirate: 'hút/nhỏ', hold: 'giữ', electrode: 'điện cực', bridge: 'nối dung dịch', gas: 'sục khí' })[c]).filter(Boolean).join(' · '), type })
-    if (type === 'litmusPaper') items.push({ key: 'eq:litmusPaper:ind', tab: 'indicator', name: def.name, sub: 'nhúng trực tiếp', type })
-  }
-  for (const r of REAGENTS) {
-    const tab = r.kind === 'solution' ? 'solution' : r.kind === 'liquid' ? 'liquid' : r.kind === 'solid' ? 'solid' : r.kind === 'indicator' ? 'indicator' : 'gas'
-    if (r.kind === 'gas') continue
-    items.push({ key: `rg:${r.id}`, tab, name: r.name, sub: `${sub(r.formula) || ''}${r.M ? ` · ${String(r.M).replace('.', ',')} M` : ''}`, reagent: r.id })
-  }
-  return items
-}
-
 export function initDynamicLab(host) {
   if (!host || host.dataset.ready) return
   host.dataset.ready = '1'
   const sim = createSim(Date.now() >>> 0)
   const view = createView()
-  const ui = { selected: null, tab: 'equipment', query: '', theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', highlight: [], mode: 'sandbox', guided: null, render3d: false, quality: 'high', dirty: false }
+  const ui = { selected: null, hover: null, held: null, tab: 'equipment', query: '', theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', highlight: [], mode: 'sandbox', guided: null, render3d: false, quality: 'high', dirty: false, sideTab: 'obs' }
   host.innerHTML = template()
   host.classList.add('dlab')
+  // Drawers start open only where they leave the bench wide enough; on tablets/phones they are sheets.
+  // Same breakpoint as dlab.css: below it the drawers are bottom sheets over the bench.
+  const wideMQ = window.matchMedia('(min-width: 1100px)')
+  const wideLayout = () => wideMQ.matches
+  if (wideLayout()) {
+    const w = host.getBoundingClientRect().width
+    host.classList.add('dlab--show-lib')
+    if (w >= 1240) host.classList.add('dlab--show-side')
+  }
   const $ = sel => host.querySelector(sel)
   const canvas = $('.dlab-canvas')
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { alpha: false }) // opaque: the compositor need not blend it with the page
   const stage = $('.dlab-stage')
   const live = $('.dlab-live')
   const items = libraryItems()
+  let three = null
 
   // ── Layout & rendering loop ────────────────────────────────────────
+  // Stage area covered by floating drawers, action bar and dock; framing keeps objects out of it.
+  function insets() {
+    const r = stage.getBoundingClientRect()
+    const cover = el => {
+      if (!el || el.offsetParent === null || el.hidden) return null
+      const b = el.getBoundingClientRect()
+      return b.width && b.height ? b : null
+    }
+    const out = { l: 0, r: 0, t: 0 }
+    if (wideLayout()) {
+      const lib = host.classList.contains('dlab--show-lib') && cover($('.dlab-lib'))
+      const side = host.classList.contains('dlab--show-side') && cover($('.dlab-side'))
+      if (lib) out.l = lib.right - r.left
+      if (side) out.r = r.right - side.left
+    }
+    const bar = cover($('.dlab-actionbar'))
+    out.t = bar ? Math.min(r.height * 0.3, bar.bottom - r.top) : 0
+    return out
+  }
+
   function resize() {
     const rect = stage.getBoundingClientRect()
     view.w = Math.max(200, rect.width)
@@ -73,15 +79,21 @@ export function initDynamicLab(host) {
   // Zooming or panning by hand turns this off until "Vừa khung" is pressed.
   function fitView() {
     const objs = sim.state.objects
-    if (!objs.length) { view.zoom = Math.max(0.55, Math.min(2, view.w / 520, view.h / 300)); view.x = 430; view.y = 90; return }
+    const ins = insets()
+    const freeW = Math.max(160, view.w - ins.l - ins.r)
+    const top = Math.max(ins.t, 8) + 14
+    view.ox = (ins.l - ins.r) / 2
+    view.y = 90
+    if (!objs.length) { view.zoom = Math.max(0.6, Math.min(2.2, freeW / 420, view.h / 300)); view.x = 430; return }
     let x0 = Infinity, x1 = -Infinity, y1 = 0
     for (const o of objs) { const b = bounds(o); x0 = Math.min(x0, b.x0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1) }
-    const zx = view.w * 0.9 / Math.max(160, x1 - x0 + 70)
-    const zy = (view.h * 0.8 - 12) / Math.max(120, y1 + 60)
+    const zx = freeW * 0.88 / Math.max(160, x1 - x0 + 50)
+    const zy = (view.h * 0.8 - top) / Math.max(110, y1 + 60) // head-room: a vessel lifted to pour stays in view
     view.zoom = Math.max(0.55, Math.min(3, zx, zy))
     view.x = (x0 + x1) / 2
-    view.y = 90
   }
+  // Re-frame (unless the user zoomed by hand) when a drawer opens/closes or the action bar changes height.
+  function reframe() { if (!ui.userView) fitView(); three?.reframe?.(insets()) }
   new ResizeObserver(resize).observe(stage)
 
   let frame = null
@@ -104,11 +116,39 @@ export function initDynamicLab(host) {
   window.addEventListener('chemlab:view-change', () => setTimeout(start, 0))
   new IntersectionObserver(() => start()).observe(host)
 
+  // Magnifier: a real sodium piece is ~3 mm, so the vessel where a reaction runs is also drawn ×3
+  // in a corner inset (same renderer, same state — a closer camera, not a bigger object).
+  const loupe = $('.dlab-loupe')
+  const loupeCtx = loupe.querySelector('canvas').getContext('2d')
+  const loupeView = createView()
+  function drawLoupe() {
+    const st = sim.state
+    const c = ui.loupeOff ? null : st.objects.find(o => isContainer(o) && !o.stock && Object.values(o.activeReactions || {}).some(t => st.t - t < 1.5))
+    if (c) ui.loupeId = c.id
+    const target = byId(st, ui.loupeId)
+    const show = !ui.render3d && !ui.loupeOff && target && isContainer(target) && Object.values(target.activeReactions || {}).some(t => st.t - t < 6)
+    loupe.hidden = !show
+    if (!show) return
+    const def = EQUIPMENT[target.type]
+    const cv = loupe.querySelector('canvas')
+    const size = cv.clientWidth || 220
+    const dpr = Math.min(2, window.devicePixelRatio || 1)
+    if (cv.width !== Math.round(size * dpr)) { cv.width = cv.height = Math.round(size * dpr) }
+    Object.assign(loupeView, { w: size, h: size, dpr, ox: 0, zoom: Math.min(3.2 * view.zoom, size * 0.8 / Math.max(def.w, def.h)) })
+    loupeView.x = target.x
+    loupeView.y = target.y + def.h / 2 + 90 - (0.3 * size) / loupeView.zoom
+    if (loupeView.zoom / view.zoom < 1.5) { loupe.hidden = true; return } // the bench view is already close enough
+    render(loupeCtx, st, loupeView, { ...ui, selected: null, hover: null, held: null, highlight: [] })
+    loupe.querySelector('.dlab-loupe-x').textContent = `×${num(loupeView.zoom / view.zoom, 1)}`
+  }
+  loupe.addEventListener('click', e => { if (e.target.closest('[data-loupe-close]')) { ui.loupeOff = true; loupe.hidden = true } })
+
   function draw() {
     ui.theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
-    if (!ui.render3d) render(ctx, sim.state, view, ui)
+    if (!ui.render3d) { render(ctx, sim.state, view, ui); drawLoupe() }
+    else loupe.hidden = true
     paintToolbar()
-    if (++ui.tick % 6 === 0 || ui.forcePanel) { paintInspector(); paintLog(); paintGuided(); ui.forcePanel = false }
+    if (++ui.tick % 6 === 0 || ui.forcePanel) { paintInspector(); paintObservations(); paintGuided(); paintActions(); ui.forcePanel = false }
   }
   ui.tick = 0
 
@@ -122,13 +162,14 @@ export function initDynamicLab(host) {
 
   // ── Library ────────────────────────────────────────────────────────
   function paintLibrary() {
-    const q = ui.query.trim().toLowerCase()
-    const list = items.filter(it => (q ? `${it.name} ${it.sub}`.toLowerCase().includes(q) : it.tab === ui.tab))
+    const found = searchLibrary(items, ui.query)
+    const seen = new Set()
+    const list = (found || items.filter(it => it.tab === ui.tab)).filter(it => { const k = it.type || it.reagent; return !seen.has(k) && seen.add(k) })
     $('.dlab-lib-list').innerHTML = list.map(it => `
       <li><button type="button" class="dlab-lib-item" data-key="${esc(it.key)}" title="Bấm để lấy ra bàn, hoặc kéo thả vào bàn/cốc">
-        <span class="dlab-lib-name">${esc(it.name)}</span><span class="dlab-lib-sub">${esc(it.sub)}</span>
-      </button></li>`).join('') || '<li class="dlab-empty">Không tìm thấy mục phù hợp.</li>'
-    host.querySelectorAll('.dlab-tab').forEach(b => b.setAttribute('aria-selected', String(!q && b.dataset.tab === ui.tab)))
+        <span class="dlab-lib-icon">${iconFor(it)}</span><span class="dlab-lib-text"><span class="dlab-lib-name">${esc(it.name)}</span><span class="dlab-lib-sub">${esc(it.sub)}</span></span>
+      </button></li>`).join('') || '<li class="dlab-empty">Không tìm thấy mục phù hợp. Thử tên khác, ví dụ “nước”, “natri”, “cốc”.</li>'
+    host.querySelectorAll('.dlab-tab').forEach(b => b.setAttribute('aria-selected', String(!found && b.dataset.tab === ui.tab)))
   }
   host.querySelector('.dlab-tabs').addEventListener('click', e => {
     const b = e.target.closest('.dlab-tab')
@@ -156,24 +197,41 @@ export function initDynamicLab(host) {
     const it = items.find(i => i.key === key)
     if (!it) return
     if (it.type) {
+      // New equipment rests on the bench (no floating tools) unless it was dropped over a vessel.
+      const over = at && containerBelow(sim.state, at.x, at.y + 40)
       if (it.type === 'litmusPaper') {
         const r = sim.dispatch({ type: 'newLitmus', x: at?.x ?? freeX() })
-        if (at) byId(sim.state, r.id).y = Math.max(0, at.y)
+        byId(sim.state, r.id).y = over ? Math.max(0, at.y) : 0
         return select(r.id)
       }
-      const tool = ['dropper', 'pipette', 'rod', 'spatula', 'tongs', 'thermometer', 'phMeter', 'electrodes'].includes(it.type)
-      const r = sim.dispatch({ type: 'add', equipmentType: it.type, x: at?.x ?? freeX(), y: tool ? Math.max(40, at?.y ?? 120) : 0 })
+      const tool = TOOLS.includes(it.type)
+      const r = sim.dispatch({ type: 'add', equipmentType: it.type, x: at?.x ?? freeX(), y: tool && over ? Math.max(0, at.y) : 0 })
       if (!tool) sim.dispatch({ type: 'move', id: r.id, x: byId(sim.state, r.id).x, y: 0 }, { record: false })
       return select(r.id)
     }
     const reagent = REAGENT_BY_ID[it.reagent]
     if (reagent.kind === 'solid') {
-      const target = at ? containerAt(sim.state, at.x, at.y + 2) || containerBelow(sim.state, at.x, at.y + 200) : selectedContainer()
-      if (!target) return toast(`Chọn hoặc kéo ${reagent.name} vào một cốc/ống nghiệm. Chất rắn được lấy bằng ${reagent.tool === 'tongs' ? 'kẹp' : 'thìa'}.`)
+      let target = at ? containerAt(sim.state, at.x, at.y + 2) || containerBelow(sim.state, at.x, at.y + 200) : selectedContainer()
+      if (!target) {
+        // No vessel chosen: use the only vessel with liquid, or ask which one.
+        const wet = vessels().filter(c => volumeOf(c) > 0.5)
+        const pool = wet.length ? wet : vessels()
+        if (pool.length === 1) target = pool[0]
+        else if (pool.length > 1) return chooseVessel(`Thả ${reagent.name} vào đâu?`, pool).then(c => c && addSolidWithTool(reagent, c))
+        else return toast(`Cần một cốc hoặc ống nghiệm trên bàn trước khi thêm ${reagent.name}.`)
+      }
       return addSolidWithTool(reagent, target)
     }
     const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', reagent: reagent.id, x: at?.x ?? freeX() })
     select(r.id)
+  }
+
+  // Usable, non-stock vessels on the bench, nearest to x first.
+  function vessels(x = view.x, exclude = null) {
+    return sim.state.objects.filter(c => isContainer(c) && !c.stock && c.id !== exclude && c.condition !== 'UNUSABLE').sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))
+  }
+  function chooseVessel(title, pool) {
+    return choiceDialog(title, pool.map(c => ({ value: c.id, title: objLabel(c), sub: volumeOf(c) > 0.05 ? `${num(volumeOf(c), 1)} mL${c.pH != null ? ` · pH ${num(c.pH, 1)}` : ''}` : 'đang trống' }))).then(id => id && byId(sim.state, id))
   }
 
   function selectedContainer() {
@@ -190,14 +248,17 @@ export function initDynamicLab(host) {
     tool.y = container.y + EQUIPMENT[container.type].h + 30
     if (!(await run({ type: 'pick', tool: tool.id, reagent: reagent.id, massG: mass }))) return
     await run({ type: 'release', tool: tool.id })
-    select(tool.id)
+    // Put the tool back on the bench beside the vessel and keep the vessel in focus for observing.
+    sim.dispatch({ type: 'move', id: tool.id, x: container.x + EQUIPMENT[container.type].w / 2 + 22, y: 0 }, { record: false })
+    select(container.id)
   }
 
   host.querySelector('.dlab-lib-list').addEventListener('click', e => {
     const b = e.target.closest('.dlab-lib-item')
     if (b && !ui.libDragged) {
       takeFromLibrary(b.dataset.key)
-      host.classList.remove('dlab--show-lib')
+      // On phones the sheet covers the bench: close it so the student sees the result.
+      if (!wideLayout()) toggleDrawer('lib', false)
     }
     ui.libDragged = false
   })
@@ -234,7 +295,7 @@ export function initDynamicLab(host) {
 
   host.addEventListener('click', e => {
     const c = e.target.closest('[data-close]')
-    if (c) host.classList.remove(`dlab--show-${c.dataset.close}`)
+    if (c) toggleDrawer(c.dataset.close, false)
   })
 
   // ── Commands with safety dialogs ───────────────────────────────────
@@ -293,6 +354,8 @@ export function initDynamicLab(host) {
     sim.record()
     drag = { id: o.id, dx: o.x - x, dy: o.y - y, start: { x: o.x, y: o.y, angle: o.angle }, moved: false }
     if (isContainer(o)) o.held = true
+    ui.held = o.id
+    host.classList.add('dlab--dragging') // overlays step aside so the lifted vessel and the wheel stay on the bench
     return true
   }
   function dragTo(x, y) {
@@ -314,13 +377,24 @@ export function initDynamicLab(host) {
   async function endObjectDrag() {
     const d = drag
     drag = null
+    ui.held = null
+    host.classList.remove('dlab--dragging')
     if (ui.fitPending) { ui.fitPending = false; if (!ui.userView) fitView() }
     if (d?.id) await finishDrag(d)
   }
   canvas.addEventListener('pointermove', e => {
     const rect = canvas.getBoundingClientRect()
     if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
-    if (!drag) return
+    if (!drag) {
+      if (e.pointerType === 'mouse') {
+        const [hx, hy] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
+        const h = pick(hx, hy)
+        ui.hover = h?.id ?? null
+        canvas.style.cursor = h ? 'grab' : ''
+      }
+      return
+    }
+    canvas.style.cursor = drag.id ? 'grabbing' : 'move'
     if (drag.pinch) { if (pointers.size === 2) { view.zoom = clampZoom(drag.zoom * pinchDist() / drag.dist); ui.userView = true } return }
     if (drag.pan) { ui.userView = true; view.x = drag.vx - (e.clientX - drag.sx) / view.zoom; view.y = drag.vy + (e.clientY - drag.sy) / view.zoom; return }
     const [x, y] = toWorld(view, e.clientX - rect.left, e.clientY - rect.top)
@@ -347,8 +421,11 @@ export function initDynamicLab(host) {
     else if (!r.ok) { Object.assign(o, d.start); toast(r.verdict.reasons.join(' '), 'danger'); settleBack(o) }
     // A loaded tool released over a container drops its solid in.
     if ((o.type === 'tongs' || o.type === 'spatula') && o.load && containerBelow(sim.state, o.x, o.y + 40)) await run({ type: 'release', tool: o.id }, { record: false })
+    // A tool let go in mid-air (not in or over a vessel) comes to rest on the bench instead of floating.
+    if (TOOLS.includes(o.type) && o.y > 0 && !o.load && !containerAt(sim.state, o.x, o.y + 1) && !containerBelow(sim.state, o.x, o.y + 40)) sim.dispatch({ type: 'move', id: o.id, x: o.x, y: 0 }, { record: false })
   }
   function settleBack(o) { sim.dispatch({ type: 'move', id: o.id, x: o.x, y: o.y }, { record: false }) }
+  canvas.addEventListener('pointerleave', () => { ui.hover = null })
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
   canvas.addEventListener('wheel', e => {
@@ -586,61 +663,262 @@ export function initDynamicLab(host) {
     }
   })
 
-  // ── Log ────────────────────────────────────────────────────────────
-  let lastLogLen = -1
-  function paintLog() {
+  // ── Observation panel: happening now → conclusion/results → safety; journal collapsed ──
+  function paintObservations() {
+    const m = observe(sim.state)
+    const box = $('.dlab-obs')
+    let html = ''
+    html += `<section class="dlab-obs-block" aria-label="Hiện tượng đang diễn ra"><h4>Đang diễn ra</h4>${m.happening.length ? `<ul class="dlab-now">${m.happening.map(h => `<li><span class="dlab-pulse" aria-hidden="true"></span><span><strong>${esc(h.where)}:</strong> ${esc(h.text)}</span></li>`).join('')}</ul>` : '<p class="dlab-hint">Chưa có phản ứng nào đang xảy ra.</p>'}</section>`
+    if (m.conclusions.length) html += m.conclusions.map(c => `<section class="dlab-conclusion" aria-label="Kết luận"><h4>Kết luận</h4><p class="dlab-eq">${esc(c.equation)}</p><p>${esc(c.text)}</p>${c.facts.length ? `<ul>${c.facts.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}</section>`).join('')
+    if (m.safety.length) html += `<section class="dlab-obs-block dlab-obs-safety" aria-label="Cảnh báo an toàn"><h4>An toàn</h4><ul>${m.safety.map(e => `<li class="is-${e.kind}">${esc(e.text)}</li>`).join('')}</ul></section>`
+    html += `<section class="dlab-obs-block" aria-label="Kết quả quan sát"><h4>Quan sát được</h4>${m.results.length ? `<ol class="dlab-log">${m.results.map(e => `<li class="dlab-log--observe"><time>${fmtTime(e.t)}</time> ${esc(e.text)}</li>`).join('')}</ol>` : '<p class="dlab-hint">Hiện tượng quan sát được sẽ ghi ở đây.</p>'}</section>`
+    html += `<details class="dlab-journal"${ui.journalOpen ? ' open' : ''}><summary>Nhật ký thao tác (${m.journal.length})</summary><ol class="dlab-log">${m.journal.slice(0, 40).map(e => `<li class="dlab-log--${e.kind}"><time>${fmtTime(e.t)}</time> ${esc(e.text)}${e.n > 1 ? ` <span class="dlab-count">×${e.n}</span>` : ''}</li>`).join('') || '<li class="dlab-empty">Chưa có thao tác nào.</li>'}</ol></details>`
+    patch(box, html)
+    // First reaction of the session: bring the observations into view (wide screens only — on phones
+    // a sheet would cover the bench, so the button gets a dot instead). The library makes room if needed.
+    if (m.happening.length && !ui.autoOpened && wideLayout() && !host.classList.contains('dlab--show-side')) {
+      ui.autoOpened = true
+      if (host.getBoundingClientRect().width < 1240) host.classList.remove('dlab--show-lib')
+      openSide('obs')
+    }
     const log = sim.state.log
-    if (log.length === lastLogLen && !ui.logDirty) return
-    lastLogLen = log.length
-    const items = log.slice(-14).reverse()
-    $('.dlab-log').innerHTML = items.map(e => `<li class="dlab-log--${e.kind}"><time>${fmtTime(e.t)}</time> ${esc(e.text)}</li>`).join('') || '<li class="dlab-empty">Chưa có quan sát nào.</li>'
     const newest = log[log.length - 1]
     if (newest && newest !== ui.lastAnnounced && newest.kind !== 'action') { ui.lastAnnounced = newest; announce(newest.text) }
+    // Dot on the collapsed "Quan sát" button when something new is observed.
+    const count = m.results.length + m.safety.length + m.conclusions.length
+    if (count !== ui.obsCount) {
+      if (ui.obsCount != null && !host.classList.contains('dlab--show-side')) $('[data-hd="side"]').dataset.badge = '1'
+      ui.obsCount = count
+    }
   }
+  $('.dlab-obs').addEventListener('toggle', e => { if (e.target.matches('.dlab-journal')) ui.journalOpen = e.target.open }, true)
   const fmtTime = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`
+
+  // ── Contextual action bar: the main operations for the selected object, no shortcuts needed ──
+  const bar = $('.dlab-actionbar')
+  const opt = list => list.map(c => `<option value="${c.id}">${esc(objLabel(c))}</option>`).join('')
+  function paintActions() {
+    if (bar.contains(document.activeElement) && document.activeElement.matches('input, select')) return
+    const o = byId(sim.state, ui.selected)
+    const before = bar.offsetHeight
+    if (!o) {
+      const hasStuff = sim.state.objects.length > 0
+      bar.dataset.kind = 'hint'
+      patch(bar, `<p class="dlab-bar-hint">${icon('help')}<span>${hasStuff ? 'Chọn một vật trên bàn để thấy các thao tác chính. Kéo vật để di chuyển.' : 'Lấy dụng cụ và hóa chất từ Thư viện để bắt đầu.'}</span></p>`)
+    }
+    else {
+      bar.dataset.kind = o.type
+      const r = o.type === 'solid' || o.stock ? REAGENT_BY_ID[o.reagent] : null
+      const name = o.type === 'solid' ? r.name : objLabel(o)
+      const head = `<div class="dlab-bar-head">${iconFor(r ? { reagentDef: r } : { type: o.type })}<div><strong>${esc(name)}</strong><span>${esc(summary(o))}</span></div></div>`
+      patch(bar, `${head}<div class="dlab-bar-acts">${quickActions(o)}<button type="button" class="dlab-btn dlab-btn--ghost" data-qa="details">Chi tiết</button></div>`)
+    }
+    if (bar.offsetHeight !== before) reframe()
+  }
+  function summary(o) {
+    if (o.type === 'solid') return `${num(o.massG, 3)} g${o.in ? ` · trong ${objLabel(byId(sim.state, o.in))}` : ''}`
+    if (isContainer(o)) {
+      const v = volumeOf(o)
+      if (o.condition === 'UNUSABLE') return 'Hỏng — không dùng được'
+      if (v < 0.05) return 'Đang trống'
+      return `${num(v, 1)} mL${o.pH != null ? ` · pH ${num(o.pH, 1)}` : ''} · ${num(o.T, 0)} °C`
+    }
+    if (o.type === 'dropper' || o.type === 'pipette') { const v = volumeOf({ contents: o.contents }); return v > 0 ? `Đang chứa ${num(v, 2)} mL` : 'Đang trống' }
+    if ((o.type === 'tongs' || o.type === 'spatula') && o.load) return `Đang giữ ${num(o.load.massG, 3)} g ${REAGENT_BY_ID[o.load.reagent].name}`
+    if (o.type === 'thermometer') return `${num(o.reading ?? 25, 1)} °C`
+    if (o.type === 'phMeter') return o.reading == null ? 'Nhúng vào dung dịch để đo' : `pH ${num(o.reading, 2)}`
+    if (o.type === 'litmusPaper') return o.inside ? 'Đang nhúng' : 'Nhúng vào dung dịch để thử'
+    return (EQUIPMENT[o.type].caps || []).map(c => CAPABILITIES[c] || c).slice(0, 2).join(' · ')
+  }
+  function quickActions(o) {
+    if (o.condition === 'UNUSABLE') return '<button type="button" class="dlab-btn dlab-btn--accent" data-qa="replace">Lấy dụng cụ mới</button>'
+    if (o.type === 'solid') return ''
+    const targets = vessels(o.x, o.id)
+    const sel = (k, list, label) => (list.length ? `<select data-qa-in="${k}" aria-label="${label}">${opt(list)}</select>` : '')
+    if (isContainer(o)) {
+      const vol = volumeOf(o)
+      if (vol < 0.05) return '<span class="dlab-bar-note">Rót chất lỏng vào từ chai hóa chất.</span>'
+      if (!targets.length) return '<span class="dlab-bar-note">Lấy thêm một cốc để rót sang.</span>'
+      const reagent = o.stock && REAGENT_BY_ID[o.reagent]
+      if (reagent?.kind === 'indicator') return `<span class="dlab-bar-label">Nhỏ 3 giọt vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drops">Nhỏ vào cốc</button>`
+      const amount = o.stock ? 50 : Math.max(1, Math.round(Math.min(vol, 20)))
+      let h = `<span class="dlab-bar-label">Rót</span><input type="number" class="dlab-in" data-qa-in="ml" min="0.5" step="5" value="${amount}" aria-label="Thể tích rót (mL)"><span class="dlab-bar-label">mL vào</span>${sel('to', targets, 'Rót vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="pour">Rót vào cốc</button>`
+      if (!o.stock) h += `<label class="dlab-tilt"><span>Nghiêng tay</span><input type="range" min="0" max="110" step="5" value="${Math.round(Math.abs(o.angle) * 180 / Math.PI)}" data-qa-in="tilt" aria-label="Nghiêng cốc để rót trực tiếp (độ)"></label><button type="button" class="dlab-btn" data-qa="stir">Khuấy</button>`
+      return h
+    }
+    const wet = targets.filter(c => volumeOf(c) > 0.5)
+    if (o.type === 'dropper' || o.type === 'pipette') {
+      const vol = volumeOf({ contents: o.contents })
+      if (vol <= 0) return wet.length ? `<span class="dlab-bar-label">Hút từ</span>${sel('from', wet, 'Hút từ')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="suck">Hút ${o.type === 'dropper' ? '1 mL' : '5 mL'}</button>` : '<span class="dlab-bar-note">Chưa có dung dịch để hút.</span>'
+      return `<span class="dlab-bar-label">Nhỏ vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop1">1 giọt</button><button type="button" class="dlab-btn" data-qa="drop5">5 giọt</button>`
+    }
+    if (o.type === 'tongs' || o.type === 'spatula') {
+      if (o.load) return `<span class="dlab-bar-label">Thả vào</span>${sel('to', targets, 'Thả vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop-solid">Thả</button>`
+      const solids = REAGENTS.filter(r => r.kind === 'solid' && r.tool === o.type)
+      return `<select data-qa-in="solid" aria-label="Chất rắn">${solids.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><input type="number" class="dlab-in" data-qa-in="mass" min="0.01" step="0.05" value="${solids[0]?.defaultMass ?? 1}" aria-label="Khối lượng (g)"><span class="dlab-bar-label">g</span><button type="button" class="dlab-btn dlab-btn--accent" data-qa="pick">Lấy</button>`
+    }
+    if (o.type === 'litmusPaper' || o.type === 'thermometer' || o.type === 'phMeter') {
+      if (o.inside) return '<button type="button" class="dlab-btn dlab-btn--accent" data-qa="lift">Lấy ra</button>'
+      const word = o.type === 'litmusPaper' ? 'Nhúng' : 'Đo'
+      return wet.length ? `<span class="dlab-bar-label">${word} vào</span>${sel('to', wet, `${word} vào`)}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="dip">${word}</button>` : '<span class="dlab-bar-note">Chưa có dung dịch để nhúng.</span>'
+    }
+    if (o.type === 'rod') return wet.length ? `<span class="dlab-bar-label">Khuấy</span>${sel('to', wet, 'Khuấy cốc')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="stir-in">Khuấy</button>` : ''
+    if (o.type === 'burner') return `<button type="button" class="dlab-btn dlab-btn--accent" data-qa="burner">${o.on ? 'Tắt bếp' : 'Bật bếp'}</button>`
+    return ''
+  }
+  const qa = k => bar.querySelector(`[data-qa-in="${k}"]`)?.value
+  bar.addEventListener('click', async e => {
+    const b = e.target.closest('[data-qa]')
+    const o = b && byId(sim.state, ui.selected)
+    if (!o) return
+    const act = b.dataset.qa
+    const t = byId(sim.state, qa('to'))
+    const above = c => ({ x: c.x, y: c.y + EQUIPMENT[c.type].h + 14 })
+    const beside = c => ({ x: c.x + EQUIPMENT[c.type].w / 2 + 22, y: 0 })
+    if (act === 'details') { openSide('detail'); return }
+    if (act === 'replace') { const r = await run({ type: 'replace', id: o.id }); if (r) select(r.id) }
+    if (act === 'pour' && t) await run({ type: 'pourExact', from: o.id, to: t.id, mL: Math.max(0.1, Number(qa('ml')) || 0) })
+    if (act === 'drops' && t) await run({ type: 'pourExact', from: o.id, to: t.id, mL: 3 * EQUIPMENT.dropper.dropML })
+    if (act === 'stir') await run({ type: 'stir', id: o.id })
+    if (act === 'stir-in' && t) { await run({ type: 'move', id: o.id, x: t.x, y: t.y + 3 }); await run({ type: 'stir', id: t.id }) }
+    if (act === 'suck') {
+      const c = byId(sim.state, qa('from'))
+      if (c && await run({ type: 'move', id: o.id, x: c.x, y: Math.max(c.y + 3, surfaceY(c) - 10) })) await run({ type: 'aspirate', tool: o.id, from: c.id, mL: o.type === 'dropper' ? 1 : 5 })
+    }
+    if ((act === 'drop1' || act === 'drop5') && t) {
+      const p = above(t)
+      if (await run({ type: 'move', id: o.id, x: p.x, y: p.y })) await run({ type: 'dispense', tool: o.id, drops: act === 'drop1' ? 1 : 5 })
+    }
+    if (act === 'pick') await run({ type: 'pick', tool: o.id, reagent: qa('solid'), massG: Number(qa('mass')) })
+    if (act === 'drop-solid' && t) {
+      if (await run({ type: 'move', id: o.id, x: t.x, y: t.y + EQUIPMENT[t.type].h + 30 }) && await run({ type: 'release', tool: o.id })) {
+        const p = beside(t)
+        sim.dispatch({ type: 'move', id: o.id, x: p.x, y: 0 }, { record: false })
+        select(t.id)
+      }
+    }
+    if (act === 'dip' && t) await run({ type: 'move', id: o.id, x: t.x, y: Math.max(t.y + 3, surfaceY(t) - 12) })
+    if (act === 'lift') { const c = byId(sim.state, o.inside); if (c) { const p = beside(c); await run({ type: 'move', id: o.id, x: p.x, y: 0 }) } }
+    if (act === 'burner') await run({ type: 'burner', id: o.id, on: !o.on })
+    ui.forcePanel = true
+  })
+  // "Nghiêng tay": hold the vessel above the chosen receiver and tilt it with the slider — the same
+  // tilt the mouse wheel or [ ] keys give, so how much pours is still decided by the simulation.
+  bar.addEventListener('input', e => {
+    if (!e.target.matches('[data-qa-in="tilt"]')) return
+    const o = byId(sim.state, ui.selected)
+    const t = byId(sim.state, qa('to'))
+    if (!o || !t || !isContainer(o)) return
+    const deg = Number(e.target.value)
+    if (!ui.tilting && deg > 0) {
+      ui.tilting = { id: o.id, x: o.x, y: o.y }
+      sim.record()
+      o.held = true
+      o.x = t.x - (EQUIPMENT[o.type].w / 2 + EQUIPMENT[t.type].w * 0.12)
+      o.y = t.y + EQUIPMENT[t.type].h + 22
+      ui.held = o.id
+    }
+    if (!ui.tilting) return
+    o.angle = Math.min(2.2, deg * Math.PI / 180)
+    if (deg === 0) endTilt()
+  })
+  function endTilt() {
+    const s0 = ui.tilting
+    ui.tilting = null
+    ui.held = null
+    const o = s0 && byId(sim.state, s0.id)
+    if (!o) return
+    o.angle = 0
+    o.held = false
+    sim.dispatch({ type: 'move', id: o.id, x: s0.x, y: s0.y }, { record: false })
+    ui.forcePanel = true
+  }
 
   // ── Toolbar ────────────────────────────────────────────────────────
   function paintToolbar() {
     const st = sim.state
-    $('.dlab-time').textContent = `t = ${fmtTime(st.t)}`
+    const tText = `t = ${fmtTime(st.t)}`
+    if (ui.tText !== tText) { ui.tText = tText; $('.dlab-time').textContent = tText } // avoid repainting the dock every frame
     const play = $('[data-tb="play"]')
     const label = st.paused ? 'Tiếp tục' : 'Tạm dừng'
-    if (play.dataset.label !== label) { play.dataset.label = label; play.textContent = label; play.setAttribute('aria-pressed', String(st.paused)) }
+    if (play.dataset.label !== label) {
+      play.dataset.label = label
+      play.innerHTML = `${icon(st.paused ? 'play' : 'pause')}<span>${label}</span>`
+      play.setAttribute('aria-pressed', String(st.paused))
+    }
     host.querySelectorAll('[data-speed]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.speed) === st.speed)))
     $('[data-tb="undo"]').disabled = !sim.history.length
   }
   function togglePause() { sim.state.paused = !sim.state.paused; announce(sim.state.paused ? 'Đã tạm dừng mô phỏng' : 'Tiếp tục mô phỏng'); draw() }
-  $('.dlab-toolbar').addEventListener('click', async e => {
+  $('.dlab-dock').addEventListener('click', async e => {
     const b = e.target.closest('button')
     if (!b) return
     if (b.dataset.speed) { sim.state.speed = Number(b.dataset.speed); announce(`Tốc độ ${b.textContent}`) }
     if (b.dataset.tb === 'play') togglePause()
     if (b.dataset.tb === 'undo') sim.undo()
     if (b.dataset.tb === 'reset') { if (await confirmDialog('Đặt lại thí nghiệm?', ['Bàn thí nghiệm sẽ trở về trạng thái ban đầu. Có thể hoàn tác.'])) sim.reset() }
-    if (b.dataset.tb === 'cleanup') sim.dispatch({ type: 'cleanup' })
-    if (b.dataset.tb === 'fit') { ui.userView = false; fitView() }
+    if (b.dataset.tb === 'fit') { ui.userView = false; fitView(); three?.fit?.(insets()) }
+    if (b.dataset.tb === 'home3d') three?.home?.()
     draw()
   })
 
-  // ── Header ─────────────────────────────────────────────────────────
-  $('.dlab-header').addEventListener('click', async e => {
+  // ── Header, drawers and menu ─────────────────────────────────────
+  function openSide(tab) {
+    host.classList.add('dlab--show-side')
+    if (!wideLayout()) host.classList.remove('dlab--show-lib')
+    delete $('[data-hd="side"]').dataset.badge
+    if (tab) setSideTab(tab)
+    syncDrawerButtons()
+    requestAnimationFrame(reframe)
+  }
+  function setSideTab(tab) {
+    ui.sideTab = tab
+    host.querySelectorAll('[data-side-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.sideTab === tab)))
+    $('.dlab-obs-pane').hidden = tab !== 'obs'
+    $('.dlab-detail-pane').hidden = tab !== 'detail'
+    ui.forcePanel = true
+  }
+  function toggleDrawer(which, force) {
+    const cls = `dlab--show-${which}`
+    const open = force ?? !host.classList.contains(cls)
+    host.classList.toggle(cls, open)
+    if (open && !wideLayout()) host.classList.remove(`dlab--show-${which === 'lib' ? 'side' : 'lib'}`)
+    if (which === 'side' && open) delete $('[data-hd="side"]').dataset.badge
+    if (which === 'lib' && open) setTimeout(() => $('.dlab-search').focus({ preventScroll: true }), 0)
+    syncDrawerButtons()
+    requestAnimationFrame(reframe)
+  }
+  function syncDrawerButtons() {
+    $('[data-hd="lib"]').setAttribute('aria-expanded', String(host.classList.contains('dlab--show-lib')))
+    $('[data-hd="side"]').setAttribute('aria-expanded', String(host.classList.contains('dlab--show-side')))
+  }
+  host.querySelectorAll('[data-side-tab]').forEach(b => b.addEventListener('click', () => setSideTab(b.dataset.sideTab)))
+  host.addEventListener('click', async e => {
     const b = e.target.closest('[data-hd]')
     if (!b) return
     const what = b.dataset.hd
+    const menu = b.closest('.dlab-menu')
+    if (menu) menu.open = false
     if (what === 'sandbox') startSandbox()
     if (what === 'guided') openGuidedPicker()
     if (what === 'save') saveDialog()
     if (what === 'open') openDialog()
     if (what === 'view3d') toggle3d()
+    if (what === 'help') coach.start()
+    if (what === 'cleanup') { const r = sim.dispatch({ type: 'cleanup' }); if (r.ok && !r.changed) toast('Bàn đã sạch, không có gì cần dọn.') }
     if (what === 'full') { if (document.fullscreenElement) document.exitFullscreen(); else host.requestFullscreen?.() }
     if (what === 'ai') askChemAI()
-    if (what === 'quality') { ui.quality = ui.quality === 'high' ? 'low' : 'high'; b.textContent = ui.quality === 'high' ? 'Đồ họa: Cao' : 'Đồ họa: Tiết kiệm'; three?.setQuality(ui.quality) }
-    if (what === 'lib' || what === 'insp') {
-      host.classList.toggle(`dlab--show-${what}`)
-      host.classList.remove(`dlab--show-${what === 'lib' ? 'insp' : 'lib'}`)
-      host.style.setProperty('--dlab-head-h', `${$('.dlab-header').offsetHeight}px`)
-    }
+    if (what === 'quality') { ui.qualityChosen = true; ui.quality = ui.quality === 'high' ? 'low' : 'high'; b.textContent = ui.quality === 'high' ? 'Đồ họa: Cao' : 'Đồ họa: Tiết kiệm'; three?.setQuality(ui.quality) }
+    if (what === 'lib' || what === 'side') toggleDrawer(what)
   })
+  document.addEventListener('click', e => { const m = $('.dlab-menu'); if (m?.open && !m.contains(e.target)) m.open = false })
+  host.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return
+    const m = $('.dlab-menu')
+    if (m?.open) { m.open = false; m.querySelector('summary').focus(); return }
+    if (!wideLayout() && (host.classList.contains('dlab--show-lib') || host.classList.contains('dlab--show-side'))) { toggleDrawer('lib', false); toggleDrawer('side', false) }
+  })
+  syncDrawerButtons()
 
   function startSandbox() {
     ui.mode = 'sandbox'
@@ -649,7 +927,7 @@ export function initDynamicLab(host) {
     sim.load(restore(snapshot(seedSandbox())))
     sim.markInitial()
     setModeButtons()
-    toast('Chế độ Sandbox: lấy tự do hóa chất và dụng cụ từ thư viện bên trái.')
+    toast('Thực hành tự do: lấy hóa chất và dụng cụ từ Thư viện.')
   }
   function seedSandbox() {
     const s = createSim(Date.now() >>> 0)
@@ -657,8 +935,8 @@ export function initDynamicLab(host) {
     add('beaker100', 260)
     add('beaker100', 360)
     add('testTube', 460)
-    add('dropper', 540, { y: 150 })
-    add('rod', 600, { y: 90 })
+    add('dropper', 530)
+    add('rod', 575)
     s.state.log = []
     return s.state
   }
@@ -680,6 +958,7 @@ export function initDynamicLab(host) {
     ui.mode = 'guided'
     ui.guided = { lab, roles, done: [], finished: false }
     setModeButtons()
+    openSide('obs')
     ui.forcePanel = true
   }
   function paintGuided() {
@@ -704,7 +983,8 @@ export function initDynamicLab(host) {
       ${current === 0 ? `<p><strong>Mục tiêu:</strong> ${esc(g.lab.goal)}</p><p><strong>Kiến thức:</strong> ${esc(g.lab.knowledge)}</p><p><strong>Dụng cụ:</strong> ${esc(g.lab.equipment.join(', '))}</p><p><strong>Hóa chất:</strong> ${esc(g.lab.chemicals.join(', '))}</p><p class="dlab-alert">${esc(g.lab.safety)}</p>` : ''}
       <ol class="dlab-steps">${g.lab.steps.map((s, i) => `<li class="${i < current ? 'is-done' : i === current ? 'is-current' : ''}" ${i === current ? 'aria-current="step"' : ''}>${esc(s.text)}</li>`).join('')}</ol>
       ${finished ? `<div class="dlab-result"><p><strong>Hiện tượng:</strong> ${esc(g.lab.observe)}</p><p><strong>Giải thích:</strong> ${esc(g.lab.explain)}</p><p><strong>Kết luận:</strong> ${esc(g.lab.conclusion)}</p></div>` : ''}
-      <p class="dlab-progress">Tiến độ: ${Math.min(current, g.lab.steps.length)}/${g.lab.steps.length}</p>`}
+      <p class="dlab-progress">Tiến độ: ${Math.min(current, g.lab.steps.length)}/${g.lab.steps.length}</p>
+      <div class="dlab-meter" aria-hidden="true"><span style="width:${Math.round(100 * Math.min(current, g.lab.steps.length) / g.lab.steps.length)}%"></span></div>`}
       <div class="dlab-row"><button type="button" class="dlab-btn dlab-btn--ghost" data-g="exit">Thoát bài</button></div>`
   }
   $('.dlab-guided').addEventListener('click', e => {
@@ -751,7 +1031,6 @@ export function initDynamicLab(host) {
   setInterval(() => { if (visible()) autosave() }, 15000)
 
   // ── 3D view (same state, lazy-loaded) ──────────────────────────────
-  let three = null
   async function toggle3d() {
     const btn = $('[data-hd="view3d"]')
     if (ui.render3d) {
@@ -762,14 +1041,25 @@ export function initDynamicLab(host) {
       $('.dlab-3d').hidden = true
       btn.textContent = 'Xem 3D'
       btn.setAttribute('aria-pressed', 'false')
+      $('[data-tb="home3d"]').hidden = true
       return
     }
     try {
+      // No GPU (software WebGL): start in economy graphics unless the user picked a quality.
+      if (!ui.qualityChosen && ui.quality === 'high' && softwareGL()) {
+        ui.quality = 'low'
+        const qb = $('[data-hd="quality"]')
+        if (qb) qb.textContent = 'Đồ họa: Tiết kiệm'
+        ui.autoLow = true
+      }
       const { create3dView } = await import('./render3d.js')
       $('.dlab-3d').hidden = false
       three = create3dView($('.dlab-3d'), {
         quality: ui.quality,
         onPick: id => select(id),
+        onHover: id => { ui.hover = id },
+        insets: () => insets(),
+        describe: id => { const o = byId(sim.state, id); return !o ? '' : o.type === 'solid' ? REAGENT_BY_ID[o.reagent].name : objLabel(o) },
         controller: {
           down: (id, x, y) => { const o = byId(sim.state, id); return o ? beginDrag(o, x, y) : false },
           move: dragTo,
@@ -784,8 +1074,9 @@ export function initDynamicLab(host) {
       canvas.hidden = true
       btn.textContent = 'Xem 2D'
       btn.setAttribute('aria-pressed', 'true')
+      $('[data-tb="home3d"]').hidden = false
       three.update(sim.state, ui)
-      toast('Chế độ 3D: kéo vật để di chuyển, nhấc, nhúng; giữ vật và lăn chuột (hoặc [ ]) để nghiêng, rót. Kéo vùng trống để xoay, lăn chuột để phóng to.')
+      toast(`${ui.autoLow ? 'Máy không có tăng tốc đồ họa nên dùng “Đồ họa: Tiết kiệm” (đổi ở menu ⋯). ' : ''}3D: kéo vật để di chuyển; kéo vùng trống để xoay bàn; lăn chuột để phóng to. Thao tác chính có ở thanh phía trên.`)
     }
     catch (err) { toast(`Không tải được 3D: ${err.message}`, 'danger') }
   }
@@ -808,7 +1099,8 @@ export function initDynamicLab(host) {
       const prev = document.activeElement
       dialog.innerHTML = html
       const done = v => { dialog.close(); prev?.focus?.(); resolve(v) }
-      dialog.onclose = () => resolve(null)
+      // A previous modal's queued 'close' event can arrive after this one opened; only a real close cancels.
+      dialog.onclose = () => { if (!dialog.open) resolve(null) }
       wire(dialog, done)
       dialog.showModal()
       dialog.querySelector('[autofocus], input, button')?.focus()
@@ -856,6 +1148,53 @@ export function initDynamicLab(host) {
     requestAnimationFrame(() => { live.textContent = text })
   }
 
+  // ── Onboarding: four short coach cards, skippable, reopened with the "?" button ──
+  const COACH_KEY = 'chemlab-dlab-onboarded'
+  const COACH = [
+    { target: '.dlab-lib', open: 'lib', title: 'Thư viện hóa chất & dụng cụ', text: 'Gõ tên để tìm (ví dụ “nước”, “natri”) hoặc chọn nhóm. Bấm một mục để lấy ra bàn, hoặc kéo thả thẳng vào cốc.' },
+    { target: '.dlab-actionbar', title: 'Bàn thí nghiệm', text: 'Kéo dụng cụ để di chuyển. Bấm chọn một vật: các thao tác chính — rót, nhỏ giọt, nhúng, thả chất rắn — hiện ở thanh này, không cần nhớ phím tắt.' },
+    { target: '.dlab-side', open: 'side', title: 'Bảng Quan sát', text: 'Hiện tượng đang diễn ra, kết luận và cảnh báo an toàn hiện ở đây. Nhật ký thao tác chi tiết được thu gọn ở cuối.' },
+    { target: '.dlab-mode', title: 'Bắt đầu', text: 'Chọn “Có hướng dẫn” để làm theo từng bước, hoặc thực hành tự do: lấy Nước cất rót vào cốc, nhỏ phenolphtalein, rồi thả một mẩu natri. Mở lại hướng dẫn này bằng nút “?”.' }
+  ]
+  const coach = (() => {
+    let i = -1
+    const card = $('.dlab-coach')
+    function show() {
+      host.querySelectorAll('.is-coach-target').forEach(el => el.classList.remove('is-coach-target'))
+      if (i < 0) { card.hidden = true; return }
+      const step = COACH[i]
+      if (step.open) toggleDrawer(step.open, true)
+      $(step.target)?.classList.add('is-coach-target')
+      card.hidden = false
+      card.innerHTML = `<p class="dlab-kicker">Hướng dẫn nhanh · ${i + 1}/${COACH.length}</p><h3 id="dlab-coach-title">${step.title}</h3><p>${step.text}</p>
+        <div class="dlab-row"><button type="button" data-coach="skip" class="dlab-btn dlab-btn--ghost">Bỏ qua</button><span class="dlab-grow"></span>${i > 0 ? '<button type="button" data-coach="back" class="dlab-btn">Quay lại</button>' : ''}<button type="button" data-coach="next" class="dlab-btn dlab-btn--accent">${i === COACH.length - 1 ? 'Bắt đầu thực hành' : 'Tiếp'}</button></div>`
+      card.querySelector('[data-coach="next"]').focus({ preventScroll: true })
+    }
+    function end() {
+      i = -1
+      show()
+      try { localStorage.setItem(COACH_KEY, '1') } catch {}
+      canvas.focus({ preventScroll: true })
+    }
+    card.addEventListener('click', e => {
+      const b = e.target.closest('[data-coach]')
+      if (!b) return
+      if (b.dataset.coach === 'skip') end()
+      if (b.dataset.coach === 'back') { i -= 1; show() }
+      if (b.dataset.coach === 'next') { if (i >= COACH.length - 1) end(); else { i += 1; show() } }
+    })
+    card.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); end() } })
+    return {
+      start() { i = 0; show() },
+      maybeStart() {
+        let seen = false
+        try { seen = localStorage.getItem(COACH_KEY) === '1' } catch {}
+        if (!seen) this.start()
+      },
+      state: () => ({ step: i, open: i >= 0 })
+    }
+  })()
+
   // ── Boot: resume autosave if present, else a starter bench ─────────
   ;(async () => {
     try {
@@ -872,6 +1211,7 @@ export function initDynamicLab(host) {
     resize()
     start()
     ui.booted = true
+    coach.maybeStart()
   })()
 
   // Test/automation hook (read-only access + commands through the same safety path).
@@ -891,66 +1231,96 @@ export function initDynamicLab(host) {
     toggle3d,
     is3d: () => ui.render3d,
     guided: () => (ui.guided ? { id: ui.guided.lab.id, done: ui.guided.done.length, total: ui.guided.lab.steps.length } : null),
-    startGuided: id => { const lab = GUIDED.find(g => g.id === id); const s = createSim(1); const roles = lab.setup(s); s.state.log = []; sim.load(restore(snapshot(s.state))); sim.markInitial(); ui.mode = 'guided'; ui.guided = { lab, roles, done: [] }; setModeButtons(); return roles },
+    startGuided: id => { const lab = GUIDED.find(g => g.id === id); const s = createSim(1); const roles = lab.setup(s); s.state.log = []; sim.load(restore(snapshot(s.state))); sim.markInitial(); ui.mode = 'guided'; ui.guided = { lab, roles, done: [] }; setModeButtons(); openSide('obs'); return roles },
     save: name => saveExperiment({ name, state: sim.state }),
     list: () => listExperiments(),
     load: async id => { const s = await loadExperiment(id); sim.load(s.state); return true },
-    worldToScreen: (x, y) => { const rect = canvas.getBoundingClientRect(); const [sx, sy] = toScreenPublic(x, y); return { x: rect.left + sx, y: rect.top + sy } }
+    worldToScreen: (x, y) => { const rect = canvas.getBoundingClientRect(); const [sx, sy] = toScreen(view, x, y); return { x: rect.left + sx, y: rect.top + sy } },
+    coach: () => coach.state()
   })
-  function toScreenPublic(x, y) {
-    const benchY = view.h * 0.8
-    return [(x - view.x) * view.zoom + view.w / 2, benchY - (y - view.y + 90) * view.zoom]
+}
+
+// True when WebGL runs on a CPU rasteriser (SwiftShader, llvmpipe, Microsoft Basic Render).
+function softwareGL() {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    if (!gl) return false
+    const ext = gl.getExtension('WEBGL_debug_renderer_info')
+    const name = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER))
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return /swiftshader|llvmpipe|software|basic render/i.test(name)
   }
+  catch { return false }
 }
 
 function template() {
   const tabs = LIB_TABS.map(t => `<button type="button" role="tab" class="dlab-tab" data-tab="${t.id}">${t.label}</button>`).join('')
+  const speeds = SPEEDS.map(s => `<button type="button" class="dlab-btn" data-speed="${s}" aria-pressed="${s === 1}">${String(s).replace('.', ',')}×</button>`).join('')
   return `
   <div class="dlab-shell">
     <header class="dlab-header">
       <div class="dlab-brand"><span class="dlab-kicker">ChemLab 7.0 · Thử nghiệm</span><h2>Phòng thí nghiệm động</h2></div>
-      <div class="dlab-seg" role="group" aria-label="Chế độ">
-        <button type="button" class="dlab-btn" data-hd="sandbox" aria-pressed="true">Sandbox</button>
-        <button type="button" class="dlab-btn" data-hd="guided" aria-pressed="false">Guided Lab</button>
+      <div class="dlab-seg dlab-mode" role="group" aria-label="Chế độ thực hành">
+        <button type="button" class="dlab-btn" data-hd="sandbox" aria-pressed="true">Tự do</button>
+        <button type="button" class="dlab-btn" data-hd="guided" aria-pressed="false">Có hướng dẫn</button>
       </div>
       <div class="dlab-head-actions">
-        <button type="button" class="dlab-btn dlab-mobile-only" data-hd="lib" aria-controls="dlab-lib">Thư viện</button>
-        <button type="button" class="dlab-btn dlab-mobile-only" data-hd="insp" aria-controls="dlab-insp">Chi tiết</button>
-        <button type="button" class="dlab-btn" data-hd="save">Lưu</button>
-        <button type="button" class="dlab-btn" data-hd="open">Mở</button>
         <button type="button" class="dlab-btn" data-hd="view3d" aria-pressed="false">Xem 3D</button>
-        <button type="button" class="dlab-btn" data-hd="quality">Đồ họa: Cao</button>
-        <button type="button" class="dlab-btn" data-hd="full">Toàn màn hình</button>
+        <button type="button" class="dlab-btn dlab-btn--icon" data-hd="help" aria-label="Hướng dẫn sử dụng" title="Hướng dẫn sử dụng">${icon('help')}</button>
+        <details class="dlab-menu">
+          <summary class="dlab-btn dlab-btn--icon" aria-label="Thêm tùy chọn" title="Thêm tùy chọn">${icon('more')}</summary>
+          <div class="dlab-menu-list" role="group" aria-label="Thêm tùy chọn">
+            <button type="button" class="dlab-btn dlab-btn--ghost" data-hd="save">Lưu</button>
+            <button type="button" class="dlab-btn dlab-btn--ghost" data-hd="open">Mở</button>
+            <button type="button" class="dlab-btn dlab-btn--ghost" data-hd="cleanup">Dọn bàn</button>
+            <button type="button" class="dlab-btn dlab-btn--ghost" data-hd="quality">Đồ họa: Cao</button>
+            <button type="button" class="dlab-btn dlab-btn--ghost" data-hd="full">Toàn màn hình</button>
+          </div>
+        </details>
         <button type="button" class="dlab-btn dlab-btn--accent" data-hd="ai">Hỏi ChemAI</button>
       </div>
     </header>
-    <aside class="dlab-lib" id="dlab-lib" aria-label="Thư viện dụng cụ và hóa chất">
-      <button type="button" class="dlab-btn dlab-btn--ghost dlab-mobile-only dlab-close" data-close="lib">Đóng thư viện</button>
-      <input type="search" class="dlab-search dlab-in" placeholder="Tìm dụng cụ, hóa chất…" aria-label="Tìm trong thư viện">
-      <div class="dlab-tabs" role="tablist" aria-label="Nhóm">${tabs}</div>
-      <ul class="dlab-lib-list"></ul>
-    </aside>
     <main class="dlab-stage">
-      <canvas class="dlab-canvas" tabindex="0" role="application" aria-label="Bàn thí nghiệm. Chọn vật trong danh sách bên phải; phím mũi tên di chuyển, [ ] nghiêng, Enter thao tác chính, Ctrl+Z hoàn tác, Space tạm dừng."></canvas>
+      <canvas class="dlab-canvas" tabindex="0" role="application" aria-label="Bàn thí nghiệm. Chọn một vật để thấy thao tác ở thanh phía trên. Phím tắt: mũi tên di chuyển, [ ] nghiêng, Enter thao tác chính, Ctrl+Z hoàn tác, Space tạm dừng."></canvas>
       <div class="dlab-3d" hidden></div>
-      <section class="dlab-guided" hidden aria-label="Hướng dẫn thực hành"></section>
+      <div class="dlab-actionbar" role="toolbar" aria-label="Thao tác với vật đang chọn"></div>
+      <button type="button" class="dlab-btn dlab-fab dlab-fab--lib" data-hd="lib" aria-controls="dlab-lib">${icon('library')}<span>Thư viện</span></button>
+      <button type="button" class="dlab-btn dlab-fab dlab-fab--side" data-hd="side" aria-controls="dlab-insp">${icon('panel')}<span>Quan sát</span></button>
+      <aside class="dlab-lib dlab-drawer" id="dlab-lib" aria-label="Thư viện dụng cụ và hóa chất">
+        <div class="dlab-drawer-head"><h3>Hóa chất &amp; dụng cụ</h3><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="lib" aria-label="Thu gọn thư viện">${icon('close')}</button></div>
+        <label class="dlab-searchbox">${icon('search')}<input type="search" class="dlab-search dlab-in" placeholder="Tìm: nước, natri, cốc…" aria-label="Tìm trong thư viện"></label>
+        <div class="dlab-tabs" role="tablist" aria-label="Nhóm">${tabs}</div>
+        <ul class="dlab-lib-list"></ul>
+        <p class="dlab-hint dlab-lib-foot">Bấm để lấy ra bàn · kéo thả vào cốc</p>
+      </aside>
+      <aside class="dlab-side dlab-drawer" id="dlab-insp" aria-label="Quan sát và thông tin">
+        <div class="dlab-drawer-head">
+          <div class="dlab-sidetabs" role="tablist" aria-label="Bảng bên phải">
+            <button type="button" role="tab" class="dlab-tab" data-side-tab="obs" aria-selected="true">Quan sát</button>
+            <button type="button" role="tab" class="dlab-tab" data-side-tab="detail" aria-selected="false">Chi tiết vật</button>
+          </div>
+          <button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="side" aria-label="Thu gọn bảng quan sát">${icon('close')}</button>
+        </div>
+        <div class="dlab-obs-pane">
+          <section class="dlab-guided" hidden aria-label="Hướng dẫn thực hành"></section>
+          <div class="dlab-obs"></div>
+        </div>
+        <div class="dlab-detail-pane" hidden><div class="dlab-inspector"></div></div>
+      </aside>
+      <footer class="dlab-dock" aria-label="Điều khiển mô phỏng">
+        <button type="button" class="dlab-btn" data-tb="play" aria-pressed="false">${icon('pause')}<span>Tạm dừng</span></button>
+        <div class="dlab-seg dlab-speeds" role="group" aria-label="Tốc độ mô phỏng">${speeds}</div>
+        <span class="dlab-time" aria-live="off">t = 0:00</span>
+        <span class="dlab-dock-sep" aria-hidden="true"></span>
+        <button type="button" class="dlab-btn" data-tb="undo">${icon('undo')}<span>Hoàn tác</span></button>
+        <button type="button" class="dlab-btn" data-tb="reset">${icon('reset')}<span>Đặt lại</span></button>
+        <button type="button" class="dlab-btn" data-tb="fit" title="Đưa toàn bộ dụng cụ vào khung nhìn">${icon('fit')}<span>Vừa khung</span></button>
+        <button type="button" class="dlab-btn" data-tb="home3d" hidden title="Đưa camera 3D về góc nhìn mặc định">${icon('home')}<span>Góc mặc định</span></button>
+      </footer>
+      <figure class="dlab-loupe" hidden><canvas aria-hidden="true"></canvas><figcaption>Phóng to vùng phản ứng <span class="dlab-loupe-x"></span></figcaption><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-loupe-close aria-label="Ẩn khung phóng to">${icon('close')}</button></figure>
+      <section class="dlab-coach" role="dialog" aria-modal="false" aria-labelledby="dlab-coach-title" hidden></section>
       <div class="dlab-toast" hidden></div>
     </main>
-    <aside class="dlab-side" id="dlab-insp" aria-label="Thông tin vật đang chọn">
-      <button type="button" class="dlab-btn dlab-btn--ghost dlab-mobile-only dlab-close" data-close="insp">Đóng chi tiết</button>
-      <div class="dlab-inspector"></div>
-      <h3 class="dlab-log-title">Quan sát</h3>
-      <ol class="dlab-log"></ol>
-    </aside>
-    <footer class="dlab-toolbar" aria-label="Điều khiển thời gian">
-      <button type="button" class="dlab-btn" data-tb="play" aria-pressed="false">Tạm dừng</button>
-      <div class="dlab-seg" role="group" aria-label="Tốc độ mô phỏng">${SPEEDS.map(s => `<button type="button" class="dlab-btn" data-speed="${s}" aria-pressed="${s === 1}">${String(s).replace('.', ',')}×</button>`).join('')}</div>
-      <span class="dlab-time" aria-live="off">t = 0:00</span>
-      <button type="button" class="dlab-btn" data-tb="undo">Hoàn tác</button>
-      <button type="button" class="dlab-btn" data-tb="reset">Đặt lại</button>
-      <button type="button" class="dlab-btn" data-tb="cleanup">Dọn dẹp</button>
-      <button type="button" class="dlab-btn" data-tb="fit" title="Phóng to vừa các dụng cụ trên bàn">Vừa khung</button>
-    </footer>
     <dialog class="dlab-dialog"></dialog>
     <div class="dlab-live sr-only" aria-live="polite"></div>
   </div>`

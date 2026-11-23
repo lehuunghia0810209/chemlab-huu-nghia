@@ -8,6 +8,8 @@ import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipme
 import { volumeOf, surfaceY, byId } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
 import { GUIDED } from '../src/dlab/guided.js'
+import { observe, mergeRepeats, indicatorReading } from '../src/dlab/ui/observations.js'
+import { libraryItems, searchLibrary } from '../src/dlab/ui/library.js'
 
 const results = []
 function test(name, fn) {
@@ -250,6 +252,52 @@ test('Na + water: floats, moves, shrinks to nothing, NaOH pH and heat', () => {
   rel(l.s().gas.H2, n / 2, 0.005, 'H2')
   near(D.pH, 14 + Math.log10(n / 0.1001), 0.03, 'pH')
   assert.ok(D.T > 25.3, `temperature rose: ${D.T}`)
+})
+test('Observation panel: Na + water — happening, then a conclusion read from the real pH', () => {
+  const l = makeLab()
+  const D = l.put('dish', 300)
+  l.fill(D, 'water', 100)
+  l.sim.dispatch({ type: 'addReagentTo', id: D.id, reagent: 'phenolphthalein', mL: 0.1 }, { record: false })
+  dropSolid(l, D, 'na', 0.1)
+  l.sim.runFor(2)
+  const during = observe(l.s())
+  assert.equal(during.happening.length, 1, 'one reaction happening')
+  assert.match(during.happening[0].text, /natri/i)
+  assert.equal(during.conclusions.length, 0, 'no conclusion before it finishes')
+  l.sim.runFor(120)
+  const after = observe(l.s())
+  assert.equal(after.happening.length, 0, 'nothing happening once Na is used up')
+  assert.equal(after.conclusions.length, 1)
+  const c = after.conclusions[0]
+  assert.match(c.equation, /2Na \+ 2H₂O/)
+  assert.ok(c.facts.some(f => /Phenolphtalein chuyển hồng/.test(f)), `indicator fact: ${c.facts}`)
+  assert.ok(c.facts.some(f => /bazơ/.test(f) && f.includes(D.pH.toLocaleString('vi-VN', { maximumFractionDigits: 1 }))), `pH fact from state: ${c.facts}`)
+})
+test('Observation panel: repeated journal entries merge with a count, nothing dropped', () => {
+  const merged = mergeRepeats([{ t: 1, kind: 'action', text: 'A' }, { t: 2, kind: 'action', text: 'A' }, { t: 3, kind: 'observe', text: 'B' }, { t: 4, kind: 'action', text: 'A' }])
+  assert.deepEqual(merged.map(e => [e.text, e.n]), [['A', 1], ['B', 1], ['A', 2]])
+  assert.equal(merged.reduce((s, e) => s + e.n, 0), 4, 'every entry is still counted')
+  assert.equal(indicatorReading('phenolphthalein', 8.0), 'Phenolphtalein không màu')
+  assert.equal(indicatorReading('litmus', 3), 'Quỳ tím màu đỏ')
+  assert.equal(indicatorReading('methylOrange', 5), 'Metyl da cam màu vàng')
+})
+test('Cleanup logs only when something was cleaned', () => {
+  const l = makeLab()
+  l.put('beaker100', 200)
+  const n = l.s().log.length
+  assert.equal(l.sim.dispatch({ type: 'cleanup' }).changed, false)
+  assert.equal(l.s().log.length, n, 'no log line for an already clean bench')
+  l.s().spill.mL = 3
+  assert.equal(l.sim.dispatch({ type: 'cleanup' }).changed, true)
+  assert.match(l.s().log.at(-1).text, /lau chất đổ/)
+})
+test('Library search: exact base name first, accents optional', () => {
+  const items = libraryItems()
+  assert.equal(searchLibrary(items, 'natri')[0].name, 'Natri (mẩu)')
+  assert.equal(searchLibrary(items, 'nuoc')[0].name, 'Nước cất')
+  assert.ok(searchLibrary(items, 'NaOH').some(i => i.reagent === 'naoh'), 'formula search')
+  assert.equal(searchLibrary(items, '  '), null, 'empty query → tabs')
+  assert.equal(searchLibrary(items, 'zzzz').length, 0)
 })
 test('Fe + CuSO4: copper coats the nail mole-for-mole', () => {
   const l = makeLab()

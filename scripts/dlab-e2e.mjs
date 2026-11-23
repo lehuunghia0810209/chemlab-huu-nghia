@@ -17,8 +17,10 @@ const browser = await ({ chromium, firefox, webkit }[browserName]).launch({ head
 const results = []
 const aiRequests = []
 
-async function newPage(width = 1440, height = 900, touch = false) {
+async function newPage(width = 1440, height = 900, touch = false, opts = {}) {
   const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch, isMobile: touch && browserName !== 'firefox' })
+  // The first-visit onboarding is covered by its own test (U01); other journeys start past it.
+  if (!opts.onboarding) await context.addInitScript(() => { try { localStorage.setItem('chemlab-dlab-onboarded', '1') } catch {} })
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', e => errors.push(String(e)))
@@ -72,7 +74,7 @@ async function dragWorld(page, from, to, steps = 12) {
 
 async function test(name, fn, opts = {}) {
   if (only && !only.has(name.split(' ')[0])) return
-  const env = await newPage(opts.width, opts.height, opts.touch)
+  const env = await newPage(opts.width, opts.height, opts.touch, opts)
   try {
     await fn(env.page, env)
     if (env.errors.length) throw new Error(`console errors: ${env.errors.join(' | ')}`)

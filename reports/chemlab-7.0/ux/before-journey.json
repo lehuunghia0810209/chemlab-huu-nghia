@@ -1,0 +1,102 @@
+{
+  "label": "before",
+  "base": "http://localhost:5173/",
+  "viewports": {
+    "390": {
+      "stageW": 356,
+      "stageH": 490,
+      "stageShare": 0.53,
+      "zoom": 0.73,
+      "beaker100Px": 58,
+      "visibleButtons": 18
+    },
+    "768": {
+      "stageW": 644,
+      "stageH": 594,
+      "stageShare": 0.49,
+      "zoom": 1.31,
+      "beaker100Px": 105,
+      "visibleButtons": 20
+    },
+    "1366": {
+      "stageW": 488,
+      "stageH": 512,
+      "stageShare": 0.24,
+      "zoom": 1,
+      "beaker100Px": 80,
+      "visibleButtons": 39
+    },
+    "1440": {
+      "stageW": 562,
+      "stageH": 644,
+      "stageShare": 0.28,
+      "zoom": 1.15,
+      "beaker100Px": 92,
+      "visibleButtons": 39
+    },
+    "1920": {
+      "stageW": 730,
+      "stageH": 824,
+      "stageShare": 0.29,
+      "zoom": 1.49,
+      "beaker100Px": 119,
+      "visibleButtons": 39
+    }
+  },
+  "steps": [
+    {
+      "name": "Có hướng dẫn bước đầu khi mở Lab",
+      "ok": false,
+      "note": ""
+    },
+    {
+      "name": "Tìm thấy \"Nước\" trong thư viện",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Rót nước vào cốc bằng nút nhìn thấy được",
+      "ok": true,
+      "note": "5.0 mL trong cốc"
+    },
+    {
+      "name": "Tìm thấy phenolphtalein",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Thêm chất chỉ thị vào cốc nước",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Tìm thấy natri trong thư viện",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Nhận cảnh báo an toàn trước khi thả natri",
+      "ok": false,
+      "note": ""
+    },
+    {
+      "name": "Natri đã vào nước",
+      "ok": false,
+      "note": "null"
+    },
+    {
+      "name": "Bảng Quan sát nêu hiện tượng natri",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Mở chế độ 3D",
+      "ok": true,
+      "note": ""
+    }
+  ],
+  "console": [],
+  "observationText": "0:06 Lấy Natri hiđroxit 0,5 M ra bàn.\n0:04 Rót 5 mL từ Phenolphtalein sang Cốc thủy tinh 100 mL.\n0:04 Lấy Phenolphtalein ra bàn.\n0:02 Rót 5 mL từ Nước cất sang Cốc thủy tinh 100 mL.\n0:01 Lấy Nước cất ra bàn.",
+  "sodiumLeft": null,
+  "logLength": 5
+}

@@ -9,12 +9,13 @@ export function createView() {
 
 export function toScreen(view, x, y) {
   const benchY = view.h * 0.8
-  return [(x - view.x) * view.zoom + view.w / 2, benchY - (y - view.y + 90) * view.zoom]
+  return [(x - view.x) * view.zoom + view.w / 2 + (view.ox || 0), benchY - (y - view.y + 90) * view.zoom]
 }
 
+// view.ox shifts the framing so objects sit in the part of the stage not covered by open drawers.
 export function toWorld(view, sx, sy) {
   const benchY = view.h * 0.8
-  return [(sx - view.w / 2) / view.zoom + view.x, (benchY - sy) / view.zoom + view.y - 90]
+  return [(sx - view.w / 2 - (view.ox || 0)) / view.zoom + view.x, (benchY - sy) / view.zoom + view.y - 90]
 }
 
 const rgba = (c, a = c[3] ?? 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
@@ -82,20 +83,46 @@ export function render(ctx, state, view, ui) {
     ctx.ellipse(x, y, 2.4 * view.zoom, 3.2 * view.zoom, 0, 0, Math.PI * 2)
     ctx.fill()
   }
-  // Selection & guided highlights on top
+  // Selection, hover and guided highlights on top: soft rounded halo, not a debug box.
   for (const o of state.objects) {
     const sel = ui.selected === o.id
+    const held = ui.held === o.id
+    const hover = ui.hover === o.id && !sel
     const hl = ui.highlight?.includes(o.id)
-    if (!sel && !hl) continue
+    if (!sel && !hl && !hover) continue
     const b = bounds(o)
     const [x0, y0] = toScreen(view, b.x0, b.y1)
     const [x1, y1] = toScreen(view, b.x1, b.y0)
+    const accent = dark ? [124, 196, 255] : [29, 111, 216]
     ctx.save()
-    ctx.setLineDash(sel ? [] : [5, 4])
-    ctx.strokeStyle = sel ? (dark ? '#7cc4ff' : '#1d6fd8') : '#f0a400'
-    ctx.lineWidth = sel ? 2 : 2.5
-    roundRect(ctx, x0 - 6, y0 - 6, x1 - x0 + 12, y1 - y0 + 12, 8)
-    ctx.stroke()
+    roundRect(ctx, x0 - 7, y0 - 7, x1 - x0 + 14, y1 - y0 + 14, 10)
+    if (hl && !sel) {
+      ctx.setLineDash([6, 5])
+      ctx.strokeStyle = '#e09a00'
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+    }
+    else {
+      ctx.fillStyle = rgba(accent, hover ? 0.05 : held ? 0.12 : 0.08)
+      ctx.fill()
+      ctx.strokeStyle = rgba(accent, hover ? 0.45 : 0.9)
+      ctx.lineWidth = held ? 2.5 : 1.5
+      ctx.stroke()
+    }
+    if (held) {
+      const text = 'Đang cầm'
+      ctx.font = '600 12px system-ui, sans-serif'
+      const tw = ctx.measureText(text).width + 14
+      const cx = (x0 + x1) / 2
+      ctx.setLineDash([])
+      ctx.fillStyle = rgba(accent, 0.95)
+      roundRect(ctx, cx - tw / 2, y0 - 32, tw, 20, 10)
+      ctx.fill()
+      ctx.fillStyle = dark ? '#0b1220' : '#fff'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(text, cx, y0 - 22)
+    }
     ctx.restore()
   }
   ctx.restore()
@@ -427,6 +454,18 @@ function drawLooseSolid(ctx, view, s) {
   ctx.fill()
 }
 
+let field = null
+function fieldImage() {
+  if (!field) {
+    const canvas = document.createElement('canvas')
+    canvas.width = GW
+    canvas.height = GH
+    const ctx = canvas.getContext('2d')
+    field = { canvas, ctx, data: ctx.createImageData(GW, GH) }
+  }
+  return field
+}
+
 function drawContainer(ctx, state, view, c, ui, ink, dark) {
   const def = EQUIPMENT[c.type]
   const H = innerHeight(def)
@@ -456,17 +495,22 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
         }
       }
       else if (Math.abs(c.angle) < 0.02) {
+        // Tracer grid → a GW×GH image scaled with smoothing: one draw call per vessel instead of
+        // GW·GH rects, and the colour front reads as a gradient rather than blocks.
         const hw = halfWidthAt(def, 0) + 4
-        const cellW = (2 * hw) / GW
-        const cellH = Math.max(0.5, aqLevel / GH)
         const mean = fieldMean(c)
+        const img = fieldImage()
         for (let j = 0; j < GH; j += 1) {
           for (let i = 0; i < GW; i += 1) {
             const col = cellColor(c, j * GW + i, mean) || [220, 235, 250, 0.2]
-            ctx.fillStyle = rgba(col, Math.min(0.92, col[3] + 0.05))
-            ctx.fillRect(-hw + i * cellW - 0.3, -2 - (j + 1) * cellH - 0.3, cellW + 0.6, cellH + 0.6)
+            const k = ((GH - 1 - j) * GW + i) * 4
+            img.data.data[k] = col[0]; img.data.data[k + 1] = col[1]; img.data.data[k + 2] = col[2]
+            img.data.data[k + 3] = Math.round(255 * Math.min(0.92, col[3] + 0.05))
           }
         }
+        img.ctx.putImageData(img.data, 0, 0)
+        ctx.imageSmoothingEnabled = true
+        ctx.drawImage(img.canvas, -hw, -2 - aqLevel, 2 * hw, Math.max(0.5, aqLevel))
         if (oil > 0.01) {
           ctx.fillStyle = 'rgba(240,200,60,0.75)'
           ctx.fillRect(-hw, -2 - level, 2 * hw, level - aqLevel)

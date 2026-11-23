@@ -9,41 +9,41 @@
   "render": {
     "2D thường (3 cốc)": {
       "fps": 60,
-      "p95ms": 16.8,
+      "p95ms": 16.7,
       "particles": 0
     },
     "2D nhiều dụng cụ + hạt (8 cốc)": {
       "fps": 60,
-      "p95ms": 16.7,
+      "p95ms": 16.8,
       "particles": 480
     },
     "2D tiết kiệm (8 cốc)": {
       "fps": 60,
-      "p95ms": 16.7,
+      "p95ms": 16.8,
       "particles": 480
     },
     "3D thường (3 cốc)": {
-      "fps": 60,
-      "p95ms": 16.7,
+      "fps": 6.7,
+      "p95ms": 166.6,
       "particles": 0
     },
     "3D nhiều hạt (8 cốc)": {
-      "fps": 47.9,
-      "p95ms": 33.4,
+      "fps": 7,
+      "p95ms": 150.1,
       "particles": 480
     },
     "3D tiết kiệm (8 cốc)": {
-      "fps": 60,
-      "p95ms": 16.7,
+      "fps": 38.3,
+      "p95ms": 33.4,
       "particles": 480
     }
   },
   "lazy3d": {
-    "msToCanvas": 455,
+    "msToCanvas": 548,
     "files": [
       {
-        "url": "render3d-Cx-64r8f.js",
-        "kB": 7.7
+        "url": "render3d-CIE9AU4e.js",
+        "kB": 25.3
       },
       {
         "url": "sceneHost-C1iqKWjU.js",
@@ -58,9 +58,9 @@
   "cycles": [
     {
       "cycle": 0,
-      "heapMB": 6.05,
-      "listeners": 74,
-      "nodes": 1825,
+      "heapMB": 7.41,
+      "listeners": 85,
+      "nodes": 2140,
       "documents": 1
     },
     {
@@ -68,9 +68,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 6.14,
-      "listeners": 74,
-      "nodes": 1766,
+      "heapMB": 6.8,
+      "listeners": 85,
+      "nodes": 1963,
       "documents": 1
     },
     {
@@ -78,9 +78,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 6.29,
-      "listeners": 74,
-      "nodes": 1775,
+      "heapMB": 6.94,
+      "listeners": 85,
+      "nodes": 1972,
       "documents": 1
     },
     {
@@ -88,9 +88,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 6.37,
-      "listeners": 74,
-      "nodes": 1784,
+      "heapMB": 7.09,
+      "listeners": 85,
+      "nodes": 1981,
       "documents": 1
     },
     {
@@ -98,9 +98,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 6.47,
-      "listeners": 74,
-      "nodes": 1793,
+      "heapMB": 7.19,
+      "listeners": 85,
+      "nodes": 1990,
       "documents": 1
     },
     {
@@ -108,9 +108,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 6.58,
-      "listeners": 74,
-      "nodes": 1802,
+      "heapMB": 7.3,
+      "listeners": 85,
+      "nodes": 1999,
       "documents": 1
     },
     {
@@ -118,9 +118,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 6.97,
-      "listeners": 74,
-      "nodes": 1811,
+      "heapMB": 7.63,
+      "listeners": 85,
+      "nodes": 2008,
       "documents": 1
     },
     {
@@ -128,9 +128,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 7.04,
-      "listeners": 74,
-      "nodes": 1820,
+      "heapMB": 7.75,
+      "listeners": 85,
+      "nodes": 2017,
       "documents": 1
     },
     {
@@ -138,9 +138,9 @@
       "rafPerSecWhileAway": 0,
       "webglCanvases": 0,
       "dlabShells": 1,
-      "heapMB": 7.15,
-      "listeners": 74,
-      "nodes": 1829,
+      "heapMB": 7.86,
+      "listeners": 85,
+      "nodes": 2026,
       "documents": 1
     }
   ]

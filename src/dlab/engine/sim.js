@@ -176,9 +176,12 @@ const COMMANDS = {
   },
   cleanup(state) {
     const removed = state.objects.filter(o => o.condition === 'UNUSABLE' || (o.type === 'solid' && !o.in && o.massG <= 0))
+    const spilled = state.spill.mL > 0
     state.objects = state.objects.filter(o => !removed.includes(o))
     state.spill = { mL: 0, contents: emptyContents() }
-    log(state, `Dọn bàn: lau chất đổ${removed.length ? `, bỏ ${removed.length} vật hỏng/hết` : ''}.`, 'action')
+    // Log only when something was actually cleaned, so repeated clicks do not flood the journal.
+    if (spilled || removed.length) log(state, `Dọn bàn:${spilled ? ' lau chất đổ' : ''}${spilled && removed.length ? ',' : ''}${removed.length ? ` bỏ ${removed.length} vật hỏng/hết` : ''}.`, 'action')
+    return { changed: spilled || removed.length > 0 }
   },
   replace(state, { id }) {
     const o = byId(state, id)

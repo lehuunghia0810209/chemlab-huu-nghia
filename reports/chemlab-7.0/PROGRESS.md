@@ -1,6 +1,6 @@
 # ChemLab 7.0 — PROGRESS (điểm tiếp tục cho phiên sau)
 
-Cập nhật: 2026-11-22 (phiên hoàn thiện Phase 5). Worktree `D:\EduLab\.worktrees\chemlab-7.0`, nhánh `feature/chemlab-7.0-dynamic-laboratory` (từ `origin/main` 8ce6f35). **Đã push nhánh (được chủ sở hữu duyệt); chưa merge, chưa deploy Production; version vẫn 6.7.0.** Checkout chính `D:\EduLab\ChemLab` không bị sửa.
+Cập nhật: 2026-11-23 (UX rescue & 3D redesign, xem `UX_RESCUE_REPORT.md`). Phát triển tại `D:\EduLab\ChemLab` (worktree cũ đã gỡ 2026-11-22), nhánh `feature/chemlab-7.0-dynamic-laboratory` (từ `origin/main` 8ce6f35). **Đã push nhánh (được chủ sở hữu duyệt); chưa merge, chưa deploy Production; version vẫn 6.7.0.** Checkout chính `D:\EduLab\ChemLab` không bị sửa.
 
 ## Phase hiện tại: 5/5 — PARTIAL (Preview sẵn sàng cho nghiệm thu)
 
@@ -15,6 +15,10 @@ Cập nhật: 2026-11-22 (phiên hoàn thiện Phase 5). Worktree `D:\EduLab\.wo
 ## Phiên này đã làm
 
 Đối chiếu nguồn và sửa 3 hằng số + thêm dime Cu (hết kết tủa Cu(OH)₂ giả; pH CuSO₄ khớp số đo); cảnh báo lực ion; 3D tương tác qua controller dùng chung; tự căn khung, sửa đáy cốc, bóng/phản quang, nhãn hư hỏng, đám mây kết tủa; nhúng quỳ bằng thông số; lệnh lỗi tự khôi phục; sửa `check:ui` hỏng từ b379911; test: 41 unit, E2E 40/37/37, 448/448; Lighthouse; hiệu năng/bộ nhớ qua CDP; Preview `4f89127` (Access 302).
+
+## Phiên 2026-11-23 — UX rescue
+
+Bố cục "bàn trước, điều khiển sau", thanh thao tác theo ngữ cảnh, tìm kiếm thư viện, bảng Quan sát (đang diễn ra / kết luận / an toàn, nhật ký gộp), hướng dẫn nhanh, khung phóng to 2D, 3D dựng lại (thủy tinh, mặt thoáng ngang, bóng, vòng chọn, camera giới hạn, Góc mặc định/Vừa khung, tự chuyển Tiết kiệm khi không có GPU). Sửa lỗi hộp thoại liên tiếp làm không thả được natri. Test: 45 unit, E2E 47/44/44, 448/448. Chưa push. Chi tiết và giới hạn: `UX_RESCUE_REPORT.md`.
 
 ## Còn lại / blocker
 

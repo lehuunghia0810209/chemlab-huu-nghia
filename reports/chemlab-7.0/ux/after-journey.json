@@ -1,0 +1,107 @@
+{
+  "label": "after",
+  "base": "http://localhost:5173/",
+  "viewports": {
+    "390": {
+      "stageW": 356,
+      "stageH": 557,
+      "stageShare": 0.6,
+      "zoom": 0.79,
+      "beaker100Px": 63,
+      "visibleButtons": 42
+    },
+    "768": {
+      "stageW": 644,
+      "stageH": 775,
+      "stageShare": 0.63,
+      "zoom": 1.43,
+      "beaker100Px": 114,
+      "visibleButtons": 44
+    },
+    "1366": {
+      "stageW": 1036,
+      "stageH": 615,
+      "stageShare": 0.61,
+      "zoom": 1.72,
+      "beaker100Px": 138,
+      "visibleButtons": 44
+    },
+    "1440": {
+      "stageW": 1110,
+      "stageH": 747,
+      "stageShare": 0.64,
+      "zoom": 1.89,
+      "beaker100Px": 151,
+      "visibleButtons": 44
+    },
+    "1920": {
+      "stageW": 1278,
+      "stageH": 927,
+      "stageShare": 0.57,
+      "zoom": 1.45,
+      "beaker100Px": 116,
+      "visibleButtons": 46
+    }
+  },
+  "steps": [
+    {
+      "name": "Có hướng dẫn bước đầu khi mở Lab",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Tìm thấy \"Nước\" trong thư viện",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Rót nước vào cốc bằng nút nhìn thấy được",
+      "ok": true,
+      "note": "50.0 mL trong cốc"
+    },
+    {
+      "name": "Tìm thấy phenolphtalein",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Thêm chất chỉ thị vào cốc nước",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Tìm thấy natri trong thư viện",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Nhận cảnh báo an toàn trước khi thả natri",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Natri đã vào nước",
+      "ok": true,
+      "note": "{\"in\":true,\"mass\":0.0901}"
+    },
+    {
+      "name": "Bảng Quan sát nêu hiện tượng natri",
+      "ok": true,
+      "note": ""
+    },
+    {
+      "name": "Mở chế độ 3D",
+      "ok": true,
+      "note": ""
+    }
+  ],
+  "console": [],
+  "observationText": "ĐANG DIỄN RA\nCốc thủy tinh 100 mL: Mẩu natri nổi, chạy trên mặt nước, tan dần, có khí thoát ra; dung dịch thành bazơ.\nAN TOÀN\nCảnh báo an toàn: Phản ứng mạnh, tỏa nhiệt và sinh H₂ dễ cháy. Đứng xa, không cúi sát miệng chậu.\nCảnh báo an toàn: Natri phản ứng mãnh liệt với nước, sinh khí H₂ dễ cháy và NaOH ăn mòn. Không cầm bằng tay; giữ khoảng cách; đeo kính bảo hộ.\nQUAN SÁT ĐƯỢC\n0:08 2Na + 2H₂O → 2NaOH + H₂↑ — Mẩu natri nổi, chạy trên mặt nước, tan dần, có khí thoát ra; dung dịch thành bazơ.\nNhật ký thao tác (10)",
+  "sodiumLeft": 0.008654915357205297,
+  "logLength": 10,
+  "pourMoved": [
+    8.3,
+    51.7,
+    0
+  ]
+}
