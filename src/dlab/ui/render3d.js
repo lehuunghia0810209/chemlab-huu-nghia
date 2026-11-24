@@ -49,8 +49,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   const wallTex = gradientTexture(['#dfe6ef', '#c4cfdc'])
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(30, 6), mat(new THREE.MeshBasicMaterial({ map: wallTex, toneMapped: false })))
   wall.position.set(5, 2.9, -1.4)
-  scene.add(bench, edge)
-  if (high) scene.add(wall)
+  scene.add(bench, edge, wall) // the wall is one unlit quad: kept at every quality so the bench never ends in a bare diagonal edge
 
   // ── Shared materials ──────────────────────────────────────────────────────
   // Standard (not Physical/clearcoat) glass: the physical shader cost ~10× on software GPUs.

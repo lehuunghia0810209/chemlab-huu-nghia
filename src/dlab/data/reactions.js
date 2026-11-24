@@ -22,6 +22,13 @@ export const NO_REACTION = [
   { solid: 'cu', driver: 'Fe2+', reason: 'Cu yếu hơn Fe nên không khử được Fe²⁺.' }
 ]
 
+// Standard reduction potentials E° (V, 25 °C; CRC Handbook, "Electrochemical Series") for the metal ions and
+// metals on the bench. Used only to classify a metal + ion pair the registry has no rule for:
+// a weaker oxidant → NO_REACTION; a stronger one → UNSUPPORTED (it would react, but is not modelled).
+export const ION_E0 = { 'K+': -2.93, 'Ba2+': -2.91, 'Ca2+': -2.87, 'Na+': -2.71, 'Mg2+': -2.37, 'Zn2+': -0.76, 'Fe2+': -0.44, 'Cu2+': 0.34, 'Ag+': 0.80 }
+export const METAL_E0 = { mg: -2.37, zn: -0.76, fe: -0.44, cu: 0.34 }
+export const ION_NAME = { 'K+': 'K⁺', 'Ba2+': 'Ba²⁺', 'Ca2+': 'Ca²⁺', 'Na+': 'Na⁺', 'Mg2+': 'Mg²⁺', 'Zn2+': 'Zn²⁺', 'Fe2+': 'Fe²⁺', 'Cu2+': 'Cu²⁺', 'Ag+': 'Ag⁺' }
+
 // Electrochemistry. E° in volts (25 °C, CRC). Faraday quantities are exact; cell resistance is illustrative.
 export const ELECTRO = {
   electrolysisCuCl2: { decomposition: 1.02, overpotential: 0.4, resistance: 4, equation: 'CuCl₂ → Cu (catot) + Cl₂↑ (anot)' },

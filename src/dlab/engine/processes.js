@@ -2,7 +2,7 @@
 // Everything here runs inside the fixed timestep, so results do not depend on the render frame rate.
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
 import { IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass } from '../data/materials.js'
-import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS } from '../data/reactions.js'
+import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_E0, METAL_E0, ION_NAME } from '../data/reactions.js'
 import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents } from './chemistry.js'
 
 export const ROOM_T = 25
@@ -449,6 +449,17 @@ function stepKinetics(state, s, c, h, rad, level) {
     if (no) noteOnce(state, `norx-${s.reagent}-${c.id}`, `Không có phản ứng: ${no.reason}`, 'info')
     const hint = UNSUPPORTED_HINTS.find(r => r.all.every(k => drivers.includes(k) || k === s.reagent))
     if (hint) { c.unsupported = hint.reason; noteOnce(state, `unsup-${s.reagent}-${c.id}`, `Chưa có mô hình: ${hint.reason}`, 'warn') }
+    // Any other metal + metal-ion pair: classified by E°, never silently ignored or given a guessed product.
+    const Em = METAL_E0[s.reagent]
+    const M = REAGENT_BY_ID[s.reagent].formula
+    for (const ion of Em == null || no || hint ? [] : drivers.filter(d => ION_E0[d] != null && d !== `${M}2+` && d !== `${M}+`)) {
+      if (KINETIC.some(r => r.solid === s.reagent && r.driver === ion)) continue
+      if (ION_E0[ion] < Em) noteOnce(state, `norx-${s.reagent}-${ion}-${c.id}`, `Không có phản ứng: ${M} yếu hơn kim loại của ion ${ION_NAME[ion]} (E° ${ION_E0[ion].toFixed(2)} V < ${Em.toFixed(2)} V) nên không khử được ${ION_NAME[ion]}.`, 'info')
+      else {
+        c.unsupported = `${M} + ${ION_NAME[ion]}: theo dãy hoạt động có phản ứng (E° ${ION_E0[ion].toFixed(2)} V > ${Em.toFixed(2)} V) nhưng chưa được mô hình hóa định lượng.`
+        noteOnce(state, `unsup-${s.reagent}-${ion}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${c.unsupported}`, 'warn')
+      }
+    }
   }
 }
 

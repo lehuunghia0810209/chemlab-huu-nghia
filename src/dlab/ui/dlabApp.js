@@ -1330,7 +1330,8 @@ export function initDynamicLab(host) {
       <div class="dlab-guided-head"><div><span class="dlab-kicker">${esc(g.lab.group)}</span><h3>${esc(g.lab.title)}</h3></div>
       <button type="button" class="dlab-btn dlab-btn--ghost" data-g="collapse" aria-expanded="${!g.collapsed}">${g.collapsed ? 'Mở' : 'Thu gọn'}</button></div>
       ${g.collapsed ? '' : `
-      ${current === 0 ? `<p><strong>Mục tiêu:</strong> ${esc(g.lab.goal)}</p><p><strong>Kiến thức:</strong> ${esc(g.lab.knowledge)}</p><p><strong>Dụng cụ:</strong> ${esc(g.lab.equipment.join(', '))}</p><p><strong>Hóa chất:</strong> ${esc(g.lab.chemicals.join(', '))}</p><p class="dlab-alert">${esc(g.lab.safety)}</p>` : ''}
+      <p class="dlab-alert">${esc(g.lab.safety)}</p>
+      <details class="dlab-intro"><summary>Giới thiệu bài: mục tiêu, kiến thức, dụng cụ</summary><p><strong>Mục tiêu:</strong> ${esc(g.lab.goal)}</p><p><strong>Kiến thức:</strong> ${esc(g.lab.knowledge)}</p><p><strong>Dụng cụ:</strong> ${esc(g.lab.equipment.join(', '))}</p><p><strong>Hóa chất:</strong> ${esc(g.lab.chemicals.join(', '))}</p></details>
       <ol class="dlab-steps">${g.lab.steps.map((s, i) => `<li class="${i < current ? 'is-done' : i === current ? 'is-current' : ''}" ${i === current ? 'aria-current="step"' : ''}>${esc(s.text)}</li>`).join('')}</ol>
       ${finished ? `<div class="dlab-result"><p><strong>Hiện tượng:</strong> ${esc(g.lab.observe)}</p><p><strong>Giải thích:</strong> ${esc(g.lab.explain)}</p><p><strong>Kết luận:</strong> ${esc(g.lab.conclusion)}</p></div>` : ''}
       <p class="dlab-progress">Tiến độ: ${Math.min(current, g.lab.steps.length)}/${g.lab.steps.length}</p>
@@ -1365,10 +1366,10 @@ export function initDynamicLab(host) {
       const names = (step.target || []).map(r => byId(st, g.roles[r])).filter(Boolean).map(o => objectTitle(st, o, { hideContents: g.lab.hideContents }))
       const canWait = step.wait?.(st, g.roles)
       html = `<div class="dlab-gstrip-main"><span class="dlab-gstep">Bước ${current + 1}/${total}</span><p class="dlab-gtask">${esc(step.text)}</p></div>
-        <p class="dlab-gmeta">${names.length ? `<span><b>Thao tác với:</b> ${esc(names.join('; '))}</span>` : ''}${step.done ? `<span><b>Hoàn thành khi:</b> ${esc(step.done)}</span>` : ''}</p>
+        <p class="dlab-gmeta">${names.length ? `<span><b>Thao tác với:</b> ${esc(names.join('; '))}</span>` : ''}</p>
         ${(() => { const t = step.progress?.(st, g.roles) || misplaced(st, g, step); return t ? `<p class="dlab-gprogress" role="status">${esc(t)}</p>` : '' })()}
         <div class="dlab-gacts">${canWait ? `<button type="button" class="dlab-btn dlab-btn--accent" data-gs="ffwd" ${ui.ffwd ? 'disabled' : ''}>${icon('forward')}<span>${ui.ffwd ? `Đang tua… ${fmtTime(st.t - ui.ffwd.t0)}` : 'Tua đến hiện tượng'}</span></button>` : ''}<button type="button" class="dlab-btn dlab-btn--ghost" data-gs="help" aria-expanded="${Boolean(ui.stripHelp)}">Gợi ý</button><button type="button" class="dlab-btn dlab-btn--ghost" data-gs="lesson">Bài học</button></div>
-        ${ui.stripHelp && step.help ? `<p class="dlab-ghelp">${esc(step.help)}</p>` : ''}`
+        ${ui.stripHelp && step.help ? `<p class="dlab-ghelp">${esc(step.help)}${step.done ? `<br><b>Hoàn thành khi:</b> ${esc(step.done)}` : ''}</p>` : ''}`
     }
     const wasHidden = strip.hidden
     strip.hidden = false

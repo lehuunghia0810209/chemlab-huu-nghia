@@ -598,12 +598,26 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
         ctx.strokeStyle = 'rgba(255,255,255,0.55)'
         ctx.lineWidth = 1
         ctx.beginPath(); ctx.moveTo(-hw, -2 - level); ctx.lineTo(hw, -2 - level); ctx.stroke()
-        // Precipitate particles and settled layer
+        // Precipitate: a suspension looks cloudy. The haze is proportional to the suspended amount per litre
+        // (engine mol × share of grains not yet settled); flocs are drawn larger than real grains so they are
+        // visible at bench scale (visualization approximation, not a particle-size measurement).
+        const pptKeys = Object.keys(c.contents.precipitates).filter(k => c.contents.precipitates[k] > 1e-7 && PRECIPITATES[k])
+        if (pptKeys.length && c.vis.parts.length) {
+          const free = c.vis.parts.filter(p => !p.settled).length / c.vis.parts.length
+          const L = Math.max(1e-3, aq / 1000)
+          for (const k of pptKeys) {
+            const haze = Math.min(0.6, (c.contents.precipitates[k] * free / L) * 6)
+            if (haze > 0.02) { ctx.fillStyle = rgba(PRECIPITATES[k].color, haze); ctx.fillRect(-hw, -2 - aqLevel, 2 * hw, aqLevel) }
+          }
+        }
+        ctx.lineWidth = 0.5
         for (const p of c.vis.parts) {
           const ppt = PRECIPITATES[p.key]
-          ctx.fillStyle = rgba(ppt.color, 0.95)
           const px = p.u * (halfWidthAt(def, p.v * aqLevel) - 2)
-          ctx.fillRect(px - p.s, -2 - p.v * aqLevel - p.s, p.s * 2, p.s * 2)
+          const r = 0.9 + p.s * 1.1
+          ctx.fillStyle = rgba(ppt.color, 0.95)
+          ctx.strokeStyle = rgba(ppt.color.map(x => x * 0.55), 0.9)
+          ctx.beginPath(); ctx.arc(px, -2 - p.v * aqLevel, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
         }
         const settled = c.vis.parts.filter(p => p.settled)
         if (settled.length > 4) {
@@ -613,11 +627,17 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
           ctx.fillRect(-hw, -2 - layer, 2 * hw, layer)
         }
         for (const b of c.vis.bubbles) {
+          // A gas bubble: light, see-through body, a clear rim (dark enough to read on pale liquid) and a glint.
           const gas = GASES[b.gas]
+          const bx = b.u * (halfWidthAt(def, b.v * level) - 2)
           const by = -2 - b.v * level
-          ctx.strokeStyle = gas?.visible ? rgba(gas.color, 0.9) : 'rgba(255,255,255,0.85)'
-          ctx.lineWidth = 0.8
-          ctx.beginPath(); ctx.arc(b.u * (halfWidthAt(def, b.v * level) - 2), by, b.r, 0, Math.PI * 2); ctx.stroke()
+          const r = Math.max(0.9, b.r)
+          ctx.fillStyle = gas?.visible ? rgba(gas.color, 0.35) : 'rgba(255,255,255,0.45)'
+          ctx.strokeStyle = gas?.visible ? rgba(gas.color, 0.95) : 'rgba(60,90,120,0.75)'
+          ctx.lineWidth = 0.6
+          ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+          ctx.fillStyle = 'rgba(255,255,255,0.9)'
+          ctx.beginPath(); ctx.arc(bx - r * 0.35, by - r * 0.35, r * 0.3, 0, Math.PI * 2); ctx.fill()
         }
       }
       else {

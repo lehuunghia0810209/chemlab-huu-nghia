@@ -782,6 +782,36 @@ test('guided steps: each has a completion sign and help; waiting steps can be fa
   assert.ok(Math.abs((sim2.state.t - t3) - small) < 0.6 * small, `2 g ${(sim2.state.t - t3).toFixed(0)} s vs 0.1 g ${small.toFixed(0)} s`)
 })
 
+// Metal + metal-ion pairs without a rule are classified by E° (CRC), never silently ignored or given a product.
+test('reaction coverage: unmodelled metal/ion pairs are NO_REACTION or UNSUPPORTED by E°, with no invented product', () => {
+  const run = (metal, sol) => {
+    const l = lab(9)
+    const b = l.put('beaker100', 300)
+    l.fill(b, sol, 40)
+    const ions = JSON.stringify(byId(l.s(), b.id).contents.ions)
+    const k = l.put('tongs', 300, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: k.id, reagent: metal, massG: 0.5 }, { confirmed: true })
+    l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true })
+    l.sim.runFor(10)
+    const s = l.s().objects.find(o => o.type === 'solid')
+    return { text: l.s().log.map(e => e.text).join(' | '), mass: s.massG, coat: s.coat, ions, after: JSON.stringify(byId(l.s(), b.id).contents.ions) }
+  }
+  for (const [metal, sol] of [['mg', 'cuso4'], ['fe', 'agno3'], ['zn', 'agno3']]) {
+    const r = run(metal, sol)
+    assert.match(r.text, /Chưa hỗ trợ mô phỏng phản ứng này/, `${metal} + ${sol}: ${r.text}`)
+    assert.equal(r.mass, 0.5, `${metal} + ${sol}: no invented consumption`)
+    assert.deepEqual(r.coat, {}, `${metal} + ${sol}: no invented deposit`)
+    assert.equal(r.after, r.ions, `${metal} + ${sol}: solution unchanged`)
+  }
+  for (const [metal, sol] of [['zn', 'mgcl2'], ['fe', 'mgcl2']]) {
+    const r = run(metal, sol)
+    assert.match(r.text, /Không có phản ứng: .* yếu hơn/, `${metal} + ${sol}: ${r.text}`)
+    assert.equal(r.mass, 0.5)
+  }
+  assert.match(run('cu', 'znso4').text, /Không có phản ứng: Cu yếu hơn Zn/, 'curated NO_REACTION text still wins')
+  assert.ok(run('fe', 'cuso4').coat.Cu > 0, 'a modelled pair still reacts')
+})
+
 // A guided step is completed only by evidence from its own target objects, never by a bench-wide total.
 test('guided steps: gas from another vessel does not complete a step; gas is counted per vessel and conserved', () => {
   const sim = createSim(8)

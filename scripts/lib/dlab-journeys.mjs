@@ -924,7 +924,9 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await page.locator('.dlab-choice', { hasText: 'Kim loại' }).click()
     const strip = page.locator('.dlab-gstrip')
     await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
-    assert.match(await strip.innerText(), /Hoàn thành khi:/)
+    await page.locator('[data-gs="help"]').click() // the completion sign is in the help, keeping the strip short
+    assert.match(await page.locator('.dlab-ghelp').innerText(), /Hoàn thành khi:/)
+    await page.locator('[data-gs="help"]').click()
     const roles = await st(page, L => { const b = L.state.objects.filter(o => o.type === 'beaker100'); return { cu: b[0].id, tongs: L.state.objects.find(o => o.type === 'tongs').id } })
     const k = await obj(page, roles.tongs)
     await clickWorld(page, k.x, k.y + 60)

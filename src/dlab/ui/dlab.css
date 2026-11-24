@@ -460,3 +460,9 @@
 /* 3D camera buttons in the dock: icon only (named by their hidden text and tooltip) so the dock fits. */
 .dlab-dock .dlab-btn--cam { width: 36px; padding: 0 }
 .dlab-btn--cam span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
+
+/* Lesson intro: folded by default so the steps and the bench stay in view. */
+.dlab-intro { margin: 0; font-size: var(--text-sm, .875rem) }
+.dlab-intro summary { cursor: pointer; color: var(--dlab-text); font-weight: 600; padding: 4px 0 }
+.dlab-intro summary:focus-visible { outline: 2px solid var(--focus-ring, #60a5fa); outline-offset: 2px }
+.dlab-intro p { margin: .35rem 0 }
