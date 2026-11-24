@@ -240,7 +240,7 @@ export function mix(target, parcel) {
   const after = freeProtons(target)
   const xi = Math.max(0, before.h + added.h - after.h, before.oh + added.oh - after.oh)
   // neutralised: H⁺ and OH⁻ both consumed (OH⁻ taken by a precipitate or a metal ion alone is not neutralisation).
-  return { heatJ: -NEUTRALIZATION_DH * xi, waterFormed: xi, neutralised: Math.min(Math.max(0, before.h + added.h - after.h), Math.max(0, before.oh + added.oh - after.oh)), formed }
+  return { heatJ: -NEUTRALIZATION_DH * xi, waterFormed: xi, neutralised: Math.min(Math.max(0, before.h + added.h - after.h), Math.max(0, before.oh + added.oh - after.oh)), formed } // shortcut: heat still uses xi (over-heats a hydroxide precipitation by ≤ 1–2 °C), upgrade with a per-species proton balance
 }
 
 // Removes `mL` from the container, top layer first for immiscible liquids (what actually pours out).

@@ -217,7 +217,7 @@ const COMMANDS = {
   },
   replace(state, { id }) {
     const o = byId(state, id)
-    const fresh = makeObject(state, o.type, { x: o.x + 10, y: 0 })
+    const fresh = makeObject(state, o.type, { x: o.x + 10, y: 0, replaces: o.id })
     state.objects = state.objects.filter(x => x !== o)
     log(state, `Thay ${label(o)} hỏng bằng dụng cụ mới.`, 'action')
     return { id: fresh.id }

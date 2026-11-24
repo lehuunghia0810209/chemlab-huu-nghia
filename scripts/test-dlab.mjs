@@ -836,6 +836,31 @@ test('audit fixes: no fabricated atoms, no overshoot, unsupported before any rul
   }
 })
 
+// Second independent review (Antigravity) of the fixes above: each scenario it reported, now checked.
+test('review 2: hints fire for real gaps only; no sulfate false positives; no mass from boiling; honest notes', () => {
+  const logOf = l => l.s().log.map(e => e.text).join('|')
+  const sol = (pairs, seed = 21) => { const l = lab(seed); const b = l.put('beaker250', 300); for (const [r, mL] of pairs) l.fill(b, r, mL); l.sim.runFor(0.5); return { l, b: byId(l.s(), b.id) } }
+  assert.match(logOf(sol([['znso4', 20], ['naoh', 50]]).l), /Zn\(OH\)₂ lưỡng tính/, 'excess base on Zn(OH)₂ is flagged')
+  assert.match(logOf(sol([['cuso4', 10], ['nh3', 60]]).l), /\[Cu\(NH₃\)₄\]²⁺/, 'Cu²⁺ + excess NH₃ is flagged')
+  assert.doesNotMatch(logOf(sol([['agno3', 10], ['na2co3', 40]]).l), /Ag₂O/, 'Ag₂CO₃ + excess carbonate is not called Ag₂O')
+  const s = sol([['na2so4', 10], ['agno3', 5]])
+  assert.ok(!Object.keys(s.b.contents.precipitates).some(k => s.b.contents.precipitates[k] > 0), 'Na₂SO₄ + AgNO₃ stays clear (school Cl⁻/SO₄²⁻ test)')
+  assert.doesNotMatch(logOf(sol([['cuso4', 20], ['naoh', 50]]).l), /trung hòa/, 'CuSO₄ + 50 mL NaOH is not a neutralisation')
+  { // Zn in strong base: unsupported, not "no reaction because Na is stronger".
+    const l = lab(22); const b = l.put('beaker100', 300); l.fill(b, 'naoh', 40)
+    const k = l.put('tongs', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'zn', massG: 0.5 }); l.sim.dispatch({ type: 'release', tool: k.id }); l.sim.runFor(2)
+    assert.match(logOf(l), /Zn tan trong kiềm mạnh/); assert.doesNotMatch(logOf(l), /Không có phản ứng: Zn/)
+  }
+  { // Boiling a salt solution down with a crystal in it never adds more salt than was dissolved.
+    const l = lab(23); const b = l.put('beaker100', 300); l.fill(b, 'water', 5)
+    const k = l.put('spatula', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'nacl-s', massG: 2 }); l.sim.dispatch({ type: 'release', tool: k.id }); l.sim.runFor(20)
+    const before = l.s().objects.filter(o => o.type === 'solid').reduce((a, o) => a + o.massG, 0) + (byId(l.s(), b.id).contents.ions['Na+'] || 0) * molarMass('NaCl')
+    const c = byId(l.s(), b.id); c.T = 100; c.contents.liquids.water = 0.1; l.sim.runFor(2)
+    const after = l.s().objects.filter(o => o.type === 'solid').reduce((a, o) => a + o.massG, 0) + (byId(l.s(), b.id).contents.ions['Na+'] || 0) * molarMass('NaCl')
+    near(after, before, 1e-6, 'NaCl mass conserved while boiling down')
+  }
+})
+
 // Metal + metal-ion pairs without a rule are classified by E° (CRC), never silently ignored or given a product.
 test('reaction coverage: unmodelled metal/ion pairs are NO_REACTION or UNSUPPORTED by E°, with no invented product', () => {
   const run = (metal, sol) => {

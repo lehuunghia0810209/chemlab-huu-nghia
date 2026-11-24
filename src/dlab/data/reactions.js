@@ -34,9 +34,9 @@ export const ION_NAME = { 'K+': 'K⁺', 'Ba2+': 'Ba²⁺', 'Ca2+': 'Ca²⁺', 'N
 export const ION_HINTS = [
   { all: ['Fe3+', 'I-'], reason: 'Fe³⁺ oxi hóa I⁻ thành I₂ — chưa được mô hình hóa.' },
   { all: ['Cu2+', 'I-'], reason: 'Cu²⁺ + I⁻ (tạo CuI↓ và I₂) — chưa được mô hình hóa.' },
-  { all: ['Ag+'], minPH: 8.5, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
+  { all: ['Ag+'], minPH: 12, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
   { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
-  { all: ['Cu2+', 'NH4+'], minPH: 9, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
+  { all: ['Cu2+', 'NH3'], minPH: 9, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
 ]
 
 // Electrochemistry. E° in volts (25 °C, CRC). Faraday quantities are exact; cell resistance is illustrative.
@@ -50,5 +50,8 @@ export const UNSUPPORTED_HINTS = [
   { all: ['NO3-', 'cu'], maxPH: 3, reason: 'Cu với HNO₃ (tạo NO/NO₂) chưa được mô hình hóa định lượng.' },
   { all: ['Fe3+', 'cu'], reason: 'Cu + Fe³⁺ chưa được mô hình hóa.' },
   { all: ['Fe3+', 'fe'], reason: 'Fe + Fe³⁺ chưa được mô hình hóa.' },
+  { all: ['Fe3+', 'zn'], reason: 'Zn + Fe³⁺ (khử Fe³⁺) chưa được mô hình hóa.' },
+  { all: ['Fe3+', 'mg'], reason: 'Mg + Fe³⁺ (khử Fe³⁺) chưa được mô hình hóa.' },
+  { all: ['zn'], minPH: 12.5, reason: 'Zn tan trong kiềm mạnh (Zn + 2OH⁻ + 2H₂O → [Zn(OH)₄]²⁻ + H₂↑) chưa được mô hình hóa.' },
   { all: ['I-', 'Fe3+'], reason: 'Phản ứng oxi hóa I⁻ bởi Fe³⁺ chưa được mô hình hóa.' }
 ]

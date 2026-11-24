@@ -467,11 +467,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     wireKey = key
     for (const m of [...wireGroup.children]) { wireGroup.remove(m); m.geometry.dispose() }
     for (const [a, b] of ends) {
-      const top = o => new THREE.Vector3(o.x * S, (o.y + (EQUIPMENT[o.type]?.h || 20) * (o.type === 'electrodes' ? 1 : 0.6)) * S, 0.12)
+      const top = o => { const c = o.type === 'solid' && o.in && byId(state, o.in); return new THREE.Vector3(o.x * S, (c ? c.y + EQUIPMENT[c.type].h + 6 : o.y + (EQUIPMENT[o.type]?.h || 20) * (o.type === 'electrodes' ? 1 : 0.6)) * S, 0.12) }
       const p0 = top(a)
       const p1 = top(b)
       const mid = p0.clone().lerp(p1, 0.5)
-      mid.y = Math.min(p0.y, p1.y) - 0.15 // sag
+      mid.y = Math.max(0.03, Math.min(p0.y, p1.y) - 0.15) // sag, never below the bench
       wireGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(p0, mid, p1), 24, 1.2 * S, 6), wireMat))
     }
   }
@@ -659,7 +659,8 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     liq.surface.position.y += 0.0005
     liq.surface.scale.set(r / Math.cos(a), r, 1)
     const n = GW * GH
-    liq.surface.material.color.setRGB(sum[0] / n / 255, sum[1] / n / 255, sum[2] / n / 255, SRGB)
+    if (aqFrac < 1) liq.surface.material.color.setRGB(240 / 255, 200 / 255, 60 / 255, SRGB) // seen from above: the oil on top
+    else liq.surface.material.color.setRGB(sum[0] / n / 255, sum[1] / n / 255, sum[2] / n / 255, SRGB)
     liq.surface.material.opacity = Math.min(0.92, Math.max(0.42, sum[3] / n + 0.25))
     // Settled precipitate layer (same rule as 2D: a layer once enough grains have settled).
     const settled = o.vis.parts.filter(pt => pt.settled)

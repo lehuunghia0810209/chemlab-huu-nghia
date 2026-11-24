@@ -129,7 +129,7 @@ export function initDynamicLab(host) {
     if (hiddenObject()) fitView()
   }
   function loadSim(state) { ui.userView = false; ui.framePending = true; sim.load(state) }
-  function resetSim() { ui.userView = false; ui.framePending = true; sim.reset() }
+  function resetSim() { ui.userView = false; ui.framePending = true; if (ui.guided) { ui.guided.done = []; ui.guided.doneH = [] } sim.reset() }
   function flushFrame() { if (ui.framePending && !drag) { ui.framePending = false; fitView() } }
   function reframe() { if (ui.framePending) flushFrame(); else maybeFit(); three?.reframe?.(insets()) }
   new ResizeObserver(resize).observe(stage)
@@ -673,11 +673,11 @@ export function initDynamicLab(host) {
 
   // Re-rendering on every tick would detach buttons mid-click; when only numbers change, update text in place.
   function patch(el, html, keepPicks = true) {
-    if (el.dataset.html === html) return
+    if (keepPicks && el.dataset.html === html) return
     // Only numbers in text may change in place; any attribute change (an option's value when the list is
     // re-ordered) rebuilds the markup, or the visible name and the real target could disagree.
     const skeleton = html.replace(/>[^<]*</g, t => t.replace(/[0-9.,:−+-]+/g, '#'))
-    if (el.dataset.skel === skeleton) {
+    if (keepPicks && el.dataset.skel === skeleton) {
       const next = document.createElement('div')
       next.innerHTML = html
       const a = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
@@ -928,6 +928,12 @@ export function initDynamicLab(host) {
   function quickActions(o) {
     if (o.condition === 'UNUSABLE') return '<button type="button" class="dlab-btn dlab-btn--accent" data-qa="replace">Lấy dụng cụ mới</button>'
     const targets = vessels(o.x, o.id)
+    // A carried solid the step assigns to its own vessel (Zn → Cốc B, Cu → Cốc C) defaults to that vessel.
+    const carried = o.type === 'solid' ? o.reagent : o.load?.reagent
+    const step = ui.guided && ui.guided.lab.steps[ui.guided.done.length]
+    const into = carried && step?.need?.find(n => n.reagent === carried && n.into)
+    const home = into && targets.find(c => c.id === ui.guided.roles[into.into])
+    if (home) targets.splice(targets.indexOf(home), 1), targets.unshift(home)
     if (o.type === 'solid') return pieceActions(o, targets)
     const sel = (k, list, label) => (list.length ? `<select data-qa-in="${k}" aria-label="${label}">${opt(list)}</select>` : '')
     if (isContainer(o)) {
@@ -1302,7 +1308,7 @@ export function initDynamicLab(host) {
     loadSim(restore(snapshot(s.state)))
     sim.markInitial()
     ui.mode = 'guided'
-    ui.guided = { lab, roles, done: [], finished: false }
+    ui.guided = { lab, roles, done: [], doneH: [], finished: false }
     ui.selected = null
     ui.solidChoice = {}
     setModeButtons()
@@ -1317,12 +1323,17 @@ export function initDynamicLab(host) {
     box.hidden = false
     const st = sim.state
     // Undo/reset bring the simulation clock back: progress made after that moment is undone with it.
-    while (g.done.length && g.done[g.done.length - 1] > st.t + 1e-9) g.done.pop()
-    // A lesson object put away (or a check that cannot read its objects) must not stop the render loop.
-    g.missing = Object.values(g.roles).some(id => !byId(st, id))
-    const safe = fn => { try { return fn() } catch { return false } }
+    g.doneH = g.doneH || []
+    while (g.done.length && (g.done[g.done.length - 1] > st.t + 1e-9 || g.doneH[g.done.length - 1] > sim.history.length)) { g.done.pop(); g.doneH.pop() }
+    // Replacement equipment takes over the lesson role of the one it replaced.
+    for (const [role, id] of Object.entries(g.roles)) if (!byId(st, id)) { const fresh = st.objects.find(o => o.replaces === id); if (fresh) g.roles[role] = fresh.id }
+    // Only the current step's own objects matter; a check that cannot read them must not stop the render loop.
     const idx = g.done.length
-    if (!g.missing && idx < g.lab.steps.length && safe(() => g.lab.steps[idx].check(st, g.roles))) { g.done.push(st.t); ui.solidChoice = {}; announce(`Hoàn thành bước ${idx + 1}`) }
+    const cur = g.lab.steps[idx]
+    let ok = false
+    g.missing = Boolean(cur && (cur.target || []).some(r => g.roles[r] && !byId(st, g.roles[r])))
+    if (cur && !g.missing) { try { ok = cur.check(st, g.roles) } catch { g.missing = true } }
+    if (ok) { g.done.push(st.t); g.doneH.push(sim.history.length); ui.solidChoice = {}; announce(`Hoàn thành bước ${idx + 1}`) }
     const current = g.done.length
     const step = g.lab.steps[current]
     ui.highlight = step ? (step.target || []).map(r => g.roles[r]).filter(Boolean) : []
@@ -1349,9 +1360,11 @@ export function initDynamicLab(host) {
   // Recovery for any step that needs a solid in a given vessel: if the piece went into another vessel,
   // say where it is and what to do, from the step's own data (need + target roles), for every lesson.
   function misplaced(st, g, step) {
-    const target = (step.target || []).map(r => byId(st, g.roles[r])).find(c => c && isContainer(c) && !c.stock)
-    if (!target || !step.need?.length) return ''
+    const vesselsOf = (step.target || []).map(r => byId(st, g.roles[r])).filter(c => c && isContainer(c) && !c.stock)
+    if (!step.need?.length) return ''
     for (const n of step.need) {
+      const target = n.into ? byId(st, g.roles[n.into]) : vesselsOf.length === 1 ? vesselsOf[0] : null
+      if (!target) continue
       const wrong = st.objects.find(o => o.type === 'solid' && o.reagent === n.reagent && o.in && o.in !== target.id)
       if (wrong && !st.objects.some(o => o.type === 'solid' && o.reagent === n.reagent && o.in === target.id)) {
         return `${REAGENT_BY_ID[n.reagent].name} đang ở ${objLabel(byId(st, wrong.in))}, không phải ${objLabel(target)}. Lấy mẩu mới và thả vào ${objLabel(target)}.`

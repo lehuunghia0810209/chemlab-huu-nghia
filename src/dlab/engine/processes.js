@@ -169,7 +169,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
   const result = mix(c.contents, parcel)
   const Ctot = C1 + C2
   if (Ctot > 0) c.T = (C1 * c.T + C2 * T + result.heatJ) / Ctot
-  if (result.neutralised > 1e-6) noteOnce(state, `neutral-${c.id}`, `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
+  if (result.neutralised > 1e-5) noteOnce(state, `neutral-${c.id}`, `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
   for (const [key, mol] of Object.entries(result.formed)) {
     spawnParticles(state, c, key, mol, u, v)
     noteOnce(state, `ppt-${key}-${c.id}`, `Xuất hiện kết tủa ${PRECIPITATES[key].formula} (${PRECIPITATES[key].name}) trong ${label(c)}.`)
@@ -265,8 +265,9 @@ function trimParticles(c) {
 // Dissolved species the model cannot react: say so once per vessel instead of showing nothing.
 function ionHints(state, c) {
   let pH
+  const has = k => (c.contents.ions[k] || 0) > 1e-7 || Object.entries(c.contents.precipitates).some(([key, mol]) => mol > 1e-7 && PRECIPITATES[key]?.cation === k)
   for (const r of ION_HINTS) {
-    if (!r.all.every(k => (c.contents.ions[k] || 0) > 1e-7)) continue
+    if (!r.all.every(has)) continue
     if (state.notes[`ionhint-${r.all.join('+')}-${c.id}`] != null) continue
     if (r.minPH != null) {
       const V = aqueousLitres(c.contents)
@@ -365,7 +366,7 @@ function stepDissolve(state, s, c, h) {
   const driving = 1 - dissolvedG / sat
   const k = 2e-4 * (1 + 3 * c.vis.stir) * 2 ** ((c.T - ROOM_T) / 10)
   let dn = k * solidArea(s) * driving * h
-  dn = Math.min(dn, s.massG / M)
+  dn = Math.max(Math.min(dn, s.massG / M), -dissolvedG / M)
   if (dn > 0) {
     s.massG -= dn * M
     for (const [ion, n] of Object.entries(SALT_IONS[key])) c.contents.ions[ion] = (c.contents.ions[ion] || 0) + n * dn
@@ -414,9 +415,9 @@ function stepKinetics(state, s, c, h, rad, level) {
   const stirBoost = 1 + c.vis.stir
   const tempBoost = 2 ** ((c.T - ROOM_T) / 10)
   const area = solidArea(s)
-  const present = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 0)
+  const present = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 1e-7)
   const pHnow = -Math.log10(hConc)
-  const hintFirst = UNSUPPORTED_HINTS.find(r => r.all.every(k => present.includes(k) || k === s.reagent) && !(r.maxPH < pHnow))
+  const hintFirst = UNSUPPORTED_HINTS.find(r => r.all.every(k => present.includes(k) || k === s.reagent) && !(r.maxPH < pHnow) && !(r.minPH > pHnow))
   if (hintFirst) {
     c.unsupported = hintFirst.reason
     noteOnce(state, `unsup-${s.reagent}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${hintFirst.reason}`, 'warn')
@@ -473,7 +474,7 @@ function stepKinetics(state, s, c, h, rad, level) {
   if (!anyRule && !c.unsupported) {
     const drivers = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 0)
     const no = NO_REACTION.find(r => r.solid === s.reagent && (r.driver === 'h' ? hConc > 1e-3 : drivers.includes(r.driver)))
-    const hint = UNSUPPORTED_HINTS.find(r => r.all.every(k => drivers.includes(k) || k === s.reagent) && !(r.maxPH < -Math.log10(hConc)))
+    const hint = UNSUPPORTED_HINTS.find(r => r.all.every(k => drivers.includes(k) || k === s.reagent) && !(r.maxPH < -Math.log10(hConc)) && !(r.minPH > -Math.log10(hConc)))
     if (no && !hint) noteOnce(state, `norx-${s.reagent}-${c.id}`, `Không có phản ứng: ${no.reason}`, 'info')
     if (hint) { c.unsupported = hint.reason; noteOnce(state, `unsup-${s.reagent}-${c.id}`, `Chưa có mô hình: ${hint.reason}`, 'warn') }
     // Any other metal + metal-ion pair: classified by E°, never silently ignored or given a guessed product.
