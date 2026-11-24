@@ -171,7 +171,7 @@ const COMMANDS = {
   power(state, { id, on, volts }) {
     const p = byId(state, id)
     if (on != null) p.on = Boolean(on)
-    if (volts != null) p.volts = Math.max(0, Math.min(12, Number(volts)))
+    if (volts != null && Number.isFinite(Number(volts))) p.volts = Math.max(0, Math.min(12, Number(volts))) // a cleared input keeps the last voltage (was NaN V / NaN A)
     log(state, `Nguồn điện ${p.on ? 'bật' : 'tắt'}, ${p.volts} V.`, 'action')
   },
   wire(state, { from, to }) {

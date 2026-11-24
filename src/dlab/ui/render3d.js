@@ -268,7 +268,10 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         break
       case 'electrodes':
         add(new THREE.BoxGeometry(def.w * S, 6 * S, 10 * S), darkPlastic, h - 3 * S)
-        for (const s of [-1, 1]) add(new THREE.CylinderGeometry(2.8 * S, 2.8 * S, h - 6 * S, 12), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.5, metalness: 0.3 }), (h - 6 * S) / 2, s * def.w * 0.32 * S)
+        for (const s of [-1, 1]) {
+          const rod = add(new THREE.CylinderGeometry(2.8 * S, 2.8 * S, h - 6 * S, 12), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.5, metalness: 0.3 }), (h - 6 * S) / 2, s * def.w * 0.32 * S)
+          if (s < 0) g.userData.cathode = rod // left rod is the cathode (−), as in 2D
+        }
         break
       case 'bridge': {
         const w = def.w * S / 2 - 6 * S
@@ -452,9 +455,30 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   let framed = false
   let lastSel = null
 
+  // Wires (power → electrodes, voltmeter leads): thin sagging tubes, rebuilt only when a wire or an end moves.
+  const wireGroup = new THREE.Group()
+  scene.add(wireGroup)
+  const wireMat = mat(new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.6 }))
+  let wireKey = ''
+  function updateWires(state) {
+    const ends = (state.wires || []).map(w => [byId(state, w.from), byId(state, w.to)]).filter(([a, b]) => a && b)
+    const key = ends.map(([a, b]) => `${a.id}:${a.x | 0},${a.y | 0}-${b.id}:${b.x | 0},${b.y | 0}`).join('|')
+    if (key === wireKey) return
+    wireKey = key
+    for (const m of [...wireGroup.children]) { wireGroup.remove(m); m.geometry.dispose() }
+    for (const [a, b] of ends) {
+      const top = o => new THREE.Vector3(o.x * S, (o.y + (EQUIPMENT[o.type]?.h || 20) * (o.type === 'electrodes' ? 1 : 0.6)) * S, 0.12)
+      const p0 = top(a)
+      const p1 = top(b)
+      const mid = p0.clone().lerp(p1, 0.5)
+      mid.y = Math.min(p0.y, p1.y) - 0.15 // sag
+      wireGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(p0, mid, p1), 24, 1.2 * S, 6), wireMat))
+    }
+  }
   function update(state, ui = {}) {
     lastState = state
     if (!framed) { fit(insets?.() || lastInsets, false); framed = true }
+    updateWires(state)
     const alive = new Set()
     let b = 0
     let p = 0
@@ -508,6 +532,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         }
       }
       if (u.hot) u.hot.material.emissive.setHex(o.on ? 0xb33a00 : 0x000000)
+      if (u.cathode) { const d = Math.min(1, (o.cuDeposit || 0) / 3e-4); u.cathode.material.color.setRGB((50 + 150 * d) / 255, (50 + 60 * d) / 255, (50 + 10 * d) / 255, SRGB) }
       if (u.column) { const len = Math.max(2, Math.min(def.h * 0.85, (o.reading ?? 25) / 110 * def.h * 0.85)) * S; u.column.scale.y = len; u.column.position.y = 6 * S + len / 2 }
       if (u.fill) {
         const vol = volumeOf({ contents: o.contents || { liquids: {} } })
@@ -604,12 +629,14 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     }
     const mean = fieldMean(o)
     const tilted = Math.abs(o.angle) > 0.02
+    const oil = o.contents.liquids.oil || 0
+    const aqFrac = oil > 0.01 && level > 0 ? levelForVolume(o.type, Math.max(0, vol - oil)) / level : 1
     const x = liq.tex.getContext('2d')
     const img = x.createImageData(GW, GH)
     let sum = [0, 0, 0, 0]
     for (let j = 0; j < GH; j += 1) {
       for (let i = 0; i < GW; i += 1) {
-        const c = (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
+        const c = (j + 0.5) / GH > aqFrac ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
         const k = ((GH - 1 - j) * GW + i) * 4
         img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]
         img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.14, (c[3] ?? 0.3) * 1.1)))
@@ -843,6 +870,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       for (const node of nodes.values()) remove(node)
       nodes.clear()
       streamGeo.dispose()
+      for (const m of wireGroup.children) m.geometry.dispose()
       streamMeshes.forEach(m => m.material.dispose())
       planeGeo.dispose()
       ringGeo.dispose()
