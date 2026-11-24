@@ -17,6 +17,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await page.getByRole('tab', { name: 'Chi tiết vật' }).click()
   }
   const panelBtn = (page, name) => ({ click: async () => { await showDetails(page); await page.locator('.dlab-inspector').getByRole('button', { name, exact: true }).click() } })
+  // Library: choose the shelf, then the group chip (Tủ hóa chất / Kệ dụng cụ).
+  const libGroup = async (page, shelf, group) => { await page.getByRole('tab', { name: shelf }).click(); await page.locator('.dlab-chip', { hasText: group }).click() }
   const menu = async (page, name) => { await page.locator('.dlab-menu summary').click(); await btn(page, name).click() }
   const redDominant = c => c[0] > c[2] + 50 && c[0] > c[1] + 50
   const violet = c => c[2] > c[1] + 40 && c[0] > c[1] + 20 && Math.abs(c[0] - c[2]) < 60
@@ -24,13 +26,14 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   async function dipPaper(page) {
     const ids = await bench(page, { A: { type: 'beaker100', x: 400, fill: [['hcl', 60]] } })
     ids.P = await st(page, L => L.dispatch({ type: 'newLitmus', x: 560 }, { record: false }).id)
+    await settled(page) // the bench is framed once more after layout; aim after that
     const s = await surface(page, ids.A)
     return { ids, s }
   }
 
   await test('S01 lấy giấy quỳ từ thư viện', async page => {
     await bench(page, {})
-    await page.getByRole('tab', { name: 'Chỉ thị' }).click()
+    await libGroup(page, 'Tủ hóa chất', 'Chất chỉ thị')
     await page.locator('.dlab-lib-item', { hasText: 'Giấy quỳ tím' }).first().click()
     await wait(page, L => L.state.objects.some(o => o.type === 'litmusPaper'))
   })
@@ -168,8 +171,9 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('S10 chất rắn hòa tan (kéo từ thư viện)', async page => {
     const ids = await bench(page, { A: { type: 'beaker100', x: 360, fill: [['water', 40]] } })
-    await page.getByRole('tab', { name: 'Chất rắn' }).click()
+    await libGroup(page, 'Tủ hóa chất', 'Chất rắn')
     const item = page.locator('.dlab-lib-item', { hasText: 'Muối ăn' }).first()
+    await item.scrollIntoViewIfNeeded() // the list scrolls; a student scrolls to the item before dragging it
     const box = await item.boundingBox()
     const target = await screen(page, 360, 40)
     await page.mouse.move(box.x + 20, box.y + 15)
@@ -186,7 +190,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   await test('S11 kim loại: đinh sắt trong CuSO4', async page => {
     const ids = await bench(page, { A: { type: 'beaker100', x: 360, fill: [['cuso4', 40]] } })
     await select(page, ids.A)
-    await page.getByRole('tab', { name: 'Chất rắn' }).click()
+    await libGroup(page, 'Tủ hóa chất', 'Chất rắn')
     await page.locator('.dlab-lib-item', { hasText: 'Đinh sắt' }).first().click()
     await page.locator('.dlab-dialog button[type="submit"]').click()
     await st(page, L => { L.state.speed = 4 })
@@ -378,10 +382,10 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   await test('S23 thực hành Sandbox từ thư viện', async page => {
     await btn(page, 'Tự do').click()
     await bench(page, {})
-    await page.getByRole('tab', { name: 'Dụng cụ' }).click()
+    await libGroup(page, 'Kệ dụng cụ', 'Cốc, bình, ống')
     await page.locator('.dlab-lib-item', { hasText: 'Cốc thủy tinh 100 mL' }).first().click()
     const beaker = await st(page, L => L.state.objects.find(o => o.type === 'beaker100').id)
-    await page.getByRole('tab', { name: 'Dung dịch' }).click()
+    await libGroup(page, 'Tủ hóa chất', 'Dung dịch')
     await page.locator('.dlab-lib-item', { hasText: 'Axit clohiđric' }).first().click()
     await showDetails(page); await page.locator('[data-in="pour-ml"]').fill('10')
     await showDetails(page); await page.locator('[data-in="pour-to"]').selectOption(beaker)
@@ -558,6 +562,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   await test('T03 3D: nhúng giấy quỳ vào axit', async page => {
     const ids = await bench(page, { A: { type: 'beaker100', x: 400, fill: [['hcl', 60]] } })
     ids.P = await st(page, L => L.dispatch({ type: 'newLitmus', x: 560 }, { record: false }).id)
+    await settled(page) // the bench is framed once more after layout; aim after that
     const s = await surface(page, ids.A)
     await open3d(page)
     const p0 = await obj(page, ids.P)
@@ -941,14 +946,15 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     const ratio = (s1 - s0) / ((r1 - r0) / 1000)
     assert.ok(ratio > 3.2 && ratio < 4.4, `simulated/real time at 4× = ${ratio.toFixed(2)}`)
     assert.match(await page.locator('.dlab-time').innerText(), /Mô phỏng \d+:\d\d/)
-    // Make the wait long on purpose (a small nail), then jump to the phenomenon.
+    // A small nail, then jump to the phenomenon with the model.
     await st(page, L => { const n = L.state.objects.find(o => o.reagent === 'fe'); n.massG = 0.1; n.mass0 = 0.1; n.coat = {} })
     await btn(page, '1×').click()
     await page.locator('[data-gs="ffwd"]').click()
     await strip.locator('.dlab-gstep', { hasText: 'Bước 3/5' }).waitFor({ timeout: 30000 })
     await page.locator('.dlab-toast', { hasText: 'thời gian mô phỏng' }).waitFor()
     const coat = await st(page, L => L.state.objects.find(o => o.reagent === 'fe').coat.Cu)
-    assert.ok(coat > 8e-4, `copper really deposited by the model: ${coat}`)
+    // Same layer as 0.8 mmol on a 2 g nail; a nail's area is proportional to its mass (fixed radius).
+    assert.ok(coat > 8e-4 * (0.1 / 2) * 0.98, `copper really deposited by the model: ${coat}`)
     assert.equal(await page.locator('[data-gs="ffwd"]').count(), 0, 'no fast-forward on an action step')
     await page.locator('[data-gs="help"]').click()
     await page.locator('.dlab-ghelp', { hasText: 'Kẽm' }).waitFor()
@@ -1001,4 +1007,174 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     assert.ok(overflow <= 1, `no horizontal scroll: ${overflow}`)
     await page.screenshot({ path: `${outDir}/${browserName}-g07-phone.png` })
   }, { width: 390, height: 844, touch: true })
+
+  // ── Post-Codex QA (CL7-QA-001 and UX follow-ups) ──
+  const approx = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b)
+  await test('G08 kết tủa (CL7-QA-001): ống nhỏ giọt hút 2 mL, 10 giọt, tiến độ định lượng, Cu(OH)₂ sau ≤ 10 thao tác', async page => {
+    await btn(page, 'Có hướng dẫn').click()
+    await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()
+    const strip = page.locator('.dlab-gstrip')
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
+    assert.match(await strip.innerText(), /3 mL/, 'the task states the amount the model needs')
+    const progress = page.locator('.dlab-gprogress')
+    assert.match(await progress.innerText(), /Chưa nhỏ NaOH/)
+    const r = await st(page, L => ({ d: L.state.objects.find(o => o.type === 'dropper'), naoh: L.state.objects.find(o => o.reagent === 'naoh').id, a: L.state.objects.find(o => o.type === 'beaker100').id }))
+    await clickWorld(page, r.d.x, r.d.y + 45)
+    assert.equal(await st(page, L => L.selected()), r.d.id)
+    await page.locator('[data-qa-in="from"]').selectOption(r.naoh)
+    await btn(page, 'Hút 2 mL').click()
+    let actions = 1
+    const texts = []
+    while (!(await st(page, L => L.guided().done)) && actions < 12) {
+      const left = await st(page, (L, id) => Object.values(L.state.objects.find(o => o.id === id).contents.liquids).reduce((a, b) => a + b, 0), r.d.id)
+      if (left < 0.5 - 1e-6) {
+        assert.equal(await page.locator('[data-qa-in="from"]').inputValue(), r.naoh, 'refilling offers the NaOH bottle again, not the beaker')
+        await btn(page, 'Hút 2 mL').click()
+      }
+      else {
+        assert.equal(await page.locator('[data-qa-in="to"]').inputValue(), r.a)
+        await btn(page, '10 giọt').click()
+        await page.waitForTimeout(600)
+        texts.push(await progress.innerText().catch(() => ''))
+      }
+      actions += 1
+    }
+    assert.ok(await st(page, L => L.guided().done) >= 1, `step 1 done after ${actions} actions`)
+    assert.ok(actions <= 10, `actions ${actions}`)
+    assert.ok(texts.some(t => /Đã thêm 0,5 mL NaOH .* Cần thêm khoảng \d+(,\d+)? mL \(\d+ giọt\)/.test(t)), texts.join(' | '))
+    const a = await obj(page, r.a)
+    assert.ok(a.contents.precipitates['Cu(OH)2'] > 2e-4, 'Cu(OH)₂ formed by the engine')
+    approx(a.contents.ions['Na+'] * 1000 / 0.5, (actions - 2) * 0.5, 0.05, 'every drop reached the beaker (mL of NaOH)')
+    await page.screenshot({ path: `${outDir}/${browserName}-g08-precipitate.png` })
+  })
+
+  await test('L01 Tủ hóa chất / Kệ dụng cụ: hai khu, nhóm không cuộn ngang, tìm có/không dấu và công thức', async page => {
+    await bench(page, {})
+    const lib = page.locator('.dlab-lib')
+    for (let i = 0; i < 12; i += 1) await page.getByRole('tab', { name: i % 2 ? 'Kệ dụng cụ' : 'Tủ hóa chất' }).click()
+    assert.equal(await page.getByRole('tab', { name: 'Tủ hóa chất' }).getAttribute('aria-selected'), 'false')
+    const names = async () => page.locator('.dlab-lib-item .dlab-lib-name').allInnerTexts()
+    for (const g of ['Kẹp hóa chất', 'Ống nhỏ giọt', 'Đũa thủy tinh', 'Pipet 10 mL', 'Giấy quỳ tím', 'Cốc thủy tinh 100 mL', 'Máy đo pH']) assert.ok((await names()).includes(g), `tool shelf lists ${g}`)
+    await page.getByRole('tab', { name: 'Tủ hóa chất' }).click()
+    for (const chip of ['Dung dịch', 'Chất rắn', 'Chất lỏng', 'Chất khí', 'Chất chỉ thị']) {
+      const c = page.locator('.dlab-chip', { hasText: chip })
+      assert.ok(await c.isVisible(), `chip ${chip} visible`)
+      await c.click()
+      assert.ok((await names()).length > 0, `${chip} has items`)
+    }
+    const overflow = await lib.evaluate(el => [...el.querySelectorAll('.dlab-shelves, .dlab-groups, .dlab-lib-list')].map(n => n.scrollWidth - n.clientWidth))
+    assert.ok(overflow.every(v => v <= 1), `no sideways scrolling: ${overflow}`)
+    for (const [q, want] of [['muoi an', 'Muối ăn (tinh thể)'], ['CuSO4', 'Đồng(II) sunfat'], ['CuSO₄', 'Đồng(II) sunfat'], ['kep', 'Kẹp hóa chất'], ['naoh', 'Natri hiđroxit']]) {
+      await page.locator('.dlab-search').fill(q)
+      assert.equal((await names())[0], want, `search “${q}”`)
+    }
+    await page.locator('.dlab-search').fill('kep')
+    await page.locator('.dlab-lib-item', { hasText: 'Kẹp hóa chất' }).first().click()
+    await wait(page, L => L.state.objects.some(o => o.type === 'tongs'))
+  })
+
+  await test('W01 bàn 2D đứng yên: chọn dụng cụ, mở/đóng Quan sát, đổi thanh thao tác không làm vật dịch chuyển', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 380, fill: [['water', 30]] }, D: { type: 'dropper', x: 450, y: 0 }, K: { type: 'tongs', x: 330 } })
+    await settled(page)
+    const where = () => st(page, (L, id) => { const o = L.state.objects.find(x => x.id === id); return L.worldToScreen(o.x, o.y + 20) }, ids.A)
+    const p0 = await where()
+    const moved = async what => { const p = await where(); assert.ok(Math.hypot(p.x - p0.x, p.y - p0.y) < 1.5, `${what}: beaker moved ${JSON.stringify(p0)} → ${JSON.stringify(p)}`) }
+    await clickWorld(page, 450, 45); await moved('select dropper (action bar changes)')
+    await clickWorld(page, 330, 60); await moved('select tongs')
+    await btn(page, 'Lấy').click()
+    const warn = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' })
+    if (await warn.isVisible().catch(() => false)) await warn.click() // sodium is the first solid: confirm the safety note
+    await page.waitForTimeout(300); await moved('take a piece (object count changes)')
+    // Opening the panel: nothing moves right after the click. Later (pointer at rest) the view may re-frame,
+    // but only if the panel or a narrower, wrapped action bar really hides something.
+    await page.locator('.dlab-fab--side').click()
+    await page.waitForTimeout(300); await moved('open Quan sát, just after the click')
+    const hidden = await st(page, L => L.hiddenObject())
+    await page.waitForTimeout(1300)
+    if (!hidden) await moved('open Quan sát (nothing hidden)')
+    else assert.equal(await st(page, L => L.hiddenObject()), false, 'after re-framing nothing is hidden')
+    const p1 = await where()
+    await page.locator('[data-close="side"]').click(); await page.waitForTimeout(1300)
+    const p2 = await where()
+    assert.ok(Math.hypot(p2.x - p1.x, p2.y - p1.y) < 1.5, 'closing the panel hides nothing, so nothing moves')
+  })
+
+  await test('W02 bàn 2D: dụng cụ bị che chỉ được căn lại khi chuột đã dừng, không trong lúc kéo', async page => {
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['water', 30]] }, B: { type: 'beaker100', x: 760 } })
+    await settled(page)
+    const view0 = await st(page, L => L.view())
+    // Drag beaker A; while the pointer is down the view must not change, whatever else happens.
+    const a = await screen(page, 300, 30)
+    await page.mouse.move(a.x, a.y); await page.mouse.down()
+    await page.mouse.move(a.x + 60, a.y - 20, { steps: 6 })
+    await st(page, L => { L.dispatch({ type: 'add', equipmentType: 'beaker250', x: 1400, y: 0 }, { record: false }) }) // far off-screen
+    await page.waitForTimeout(1200)
+    assert.deepEqual(await st(page, L => L.view()), view0, 'no re-framing during a drag')
+    await page.mouse.up()
+    await page.waitForTimeout(1500)
+    const v1 = await st(page, L => L.view())
+    assert.notDeepEqual(v1, view0, 'after the pointer rests, the hidden beaker is brought into view')
+    const far = await st(page, L => { const o = L.state.objects.find(x => x.type === 'beaker250'); return L.worldToScreen(o.x, o.y + 40) })
+    const box = await page.locator('.dlab-canvas').boundingBox()
+    assert.ok(far.x < box.x + box.width, 'the new beaker is visible')
+    assert.ok(ids.B)
+  })
+
+  await test('T02 3D: kéo vật không xoay camera, xoay camera không dời vật, phản hồi thả đúng/sai, nhìn vật chọn', async page => {
+    const ids = await bench(page, {
+      T: { type: 'testTube', x: 300, fill: [['water', 10]] }, D: { type: 'dish', x: 470, fill: [['water', 150]] }, K: { type: 'tongs', x: 620 }, B: { type: 'beaker100', x: 380 }
+    })
+    await btn(page, 'Xem 3D').click()
+    await page.locator('.dlab-3d canvas').waitFor()
+    await page.waitForTimeout(900)
+    const at3 = (x, y) => st(page, (L, a) => L.worldToScreen3d(a[0], a[1]), [x, y])
+    const cam = () => st(page, L => L.camera3d())
+    // Orbit on empty space: camera moves, objects stay.
+    const before = JSON.stringify(await st(page, L => L.state.objects.map(o => [o.id, o.x, o.y])))
+    const c0 = await cam()
+    const e = await at3(470, 230) // empty space above the dish (the library drawer covers the left edge)
+    await page.mouse.move(e.x, e.y); await page.mouse.down(); await page.mouse.move(e.x + 120, e.y + 10, { steps: 8 }); await page.mouse.up()
+    await page.waitForTimeout(300)
+    assert.notDeepEqual((await cam()).pos, c0.pos, 'dragging empty space orbits the camera')
+    assert.equal(JSON.stringify(await st(page, L => L.state.objects.map(o => [o.id, o.x, o.y]))), before, 'orbiting moved no object')
+    // Take sodium with the tongs, carry it: over the test tube → red, over the dish → green; the camera holds still.
+    await st(page, (L, id) => { L.dispatch({ type: 'pick', tool: id, reagent: 'na', massG: 0.1 }, { record: false, confirmed: true }) }, ids.K)
+    const k = await obj(page, ids.K)
+    for (let i = 0, prev = ''; i < 30; i += 1) { const c = JSON.stringify(await cam()); if (c === prev) break; prev = c; await page.waitForTimeout(120) } // orbit damping (inertia) has run out
+    const c1 = await cam()
+    let p = await at3(k.x, k.y + 60)
+    await page.mouse.move(p.x, p.y); await page.mouse.down()
+    const tube = await obj(page, ids.T)
+    p = await at3(tube.x, 150)
+    await page.mouse.move(p.x, p.y, { steps: 10 })
+    await page.waitForTimeout(250)
+    const bad = await st(page, L => L.drop())
+    assert.equal(bad?.id, ids.T); assert.equal(bad.ok, false, 'sodium over a test tube is refused')
+    assert.ok(await page.locator('.dlab-label.is-drop-bad').isVisible(), 'the refusal is shown on the target')
+    const dish = await obj(page, ids.D)
+    p = await at3(dish.x, 110)
+    await page.mouse.move(p.x, p.y, { steps: 10 })
+    await page.waitForTimeout(250)
+    const good = await st(page, L => L.drop())
+    assert.equal(good?.id, ids.D); assert.equal(good.ok, true)
+    assert.ok(await page.locator('.dlab-label.is-drop-ok').isVisible())
+    await page.screenshot({ path: `${outDir}/${browserName}-t02-drop-ok.png` })
+    const c2 = (await cam()).pos
+    assert.ok(Math.hypot(c2[0] - c1.pos[0], c2[1] - c1.pos[1], c2[2] - c1.pos[2]) < 1e-3, `carrying an object did not rotate the camera: ${c1.pos} → ${c2}`)
+    await page.mouse.up()
+    await page.waitForTimeout(300)
+    await page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }).click()
+    await wait(page, (L, id) => L.state.objects.some(o => o.reagent === 'na' && o.in === id), ids.D)
+    assert.equal(await st(page, L => L.drop()), null, 'feedback cleared after the drop')
+    // Focus the selected beaker: the camera comes closer and looks at it.
+    await select(page, ids.B)
+    const d0 = await cam()
+    await btn(page, 'Nhìn vật chọn').click()
+    await page.waitForTimeout(800)
+    const d1 = await cam()
+    const dist = c => Math.hypot(c.pos[0] - c.target[0], c.pos[1] - c.target[1], c.pos[2] - c.target[2])
+    assert.ok(dist(d1) < dist(d0), `camera closer: ${dist(d0).toFixed(2)} → ${dist(d1).toFixed(2)}`)
+    await btn(page, 'Góc mặc định').click()
+    await btn(page, 'Vừa khung').click()
+  })
 }

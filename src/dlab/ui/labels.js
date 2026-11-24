@@ -1,7 +1,7 @@
 // Object names for labels (pure: no DOM). Everything is derived from the simulation state, so a label
 // follows the chemistry: pour HCl into "Cốc A — CuSO₄" and it becomes "Cốc A — CuSO₄ + HCl".
 import { REAGENT_BY_ID, IONS, LIQUIDS, INDICATORS, PRECIPITATES } from '../data/materials.js'
-import { byId, isContainer, label } from '../engine/processes.js'
+import { byId, isContainer, label, coatCoverage } from '../engine/processes.js'
 
 const sub = f => String(f).replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join(''))
 const METAL = { 'Na+': ['Na', 1], 'K+': ['K', 1], 'Ag+': ['Ag', 1], 'Ba2+': ['Ba', 2], 'Ca2+': ['Ca', 2], 'Mg2+': ['Mg', 2], 'Zn2+': ['Zn', 2], 'Cu2+': ['Cu', 2], 'Fe2+': ['Fe', 2], 'Fe3+': ['Fe', 3] }
@@ -69,7 +69,7 @@ export function solidName(s) {
 // Full label text for the bench overlay. hideContents: the lesson is to identify unknown solutions.
 export function objectTitle(state, o, { hideContents = false } = {}) {
   if (o.type === 'solid') {
-    const coat = Object.entries(o.coat || {}).filter(([, v]) => v > 1e-4).map(([m]) => m)
+    const coat = coatCoverage(o) > 0.05 ? Object.entries(o.coat || {}).filter(([, v]) => v > 0).map(([m]) => m) : []
     return `${solidName(o)}${coat.length ? ` · có lớp ${coat.join(', ')} bám` : ''}`
   }
   const name = label(o)

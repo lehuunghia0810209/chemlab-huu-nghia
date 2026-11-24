@@ -7,7 +7,7 @@ import { createSceneHost } from '../../three/sceneHost.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume } from '../data/equipment.js'
 import { PRECIPITATES, REAGENT_BY_ID, GASES } from '../data/materials.js'
-import { isContainer, volumeOf, solidRadiusMM, byId, GW, GH, cellColor, fieldMean } from '../engine/processes.js'
+import { isContainer, volumeOf, solidRadiusMM, coatCoverage, byId, GW, GH, cellColor, fieldMean } from '../engine/processes.js'
 
 const S = 0.01 // 1 mm = 0.01 scene units
 const MAX = 600
@@ -473,8 +473,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         node.visible = o.massG > 0
         if (c) node.position.set((c.x + o.lx) * S, (c.y + o.ly + 2) * S, 0)
         else node.position.set(o.x * S, o.y * S, 0)
-        const coat = Object.values(o.coat || {}).reduce((a, x) => a + x, 0)
-        const f = Math.min(1, coat / 1.5e-3)
+        const f = coatCoverage(o)
         const coatColor = o.coat?.Ag ? [200, 200, 205] : [190, 90, 50]
         const base = node.userData.body.userData.base
         node.userData.body.userData.mat.color.setRGB(...base.map((v, i) => (v + (coatColor[i] - v) * f) / 255), SRGB)
@@ -493,11 +492,12 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       const held = ui.held === o.id
       const hov = ui.hover === o.id
       const guide = ui.highlight?.includes(o.id)
+      const drop = ui.drop?.id === o.id ? ui.drop : null
       const ring = node.userData.ring
-      ring.visible = node.visible && (sel || hov || guide)
+      ring.visible = node.visible && (sel || hov || guide || Boolean(drop))
       ring.position.set(o.x * S, 0.004, 0)
-      ring.material.color.setHex(guide && !sel ? 0xe09a00 : 0x2f7cf6)
-      ring.material.opacity = held ? 0.95 : sel ? 0.75 : guide ? 0.8 : 0.35
+      ring.material.color.setHex(drop ? (drop.ok ? 0x16a34a : 0xdc2626) : guide && !sel ? 0xe09a00 : 0x2f7cf6)
+      ring.material.opacity = drop ? 0.95 : held ? 0.95 : sel ? 0.75 : guide ? 0.8 : 0.35
       const u = node.userData.body.userData
       if (u.paper && o.seg) {
         const k = o.seg.map(x => x.rgb.join(',')).join('|')
@@ -763,6 +763,12 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   }
   function onKey(e) {
     if (!controller) return
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && controller.hasSelection() && lastSel) {
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      api.focus(lastSel)
+      return
+    }
     // Arrows: move the selected object (as in 2D); without a selection they orbit the camera.
     if (!controller.hasSelection() && e.key.startsWith('Arrow')) {
       e.preventDefault()
@@ -799,11 +805,24 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   const ro = new ResizeObserver(() => { applyViewOffset(insets?.() || lastInsets); host.requestRender() })
   ro.observe(container)
 
-  return {
+  const api = {
     update,
     fit: ins => fit(ins),
     reframe: ins => { applyViewOffset(ins); host.requestRender() },
     home: () => host.resetView(),
+    camera: () => ({ pos: camera.position.toArray(), target: controls.target.toArray() }),
+    // Fly to the selected object, keeping the current viewing direction; close enough to see a small piece.
+    focus(id) {
+      // Sized from the object's own dimensions: a node's bounding box also holds invisible helpers.
+      const o = lastState?.objects.find(x => x.id === id)
+      if (!o || !nodes.get(id)) return false
+      const def = o.type === 'solid' ? { w: 2 * solidRadiusMM(o), h: 2 * solidRadiusMM(o) } : EQUIPMENT[o.type]
+      const target = new THREE.Vector3(o.x * S, (o.y + def.h / 2) * S, 0)
+      const size = Math.hypot(def.w, def.h) * S
+      const dir = camera.position.clone().sub(controls.target).normalize()
+      host.flyTo(target.clone().addScaledVector(dir, Math.max(controls.minDistance, size * 2.6)), target, 480)
+      return true
+    },
     // Test/automation hook: screen position of a world point, so 3D journeys can drive real pointer events.
     worldToScreen(x, y) {
       const v = new THREE.Vector3(x * S, y * S, 0).project(camera)
@@ -833,6 +852,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       host.dispose() // disposes remaining scene geometry/materials, renderer and controls
     }
   }
+  return api
 }
 
 const SRGB = THREE_NS.SRGBColorSpace

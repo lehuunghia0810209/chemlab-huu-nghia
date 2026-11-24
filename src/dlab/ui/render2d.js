@@ -1,7 +1,7 @@
 // Canvas 2D renderer. Read-only view of the simulation state: it never changes chemistry.
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume } from '../data/equipment.js'
 import { PRECIPITATES, REAGENT_BY_ID, GASES, LIQUIDS } from '../data/materials.js'
-import { GW, GH, cellColor, fieldMean, volumeOf, surfaceY, solidRadiusMM, isContainer, byId } from '../engine/processes.js'
+import { GW, GH, cellColor, fieldMean, volumeOf, surfaceY, solidRadiusMM, coatCoverage, isContainer, byId } from '../engine/processes.js'
 
 export function createView() {
   return { x: 420, y: 90, zoom: 1, w: 800, h: 500, dpr: 1 }
@@ -90,6 +90,23 @@ export function render(ctx, state, view, ui) {
     const hover = ui.hover === o.id && !sel
     const hl = ui.highlight?.includes(o.id)
     const grab = ui.grabbable?.includes(o.id) && !sel
+    const drop = ui.drop?.id === o.id ? ui.drop : null
+    if (drop) {
+      // Drop target while carrying: green = will receive it, red = the safety rules refuse it.
+      const b = bounds(o, state)
+      const [x0, y0] = toScreen(view, b.x0, b.y1)
+      const [x1, y1] = toScreen(view, b.x1, b.y0)
+      ctx.save()
+      roundRect(ctx, x0 - 8, y0 - 8, x1 - x0 + 16, y1 - y0 + 16, 10)
+      ctx.fillStyle = drop.ok ? 'rgba(22,163,74,0.10)' : 'rgba(220,38,38,0.10)'
+      ctx.fill()
+      ctx.strokeStyle = drop.ok ? '#16a34a' : '#dc2626'
+      ctx.lineWidth = 3
+      if (!drop.ok) ctx.setLineDash([7, 5])
+      ctx.stroke()
+      ctx.restore()
+      continue
+    }
     if (!sel && !hl && !hover && !grab) continue
     const b = bounds(o, state)
     const [x0, y0] = toScreen(view, b.x0, b.y1)
@@ -164,7 +181,14 @@ export function anchor(state, o, target = false) {
 export function solidBox(state, s) {
   const r = REAGENT_BY_ID[s.reagent]
   const c = s.in && state && byId(state, s.in)
-  if (!c) { const rad = Math.max(2.5, solidRadiusMM(s)); return { x0: s.x - rad, x1: s.x + rad, y0: s.y, y1: s.y + 2 * rad } }
+  if (!c) {
+    // Out of a vessel: a nail or ribbon lies flat on the bench, or hangs from the tongs that hold it.
+    const len = r.shape === 'cylinder' ? 10 + s.massG * 12 : r.shape === 'ribbon' ? 12 + Math.sqrt(s.massG / (s.mass0 || s.massG)) * 30 : 0
+    if (len && s.holder) return { x0: s.x - 2.5, x1: s.x + 2.5, y0: s.y - len * 0.8, y1: s.y + len * 0.2 }
+    if (len) return { x0: s.x - len / 2, x1: s.x + len / 2, y0: s.y, y1: s.y + 4 }
+    const rad = Math.max(2.5, solidRadiusMM(s))
+    return { x0: s.x - rad, x1: s.x + rad, y0: s.y, y1: s.y + 2 * rad }
+  }
   const def = EQUIPMENT[c.type]
   const H = innerHeight(def)
   if (r.shape === 'cylinder') { const len = Math.min(H * 0.8, 10 + s.massG * 12); return { x0: s.x - 2, x1: s.x + 2, y0: c.y + 2, y1: c.y + 2 + len } }
@@ -467,15 +491,47 @@ function label(ctx, text, x, y, dark) {
   ctx.fillText(text, x, y)
 }
 
+// The same colour as inside a vessel, so a copper-coated nail taken out still looks coated.
+function solidFill(s, r) {
+  const k = coatCoverage(s)
+  const base = r.color || [240, 240, 240]
+  const coatColor = s.coat?.Ag ? [200, 200, 205] : [190, 90, 50]
+  return rgba(base.map((v, i) => v + (coatColor[i] - v) * k))
+}
 function drawLooseSolid(ctx, view, s) {
   if (s.massG <= 0) return
   const r = REAGENT_BY_ID[s.reagent]
-  const rad = Math.max(2.5, solidRadiusMM(s))
-  const [x, y] = toScreen(view, s.x, s.y + rad)
-  ctx.fillStyle = rgba(r.color || [240, 240, 240])
-  ctx.beginPath()
-  ctx.arc(x, y, rad * view.zoom, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.save()
+  ctx.fillStyle = solidFill(s, r)
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)'
+  ctx.lineWidth = 1
+  if (r.shape === 'cylinder' || r.shape === 'ribbon') {
+    // A nail: shaft with a flat head and a pointed tip; a ribbon: a thin strip. Drawn from the same box as hit tests.
+    const b = solidBox(null, s)
+    const [x0, y0] = toScreen(view, b.x0, b.y1)
+    const [x1, y1] = toScreen(view, b.x1, b.y0)
+    const vertical = (y1 - y0) > (x1 - x0)
+    if (r.shape === 'ribbon') { ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.strokeRect(x0, y0, x1 - x0, y1 - y0) }
+    else if (vertical) {
+      const w = x1 - x0, cx = (x0 + x1) / 2, tip = Math.min(w * 1.6, (y1 - y0) * 0.2)
+      ctx.beginPath(); ctx.moveTo(cx - w * 0.3, y0); ctx.lineTo(cx + w * 0.3, y0); ctx.lineTo(cx + w * 0.3, y1 - tip); ctx.lineTo(cx, y1); ctx.lineTo(cx - w * 0.3, y1 - tip); ctx.closePath(); ctx.fill(); ctx.stroke()
+      ctx.fillRect(x0, y0 - 1, w, Math.max(2, w * 0.35)); ctx.strokeRect(x0, y0 - 1, w, Math.max(2, w * 0.35))
+    }
+    else {
+      const h = y1 - y0, cy = (y0 + y1) / 2, tip = Math.min(h * 1.6, (x1 - x0) * 0.2)
+      ctx.beginPath(); ctx.moveTo(x0 + h * 0.35, cy - h * 0.3); ctx.lineTo(x1 - tip, cy - h * 0.3); ctx.lineTo(x1, cy); ctx.lineTo(x1 - tip, cy + h * 0.3); ctx.lineTo(x0 + h * 0.35, cy + h * 0.3); ctx.closePath(); ctx.fill(); ctx.stroke()
+      ctx.fillRect(x0, y0, Math.max(2, h * 0.35), h); ctx.strokeRect(x0, y0, Math.max(2, h * 0.35), h)
+    }
+  }
+  else {
+    const rad = Math.max(2.5, solidRadiusMM(s))
+    const [x, y] = toScreen(view, s.x, s.y + rad)
+    ctx.beginPath()
+    ctx.arc(x, y, rad * view.zoom, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.restore()
 }
 
 let field = null
@@ -579,11 +635,7 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
       if (s.type !== 'solid' || s.in !== c.id || s.massG <= 0) continue
       const r = REAGENT_BY_ID[s.reagent]
       const rad = Math.max(1.6, solidRadiusMM(s))
-      const coat = Object.values(s.coat || {}).reduce((a, b) => a + b, 0)
-      const coatFrac = Math.min(1, coat / 1.5e-3)
-      const base = r.color || [240, 240, 240]
-      const coatColor = s.coat?.Ag ? [200, 200, 205] : [190, 90, 50]
-      ctx.fillStyle = rgba(base.map((v, i) => v + (coatColor[i] - v) * coatFrac))
+      ctx.fillStyle = solidFill(s, r)
       ctx.strokeStyle = 'rgba(0,0,0,0.25)'
       ctx.lineWidth = 0.6
       if (r.shape === 'cylinder') {

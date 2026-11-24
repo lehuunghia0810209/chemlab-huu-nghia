@@ -1,0 +1,197 @@
+{
+  "base": "http://localhost:5173/",
+  "labs": [
+    {
+      "id": "acid-base",
+      "steps": [
+        {
+          "n": 1,
+          "how": "giấy quỳ: Nhúng",
+          "ok": true
+        },
+        {
+          "n": 2,
+          "how": "giấy quỳ: Nhúng",
+          "ok": true
+        },
+        {
+          "n": 3,
+          "how": "giấy quỳ: Nhúng",
+          "ok": true
+        },
+        {
+          "n": 4,
+          "how": "ống nhỏ giọt: Hút → 5 giọt",
+          "ok": true
+        },
+        {
+          "n": 5,
+          "how": "chai HCl: Rót 9 mL",
+          "ok": true
+        }
+      ],
+      "switched3d": {
+        "sameObjects": true,
+        "labels": 7
+      },
+      "done": "5/5",
+      "complete": true,
+      "realSeconds": 7.5,
+      "simSeconds": 6.2
+    },
+    {
+      "id": "precipitate",
+      "steps": [
+        {
+          "n": 1,
+          "how": "ống nhỏ giọt: 8 thao tác",
+          "ok": true
+        },
+        {
+          "n": 2,
+          "how": "chờ lắng+tua",
+          "ok": true
+        },
+        {
+          "n": 3,
+          "how": "đũa: Khuấy",
+          "ok": true
+        },
+        {
+          "n": 4,
+          "how": "chai HCl: Rót 15 mL",
+          "ok": true
+        },
+        {
+          "n": 5,
+          "how": "thìa: Lấy muối (gợi ý đúng) → Thả+tua",
+          "ok": true
+        }
+      ],
+      "switched3d": {
+        "sameObjects": true,
+        "labels": 7
+      },
+      "done": "5/5",
+      "complete": true,
+      "realSeconds": 12.5,
+      "simSeconds": 43.2
+    },
+    {
+      "id": "metals",
+      "steps": [
+        {
+          "n": 1,
+          "how": "kẹp: Lấy đinh (gợi ý đúng) → Thả",
+          "ok": true
+        },
+        {
+          "n": 2,
+          "how": "chờ lớp Cu+tua",
+          "ok": true
+        },
+        {
+          "n": "2b",
+          "how": "kẹp: bấm đinh → Đặt lên bàn",
+          "ok": true
+        },
+        {
+          "n": 3,
+          "how": "kẹp: Lấy kẽm (gợi ý đúng) → Thả+tua",
+          "ok": true
+        },
+        {
+          "n": 4,
+          "how": "kẹp: Lấy natri → xác nhận → Thả",
+          "ok": true
+        },
+        {
+          "n": 5,
+          "how": "chờ natri tan+tua",
+          "ok": true
+        }
+      ],
+      "switched3d": {
+        "sameObjects": true,
+        "labels": 5
+      },
+      "done": "5/5",
+      "complete": true,
+      "realSeconds": 9,
+      "simSeconds": 61.9
+    },
+    {
+      "id": "electrolysis",
+      "steps": [
+        {
+          "n": 1,
+          "how": "kéo điện cực vào cốc",
+          "ok": true
+        },
+        {
+          "n": 2,
+          "how": "nguồn: Nối dây → 6 V → Bật",
+          "ok": true
+        },
+        {
+          "n": 3,
+          "how": "chờ Cu bám catot+tua",
+          "ok": true
+        },
+        {
+          "n": 4,
+          "how": "kẹp: Zn → Cốc B, Cu → Cốc C",
+          "ok": true
+        },
+        {
+          "n": 5,
+          "how": "cầu muối + vôn kế (bảng Chi tiết)",
+          "ok": true
+        }
+      ],
+      "switched3d": {
+        "sameObjects": true,
+        "labels": 8
+      },
+      "done": "5/5",
+      "complete": true,
+      "realSeconds": 8.7,
+      "simSeconds": 41.5
+    },
+    {
+      "id": "organic",
+      "steps": [
+        {
+          "n": 1,
+          "how": "giấy quỳ: Nhúng",
+          "ok": true
+        },
+        {
+          "n": 2,
+          "how": "thìa: NaHCO₃ (gợi ý đúng) → Thả+tua",
+          "ok": true
+        },
+        {
+          "n": 3,
+          "how": "chai oil: Rót 3 mL",
+          "ok": true
+        },
+        {
+          "n": 4,
+          "how": "chai ethanol: Rót 3 mL",
+          "ok": true
+        }
+      ],
+      "switched3d": {
+        "sameObjects": true,
+        "labels": 7
+      },
+      "done": "4/4",
+      "complete": true,
+      "realSeconds": 6.6,
+      "simSeconds": 7.4
+    }
+  ],
+  "console": [],
+  "aiRequests": 0
+}

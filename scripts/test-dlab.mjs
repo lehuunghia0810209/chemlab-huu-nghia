@@ -2,12 +2,12 @@
 // Expected values are computed independently here (closed-form), not read back from the engine.
 import assert from 'node:assert/strict'
 import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
-import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres } from '../src/dlab/engine/chemistry.js'
+import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
-import { GUIDED } from '../src/dlab/guided.js'
+import { GUIDED, moreToAdd } from '../src/dlab/guided.js'
 import { observe, mergeRepeats, indicatorReading } from '../src/dlab/ui/observations.js'
 import { libraryItems, searchLibrary } from '../src/dlab/ui/library.js'
 import { objectTitle, contentsName } from '../src/dlab/ui/labels.js'
@@ -764,7 +764,70 @@ test('guided steps: each has a completion sign and help; waiting steps can be fa
   const t0 = sim.state.t
   while (!lab.steps[1].check(sim.state, roles) && sim.state.t - t0 < 600) sim.runFor(2)
   assert.ok(lab.steps[1].check(sim.state, roles), 'reached by running the model, not by changing constants')
-  assert.ok(sim.state.t - t0 > 200, `a 0.1 g nail really needs minutes of simulated time (${(sim.state.t - t0).toFixed(0)} s)`)
+  // Completion is a layer thickness (coat per cm²), and the rate is proportional to area, so the time to a
+  // visible coat hardly depends on the nail's size; the default 2 g nail is unchanged (0.8 mmol Cu).
+  const small = sim.state.t - t0
+  assert.ok(small > 10 && small < 60, `0.1 g nail: ${small.toFixed(0)} s to a visible coat`)
+  const sim2 = createSim(3)
+  const roles2 = lab.setup(sim2)
+  const t2 = byId(sim2.state, roles2.tongs)
+  sim2.dispatch({ type: 'move', id: t2.id, x: byId(sim2.state, roles2.cu).x, y: 160 })
+  sim2.dispatch({ type: 'pick', tool: t2.id, reagent: 'fe', massG: 2 })
+  sim2.dispatch({ type: 'release', tool: t2.id })
+  sim2.runFor(1)
+  const t3 = sim2.state.t
+  while (!lab.steps[1].check(sim2.state, roles2) && sim2.state.t - t3 < 600) sim2.runFor(0.5)
+  const nail = sim2.state.objects.find(o => o.reagent === 'fe')
+  near(nail.coat.Cu, 8e-4, 3e-5, '2 g nail completes at ≈ 0.8 mmol Cu, as before')
+  assert.ok(Math.abs((sim2.state.t - t3) - small) < 0.6 * small, `2 g ${(sim2.state.t - t3).toFixed(0)} s vs 0.1 g ${small.toFixed(0)} s`)
+})
+
+// CL7-QA-001: the precipitate step states how much NaOH the model needs and reports progress from state.
+test('guided precipitate: NaOH amount is stated from the model, progress is quantitative, drops reach it', () => {
+  const lab = GUIDED.find(g => g.id === 'precipitate')
+  const step = lab.steps[0]
+  assert.ok(!/vài lần/.test(step.help), 'help must not say “vài lần” when the model has a threshold')
+  const sim = createSim(4)
+  const roles = lab.setup(sim)
+  const beaker = () => byId(sim.state, roles.beaker)
+  // Independent of the UI: bisection on copies of the vessel's contents with the engine's mix().
+  const need = moreToAdd(beaker().contents, 'naoh', c => (c.precipitates['Cu(OH)2'] || 0) > 2e-4)
+  assert.ok(need > 2.5 && need < 3.5, `model threshold ≈ 3 mL as the step text says (${need})`)
+  assert.ok(/3 mL/.test(step.text))
+  assert.match(step.progress(sim.state, roles), /Chưa nhỏ/)
+  // A student fills the 2 mL dropper and dispenses 10 drops at a time.
+  const d = sim.dispatch({ type: 'add', equipmentType: 'dropper', x: 400, y: 150 }, { record: false }).id
+  let presses = 0, fills = 0
+  while (!step.check(sim.state, roles) && presses < 40) {
+    if (totalVolumeML(byId(sim.state, d).contents) < 0.5 - 1e-9) {
+      sim.dispatch({ type: 'move', id: d, x: byId(sim.state, roles.naoh).x, y: 10 }, { record: false })
+      sim.dispatch({ type: 'aspirate', tool: d, from: roles.naoh, mL: 2 }, { record: false }); fills += 1
+    }
+    sim.dispatch({ type: 'move', id: d, x: beaker().x, y: 70 + 14 }, { record: false }) // where the action bar puts it: rim + 14 mm
+    sim.dispatch({ type: 'dispense', tool: d, drops: 10 }, { record: false }); presses += 1
+    sim.runFor(1)
+    if (!step.check(sim.state, roles)) assert.match(step.progress(sim.state, roles), /Cần thêm khoảng \d+(,\d+)? mL \(\d+ giọt\)/)
+  }
+  assert.ok(step.check(sim.state, roles), 'Cu(OH)₂ formed by the engine')
+  assert.ok(presses <= 7 && fills <= 2, `10-drop presses ${presses}, fills ${fills}`)
+  assert.match(step.progress(sim.state, roles), /đã xuất hiện/)
+})
+
+test('dropper: every drop of a 10-drop burst just above a beaker lands in it (none spill on the bench)', () => {
+  const l = lab(6)
+  const b = l.put('beaker100', 300)
+  l.fill(b, 'water', 20)
+  const bottle = l.put('bottle', 450, { reagent: 'naoh' })
+  const d = l.put('dropper', 450, { y: 10 })
+  l.sim.dispatch({ type: 'aspirate', tool: d.id, from: bottle.id, mL: 2 })
+  for (const [y, drops] of [[70 + 14, 10], [70 + 14, 5], [70 + 2, 10]]) {
+    const before = byId(l.s(), b.id).contents.ions['Na+'] || 0
+    l.sim.dispatch({ type: 'move', id: d.id, x: 300, y })
+    l.sim.dispatch({ type: 'dispense', tool: d.id, drops })
+    l.sim.runFor(2)
+    assert.equal(l.s().drops.length, 0)
+    near((byId(l.s(), b.id).contents.ions['Na+'] || 0) - before, drops * 0.05 * 0.5 / 1000, 1e-9, `${drops} drops from y=${y}: NaOH that reached the beaker`)
+  }
 })
 
 const failed = results.filter(r => !r.pass)

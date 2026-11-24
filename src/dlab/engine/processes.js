@@ -278,6 +278,20 @@ export function solidArea(s) {
   return 4 * Math.PI * rad * rad
 }
 
+// How covered a piece looks (0–1): deposited metal per cm² of the piece's original surface, i.e. layer
+// thickness — not the total amount, so a small nail with the same layer looks just as coated as a large one.
+// Full colour at the layer the default 2 g nail had with 1.5 mmol (the earlier absolute scale), so the
+// default nail looks and completes exactly as before. Educational approximation of a visible coating.
+let coatFull = 0
+export function coatCoverage(s) {
+  const coat = Object.values(s.coat || {}).reduce((a, b) => a + b, 0)
+  if (!(coat > 0)) return 0
+  coatFull ||= 1.5e-3 / solidArea({ reagent: 'fe', massG: 2, mass0: 2 })
+  const m0 = Math.max(s.mass0 || 0, s.massG || 0)
+  const area0 = solidArea({ reagent: s.reagent, massG: m0, mass0: m0 })
+  return Math.min(1, coat / (coatFull * Math.max(1e-6, area0)))
+}
+
 export function solidRadiusMM(s) {
   const r = REAGENT_BY_ID[s.reagent]
   const V = Math.max(0, s.massG) / r.density

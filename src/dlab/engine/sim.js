@@ -113,10 +113,13 @@ const COMMANDS = {
     const amount = Math.min(mL ?? drops * def.dropML, total)
     if (!(amount > 0)) return
     const n = mL ? 1 : drops
+    // The receiving vessel is decided at the tip, for every drop of the burst. A burst is drawn as a short
+    // stream below the tip; deciding per drop lost the ones that start below a beaker's rim (CL7-QA-001).
+    const target = (containerAt(state, t.x, t.y - 2) || containerBelow(state, t.x, t.y))?.id || null
     for (let i = 0; i < n; i += 1) {
       const share = amount / n
       const parcel = splitParcel(t.contents, share / Math.max(1e-9, totalVolumeML(t.contents)))
-      state.drops.push({ x: t.x, y: t.y - 2 - i * 6, vy: 0, parcel })
+      state.drops.push({ x: t.x, y: t.y - 2 - i * 6, vy: 0, parcel, target })
     }
     log(state, mL ? `Xả ${fmt(amount)} mL từ ${label(t)}.` : `Nhỏ ${drops} giọt từ ${label(t)}.`, 'action')
   },

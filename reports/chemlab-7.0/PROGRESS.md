@@ -32,6 +32,29 @@ Nghiệm thu của chủ sở hữu (Preview 7a0c804): không gắp được đi
 
 Thời gian chờ lâu là do đinh 0,1 g, hệ quả của khối lượng mặc định sai; tốc độ 4× vẫn đúng. Chi tiết, bằng chứng trước/sau và giới hạn: `GUIDED_TONGS_REPORT.md`. Chưa push.
 
+## Phiên 2026-11-24 (2) — Sửa lỗi sau QA của Codex
+
+**CL7-QA-001** (19 lần bấm “5 giọt”) có ba nguyên nhân:
+- Lỗi engine: giọt sinh ra dưới miệng cốc rơi ra bàn, mất 40–70% dung dịch.
+- Mô hình cần khoảng 3 mL NaOH, nhưng hướng dẫn chỉ ghi “vài lần”.
+- Mỗi lần chỉ hút được 1 mL.
+
+Sau khi sửa:
+- Bước 1 bài Kết tủa còn 8 thao tác, có dòng tiến độ định lượng lấy từ mô hình.
+- Ống nhỏ giọt có nút 10 giọt, nhập số mL và “Hút thêm”.
+
+Các thay đổi khác:
+- Sửa `patch()` làm lệch tên và đích trong ô chọn (có thể nhỏ nhầm cốc).
+- Thư viện tách thành Tủ hóa chất và Kệ dụng cụ.
+- 3D: phản hồi thả đúng/sai và nút Nhìn vật chọn.
+- 2D: bàn không tự dịch khi người dùng đang thao tác.
+- Đinh vẽ đúng hình trên bàn; nhãn tránh panel.
+- Lớp Cu tính theo độ dày, nên thời gian chờ không còn phụ thuộc cỡ đinh.
+
+Test: DLab 53/53, E2E 59/56/55 (WebKit P01 29,1 fps), 448/448, 5/5 Guided Lab.
+
+Chi tiết: `POST_CODEX_QA_FIX_REPORT.md`. Chưa push.
+
 ## Còn lại / blocker
 
 1. Chuyên gia duyệt SCIENTIFIC_VALIDATION §8 (D31).

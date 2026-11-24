@@ -8,7 +8,7 @@ import { chromium } from 'playwright-core'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const base = process.argv[2] || 'http://localhost:5173/'
-const outDir = path.join(root, 'reports', 'chemlab-7.0', 'tongs')
+const outDir = path.join(root, 'reports', 'chemlab-7.0', process.env.WALK_OUT || 'tongs')
 await fs.mkdir(outDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const report = { base, labs: [], console: [], aiRequests: 0 }
@@ -78,7 +78,7 @@ function makeHelpers(p, L) {
       await p.waitForTimeout(300)
     },
     qa: name => { if (process.env.WALK_TRACE) console.log('  click', name); return bar.getByRole('button', { name, exact: true }) },
-    async to(id) { const s = bar.locator('[data-qa-in="to"]'); if (await s.count()) await s.selectOption(id) },
+    async to(id) { const s = bar.locator('[data-qa-in="to"]'); await s.waitFor({ timeout: 3000 }); await s.selectOption(id) }, // the list appears once the bar repaints
     async confirm() { for (let i = 0; i < 3; i += 1) { await p.waitForTimeout(250); const b = p.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.count()) await b.click() } },
     async details() { if (!(await p.locator('.dlab-detail-pane').isVisible())) { const fab = p.locator('.dlab-fab--side'); if (await fab.isVisible()) await fab.click(); await p.getByRole('tab', { name: 'Chi tiết vật' }).click() } },
     // Wait for the step to complete; use the strip's fast-forward when the step offers it.
@@ -114,7 +114,7 @@ async function acidBase(h, lab) {
   const dip = async (tube, n) => {
     let paper = await find(o => o.type === 'litmusPaper' && !o.touched?.length)
     if (!paper) {
-      await p.getByRole('tab', { name: 'Chỉ thị' }).click()
+      await p.getByRole('tab', { name: 'Tủ hóa chất' }).click(); await p.locator('.dlab-chip', { hasText: 'Chất chỉ thị' }).click()
       await p.locator('.dlab-lib-item', { hasText: 'Giấy quỳ tím' }).first().click()
       await p.waitForTimeout(200)
       paper = await find(o => o.type === 'litmusPaper' && !o.touched?.length)
@@ -133,7 +133,7 @@ async function acidBase(h, lab) {
   const phph = await find(o => o.type === 'bottle' && o.reagent === 'phenolphthalein')
   await h.pick(dropper)
   await bar.locator('[data-qa-in="from"]').selectOption(phph.id)
-  await h.qa('Hút 1 mL').click()
+  await h.qa('Hút 2 mL').click()
   await h.to(tubes[1].id)
   await h.qa('5 giọt').click()
   await h.finish(lab, 4, 'ống nhỏ giọt: Hút → 5 giọt')
@@ -149,11 +149,27 @@ async function precipitate(h, lab) {
   const { find, bar } = h
   const beakers = (await h.objs()).filter(o => o.type === 'beaker100')
   const naoh = await find(o => o.type === 'bottle' && o.reagent === 'naoh')
-  await h.pick(naoh)
-  await bar.locator('[data-qa-in="ml"]').fill('4')
-  await h.to(beakers[0].id)
-  await h.qa('Rót vào cốc').click()
-  await h.finish(lab, 1, 'chai NaOH: Rót 4 mL')
+  // CL7-QA-001: the dropper path a student follows — fill 2 mL, 10 drops at a time, "Hút thêm" when low.
+  // Count every click; the strip's progress line must say how much is still needed.
+  const progress = h.p.locator('.dlab-gprogress')
+  await h.pick(await find(o => o.type === 'dropper'))
+  await bar.locator('[data-qa-in="from"]').selectOption(naoh.id)
+  await h.qa('Hút 2 mL').click()
+  let clicks = 1
+  const seen = []
+  while ((await h.done()) < 1 && clicks < 30) {
+    const refill = bar.getByRole('button', { name: 'Hút thêm', exact: true })
+    const left = await h.L(L => { const d = L.state.objects.find(o => o.type === 'dropper'); return Object.values(d.contents.liquids).reduce((a, b) => a + b, 0) })
+    if (left < 0.5 - 1e-6) { if (await refill.count()) await refill.click(); else await h.qa('Hút 2 mL').click() }
+    else { await h.to(beakers[0].id); await h.qa('10 giọt').click() }
+    clicks += 1
+    await h.p.waitForTimeout(700)
+    seen.push(await progress.textContent({ timeout: 500 }).catch(() => ''))
+  }
+  if (!seen.some(t => /Cần thêm khoảng/.test(t))) throw new Error('progress line never said how much NaOH is still needed: ' + seen.join(' / '))
+  h.note = `ống nhỏ giọt: ${clicks} thao tác (Hút 2 mL, 10 giọt, Hút thêm); tiến độ: ${seen.slice(0, 2).join(' → ')}`
+  console.log('  precipitate step 1:', h.note)
+  await h.finish(lab, 1, `ống nhỏ giọt: ${clicks} thao tác`)
   await h.finish(lab, 2, 'chờ lắng', 40000)
   await h.toggle3d(lab)
   await h.pick(await find(o => o.type === 'rod'))

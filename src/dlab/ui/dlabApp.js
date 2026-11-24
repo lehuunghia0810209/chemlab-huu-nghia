@@ -6,12 +6,13 @@ import { REAGENTS, REAGENT_BY_ID, HAZARD_LABELS, IONS, PRECIPITATES, LIQUIDS, IN
 import { byId, isContainer, volumeOf, containerAt, containerBelow, surfaceY, label as objLabel } from '../engine/processes.js'
 import { createView, render, toWorld, toScreen, hit, bounds } from './render2d.js'
 import { icon, iconFor } from './icons.js'
-import { LIB_TABS, TOOLS, libraryItems, searchLibrary } from './library.js'
+import { LIB_SHELVES, shelfOf, TOOLS, libraryItems, searchLibrary } from './library.js'
 import { observe } from './observations.js'
 import { objectTitle, solidName } from './labels.js'
 import { GUIDED } from '../guided.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
 import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
+import { assess } from '../engine/safety.js'
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const num = (x, d = 2) => Number(x).toLocaleString('vi-VN', { maximumFractionDigits: d })
@@ -22,7 +23,7 @@ export function initDynamicLab(host) {
   host.dataset.ready = '1'
   const sim = createSim(Date.now() >>> 0)
   const view = createView()
-  const ui = { selected: null, hover: null, held: null, tab: 'equipment', query: '', theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', highlight: [], mode: 'sandbox', guided: null, render3d: false, quality: 'high', dirty: false, sideTab: 'obs' }
+  const ui = { selected: null, hover: null, held: null, shelf: 'tools', group: 'all', query: '', theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', highlight: [], mode: 'sandbox', guided: null, render3d: false, quality: 'high', dirty: false, sideTab: 'obs' }
   host.innerHTML = template()
   host.classList.add('dlab')
   // Drawers start open only where they leave the bench wide enough; on tablets/phones they are sheets.
@@ -65,14 +66,25 @@ export function initDynamicLab(host) {
 
   function resize() {
     const rect = stage.getBoundingClientRect()
+    const oldW = view.w, oldH = view.h
     view.w = Math.max(200, rect.width)
     view.h = Math.max(240, rect.height)
+    // A small height change (step strip, help text): shift the view so the bench stays where it was on the
+    // page instead of jumping under the pointer. A large change or a new width is a new layout: frame again.
+    const oldTop = ui.stageTop
+    ui.stageTop = rect.top + window.scrollY
+    if (oldW && Math.abs(view.w - oldW) < 1 && view.h !== oldH) {
+      if (Math.abs(view.h - oldH) <= 160 && oldTop != null) view.y -= ((ui.stageTop - oldTop) + 0.8 * (view.h - oldH)) / view.zoom
+      else if (!ui.userView) ui.framePending = true
+    }
+    else if (oldW && Math.abs(view.w - oldW) >= 1 && !ui.userView) ui.framePending = true
     view.dpr = Math.min(2, window.devicePixelRatio || 1)
     canvas.width = Math.round(view.w * view.dpr)
     canvas.height = Math.round(view.h * view.dpr)
     canvas.style.width = `${view.w}px`
     canvas.style.height = `${view.h}px`
-    if (!ui.userView) fitView()
+    if (ui.framePending) flushFrame()
+    else maybeFit()
     draw()
   }
 
@@ -93,9 +105,35 @@ export function initDynamicLab(host) {
     view.zoom = Math.max(0.55, Math.min(3, zx, zy))
     view.x = (x0 + x1) / 2
   }
-  // Re-frame (unless the user zoomed by hand) when a drawer opens/closes or the action bar changes height.
-  function reframe() { if (!ui.userView) fitView(); three?.reframe?.(insets()) }
+  // Framing policy: the 2D view does not move under the student's pointer. A new bench (lab start, load,
+  // reset) is framed once; afterwards the view changes by itself only when something on the bench would
+  // be hidden behind a drawer or the action bar or cut off at the edge, never during a drag and never
+  // within 900 ms of pointer activity (it waits). "Vừa khung" always re-frames; zooming by hand turns it off.
+  function hiddenObject() {
+    const ins = insets()
+    const left = ins.l + 2, right = view.w - ins.r - 2, top = ins.t + 2
+    return sim.state.objects.some(o => {
+      if (o.type === 'solid' && (o.in || o.holder)) return false // drawn with their vessel or tool
+      const b = bounds(o, sim.state)
+      const [x0, y0] = toScreen(view, b.x0, b.y1)
+      const [x1] = toScreen(view, b.x1, b.y0)
+      return x0 < left || x1 > right || y0 < top
+    })
+  }
+  let fitTimer = 0
+  function maybeFit(now = false) {
+    clearTimeout(fitTimer)
+    if (ui.userView) return
+    const idle = performance.now() - (ui.lastPointer || 0)
+    if (drag || (!now && idle < 900)) { fitTimer = setTimeout(maybeFit, drag ? 400 : 920 - idle); return }
+    if (hiddenObject()) fitView()
+  }
+  function loadSim(state) { ui.userView = false; ui.framePending = true; sim.load(state) }
+  function resetSim() { ui.userView = false; ui.framePending = true; sim.reset() }
+  function flushFrame() { if (ui.framePending && !drag) { ui.framePending = false; fitView() } }
+  function reframe() { if (ui.framePending) flushFrame(); else maybeFit(); three?.reframe?.(insets()) }
   new ResizeObserver(resize).observe(stage)
+  for (const ev of ['pointerdown', 'pointermove', 'wheel']) stage.addEventListener(ev, () => { ui.lastPointer = performance.now() }, { capture: true, passive: true })
 
   let frame = null
   let last = performance.now()
@@ -172,27 +210,50 @@ export function initDynamicLab(host) {
     ui.dirty = true
     ui.forcePanel = true
     const n = sim.state.objects.length
-    if (n !== ui.objCount) { ui.objCount = n; if (!ui.userView) { if (drag) ui.fitPending = true; else fitView() } }
+    // A new bench (or the first things put on an empty one) is framed after layout settles (drawers that
+    // open with a lab are measured); later additions only re-frame if something would be hidden.
+    // Something new on the bench is what the student just asked for: if it is out of view, frame it now
+    // (not during a drag). Passive changes (panels, the action bar) wait for the pointer to rest.
+    if (n !== ui.objCount) { const added = n > ui.objCount; if (ui.objCount === 0 && n) ui.framePending = true; ui.objCount = n; if (!ui.framePending) maybeFit(added) }
+    // Framed at once (what is on the bench is known now) and once more after layout, when drawers that
+    // open with a lab have been measured.
+    if (ui.framePending && !drag) { fitView(); requestAnimationFrame(flushFrame) }
   })
 
   // ── Library ────────────────────────────────────────────────────────
   function paintLibrary() {
+    // Search covers both shelves; otherwise the current shelf, one group or all groups under headings.
     const found = searchLibrary(items, ui.query)
-    const seen = new Set()
-    const list = (found || items.filter(it => it.tab === ui.tab)).filter(it => { const k = it.type || it.reagent; return !seen.has(k) && seen.add(k) })
-    $('.dlab-lib-list').innerHTML = list.map(it => `
-      <li><button type="button" class="dlab-lib-item" data-key="${esc(it.key)}" title="Bấm để lấy ra bàn, hoặc kéo thả vào bàn/cốc">
-        <span class="dlab-lib-icon">${iconFor(it)}</span><span class="dlab-lib-text"><span class="dlab-lib-name">${esc(it.name)}</span><span class="dlab-lib-sub">${esc(it.sub)}</span></span>
-      </button></li>`).join('') || '<li class="dlab-empty">Không tìm thấy mục phù hợp. Thử tên khác, ví dụ “nước”, “natri”, “cốc”.</li>'
-    host.querySelectorAll('.dlab-tab').forEach(b => b.setAttribute('aria-selected', String(!found && b.dataset.tab === ui.tab)))
+    const shelf = LIB_SHELVES.find(s => s.id === ui.shelf)
+    const groups = found ? [{ id: null, label: null, list: found }] : shelf.groups.filter(g => ui.group === 'all' || g.id === ui.group).map(g => ({ ...g, list: items.filter(it => it.tab === g.id) }))
+    const row = it => `<li><button type="button" class="dlab-lib-item" data-key="${esc(it.key)}" title="Bấm để lấy ra bàn, hoặc kéo thả vào bàn/cốc">
+        <span class="dlab-lib-icon">${iconFor(it)}</span><span class="dlab-lib-text"><span class="dlab-lib-name">${esc(it.name)}</span><span class="dlab-lib-sub">${esc(found ? `${shelfOf(it.tab).label} · ${it.sub}` : it.sub)}</span></span>
+      </button></li>`
+    const html = groups.map(g => {
+      const seen = new Set()
+      const list = g.list.filter(it => { const k = it.type || it.reagent; return !seen.has(k) && seen.add(k) })
+      return list.length ? `${g.label && ui.group === 'all' ? `<li class="dlab-lib-group">${esc(g.label)}</li>` : ''}${list.map(row).join('')}` : ''
+    }).join('')
+    $('.dlab-lib-list').innerHTML = html || '<li class="dlab-empty">Không tìm thấy mục phù hợp. Thử tên khác, ví dụ “nước”, “natri”, “cốc”, “CuSO4”.</li>'
+    host.querySelectorAll('.dlab-shelf').forEach(b => b.setAttribute('aria-selected', String(!found && b.dataset.shelf === ui.shelf)))
+    $('.dlab-groups').innerHTML = found ? `<span class="dlab-lib-count">${found.length} kết quả trong cả tủ và kệ</span>` : [{ id: 'all', label: 'Tất cả' }, ...shelf.groups].map(g => `<button type="button" class="dlab-chip" data-group="${g.id}" aria-pressed="${ui.group === g.id}">${g.label}</button>`).join('')
   }
-  host.querySelector('.dlab-tabs').addEventListener('click', e => {
-    const b = e.target.closest('.dlab-tab')
+  host.querySelector('.dlab-shelves').addEventListener('click', e => {
+    const b = e.target.closest('.dlab-shelf')
     if (!b) return
-    ui.tab = b.dataset.tab
+    ui.shelf = b.dataset.shelf
+    ui.group = 'all'
     ui.query = ''
     $('.dlab-search').value = ''
     paintLibrary()
+    $('.dlab-lib-list').scrollTop = 0
+  })
+  host.querySelector('.dlab-groups').addEventListener('click', e => {
+    const b = e.target.closest('.dlab-chip')
+    if (!b) return
+    ui.group = b.dataset.group
+    paintLibrary()
+    $('.dlab-lib-list').scrollTop = 0
   })
   $('.dlab-search').addEventListener('input', e => { ui.query = e.target.value; paintLibrary() })
   paintLibrary()
@@ -408,6 +469,23 @@ export function initDynamicLab(host) {
     o.y = ny
     drag.moved = true
     carry(sim.state) // a held piece follows the tool even while the simulation is paused
+    ui.drop = dropTargetFor(o)
+  }
+  // Where a carried load would go if released now (shared by 2D and 3D): the vessel and whether the
+  // same safety rules as the release command allow it. Nothing to show for an empty tool.
+  function dropTargetFor(o) {
+    const st = sim.state
+    if ((o.type === 'tongs' || o.type === 'spatula') && o.load) {
+      const c = containerAt(st, o.x, o.y + 1) || containerBelow(st, o.x, o.y + 40)
+      if (!c) return null
+      const v = assess(st, { type: 'release', tool: o.id })
+      return { id: c.id, ok: v.level !== 'block', reason: v.level === 'block' ? v.reasons[0] : '' }
+    }
+    if ((o.type === 'dropper' || o.type === 'pipette') && volumeOf({ contents: o.contents }) > 0) {
+      const c = containerAt(st, o.x, o.y - 2) || containerBelow(st, o.x, o.y)
+      return c ? { id: c.id, ok: true, reason: '' } : null
+    }
+    return null
   }
 
   // Pieces tongs can pick up: real objects that still exist (not used up) and are not held already.
@@ -476,8 +554,8 @@ export function initDynamicLab(host) {
     const d = drag
     drag = null
     ui.held = null
+    ui.drop = null
     host.classList.remove('dlab--dragging')
-    if (ui.fitPending) { ui.fitPending = false; if (!ui.userView) fitView() }
     if (d?.id) await finishDrag(d)
   }
   canvas.addEventListener('pointermove', e => {
@@ -591,7 +669,9 @@ export function initDynamicLab(host) {
   // Re-rendering on every tick would detach buttons mid-click; when only numbers change, update text in place.
   function patch(el, html) {
     if (el.dataset.html === html) return
-    const skeleton = html.replace(/[0-9.,:−+-]+/g, '#')
+    // Only numbers in text may change in place; any attribute change (an option's value when the list is
+    // re-ordered) rebuilds the markup, or the visible name and the real target could disagree.
+    const skeleton = html.replace(/>[^<]*</g, t => t.replace(/[0-9.,:−+-]+/g, '#'))
     if (el.dataset.skel === skeleton) {
       const next = document.createElement('div')
       next.innerHTML = html
@@ -600,8 +680,11 @@ export function initDynamicLab(host) {
       while (a.nextNode() && b.nextNode()) if (a.currentNode.nodeValue !== b.currentNode.nodeValue) a.currentNode.nodeValue = b.currentNode.nodeValue
     }
     else {
+      // Keep what the student picked in a list (target vessel, source…) if it is still offered.
+      const picked = [...el.querySelectorAll('select[data-qa-in]')].map(s => [s.dataset.qaIn, s.value])
       el.innerHTML = html
       el.dataset.skel = skeleton
+      for (const [k, v] of picked) { const s = el.querySelector(`select[data-qa-in="${k}"]`); if (s && [...s.options].some(o => o.value === v)) s.value = v }
     }
     el.dataset.html = html
   }
@@ -853,9 +936,11 @@ export function initDynamicLab(host) {
     if (o.type === 'dropper' || o.type === 'pipette') {
       const vol = volumeOf({ contents: o.contents })
       // Sources include reagent bottles: a dropper is filled from the stock bottle (phenolphthalein, HCl…).
-      const sources = sim.state.objects.filter(c => isContainer(c) && c.condition !== 'UNUSABLE' && volumeOf(c) > 0.5).sort((a, b) => Math.abs(a.x - o.x) - Math.abs(b.x - o.x))
-      if (vol <= 0) return sources.length ? `<span class="dlab-bar-label">Hút từ</span>${sel('from', sources, 'Hút từ')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="suck">Hút ${o.type === 'dropper' ? '1 mL' : '5 mL'}</button>` : '<span class="dlab-bar-note">Chưa có dung dịch để hút.</span>'
-      return `<span class="dlab-bar-label">Nhỏ vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop1">1 giọt</button><button type="button" class="dlab-btn" data-qa="drop5">5 giọt</button>`
+      const sources = sim.state.objects.filter(c => isContainer(c) && c.condition !== 'UNUSABLE' && volumeOf(c) > 0.5).sort((a, b) => (b.id === ui.suckFrom?.[o.id]) - (a.id === ui.suckFrom?.[o.id]) || Math.abs(a.x - o.x) - Math.abs(b.x - o.x)) // the bottle used last comes first, so refilling never draws from the target beaker by default
+      if (vol <= 0) return sources.length ? `<span class="dlab-bar-label">Hút từ</span>${sel('from', sources, 'Hút từ')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="suck">Hút ${suckML(o)} mL</button>` : '<span class="dlab-bar-note">Chưa có dung dịch để hút.</span>'
+      const src = byId(sim.state, ui.suckFrom?.[o.id])
+      const refill = vol < suckML(o) - 0.05 && src ? `<button type="button" class="dlab-btn" data-qa="refill" title="Hút lại từ ${esc(objLabel(src))}">Hút thêm</button>` : ''
+      return `<span class="dlab-bar-label">Nhỏ vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop1">1 giọt</button><button type="button" class="dlab-btn" data-qa="drop5">5 giọt</button><button type="button" class="dlab-btn" data-qa="drop10">10 giọt</button><span class="dlab-bar-sep" aria-hidden="true"></span><input type="number" class="dlab-in" data-qa-in="dml" min="0.05" step="0.05" value="${Math.max(0.05, Math.min(0.5, Math.floor(vol * 20) / 20))}" aria-label="Thể tích cần nhỏ (mL)"><span class="dlab-bar-label">mL</span><button type="button" class="dlab-btn" data-qa="dropml">Nhỏ</button>${refill}`
     }
     if (o.type === 'tongs' || o.type === 'spatula') {
       if (o.load) return `<span class="dlab-bar-label">Thả vào</span>${sel('to', targets, 'Thả vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drop-solid">Thả</button>${o.type === 'tongs' ? '<button type="button" class="dlab-btn" data-qa="put-down">Đặt lên bàn</button>' : ''}`
@@ -878,6 +963,8 @@ export function initDynamicLab(host) {
     if (o.type === 'burner') return `<button type="button" class="dlab-btn dlab-btn--accent" data-qa="burner">${o.on ? 'Tắt bếp' : 'Bật bếp'}</button>`
     return ''
   }
+  // A dropper fills to its bulb capacity (2 mL); a pipette takes 5 mL.
+  function suckML(o) { return o.type === 'dropper' ? EQUIPMENT.dropper.capacityML : 5 }
   function pieceWhere(p) {
     const c = p.in && byId(sim.state, p.in)
     return `${solidName(p)} · ${num(p.massG, 2)} g · ${c ? `trong ${objLabel(c)}` : 'trên bàn'}`
@@ -923,11 +1010,16 @@ export function initDynamicLab(host) {
     if (act === 'stir-in' && t) { await run({ type: 'move', id: o.id, x: t.x, y: t.y + 3 }); await run({ type: 'stir', id: t.id }) }
     if (act === 'suck') {
       const c = byId(sim.state, qa('from'))
-      if (c && await run({ type: 'move', id: o.id, x: c.x, y: Math.max(c.y + 3, surfaceY(c) - 10) })) await run({ type: 'aspirate', tool: o.id, from: c.id, mL: o.type === 'dropper' ? 1 : 5 })
+      if (c && await run({ type: 'move', id: o.id, x: c.x, y: Math.max(c.y + 3, surfaceY(c) - 10) }) && await run({ type: 'aspirate', tool: o.id, from: c.id, mL: suckML(o) })) ui.suckFrom = { ...ui.suckFrom, [o.id]: c.id }
     }
-    if ((act === 'drop1' || act === 'drop5') && t) {
+    if (act === 'refill') {
+      const c = byId(sim.state, ui.suckFrom?.[o.id])
+      if (c && await run({ type: 'move', id: o.id, x: c.x, y: Math.max(c.y + 3, surfaceY(c) - 10) })) await run({ type: 'aspirate', tool: o.id, from: c.id, mL: suckML(o) })
+    }
+    if (['drop1', 'drop5', 'drop10', 'dropml'].includes(act) && t) {
       const p = above(t)
-      if (await run({ type: 'move', id: o.id, x: p.x, y: p.y })) await run({ type: 'dispense', tool: o.id, drops: act === 'drop1' ? 1 : 5 })
+      const cmd = act === 'dropml' ? { mL: Math.max(0.05, Number(qa('dml')) || 0) } : { drops: Number(act.slice(4)) }
+      if (await run({ type: 'move', id: o.id, x: p.x, y: p.y })) await run({ type: 'dispense', tool: o.id, ...cmd })
     }
     if (act === 'pick') {
       const reagent = qa('solid')
@@ -1014,6 +1106,9 @@ export function initDynamicLab(host) {
       ? (x, y) => three?.worldToScreen(x, y)
       : (x, y) => { const [sx, sy] = toScreen(view, x, y); return { x: cv.left + sx, y: cv.top + sy } }
     const hide = ui.guided?.lab.hideContents
+    // Labels stay in the part of the stage not covered by open drawers or the action bar.
+    const ins = insets()
+    const freeL = Math.max(cv.left - box.left, ins.l), freeR = Math.min(cv.right - box.left, box.width - ins.r), freeT = Math.max(cv.top - box.top, ins.t)
     const items = []
     for (const o of st.objects) {
       if (o.type === 'solid' && (o.holder || !(o.massG > 0))) continue // a held piece is named on its tool
@@ -1021,14 +1116,17 @@ export function initDynamicLab(host) {
       const hov = ui.hover === o.id
       const held = ui.held === o.id
       const grab = ui.grabbable?.includes(o.id)
+      const drop = ui.drop?.id === o.id ? ui.drop : null
       // Pieces inside a vessel are listed in the vessel's label; their own label appears on demand.
-      const wanted = sel || hov || held || grab || (ui.labels === 'all' && !(o.type === 'solid' && o.in))
+      const wanted = drop || sel || hov || held || grab || (ui.labels === 'all' && !(o.type === 'solid' && o.in))
       if (!wanted) continue
       const b = bounds(o, st)
       const p = project(o.type === 'solid' ? (b.x0 + b.x1) / 2 : o.x, b.y1 + 4)
       if (!p || p.x < cv.left || p.x > cv.right || p.y < cv.top || p.y > cv.bottom) continue
-      const text = `${objectTitle(st, o, { hideContents: hide })}${grab && !sel ? ' · bấm để gắp' : ''}`
-      items.push({ id: o.id, text, x: p.x - box.left, y: p.y - box.top, rank: held ? 0 : sel ? 1 : hov ? 2 : grab ? 3 : 4, cls: held ? 'is-held' : sel ? 'is-sel' : hov ? 'is-hover' : grab ? 'is-grab' : '' })
+      const px = p.x - box.left
+      if ((px < freeL || px > freeR) && !(sel || held || drop)) continue // the object itself is under a drawer
+      const text = drop ? (drop.ok ? `Thả vào ${objLabel(o)}` : `Không thả được: ${drop.reason}`) : `${objectTitle(st, o, { hideContents: hide })}${grab && !sel ? ' · bấm để gắp' : ''}`
+      items.push({ id: o.id, text, x: p.x - box.left, y: p.y - box.top, rank: drop || held ? 0 : sel ? 1 : hov ? 2 : grab ? 3 : 4, cls: drop ? (drop.ok ? 'is-drop-ok' : 'is-drop-bad') : held ? 'is-held' : sel ? 'is-sel' : hov ? 'is-hover' : grab ? 'is-grab' : '' })
     }
     // Most important first; a label that would overlap a placed one moves up, and is dropped if it still collides.
     items.sort((a, b) => a.rank - b.rank || b.y - a.y)
@@ -1042,11 +1140,12 @@ export function initDynamicLab(host) {
       const w = Number(el.dataset.w) || (el.dataset.w = el.offsetWidth) || it.text.length * 7
       const h = 22
       // Keep the whole label inside the view: near an edge it slides inward along the edge.
-      it.x = Math.min(Math.max(it.x, cv.left - box.left + w / 2 + 4), cv.right - box.left - w / 2 - 4)
+      it.x = Math.min(Math.max(it.x, freeL + w / 2 + 4), freeR - w / 2 - 4)
       let y = it.y
       const hits = yy => placed.some(r => Math.abs(r.x - it.x) < (r.w + w) / 2 + 4 && Math.abs(r.y - yy) < h)
       for (let k = 0; k < 4 && hits(y); k += 1) y -= h + 2
-      if (hits(y) && it.rank > 1) { el.hidden = true; seen.add(it.id); continue }
+      if ((hits(y) || y - h < freeT) && it.rank > 1) { el.hidden = true; seen.add(it.id); continue }
+      if (y - h < freeT) y = freeT + h + 2 // the selected or held object's label stays below the action bar
       placed.push({ x: it.x, y, w })
       el.hidden = false
       el.style.transform = `translate(${Math.round(it.x - w / 2)}px, ${Math.round(y - h)}px)`
@@ -1077,9 +1176,10 @@ export function initDynamicLab(host) {
     if (b.dataset.speed) { sim.state.speed = Number(b.dataset.speed); announce(`Tốc độ ${b.textContent}`) }
     if (b.dataset.tb === 'play') togglePause()
     if (b.dataset.tb === 'undo') sim.undo()
-    if (b.dataset.tb === 'reset') { if (await confirmDialog('Đặt lại thí nghiệm?', ['Bàn thí nghiệm sẽ trở về trạng thái ban đầu. Có thể hoàn tác.'])) sim.reset() }
+    if (b.dataset.tb === 'reset') { if (await confirmDialog('Đặt lại thí nghiệm?', ['Bàn thí nghiệm sẽ trở về trạng thái ban đầu. Có thể hoàn tác.'])) resetSim() }
     if (b.dataset.tb === 'fit') { ui.userView = false; fitView(); three?.fit?.(insets()) }
     if (b.dataset.tb === 'home3d') three?.home?.()
+    if (b.dataset.tb === 'focus3d' && ui.selected) three?.focus?.(ui.selected)
     if (b.dataset.tb === 'labels') {
       ui.labels = { all: 'auto', auto: 'off', off: 'all' }[ui.labels]
       try { localStorage.setItem('chemlab-dlab-labels', ui.labels) } catch {}
@@ -1159,7 +1259,7 @@ export function initDynamicLab(host) {
     ui.guided = null
     ui.highlight = []
     paintStrip(null)
-    sim.load(restore(snapshot(seedSandbox())))
+    loadSim(restore(snapshot(seedSandbox())))
     sim.markInitial()
     setModeButtons()
     toast('Thực hành tự do: lấy hóa chất và dụng cụ từ Thư viện.')
@@ -1190,7 +1290,7 @@ export function initDynamicLab(host) {
     const s = createSim(seed)
     const roles = lab.setup(s)
     s.state.log = []
-    sim.load(restore(snapshot(s.state)))
+    loadSim(restore(snapshot(s.state)))
     sim.markInitial()
     ui.mode = 'guided'
     ui.guided = { lab, roles, done: [], finished: false }
@@ -1244,6 +1344,7 @@ export function initDynamicLab(host) {
       const canWait = step.wait?.(st, g.roles)
       html = `<div class="dlab-gstrip-main"><span class="dlab-gstep">Bước ${current + 1}/${total}</span><p class="dlab-gtask">${esc(step.text)}</p></div>
         <p class="dlab-gmeta">${names.length ? `<span><b>Thao tác với:</b> ${esc(names.join('; '))}</span>` : ''}${step.done ? `<span><b>Hoàn thành khi:</b> ${esc(step.done)}</span>` : ''}</p>
+        ${step.progress ? `<p class="dlab-gprogress" role="status">${esc(step.progress(st, g.roles))}</p>` : ''}
         <div class="dlab-gacts">${canWait ? `<button type="button" class="dlab-btn dlab-btn--accent" data-gs="ffwd" ${ui.ffwd ? 'disabled' : ''}>${icon('forward')}<span>${ui.ffwd ? `Đang tua… ${fmtTime(st.t - ui.ffwd.t0)}` : 'Tua đến hiện tượng'}</span></button>` : ''}<button type="button" class="dlab-btn dlab-btn--ghost" data-gs="help" aria-expanded="${Boolean(ui.stripHelp)}">Gợi ý</button><button type="button" class="dlab-btn dlab-btn--ghost" data-gs="lesson">Bài học</button></div>
         ${ui.stripHelp && step.help ? `<p class="dlab-ghelp">${esc(step.help)}</p>` : ''}`
     }
@@ -1306,7 +1407,7 @@ export function initDynamicLab(host) {
     if (!choice) return
     try {
       const save = await loadExperiment(choice)
-      sim.load(save.state)
+      loadSim(save.state)
       sim.markInitial()
       ui.guided = null
       ui.mode = 'sandbox'
@@ -1337,6 +1438,7 @@ export function initDynamicLab(host) {
       btn.textContent = 'Xem 3D'
       btn.setAttribute('aria-pressed', 'false')
       $('[data-tb="home3d"]').hidden = true
+      $('[data-tb="focus3d"]').hidden = true
       return
     }
     try {
@@ -1370,6 +1472,7 @@ export function initDynamicLab(host) {
       btn.textContent = 'Xem 2D'
       btn.setAttribute('aria-pressed', 'true')
       $('[data-tb="home3d"]').hidden = false
+      $('[data-tb="focus3d"]').hidden = false
       three.update(sim.state, ui)
       toast(`${ui.autoLow ? 'Máy không có tăng tốc đồ họa nên dùng “Đồ họa: Tiết kiệm” (đổi ở menu ⋯). ' : ''}3D: kéo vật để di chuyển; kéo vùng trống để xoay bàn; lăn chuột để phóng to. Thao tác chính có ở thanh phía trên.`)
     }
@@ -1494,12 +1597,12 @@ export function initDynamicLab(host) {
   ;(async () => {
     try {
       const save = await loadExperiment(AUTOSAVE_ID)
-      sim.load(save.state)
+      loadSim(save.state)
       sim.markInitial()
       toast('Đã khôi phục phiên làm việc trước (tự động lưu).')
     }
     catch {
-      sim.load(seedSandbox())
+      loadSim(seedSandbox())
       sim.markInitial()
     }
     setModeButtons()
@@ -1515,13 +1618,16 @@ export function initDynamicLab(host) {
     get ready() { return Boolean(ui.booted) },
     dispatch: (cmd, opts) => sim.dispatch(cmd, opts),
     undo: () => sim.undo(),
-    reset: () => sim.reset(),
+    reset: () => resetSim(),
     view: () => ({ ...view }),
     surface: id => surfaceY(byId(sim.state, id)),
     markInitial: () => sim.markInitial(),
     fit: () => { ui.userView = false; fitView() },
     selected: () => ui.selected,
     worldToScreen3d: (x, y) => three?.worldToScreen(x, y) ?? null,
+    camera3d: () => three?.camera?.() ?? null,
+    drop: () => ui.drop ?? null,
+    hiddenObject: () => hiddenObject(),
     select,
     toggle3d,
     is3d: () => ui.render3d,
@@ -1531,7 +1637,7 @@ export function initDynamicLab(host) {
     labels: () => [...labelEls.values()].filter(el => !el.hidden).map(el => el.textContent),
     save: name => saveExperiment({ name, state: sim.state }),
     list: () => listExperiments(),
-    load: async id => { const s = await loadExperiment(id); sim.load(s.state); return true },
+    load: async id => { const s = await loadExperiment(id); loadSim(s.state); return true },
     worldToScreen: (x, y) => { const rect = canvas.getBoundingClientRect(); const [sx, sy] = toScreen(view, x, y); return { x: rect.left + sx, y: rect.top + sy } },
     coach: () => coach.state()
   })
@@ -1551,7 +1657,7 @@ function softwareGL() {
 }
 
 function template() {
-  const tabs = LIB_TABS.map(t => `<button type="button" role="tab" class="dlab-tab" data-tab="${t.id}">${t.label}</button>`).join('')
+  const tabs = LIB_SHELVES.map(t => `<button type="button" role="tab" class="dlab-tab dlab-shelf" data-shelf="${t.id}">${icon(t.id === 'chem' ? 'bottle' : 'rack')}<span>${t.label}</span></button>`).join('')
   const speeds = SPEEDS.map(s => `<button type="button" class="dlab-btn" data-speed="${s}" aria-pressed="${s === 1}">${String(s).replace('.', ',')}×</button>`).join('')
   return `
   <div class="dlab-shell">
@@ -1586,9 +1692,10 @@ function template() {
       <button type="button" class="dlab-btn dlab-fab dlab-fab--lib" data-hd="lib" aria-controls="dlab-lib">${icon('library')}<span>Thư viện</span></button>
       <button type="button" class="dlab-btn dlab-fab dlab-fab--side" data-hd="side" aria-controls="dlab-insp">${icon('panel')}<span>Quan sát</span></button>
       <aside class="dlab-lib dlab-drawer" id="dlab-lib" aria-label="Thư viện dụng cụ và hóa chất">
-        <div class="dlab-drawer-head"><h3>Hóa chất &amp; dụng cụ</h3><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="lib" aria-label="Thu gọn thư viện">${icon('close')}</button></div>
-        <label class="dlab-searchbox">${icon('search')}<input type="search" class="dlab-search dlab-in" placeholder="Tìm: nước, natri, cốc…" aria-label="Tìm trong thư viện"></label>
-        <div class="dlab-tabs" role="tablist" aria-label="Nhóm">${tabs}</div>
+        <div class="dlab-drawer-head"><h3>Tủ hóa chất &amp; kệ dụng cụ</h3><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="lib" aria-label="Thu gọn thư viện">${icon('close')}</button></div>
+        <label class="dlab-searchbox">${icon('search')}<input type="search" class="dlab-search dlab-in" placeholder="Tìm tên hoặc công thức: nước, CuSO4, kẹp…" aria-label="Tìm hóa chất hoặc dụng cụ (có dấu, không dấu, công thức)"></label>
+        <div class="dlab-tabs dlab-shelves" role="tablist" aria-label="Khu vực">${tabs}</div>
+        <div class="dlab-groups" role="group" aria-label="Nhóm"></div>
         <ul class="dlab-lib-list"></ul>
         <p class="dlab-hint dlab-lib-foot">Bấm để lấy ra bàn · kéo thả vào cốc</p>
       </aside>
@@ -1615,7 +1722,8 @@ function template() {
         <button type="button" class="dlab-btn" data-tb="reset">${icon('reset')}<span>Đặt lại</span></button>
         <button type="button" class="dlab-btn" data-tb="fit" title="Đưa toàn bộ dụng cụ vào khung nhìn">${icon('fit')}<span>Vừa khung</span></button>
         <button type="button" class="dlab-btn" data-tb="labels">${icon('tag')}<span>Nhãn: Tất cả</span></button>
-        <button type="button" class="dlab-btn" data-tb="home3d" hidden title="Đưa camera 3D về góc nhìn mặc định">${icon('home')}<span>Góc mặc định</span></button>
+        <button type="button" class="dlab-btn dlab-btn--cam" data-tb="home3d" hidden title="Góc mặc định: đưa camera 3D về góc nhìn ban đầu">${icon('home')}<span>Góc mặc định</span></button>
+        <button type="button" class="dlab-btn dlab-btn--cam" data-tb="focus3d" hidden title="Nhìn vật chọn: phóng camera tới vật đang chọn (phím F)">${icon('search')}<span>Nhìn vật chọn</span></button>
       </footer>
       <figure class="dlab-loupe" hidden><canvas aria-hidden="true"></canvas><figcaption>Phóng to vùng phản ứng <span class="dlab-loupe-x"></span></figcaption><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-loupe-close aria-label="Ẩn khung phóng to">${icon('close')}</button></figure>
       <section class="dlab-coach" role="dialog" aria-modal="false" aria-labelledby="dlab-coach-title" hidden></section>

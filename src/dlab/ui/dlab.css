@@ -55,6 +55,8 @@
 .dlab-gtask { margin: 0; font-weight: 600 }
 .dlab-gmeta { grid-column: 1; display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 0; color: var(--dlab-muted); font-size: var(--text-xs, .8125rem) }
 .dlab-gmeta b { color: var(--dlab-text); font-weight: 600 }
+.dlab-gprogress { grid-column: 1; margin: 0; font-size: var(--text-xs, .8125rem); font-weight: 600; color: var(--dlab-text); font-variant-numeric: tabular-nums }
+.dlab-gprogress::before { content: "▸ "; color: var(--dlab-accent) }
 .dlab-gacts { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px }
 .dlab-gacts .dlab-btn { gap: 6px }
 .dlab-gacts .dlab-ico { width: 16px; height: 16px }
@@ -174,14 +176,24 @@
 .dlab-tab[aria-selected='true'] { background: var(--dlab-accent); border-color: var(--dlab-accent); color: #fff }
 .dlab-tab:focus-visible { outline: 2px solid var(--focus-ring, #60a5fa); outline-offset: 2px }
 .dlab-lib-list { list-style: none; margin: 0; padding: 0 2px 0 0; overflow-y: auto; display: grid; gap: 4px; align-content: start; flex: 1; min-height: 0 }
-.dlab-lib-item { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: .45rem .55rem; border: 1px solid transparent; border-radius: var(--radius-sm, 8px); background: transparent; color: var(--dlab-text); font: inherit; cursor: grab; touch-action: none }
+.dlab-lib-item { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: .3rem .5rem; border: 1px solid transparent; border-radius: var(--radius-sm, 8px); background: transparent; color: var(--dlab-text); font: inherit; cursor: grab; touch-action: none }
 .dlab-lib-item:hover { border-color: var(--dlab-line); background: var(--dlab-panel-2) }
-.dlab-lib-icon { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 8px; background: var(--dlab-panel-2); color: var(--dlab-accent) }
+.dlab-lib-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 8px; background: var(--dlab-panel-2); color: var(--dlab-accent) }
 .dlab-lib-icon .dlab-ico { width: 22px; height: 22px }
 .dlab-lib-text { display: grid; gap: 1px; min-width: 0 }
 .dlab-lib-name { font-size: var(--text-sm, .875rem); font-weight: 600 }
 .dlab-lib-sub { font-size: var(--text-xs, .8125rem); color: var(--dlab-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .dlab-lib-foot { margin: 0; text-align: center }
+/* Two shelves side by side (never scroll sideways); groups wrap as chips; list scrolls vertically. */
+.dlab-shelves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; mask-image: none }
+.dlab-shelf { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 0 .35rem; white-space: nowrap; font-size: var(--text-xs, .8125rem); border-radius: var(--radius-sm, 8px); font-weight: 600 }
+.dlab-shelf .dlab-ico { width: 15px; height: 15px; flex: none }
+.dlab-groups { display: flex; flex-wrap: wrap; gap: 4px }
+.dlab-chip { min-height: 26px; padding: 0 .5rem; border: 1px solid var(--dlab-line); border-radius: var(--radius-full, 999px); background: transparent; color: var(--dlab-text); font: inherit; font-size: var(--text-xs, .8125rem); cursor: pointer }
+.dlab-chip[aria-pressed='true'] { border-color: var(--dlab-accent); background: var(--dlab-panel-2); box-shadow: inset 0 0 0 1px var(--dlab-accent); font-weight: 600 }
+.dlab-chip:focus-visible { outline: 2px solid var(--focus-ring, #60a5fa); outline-offset: 2px }
+.dlab-lib-count { color: var(--dlab-muted); font-size: var(--text-xs, .8125rem) }
+.dlab-lib-group { position: sticky; top: 0; z-index: 1; margin-top: 4px; padding: 4px 2px; background: var(--dlab-float); color: var(--dlab-muted); font-size: var(--text-xs, .8125rem); font-weight: 700; text-transform: uppercase; letter-spacing: .04em }
 .dlab-ghost { position: fixed; z-index: 1000; pointer-events: none; padding: .35rem .6rem; border-radius: var(--radius-sm, 8px); background: var(--dlab-accent); color: #fff; font-size: var(--text-sm, .875rem) }
 
 /* Side panel */
@@ -435,3 +447,16 @@
 @media (prefers-reduced-motion: reduce) {
   .dlab * { scroll-behavior: auto !important; transition: none !important; animation: none !important }
 }
+
+/* Drop target while carrying a load: green = will receive it, red = refused by the safety rules. */
+.dlab-label.is-drop-ok { border-color: #15803d; background: #15803d; color: #fff; font-weight: 600; z-index: 2 }
+.dlab-label.is-drop-bad { border-color: #b91c1c; background: #b91c1c; color: #fff; font-weight: 600; z-index: 2; max-width: 30rem; white-space: normal }
+
+@media (max-width: 1099px) {
+  .dlab-chip { min-height: 36px }
+  .dlab-shelf { min-height: 44px }
+}
+
+/* 3D camera buttons in the dock: icon only (named by their hidden text and tooltip) so the dock fits. */
+.dlab-dock .dlab-btn--cam { width: 36px; padding: 0 }
+.dlab-btn--cam span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }

@@ -1,10 +1,27 @@
 // Guided Labs: data only. They place equipment through the same commands as Sandbox and
 // check progress by reading the shared simulation state — no separate animation system.
-import { surfaceY, byId, volumeOf } from './engine/processes.js'
+import { surfaceY, byId, volumeOf, coatCoverage } from './engine/processes.js'
+import { mix, reagentParcel } from './engine/chemistry.js'
+import { REAGENT_BY_ID } from './data/materials.js'
 
 const add = (sim, equipmentType, x, extra = {}) => sim.dispatch({ type: 'add', equipmentType, x, y: extra.y ?? 0, ...extra }, { record: false }).id
 const fill = (sim, id, reagent, mL) => sim.dispatch({ type: 'addReagentTo', id, reagent, mL }, { record: false })
 const obj = (state, id) => byId(state, id)
+const fmtML = v => String(+v.toFixed(v < 10 ? 2 : 1)).replace('.', ',')
+// How many more mL of a reagent the model needs before `reached(contents)` holds, found by bisection on
+// copies of the vessel's contents with the same mix() the simulation uses (monotone for one added reagent).
+// Returns 0 when already reached, null when even maxML is not enough.
+export function moreToAdd(contents, reagentId, reached, maxML = 20) {
+  const trial = mL => { const c = JSON.parse(JSON.stringify(contents)); if (mL > 0) mix(c, reagentParcel(REAGENT_BY_ID[reagentId], mL)); return reached(c) }
+  if (trial(0)) return 0
+  if (!trial(maxML)) return null
+  let lo = 0, hi = maxML
+  while (hi - lo > 0.025) { const mid = (lo + hi) / 2; if (trial(mid)) hi = mid; else lo = mid }
+  return hi
+}
+const memo = new Map()
+const memoOnce = (key, fn) => { if (!memo.has(key)) { if (memo.size > 50) memo.clear(); memo.set(key, fn()) } return memo.get(key) }
+const cuOH2 = c => (c.precipitates['Cu(OH)2'] || 0) > 2e-4
 const papersIn = (state, cid) => state.objects.filter(o => o.type === 'litmusPaper' && o.seg?.some(s => s.wet > 0.4) && (o.inside === cid || o.touched?.includes(cid)))
 
 export const GUIDED = [
@@ -66,7 +83,17 @@ export const GUIDED = [
       return { beaker, naoh, hcl, dropper, rod, water, spatula }
     },
     steps: [
-      { text: 'Hút dung dịch NaOH và nhỏ vào cốc CuSO₄ cho tới khi thấy kết tủa xanh lam.', done: 'Xuất hiện kết tủa xanh lam Cu(OH)₂ trong cốc.', help: 'Chọn ống nhỏ giọt → “Hút từ” chai NaOH → “Nhỏ vào” Cốc A → 5 giọt, lặp lại vài lần.', target: ['naoh', 'dropper', 'beaker'], check: (s, r) => (obj(s, r.beaker).contents.precipitates['Cu(OH)2'] || 0) > 2e-4 },
+      { text: 'Nhỏ dung dịch NaOH vào cốc CuSO₄ đến khi có kết tủa xanh lam bền. Theo mô hình cần khoảng 3 mL NaOH 0,5 M (60 giọt).', done: 'Xuất hiện kết tủa xanh lam Cu(OH)₂ trong cốc.', help: 'Chọn ống nhỏ giọt → “Hút từ” chai NaOH (mỗi lần hút đầy 2 mL) → “Nhỏ vào” Cốc A → “10 giọt” hoặc nhập số mL rồi “Nhỏ”. Hết dung dịch thì bấm “Hút thêm”. Dòng tiến độ cho biết còn thiếu bao nhiêu. Cách nhanh: chọn chai NaOH → Rót 3 mL vào Cốc A. Lưu ý mô hình: dung dịch được coi là trộn đều tức thì, nên kết tủa chỉ bền khi đủ NaOH; trong ống nghiệm thật thường thấy vẩn xanh ngay chỗ giọt rơi từ những giọt đầu.', target: ['naoh', 'dropper', 'beaker'], check: (s, r) => cuOH2(obj(s, r.beaker).contents),
+        // Quantitative feedback straight from the model: what has been added and what is still needed.
+        progress: (s, r) => {
+          const c = obj(s, r.beaker).contents
+          const added = (c.ions['Na+'] || 0) / REAGENT_BY_ID.naoh.M * 1000
+          if (added < 0.01) return 'Chưa nhỏ NaOH vào Cốc A.'
+          const more = memoOnce(JSON.stringify(c.ions) + volumeOf(obj(s, r.beaker)).toFixed(3), () => moreToAdd(c, 'naoh', cuOH2))
+          if (more === 0) return `Đã thêm ${fmtML(added)} mL NaOH: kết tủa Cu(OH)₂ đã xuất hiện.`
+          if (more == null) return `Đã thêm ${fmtML(added)} mL NaOH vào Cốc A.`
+          return `Đã thêm ${fmtML(added)} mL NaOH vào Cốc A, chưa có kết tủa bền. Cần thêm khoảng ${fmtML(Math.ceil(more * 20) / 20)} mL (${Math.ceil(more / 0.05)} giọt) nữa.`
+        } },
       { text: 'Để yên và quan sát kết tủa lắng xuống đáy.', done: 'Phần lớn kết tủa đã nằm ở đáy cốc.', help: 'Không khuấy. Chờ, tăng tốc 4×, hoặc bấm “Tua đến hiện tượng”.', wait: () => true, target: ['beaker'], check: (s, r) => { const v = obj(s, r.beaker).vis.parts; return v.length > 5 && v.filter(p => p.settled).length / v.length > 0.6 } },
       { text: 'Dùng đũa thủy tinh khuấy: kết tủa lơ lửng trở lại.', done: 'Kết tủa lơ lửng trở lại trong dung dịch.', help: 'Chọn đũa thủy tinh → “Khuấy” Cốc A.', target: ['rod', 'beaker'], check: (s, r) => obj(s, r.beaker).vis.stir > 0.3 },
       { text: 'Nhỏ HCl vào cốc đến khi kết tủa tan hết, dung dịch xanh trong trở lại.', done: 'Không còn kết tủa, dung dịch xanh trong.', help: 'Chọn chai HCl → Rót khoảng 10–15 mL vào Cốc A, hoặc nhỏ nhiều lần bằng ống nhỏ giọt; khuấy giúp tan nhanh.', wait: (s, r) => (obj(s, r.beaker).pH ?? 7) < 4, target: ['hcl', 'beaker'], check: (s, r) => s.notes[`ppt-Cu(OH)2-${r.beaker}`] != null && !((obj(s, r.beaker).contents.precipitates['Cu(OH)2'] || 0) > 1e-7) },
@@ -98,7 +125,7 @@ export const GUIDED = [
     },
     steps: [
       { text: 'Chọn kẹp, lấy đinh sắt và thả vào cốc CuSO₄.', done: 'Đinh sắt nằm trong Cốc A (CuSO₄).', help: 'Chọn Kẹp hóa chất → “Đinh sắt”, 2 g → Lấy → Thả vào Cốc A.', need: [{ reagent: 'fe', massG: 2 }], target: ['tongs', 'cu'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'fe' && o.in === r.cu) },
-      { text: 'Chờ đến khi lớp đồng đỏ bám rõ trên đinh sắt.', done: 'Đinh có lớp Cu đỏ bám rõ (khoảng 0,8 mmol Cu).', help: 'Chờ, tăng tốc 4×, hoặc bấm “Tua đến hiện tượng”. Đinh nhỏ có diện tích bề mặt nhỏ nên phản ứng chậm hơn.', wait: () => true, target: ['cu'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'fe' && o.in === r.cu && (o.coat.Cu || 0) > 8e-4) },
+      { text: 'Chờ đến khi lớp đồng đỏ bám rõ trên đinh sắt.', done: 'Đinh có lớp Cu đỏ bám rõ (lớp phủ đạt hơn nửa độ đậm; với đinh 2 g là khoảng 0,8 mmol Cu).', help: 'Chờ, tăng tốc 4×, hoặc bấm “Tua đến hiện tượng”. Tốc độ tỉ lệ với diện tích bề mặt, nên độ dày lớp đồng tăng như nhau với đinh lớn hay nhỏ.', wait: () => true, target: ['cu'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'fe' && o.in === r.cu && coatCoverage(o) >= 8e-4 / 1.5e-3) },
       { text: 'Dùng kẹp lấy kẽm viên thả vào cốc HCl, quan sát bọt khí.', done: 'Kẽm nằm trong Cốc B (HCl) và có bọt khí H₂.', help: 'Kẹp phải đang trống. Chọn kẹp → “Kẽm (viên)” → Lấy → Thả vào Cốc B.', need: [{ reagent: 'zn', massG: 0.5 }], wait: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'zn' && o.in === r.acid), target: ['tongs', 'acid'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'zn' && o.in === r.acid) && s.gas.H2 > 2e-5 },
       { text: 'Dùng kẹp lấy mẩu natri 0,1 g thả vào chậu nước có phenolphtalein.', done: 'Mẩu natri nằm trong Chậu C.', help: 'Chọn kẹp → “Natri (mẩu)”, 0,1 g → Lấy → xác nhận cảnh báo → Thả vào Chậu C.', need: [{ reagent: 'na', massG: 0.1 }], target: ['tongs', 'dish'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'na' && o.in === r.dish) },
       { text: 'Quan sát đến khi natri tan hết.', done: 'Mẩu natri đã phản ứng hết.', help: 'Chờ, tăng tốc 4×, hoặc bấm “Tua đến hiện tượng”.', wait: () => true, target: ['dish'], check: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'na' && o.in === r.dish && o.massG <= 0) }
