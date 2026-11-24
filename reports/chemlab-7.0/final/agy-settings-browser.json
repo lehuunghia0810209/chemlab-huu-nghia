@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["read_url(localhost)", "execute_url(localhost)", "read_url(127.0.0.1)", "command(node scripts/dlab-guided-walk.mjs)"],
+    "deny": ["write_file(D:/EduLab)", "write_file(C:/Users)", "command(git)", "command(npm)", "command(npx)", "command(rm)", "command(del)"]
+  }
+}

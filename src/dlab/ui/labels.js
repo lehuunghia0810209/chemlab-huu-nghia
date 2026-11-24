@@ -50,6 +50,7 @@ export function contentsName(c) {
   if (metals.length) for (const k of inSalt.slice(1)) parts.push(salt(...METAL[metals[0][0]], ANION[k]))
   for (const k of acid) parts.push(ANION[k][3])
   if ((ions.NH3 || 0) > 1e-6) parts.push('NH3')
+  if ((ions.I2 || 0) > 1e-6) parts.push('I2')
   const named = [...new Set(parts)].map(sub)
   for (const [k] of big(precipitates, 1e-7)) named.push(`${sub(PRECIPITATES[k].formula)}↓`)
   // Liquids: water only when nothing else is named; trace solvents (e.g. ethanol in an indicator) are left out.

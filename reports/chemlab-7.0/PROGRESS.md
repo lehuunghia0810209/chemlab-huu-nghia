@@ -76,6 +76,23 @@ Quyết định kiến trúc: KEEP lõi (một state, một engine), REFACTOR c�
 
 Commits: `fc43ae4`, `1707961`, `6f2bc1c`, `a306197`, `15e6d45`, cộng commit báo cáo. Chi tiết và phần chưa làm: `COMPLETE_LAB_REBUILD_REPORT.md` §18. Chưa push.
 
+## Phiên 2026-11-24 (4) — Hoàn thiện Full Rebuild (tiếp từ ea7ee23)
+
+**Khoa học:**
+- Mô hình dung môi nước–etanol–dầu.
+- CuCl₂ + KI và Fe³⁺ + I⁻ (CuI↓, I₂, độ tan I₂).
+- Điện phân từ chối khi có chất phóng điện trước.
+- Pin Daniell theo nhiệt độ.
+- 10 lỗi khác do Antigravity phát hiện.
+
+**Manifest phản ứng:** `src/dlab/data/manifest.js`, 72 mục. Các mục có kịch bản được chạy làm test registry và hiện trong thẻ "Khám phá" của Sandbox.
+
+**3D:** mỏ rót, vạch chia in số, đế ống đong, viền kính Fresnel, vòng mặt thoáng, thìa và kẹp mới, tường gạch, bàn sáng hơn, khung hình gần hơn.
+
+**E2E Sandbox:** X01–X05.
+
+**Commit bị bộ phân loại quyền chặn.** Thay đổi còn trong working tree, chờ chủ sở hữu duyệt. Kết quả và giới hạn: `COMPLETE_LAB_REBUILD_REPORT.md`, `final/`.
+
 ## Còn lại / blocker
 
 1. Chuyên gia duyệt SCIENTIFIC_VALIDATION §8 (D31).

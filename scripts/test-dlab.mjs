@@ -2,12 +2,13 @@
 // Expected values are computed independently here (closed-form), not read back from the engine.
 import assert from 'node:assert/strict'
 import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
-import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML } from '../src/dlab/engine/chemistry.js'
+import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
 import { GUIDED, moreToAdd } from '../src/dlab/guided.js'
+import { MANIFEST, DISCOVER } from '../src/dlab/data/manifest.js'
 import { observe, mergeRepeats, indicatorReading } from '../src/dlab/ui/observations.js'
 import { libraryItems, searchLibrary } from '../src/dlab/ui/library.js'
 import { objectTitle, contentsName } from '../src/dlab/ui/labels.js'
@@ -538,6 +539,64 @@ test('Daniell cell: Nernst voltage, open circuit without bridge', () => {
   near(v.reading, 1.10, 0.002, 'E at equal concentrations')
 })
 
+test('CuCl₂ + KI: 2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂ before any electrolysis; atoms and charge conserved', () => {
+  const l = makeLab()
+  const A = l.put('beaker100', 200)
+  l.fill(A, 'cucl2', 10) // 5 mmol Cu²⁺, 10 mmol Cl⁻
+  l.fill(A, 'ki', 20) // 2 mmol I⁻ → limiting: ξ = 0.5 mmol
+  const c = byId(l.s(), A.id).contents
+  near(c.precipitates.CuI, 1e-3, 1e-9, 'CuI = n(I⁻)/2'); near((c.ions.I2 || 0) + (c.precipitates.I2s || 0), 0.5e-3, 1e-9, 'I₂ = n(I⁻)/4')
+  near(c.ions.I2, 1.33e-3 * 0.030, 1e-9, 'no I⁻ left: dissolved I₂ only up to its solubility 1.33 mM (CRC), the rest is solid')
+  near(c.ions['Cu2+'], 5e-3 - 1e-3, 1e-9, 'Cu²⁺ left'); assert.ok(!(c.ions['I-'] > 1e-12), 'I⁻ used up')
+  near(c.ions['Cl-'], 10e-3, 1e-12, 'Cl⁻ spectator')
+  // Cu: 5 mmol in, I: 2 mmol in — both conserved across CuI + I₂ + ions.
+  near((c.ions['Cu2+'] || 0) + c.precipitates.CuI, 5e-3, 1e-12, 'Cu atoms'); near(c.precipitates.CuI + 2 * (c.ions.I2 + c.precipitates.I2s), 2e-3, 1e-12, 'I atoms')
+  assert.ok(Object.keys(l.s().notes).some(k => k.startsWith('redox-cu-i-')), 'equation shown')
+  // Electrolysis afterwards: I₂ in solution would be reduced first → refused, no Cl₂ and no copper invented.
+  const el = l.put('electrodes', 200, { y: 10 }); const p = l.put('power', 400)
+  l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }, { record: false })
+  l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true, record: false })
+  l.sim.runFor(10)
+  assert.ok(!(l.s().gas.Cl2 > 0) && !(el.cuDeposit > 0), 'no product from the CuCl₂ model'); assert.match(p.status, /Chưa hỗ trợ.*I₂/)
+  // Excess KI: all Cu²⁺ → CuI; I⁻ left would be oxidised at the anode first → also refused.
+  const m = makeLab(); const B = m.put('beaker100', 200); m.fill(B, 'cucl2', 2); m.fill(B, 'ki', 40)
+  const cb = byId(m.s(), B.id).contents
+  assert.ok(!(cb.ions['Cu2+'] > 1e-12)); near(cb.precipitates.CuI, 1e-3, 1e-9, 'all Cu → CuI'); near(cb.ions['I-'], 4e-3 - 2e-3, 1e-9, 'I⁻ excess')
+  // Fe³⁺ + I⁻: 2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂ (no precipitate).
+  const f2 = makeLab(); const F = f2.put('beaker100', 200); f2.fill(F, 'fecl3', 10); f2.fill(F, 'ki', 10)
+  const cf = byId(f2.s(), F.id).contents
+  near(cf.ions['Fe2+'], 1e-3, 1e-9, 'Fe²⁺'); near(cf.ions['Fe3+'], 1e-3, 1e-9, 'Fe³⁺ left'); near((cf.ions.I2 || 0) + (cf.precipitates.I2s || 0), 0.5e-3, 1e-9, 'I₂')
+  // Plain CuCl₂ is still electrolysed (Faraday test above); Ag⁺ / Fe²⁺ in the cell are refused.
+  const g = makeLab(); const G = g.put('beaker100', 200); g.fill(G, 'cucl2', 40); g.fill(G, 'feso4', 10)
+  const e2 = g.put('electrodes', 200, { y: 10 }); const p2 = g.put('power', 400)
+  g.sim.dispatch({ type: 'wire', from: p2.id, to: e2.id }, { record: false }); g.sim.dispatch({ type: 'power', id: p2.id, on: true, volts: 6 }, { confirmed: true, record: false }); g.sim.runFor(2)
+  assert.ok(!(g.s().gas.Cl2 > 0)); assert.match(p2.status, /Fe²⁺/)
+})
+
+test('Daniell cell: E follows E°(T) and the Nernst slope at the cell temperature', () => {
+  const run = T => {
+    const l = makeLab()
+    const A = l.put('beaker100', 200); const B = l.put('beaker100', 400)
+    l.fill(A, 'znso4', 50); l.fill(B, 'cuso4', 5); l.fill(B, 'water', 45) // [Cu²⁺] = 0.05 M, [Zn²⁺] = 0.5 M
+    const zn = dropSolid(l, A, 'zn', 2); const cu = dropSolid(l, B, 'cu', 2); l.sim.runFor(1)
+    const v = l.put('voltmeter', 300, { y: 0 })
+    l.sim.dispatch({ type: 'wire', from: v.id, to: zn.id }, { record: false }); l.sim.dispatch({ type: 'wire', from: v.id, to: cu.id }, { record: false })
+    const bridge = l.put('bridge', 300, { y: 80 }); l.sim.dispatch({ type: 'link', id: bridge.id, a: A.id, b: B.id }, { record: false })
+    byId(l.s(), A.id).T = T; byId(l.s(), B.id).T = T
+    l.sim.runFor(H)
+    return v
+  }
+  // Independent: ΔS° from NBS S° = −112.1 + 33.150 − 41.63 + 99.6; E = E°(T) − (RT ln10 / 2F)·log(0.5/0.05).
+  const dS = -112.1 + 33.150 - 41.63 + 99.6
+  for (const T of [25, 60]) {
+    const v = run(T); const TK = 273.15 + T
+    const expect = 1.10 + dS / (2 * 96485) * (TK - 298.15) - 8.314462618 * TK * Math.log(10) / (2 * 96485)
+    near(v.reading, expect, 3e-3, `E at ${T} °C`) // cooling toward room T in one step is < 0.01 °C
+    assert.match(v.status, new RegExp(`${T} °C`))
+  }
+  assert.ok(run(25).reading > run(60).reading, 'higher T lowers E for Q > 1 (and E° drops 0.11 mV/K)')
+})
+
 // ── Invariants and persistence ───────────────────────────────────────────
 test('invariants hold after a long mixed run', () => {
   const l = makeLab()
@@ -811,9 +870,9 @@ test('audit fixes: no fabricated atoms, no overshoot, unsupported before any rul
     assert.equal(l.s().gas.H2 || 0, 0, 'no H₂')
     assert.match(l.s().log.map(e => e.text).join('|'), /Chưa hỗ trợ mô phỏng phản ứng này: Fe \+ Fe³⁺/)
   }
-  { // FeCl₃ + KI (no solid at all) is reported, not silently ignored.
+  { // FeCl₃ + KI (no solid at all) is reported, not silently ignored — now modelled (2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂).
     const l = lab(15); const b = l.put('beaker100', 300); l.fill(b, 'fecl3', 10); l.fill(b, 'ki', 10); l.sim.runFor(1)
-    assert.match(l.s().log.map(e => e.text).join('|'), /Fe³⁺ oxi hóa I⁻/)
+    assert.match(l.s().log.map(e => e.text).join('|'), /2Fe³⁺ \+ 2I⁻ → 2Fe²⁺ \+ I₂/)
   }
   { // "Trung hòa" only when H⁺ and OH⁻ meet: CuSO₄ + NaOH is a precipitation, HCl + NaOH is a neutralisation.
     const l = lab(16); const a = l.put('beaker100', 200); l.fill(a, 'cuso4', 20); l.fill(a, 'naoh', 4)
@@ -963,6 +1022,126 @@ test('dropper: every drop of a 10-drop burst just above a beaker lands in it (no
     assert.equal(l.s().drops.length, 0)
     near((byId(l.s(), b.id).contents.ions['Na+'] || 0) - before, drops * 0.05 * 0.5 / 1000, 1e-9, `${drops} drops from y=${y}: NaOH that reached the beaker`)
   }
+})
+
+test('solvent: ethanol is not water — no pH, measured mixture density, oil sinks in ethanol, bp from the CRC table', () => {
+  // Pure ethanol: pH does not apply; litmus/pH meter must not report an aqueous pH.
+  const l = lab(31); const b = l.put('beaker100', 300); l.fill(b, 'ethanol', 20); l.sim.runFor(0.5)
+  assert.equal(byId(l.s(), b.id).pH, null, 'pure ethanol has no aqueous pH')
+  assert.ok(Object.keys(l.s().notes).some(k => k.startsWith('solvent-eth-')), 'says why there is no pH')
+  // 50 % mass ethanol → 0.90985 g/mL at 25 °C (Lange); ideal mass-average would be 0.8794 (wrong).
+  const mix50 = { ...emptyContents(), liquids: { water: 50 / 0.997, ethanol: 50 / 0.785 } }
+  near(polarPhase(mix50).density, 0.90985, 1e-4, '50 wt% density')
+  // Indicator drops (ethanol solvent) keep the pH scale: 1 drop in 5 mL water.
+  const ind = { ...emptyContents(), liquids: { water: 5, ethanol: 0.05 } }
+  assert.ok(polarPhase(ind).pHApplies)
+  near(pHOf({ ...ind, ions: {} }), 7, 0.01, 'water with one indicator drop')
+  assert.equal(pHOf({ ...emptyContents(), liquids: { water: 5, ethanol: 5 }, ions: {} }), null, '50 % v/v ethanol: no pH')
+  // Oil (0.92) floats on water (0.997) but sinks in ethanol (0.785): the upper layer pours first.
+  assert.equal(oilBelow({ ...emptyContents(), liquids: { water: 10, oil: 3 } }), false)
+  const eo = { ...emptyContents(), liquids: { ethanol: 10, oil: 3 } }
+  assert.equal(oilBelow(eo), true)
+  const out = withdraw(eo, 2)
+  near(out.liquids.ethanol || 0, 2, 1e-9, 'pouring takes the top (ethanol) layer'); assert.ok(!(out.liquids.oil > 0))
+  // Boiling points (CRC): water 100, ethanol ≈ 78, 10 wt% ethanol 90 °C with 61 wt% ethanol vapour.
+  near(boilingOf({ ...emptyContents(), liquids: { water: 10 } }).T, 100, 1e-9, 'water bp')
+  near(boilingOf({ ...emptyContents(), liquids: { ethanol: 10 } }).T, 78.3, 1e-9, 'ethanol bp')
+  const ten = { ...emptyContents(), liquids: { water: 90 / 0.997, ethanol: 10 / 0.785 } }
+  near(boilingOf(ten).T, 90, 1e-6, '10 wt% bp'); near(boilingOf(ten).vapourWt, 61, 1e-6, '10 wt% vapour')
+  // Heating pure ethanol on a burner: it boils near 78 °C and never reaches 100 °C while liquid remains.
+  const h = lab(32); const burner = h.put('burner', 200); const bk = h.put('beaker100', 500); h.fill(bk, 'ethanol', 30)
+  h.sim.dispatch({ type: 'burner', id: burner.id, on: true }, { record: false })
+  h.sim.dispatch({ type: 'move', id: bk.id, x: 200, y: 0 }, { confirmed: true, record: false })
+  let maxT = 0
+  for (let i = 0; i < 200 && (byId(h.s(), bk.id).contents.liquids.ethanol || 0) > 5; i += 1) { h.sim.runFor(1); maxT = Math.max(maxT, byId(h.s(), bk.id).T) }
+  const e = byId(h.s(), bk.id)
+  assert.ok((e.contents.liquids.ethanol || 0) < 30, 'ethanol evaporated'); assert.ok(maxT < 79 && maxT > 77.5, `boils at ~78 °C, max ${maxT}`)
+  assert.ok(h.s().ethanolVapour > 0 && Object.keys(h.s().notes).some(k => k.startsWith('boil-eth-')))
+  // Sodium in pure ethanol: real reaction, not modelled → said so, no water reaction, no H₂ invented.
+  const n = lab(33); const t = n.put('beaker100', 300); n.fill(t, 'ethanol', 20)
+  const tg = n.put('tongs', 300, { y: 160 }); n.sim.dispatch({ type: 'pick', tool: tg.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
+  assert.equal(n.sim.dispatch({ type: 'release', tool: tg.id }, { confirmed: true }).verdict.level, 'block', 'safety: Na needs ≥ 50 mL water')
+  const na = n.s().objects.find(o => o.type === 'solid'); na.in = t.id; na.ly = 0; n.sim.runFor(5) // as if it got in anyway
+  assert.ok(!(n.s().gas.H2 > 0), 'no H₂ from the water rule'); assert.match(byId(n.s(), t.id).unsupported || '', /etanol/)
+})
+
+// Third independent review (Antigravity, science): each confirmed scenario, now checked.
+test('review 3: salts before redox, no redox in base, indicator drops keep pH, oil layer insulates, honest electrolysis', () => {
+  const mixOf = list => { const c = emptyContents(); for (const [id, mL] of list) mix(c, parcel(id, mL)); return c }
+  // Ag⁺ + Cu²⁺ + I⁻: AgI (Ksp 8.5e-17) takes the iodide before Cu²⁺ can oxidise it.
+  let c = mixOf([['agno3', 10], ['cuso4', 10], ['ki', 10]])
+  near(c.precipitates.AgI, 1e-3, 1e-8, 'AgI'); assert.ok(!(c.precipitates.CuI > 1e-8) && !(c.ions.I2 > 1e-8), 'no CuI/I₂')
+  // Excess base first: Fe(OH)₃ and no iodine.
+  c = mixOf([['naoh', 20], ['ki', 10], ['fecl3', 10]])
+  assert.ok(c.precipitates['Fe(OH)3'] > 1e-4 && !(c.ions.I2 > 0) && !(c.precipitates.I2s > 0) && !(c.precipitates['Fe(OH)2'] > 1e-8), 'no redox in base')
+  // Three drops of phenolphthalein (50 % ethanol) in 1 mL NaOH: still an aqueous pH, still pink.
+  c = mixOf([['naoh', 1], ['phenolphthalein', 0.15]])
+  near(pHOf(c), 13.64, 0.05, 'pH kept'); near(c.liquids.ethanol, 0.075, 1e-9, 'half of the drops is ethanol')
+  // Na under a floating oil layer rests on the water, below the oil top.
+  const l = lab(41); const b = l.put('beaker250', 300); l.fill(b, 'water', 60); l.fill(b, 'oil', 40)
+  const k = l.put('tongs', 300, { y: 200 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'na', massG: 0.1 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true }); l.sim.runFor(1)
+  const na = l.s().objects.find(o => o.type === 'solid' && o.reagent === 'na')
+  assert.ok(na.ly < levelForVolume('beaker250', 62) && na.ly > levelForVolume('beaker250', 50), `Na at the oil/water interface: ${na.ly}`)
+  // Water is used by 2Na + 2H₂O.
+  const w0 = 60; l.sim.runFor(60); assert.ok(byId(l.s(), b.id).contents.liquids.water < w0, 'water consumed')
+  // pH meter tip only in the oil: no reading; electrodes only in oil: no current.
+  const m = lab(42); const v = m.put('beaker100', 300); m.fill(v, 'cucl2', 20); m.fill(v, 'oil', 40)
+  const top = surfaceY(byId(m.s(), v.id))
+  const ph = m.put('phMeter', 300, { y: top - 4 }); m.sim.dispatch({ type: 'move', id: ph.id, x: 300, y: top - 4 }); m.sim.runFor(0.2)
+  assert.equal(byId(m.s(), ph.id).reading, null, 'probe in oil reads nothing')
+  // Electrolysis: trace chloride is outside the CuCl₂ model; plain KI is not called an interference.
+  const e = lab(43); const B = e.put('beaker100', 300); e.fill(B, 'cuso4', 50); e.fill(B, 'nacl', 0.05)
+  const el = e.put('electrodes', 300, { y: 10 }); const p = e.put('power', 450)
+  e.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); e.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); e.sim.runFor(1)
+  assert.ok(!(e.s().gas.Cl2 > 0)); assert.match(byId(e.s(), p.id).status, /Cl⁻ quá loãng/)
+  const k2 = lab(44); const K = k2.put('beaker100', 300); k2.fill(K, 'ki', 50)
+  const el2 = k2.put('electrodes', 300, { y: 10 }); const p2 = k2.put('power', 450)
+  k2.sim.dispatch({ type: 'wire', from: p2.id, to: el2.id }); k2.sim.dispatch({ type: 'power', id: p2.id, on: true, volts: 6 }, { confirmed: true }); k2.sim.runFor(1)
+  assert.match(byId(k2.s(), p2.id).status, /chưa được mô hình hóa \(mô hình hỗ trợ dung dịch CuCl₂\)/)
+  // AgNO₃ + a little NaOH is flagged (Ag₂O), Ag₂CO₃ in carbonate is not.
+  const a = lab(45); const A = a.put('beaker100', 300); a.fill(A, 'agno3', 10); a.fill(A, 'naoh', 3); a.sim.runFor(0.5)
+  assert.match(a.s().log.map(x => x.text).join('|'), /Ag₂O/)
+})
+
+// Registry: every manifest entry with a demo is run on the real engine and must give what it claims.
+function runDemo(d) {
+  const l = lab(77)
+  const v = l.put(d.vessel, 300)
+  for (const [r, mL] of d.fill) l.fill(v, r, mL)
+  if (d.pour) l.fill(v, d.pour[0], d.pour[1])
+  if (d.solid) {
+    const k = l.put(R(d.solid[0]).tool, 300, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: k.id, reagent: d.solid[0], massG: d.solid[1] }, { confirmed: true })
+    const r = l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true })
+    assert.ok(r.ok, `release: ${JSON.stringify(r.verdict)}`)
+  }
+  l.sim.runFor(d.run)
+  return { s: l.s(), c: byId(l.s(), v.id) }
+}
+for (const e of MANIFEST.filter(x => x.demo)) {
+  test(`manifest ${e.status} ${e.id}: ${e.title}`, () => {
+    const { s, c } = runDemo(e.demo)
+    const x = e.demo.expect
+    const solid = s.objects.find(o => o.type === 'solid' && o.in === c.id)
+    if (x.gas) assert.ok((c.gasOut?.[x.gas] || 0) > 0, `${x.gas} from this vessel`)
+    if (x.ion) assert.ok((c.contents.ions[x.ion] || 0) > 1e-7, `${x.ion} formed`)
+    if (x.deposit) assert.ok((solid?.coat?.[x.deposit] || 0) > 0, `${x.deposit} deposited`)
+    if (x.ppt) assert.ok((c.contents.precipitates[x.ppt] || 0) > 1e-9, `${x.ppt} precipitated`)
+    if (x.note) assert.ok(Object.keys(s.notes).some(k => k.startsWith(x.note)), `note ${x.note}`)
+    if (x.oilBelow) assert.ok(oilBelow(c.contents), 'oil below')
+    if (x.unsupported) assert.ok(c.unsupported, 'reported as unsupported')
+    if (x.noPH) assert.equal(c.pH, null)
+    if (e.status === 'NO_REACTION' || e.status === 'UNSUPPORTED') {
+      assert.ok(!Object.values(c.gasOut || {}).some(v => v > 0), 'no gas invented')
+      assert.ok(!Object.values(solid?.coat || {}).some(v => v > 0), 'no deposit invented')
+    }
+    assert.equal(checkInvariants(s), null)
+  })
+}
+test('manifest: every entry is complete and every Sandbox suggestion has a demo', () => {
+  for (const e of MANIFEST) for (const k of ['id', 'status', 'title', 'inputs', 'conditions', 'products', 'observe', 'model', 'source', 'limits']) assert.ok(e[k] != null && e[k] !== '', `${e.id}.${k}`)
+  assert.equal(new Set(MANIFEST.map(e => e.id)).size, MANIFEST.length, 'unique ids')
+  assert.ok(DISCOVER.length >= 20 && DISCOVER.every(e => e.demo))
 })
 
 const failed = results.filter(r => !r.pass)

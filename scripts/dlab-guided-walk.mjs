@@ -87,7 +87,7 @@ function makeHelpers(p, L) {
       let ff = false
       while ((await done()) < n && Date.now() < until) {
         const b = p.locator('[data-gs="ffwd"]')
-        if (await b.count() && await b.isEnabled()) ff = (await b.click({ timeout: 1500 }).then(() => true, () => false)) || ff // the step may finish on its own meanwhile
+        if (await b.count() && await b.isEnabled({ timeout: 500 }).catch(() => false)) ff = (await b.click({ timeout: 1500 }).then(() => true, () => false)) || ff // the step may finish on its own meanwhile
         await p.waitForTimeout(400)
       }
       const ok = (await done()) >= n
@@ -141,7 +141,7 @@ async function acidBase(h, lab) {
   await h.pick(acid)
   await bar.locator('[data-qa-in="ml"]').fill('9')
   await h.to(tubes[1].id)
-  await h.qa('Rót vào cốc').click()
+  await h.qa('Rót').click()
   await h.finish(lab, 5, 'chai HCl: Rót 9 mL')
 }
 
@@ -179,7 +179,7 @@ async function precipitate(h, lab) {
   await h.pick(await find(o => o.type === 'bottle' && o.reagent === 'hcl'))
   await bar.locator('[data-qa-in="ml"]').fill('15')
   await h.to(beakers[0].id)
-  await h.qa('Rót vào cốc').click()
+  await h.qa('Rót').click()
   await h.finish(lab, 4, 'chai HCl: Rót 15 mL', 40000)
   await h.pick(await find(o => o.type === 'spatula'))
   const offered = await bar.locator('[data-qa-in="solid"]').inputValue()
@@ -285,7 +285,7 @@ async function organic(h, lab) {
     await h.pick(await find(o => o.type === 'bottle' && o.reagent === reagent))
     await h.bar.locator('[data-qa-in="ml"]').fill('3')
     await h.to(tube.id)
-    await h.qa('Rót vào cốc').click()
+    await h.qa('Rót').click()
     await h.finish(lab, n, `chai ${reagent}: Rót 3 mL`)
   }
   void p

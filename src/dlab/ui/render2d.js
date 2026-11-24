@@ -1,6 +1,7 @@
 // Canvas 2D renderer. Read-only view of the simulation state: it never changes chemistry.
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume } from '../data/equipment.js'
 import { PRECIPITATES, REAGENT_BY_ID, GASES, LIQUIDS } from '../data/materials.js'
+import { oilBelow } from '../engine/chemistry.js'
 import { GW, GH, cellColor, fieldMean, volumeOf, surfaceY, solidRadiusMM, coatCoverage, isContainer, byId } from '../engine/processes.js'
 
 export function createView() {
@@ -559,14 +560,21 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
       ctx.clip()
       const oil = c.contents.liquids.oil || 0
       const aq = vol - oil
+      // Layers follow density: oil floats on water but sinks in ethanol-rich liquid (engine oilBelow).
+      const sinks = oil > 0.01 && oilBelow(c.contents)
+      const oilLevel = sinks ? levelForVolume(c.type, oil) : 0
       const aqLevel = levelForVolume(c.type, aq)
+      const aqTop = sinks ? level : aqLevel
+      const aqH = sinks ? level - oilLevel : aqLevel
+      const oilY = sinks ? -2 - oilLevel : -2 - level
+      const oilH = sinks ? oilLevel : level - aqLevel
       if (Math.abs(c.angle) < 0.02 && ui.quality === 'low') {
         // Reduced graphics: one fill at the mean colour and fewer particles; chemistry is unchanged.
         const hw = halfWidthAt(def, 0) + 4
         const col = c.vis.displayed || c.vis.target || [220, 235, 250, 0.2]
         ctx.fillStyle = rgba(col, Math.min(0.92, col[3] + 0.05))
-        ctx.fillRect(-hw, -2 - aqLevel, 2 * hw, aqLevel)
-        if (oil > 0.01) { ctx.fillStyle = 'rgba(240,200,60,0.75)'; ctx.fillRect(-hw, -2 - level, 2 * hw, level - aqLevel) }
+        ctx.fillRect(-hw, -2 - aqTop, 2 * hw, aqH)
+        if (oil > 0.01) { ctx.fillStyle = 'rgba(240,200,60,0.75)'; ctx.fillRect(-hw, oilY, 2 * hw, oilH) }
         const parts = c.vis.parts
         for (let k = 0; k < parts.length; k += Math.ceil(parts.length / 40) || 1) {
           const p = parts[k]
@@ -590,10 +598,12 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
         }
         img.ctx.putImageData(img.data, 0, 0)
         ctx.imageSmoothingEnabled = true
-        ctx.drawImage(img.canvas, -hw, -2 - aqLevel, 2 * hw, Math.max(0.5, aqLevel))
+        ctx.drawImage(img.canvas, -hw, -2 - aqTop, 2 * hw, Math.max(0.5, aqH))
         if (oil > 0.01) {
           ctx.fillStyle = 'rgba(240,200,60,0.75)'
-          ctx.fillRect(-hw, -2 - level, 2 * hw, level - aqLevel)
+          ctx.fillRect(-hw, oilY, 2 * hw, oilH)
+          ctx.strokeStyle = 'rgba(170,130,20,0.7)'
+          ctx.beginPath(); ctx.moveTo(-hw, sinks ? oilY : -2 - aqLevel); ctx.lineTo(hw, sinks ? oilY : -2 - aqLevel); ctx.stroke()
         }
         ctx.strokeStyle = 'rgba(255,255,255,0.55)'
         ctx.lineWidth = 1
@@ -763,7 +773,10 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
     ctx.fillStyle = dark ? '#c9d6ea' : '#334155'
     ctx.font = `600 ${Math.max(9, 10 * view.zoom)}px "Be Vietnam Pro", sans-serif`
     ctx.textAlign = 'center'
-    ctx.fillText(c.label, lx, ly + 14)
+    // Narrow vessels side by side (tubes in a rack): "Ống A" would run into the next name, so only the letter is drawn.
+    const room = EQUIPMENT[c.type].w * view.zoom + 10
+    const text = ctx.measureText(c.label).width > room ? c.label.split(' ').pop() : c.label
+    ctx.fillText(text, lx, ly + 14)
   }
 }
 

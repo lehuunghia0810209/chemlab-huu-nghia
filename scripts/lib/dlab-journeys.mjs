@@ -704,11 +704,11 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await page.locator('.dlab-search').fill('nước')
     await page.locator('.dlab-lib-item').first().click()
     await page.locator('[data-qa-in="ml"]').fill('100')
-    await btn(page, 'Rót vào cốc').click()
+    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
     await wait(page, (L, id) => Object.values(L.state.objects.find(o => o.id === id).contents.liquids).reduce((s, v) => s + v, 0) > 99, ids.A)
     await page.locator('.dlab-search').fill('phenol')
     await page.locator('.dlab-lib-item').first().click()
-    await btn(page, 'Nhỏ vào cốc').click()
+    await page.locator('.dlab-actionbar [data-qa="drops"]').click()
     await wait(page, (L, id) => (L.state.objects.find(o => o.id === id).contents.indicators.phenolphthalein || 0) > 0, ids.A)
     await page.locator('.dlab-search').fill('natri')
     assert.match(await page.locator('.dlab-lib-item').first().innerText(), /Natri \(mẩu\)/, 'sodium metal ranks first')
@@ -1219,7 +1219,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await select(page, r.naoh)
     assert.equal(await page.locator('[data-qa-in="to"]').inputValue(), r.A, 'step 1: NaOH defaults to Cốc A')
     await page.locator('[data-qa-in="ml"]').fill('4')
-    await btn(page, 'Rót vào cốc').click()
+    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
     await strip.locator('.dlab-gstep', { hasText: 'Bước 2/5' }).waitFor()
     await page.locator('[data-gs="ffwd"]').click()
     await strip.locator('.dlab-gstep', { hasText: 'Bước 3/5' }).waitFor({ timeout: 30000 })
@@ -1233,7 +1233,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await select(page, r.hcl)
     assert.equal(await page.locator('[data-qa-in="to"]').inputValue(), r.A, 'step 4: HCl defaults to the step vessel, not the nearest one')
     await page.locator('[data-qa-in="ml"]').fill('15')
-    await btn(page, 'Rót vào cốc').click()
+    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
     await strip.locator('.dlab-gstep', { hasText: 'Bước 5/5' }).waitFor({ timeout: 30000 })
     assert.equal((await obj(page, r.B)).contents.ions['Cl-'] ?? 0, 0, 'no HCl in the water beaker')
     // Step 5: the spatula's "Thả vào" must not inherit the HCl bottle's pick (Cốc A).
@@ -1254,4 +1254,84 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await page.locator('[data-gs="ffwd"]').click({ timeout: 5000 }).catch(() => {})
     await strip.locator('.dlab-gstep', { hasText: 'Hoàn thành 5/5' }).waitFor({ timeout: 40000 })
   })
+
+  // ── Sandbox scenarios beyond the five guided labs (real clicks on the visible controls) ──
+  const sideTab = async (page, name) => {
+    if (!(await page.locator('.dlab-sidetabs').isVisible())) await page.locator('.dlab-fab--side').click()
+    await page.getByRole('tab', { name }).click()
+  }
+  const pourBar = async (page, bottle, to, mL) => {
+    await select(page, bottle)
+    await page.locator('[data-qa-in="to"]').selectOption(to)
+    await page.locator('[data-qa-in="ml"]').fill(String(mL))
+    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
+  }
+
+  await test('X01 Sandbox "Khám phá": bày dụng cụ Cu(OH)₂, học sinh tự rót, kết tủa từ mô hình', async page => {
+    await btn(page, 'Tự do').click()
+    await sideTab(page, 'Khám phá')
+    const card = page.locator('.dlab-disc li', { hasText: 'Cu(OH)2↓' })
+    await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
+    const r = await st(page, L => { const o = L.state.objects; return { v: o.find(x => x.contents?.ions?.['Cu2+'] > 0).id, b: o.find(x => x.type === 'bottle' && x.reagent === 'naoh').id, sel: L.selected() } })
+    assert.equal(r.sel, r.b, 'the NaOH bottle is selected, nothing was poured for the student')
+    assert.equal(await st(page, (L, id) => Object.keys(L.state.objects.find(o => o.id === id).contents.precipitates).length, r.v), 0, 'no precipitate before the student acts')
+    await pourBar(page, r.b, r.v, 6)
+    await wait(page, (L, id) => (L.state.objects.find(o => o.id === id).contents.precipitates['Cu(OH)2'] || 0) > 1e-5, r.v)
+    await sideTab(page, 'Quan sát')
+    await page.locator('.dlab-obs', { hasText: 'Cu(OH)' }).waitFor()
+  })
+
+  await test('X02 rót nhầm cốc rồi Hoàn tác: cốc nhầm trở lại như cũ, rót đúng thì có kết tủa', async page => {
+    await btn(page, 'Tự do').click()
+    const ids = await bench(page, { A: { type: 'beaker100', x: 280, fill: [['water', 20]] }, B: { type: 'beaker100', x: 400, fill: [['agno3', 20]] }, N: { type: 'bottle', x: 540, reagent: 'nacl' } })
+    await pourBar(page, ids.N, ids.A, 10)
+    await wait(page, (L, id) => (L.state.objects.find(o => o.id === id).contents.ions['Na+'] || 0) > 0, ids.A)
+    await page.locator('[data-tb="undo"]').click()
+    const a = await obj(page, ids.A)
+    assert.ok(!(a.contents.ions['Na+'] > 0) && Math.abs(a.contents.liquids.water - 20) < 1e-9, 'undo restores the wrong beaker')
+    await pourBar(page, ids.N, ids.B, 10)
+    await wait(page, (L, id) => (L.state.objects.find(o => o.id === id).contents.precipitates.AgCl || 0) > 1e-6, ids.B)
+  })
+
+  await test('X03 CuCl₂ + KI từ tủ hóa chất: CuI↓ và I₂, điện phân sau đó bị từ chối trung thực', async page => {
+    await btn(page, 'Tự do').click()
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['cucl2', 10]] }, E: { type: 'electrodes', x: 300, y: 12 }, P: { type: 'power', x: 470 } })
+    await libGroup(page, 'Tủ hóa chất', 'Dung dịch')
+    await page.locator('.dlab-lib-item', { hasText: 'Kali iotua' }).first().click()
+    const ki = await st(page, L => L.state.objects.find(o => o.type === 'bottle' && o.reagent === 'ki').id)
+    await pourBar(page, ki, ids.A, 20)
+    await wait(page, (L, id) => { const c = L.state.objects.find(o => o.id === id).contents; return c.precipitates.CuI > 1e-6 && c.ions.I2 > 1e-6 }, ids.A)
+    await wait(page, L => L.labels().join('|').includes('I₂')) // the label names the iodine (labels refresh on the next frame)
+    await st(page, (L, ids) => { L.dispatch({ type: 'wire', from: ids.P, to: ids.E }); L.dispatch({ type: 'power', id: ids.P, on: true, volts: 6 }, { confirmed: true }); return true }, ids)
+    await page.waitForTimeout(1500)
+    const p = await obj(page, ids.P)
+    assert.match(p.status, /Chưa hỗ trợ/)
+    assert.ok(!(await st(page, L => L.state.gas.Cl2 > 0)), 'no Cl₂ invented')
+  })
+
+  await test('X04 đổi bài giữa chừng: bài mới sạch, không mang trạng thái/tiến độ của bài cũ, không Hoàn tác về bài cũ', async page => {
+    await btn(page, 'Có hướng dẫn').click()
+    await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()
+    await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
+    const r = await st(page, L => { const o = L.state.objects; return { A: o.find(x => x.contents?.ions?.['Cu2+'] > 0).id, naoh: o.find(x => x.reagent === 'naoh').id } })
+    await pourBar(page, r.naoh, r.A, 4)
+    await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 2/5' }).waitFor()
+    await btn(page, 'Có hướng dẫn').click()
+    await page.locator('.dlab-choice', { hasText: 'Axit' }).first().click()
+    await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/' }).waitFor()
+    const g = await st(page, L => ({ guided: L.guided(), ppt: L.state.objects.some(o => Object.values(o.contents?.precipitates || {}).some(v => v > 0)), cu: L.state.objects.some(o => o.contents?.ions?.['Cu2+'] > 0) }))
+    assert.equal(g.guided.done, 0); assert.ok(!g.ppt && !g.cu, 'nothing of the old lesson on the bench')
+    assert.ok(await page.locator('[data-tb="undo"]').isDisabled(), 'undo cannot jump back into the old lesson')
+  })
+
+  await test('X05 rót quá nhiều: cốc tràn, phần dư chảy ra bàn, thể tích không vượt dung tích', async page => {
+    await btn(page, 'Tự do').click()
+    const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['water', 90]] }, N: { type: 'bottle', x: 460, reagent: 'nacl' } })
+    await pourBar(page, ids.N, ids.A, 30)
+    await page.waitForTimeout(800)
+    const v = await st(page, (L, id) => Object.values(L.state.objects.find(o => o.id === id).contents.liquids).reduce((a, b) => a + b, 0), ids.A)
+    assert.ok(v <= 100 + 1e-6, `volume ${v}`)
+    assert.ok(await st(page, L => L.state.log.some(e => /tràn/.test(e.text))), 'overflow reported')
+  })
+
 }

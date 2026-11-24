@@ -41,6 +41,9 @@ export const IONS = {
   'Cl-': { z: -1, label: 'Cl⁻' },
   'NO3-': { z: -1, label: 'NO₃⁻' },
   'I-': { z: -1, label: 'I⁻' },
+  // Iodine from redox (with I⁻ present it is I₃⁻; the total is tracked). colorPerM is a visual calibration:
+  // ~1 mM iodine already looks clearly yellow-brown, as in a real tube (I₃⁻ absorbs strongly).
+  I2: { z: 0, label: 'I₂ (I₃⁻)', color: [150, 75, 15], colorPerM: 700 },
   // Weak systems: the stored amount is the analytical total; speciation is solved from pH.
   SO4: { z: 0, label: 'SO₄²⁻/HSO₄⁻', weak: 'sulfate' },
   OAc: { z: 0, label: 'CH₃COOH/CH₃COO⁻', weak: 'acetate' },
@@ -75,15 +78,34 @@ export const PRECIPITATES = {
   BaCO3: { name: 'Bari cacbonat', formula: 'BaCO3', cation: 'Ba2+', anion: 'CO3', p: 1, q: 1, Ksp: 2.58e-9, color: [250, 250, 250], density: 4.29 },
   ZnCO3: { name: 'Kẽm cacbonat', formula: 'ZnCO3', cation: 'Zn2+', anion: 'CO3', p: 1, q: 1, Ksp: 1.46e-10, color: [248, 248, 245], density: 4.4 },
   Ag2CO3: { name: 'Bạc cacbonat', formula: 'Ag2CO3', cation: 'Ag+', anion: 'CO3', p: 2, q: 1, Ksp: 8.46e-12, color: [240, 232, 200], density: 6.08 },
+  // CuI forms only through the Cu²⁺ + I⁻ redox step (Cu⁺ is not a tracked ion), so it is never re-dissolved
+  // by the Ksp loop (redox: true). Ksp 1.27e-12 (CRC) makes the dissolved share negligible.
+  // Solid iodine above its solubility (see iodineSolubility in chemistry.js); not a Ksp salt.
+  I2s: { name: 'Iot (rắn)', formula: 'I2', cation: 'I2', anion: null, p: 1, q: 0, Ksp: null, redox: true, color: [70, 50, 80], density: 4.93 },
+  CuI: { name: 'Đồng(I) iotua', formula: 'CuI', cation: 'Cu+', anion: 'I-', p: 1, q: 1, Ksp: 1.27e-12, redox: true, color: [236, 226, 205], density: 5.62 },
   'Zn(OH)2': { name: 'Kẽm hiđroxit', formula: 'Zn(OH)2', cation: 'Zn2+', anion: 'OH', p: 1, q: 2, Ksp: 3e-17, color: [250, 250, 250], density: 3.05 }
 }
 
-// Pure liquids: density g/mL, heat capacity J/(g·K), aqueous = hosts dissolved ions.
+// Pure liquids at 25 °C: density g/mL, heat capacity J/(g·K), boiling point °C at 1 atm, latent heat J/g at bp.
+// aqueous = belongs to the water-miscible (polar) phase that hosts dissolved ions.
+// Water/ethanol: CRC + NIST WebBook (ethanol Tb 78.3 °C, ΔvapH 38.6 kJ/mol at Tb = 838 J/g; cp 112.4 J/(mol·K)).
+// Vegetable oil: typical 0.91–0.93 g/mL (model value 0.92, not a single measured oil).
 export const LIQUIDS = {
-  water: { name: 'Nước', formula: 'H2O', density: 0.997, cp: 4.18, aqueous: true, color: [215, 235, 250], miscibleWith: ['water', 'ethanol'] },
-  ethanol: { name: 'Etanol', formula: 'C2H5OH', density: 0.789, cp: 2.44, aqueous: true, color: [235, 240, 250], miscibleWith: ['water', 'ethanol'] },
+  water: { name: 'Nước', formula: 'H2O', density: 0.997, cp: 4.18, bp: 100, hvap: 2257, aqueous: true, color: [215, 235, 250], miscibleWith: ['water', 'ethanol'] },
+  ethanol: { name: 'Etanol', formula: 'C2H5OH', density: 0.785, cp: 2.44, bp: 78.3, hvap: 838, aqueous: true, color: [235, 240, 250], miscibleWith: ['water', 'ethanol'] },
   oil: { name: 'Dầu ăn', formula: null, density: 0.92, cp: 2.0, aqueous: false, color: [240, 200, 60], miscibleWith: ['oil'] }
 }
+
+// Water–ethanol mixtures (miscible). Mass % ethanol → density g/mL at 25 °C (Lange's Handbook 1967, via
+// Wikipedia "Ethanol (data page)"). Volume contraction on mixing is ignored for the level (volumes add).
+export const ETHANOL_WATER_DENSITY = [[0, 0.99708], [10, 0.98043], [20, 0.96639], [30, 0.95067], [40, 0.93148], [50, 0.90985], [60, 0.88699], [70, 0.86340], [80, 0.83911], [90, 0.81362], [100, 0.78506]]
+// Boiling at 1 atm: [mass % ethanol in liquid, bubble point °C, mass % ethanol in vapour] (CRC Handbook,
+// "Boiling points of aqueous solutions"; rows subsampled). 95.5 % is the azeotrope; above it the vapour is
+// taken equal to the liquid (shortcut: real vapour is marginally richer in water, negligible here).
+export const ETHANOL_WATER_BOILING = [[0, 100, 0], [1, 98, 19], [3, 96, 33], [5, 94, 44], [8, 92, 53], [10, 90, 61], [15, 88, 68], [20, 86, 72], [27, 84, 77], [41, 82, 79], [53, 81, 81], [67, 80, 83], [78, 79, 86], [85, 78.4, 89], [91, 78.2, 92], [95.5, 78.1, 95.5], [100, 78.3, 100]]
+// The aqueous pH scale (and the Ka/Ksp values above) is used only while ethanol is ≤ 10 % of the polar
+// phase by volume (indicator drops are dissolved in ethanol). Beyond that pH is not reported.
+export const PH_MAX_ETHANOL_FRACTION = 0.1
 
 // Solubility (g solute / 100 g water). KNO3 is temperature dependent (CRC table, linear interpolation).
 export const SOLUBILITY = {
@@ -107,10 +129,11 @@ export function solubilityAt(key, T) {
 export const INDICATORS = {
   // Litmus has a broad violet plateau around neutral, so it is charted rather than a single sigmoid.
   litmus: { name: 'Quỳ tím', validation: 'qualitative', range: 'đỏ < 5 · tím 5,5–7,5 · xanh > 8,3', neutral: [130, 70, 160], chart: [[4.5, [210, 50, 60]], [5.5, [130, 70, 160]], [7.5, [130, 70, 160]], [8.3, [50, 80, 200]]] },
-  phenolphthalein: { name: 'Phenolphtalein', pKin: 9.4, acid: [255, 255, 255, 0], base: [230, 40, 150], validation: 'quantitative-range', range: 'không màu < 8,2 · hồng 8,2–10' },
+  phenolphthalein: { name: 'Phenolphtalein', ethanolFraction: 0.5, pKin: 9.4, acid: [255, 255, 255, 0], base: [230, 40, 150], validation: 'quantitative-range', range: 'không màu < 8,2 · hồng 8,2–10' },
   methylOrange: { name: 'Metyl da cam', pKin: 3.46, acid: [220, 40, 40], base: [245, 190, 40], validation: 'quantitative-range', range: 'đỏ < 3,1 · vàng > 4,4' },
   universal: {
     name: 'Chất chỉ thị vạn năng',
+    ethanolFraction: 0.5,
     validation: 'qualitative',
     range: 'thang màu pH 1–14',
     chart: [[1, [200, 30, 40]], [3, [240, 110, 40]], [5, [245, 200, 50]], [7, [80, 170, 70]], [9, [40, 120, 200]], [11, [60, 60, 170]], [13, [110, 40, 140]]]

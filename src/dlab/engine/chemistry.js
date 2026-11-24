@@ -1,6 +1,7 @@
 // Quantitative aqueous chemistry: charge-balance pH, Ksp equilibria, mixing heat.
 // Ideal dilute solution at 25 °C for all equilibrium constants (activities = concentrations).
-import { IONS, WEAK, KW, PRECIPITATES, LIQUIDS, molarMass } from '../data/materials.js'
+import { ION_REDOX } from '../data/reactions.js'
+import { IONS, WEAK, KW, PRECIPITATES, LIQUIDS, INDICATORS, molarMass, ETHANOL_WATER_DENSITY, ETHANOL_WATER_BOILING, PH_MAX_ETHANOL_FRACTION } from '../data/materials.js'
 
 export const NUCLEATION_LOG = 1 // Q must exceed 10·Ksp before a first precipitate forms (educational approximation)
 export const NEUTRALIZATION_DH = -55840 // J/mol, H⁺ + OH⁻ → H₂O, from NBS ΔfH° (−285.83 − 0 + 229.99 kJ/mol)
@@ -15,6 +16,46 @@ export function aqueousLitres(contents) {
     if (LIQUIDS[key]?.aqueous) mL += value
   }
   return mL / 1000
+}
+
+function interp(table, x, col = 1) {
+  if (x <= table[0][0]) return table[0][col]
+  for (let i = 1; i < table.length; i += 1) {
+    const a = table[i - 1]
+    const b = table[i]
+    if (x <= b[0]) return a[col] + (b[col] - a[col]) * (x - a[0]) / (b[0] - a[0])
+  }
+  return table[table.length - 1][col]
+}
+
+// The water-miscible (polar) phase: water + ethanol. Mass % ethanol, measured mixture density,
+// and whether the aqueous pH scale applies (ethanol ≤ PH_MAX_ETHANOL_FRACTION by volume).
+export function polarPhase(contents) {
+  const w = contents.liquids.water || 0
+  const e = contents.liquids.ethanol || 0
+  const mW = w * LIQUIDS.water.density
+  const mE = e * LIQUIDS.ethanol.density
+  const wt = mW + mE > 0 ? 100 * mE / (mW + mE) : 0
+  return {
+    mL: w + e,
+    ethanolWt: wt,
+    ethanolVol: w + e > 0 ? e / (w + e) : 0,
+    density: w + e > 0 ? interp(ETHANOL_WATER_DENSITY, wt) : 0,
+    pHApplies: w > 0.001 && e / (w + e) <= PH_MAX_ETHANOL_FRACTION
+  }
+}
+
+// Bubble point (°C, 1 atm) and vapour mass fraction of ethanol for the polar phase (CRC table).
+export function boilingOf(contents) {
+  const { ethanolWt } = polarPhase(contents)
+  return { T: interp(ETHANOL_WATER_BOILING, ethanolWt), vapourWt: interp(ETHANOL_WATER_BOILING, ethanolWt, 2) }
+}
+
+// True when the oil layer is denser than the polar phase it sits in (e.g. oil in ethanol sinks).
+export function oilBelow(contents) {
+  const oil = contents.liquids.oil || 0
+  const p = polarPhase(contents)
+  return oil > 0 && p.mL > 0 && LIQUIDS.oil.density > p.density
 }
 
 export function totalVolumeML(contents) {
@@ -98,7 +139,7 @@ export function ionicStrength(ions, litres, h) {
 
 export function pHOf(contents) {
   const V = aqueousLitres(contents)
-  if (V < 1e-6) return null
+  if (V < 1e-6 || !polarPhase(contents).pHApplies) return null
   return -Math.log10(solveH(contents.ions, V))
 }
 
@@ -142,6 +183,7 @@ function shift(contents, ppt, key, xi) {
 function candidatePrecipitates(contents) {
   const out = []
   for (const [key, ppt] of Object.entries(PRECIPITATES)) {
+    if (ppt.redox) continue // formed by ionRedox, not by a reversible Ksp step
     const hasSolid = (contents.precipitates[key] || 0) > 0
     const hasCation = (contents.ions[ppt.cation] || 0) > 0
     const hasAnion = ppt.anion === 'OH' || (contents.ions[ppt.anion] || 0) > 0
@@ -152,10 +194,66 @@ function candidatePrecipitates(contents) {
 
 // Brings every sparingly soluble salt to Q = Ksp (precipitating or redissolving).
 // Returns {key: Δmol} of newly formed precipitate so renderers can spawn particles.
-export function equilibrate(contents) {
+// Fast solution redox (ION_REDOX) to completion, limited by the scarcer reactant. Returns {ruleId: ξ}.
+export function ionRedox(contents, formed = {}) {
+  const ran = {}
   const V = aqueousLitres(contents)
+  if (V < 1e-6) return ran
+  const pH = -Math.log10(solveH(contents.ions, V))
+  for (const r of ION_REDOX) {
+    // Acidic/neutral solution only: in base the cation is a hydroxide (Fe(OH)₃, Cu(OH)₂) and the couple's
+    // potential drops far below I₂/I⁻, so no iodine forms. Below pH 7 only the dissolved cation reacts; a
+    // hydroxide redissolves through the Ksp step and is converted on later steps.
+    if (pH > r.maxPH) continue
+    let xi = Infinity
+    for (const [ion, n] of Object.entries(r.reactants)) xi = Math.min(xi, (contents.ions[ion] || 0) / n)
+    if (!(xi > 1e-12)) continue
+    for (const [ion, n] of Object.entries(r.reactants)) contents.ions[ion] = Math.max(0, contents.ions[ion] - n * xi)
+    for (const [ion, n] of Object.entries(r.products || {})) contents.ions[ion] = (contents.ions[ion] || 0) + n * xi
+    for (const [key, n] of Object.entries(r.precipitate || {})) {
+      contents.precipitates[key] = (contents.precipitates[key] || 0) + n * xi
+      formed[key] = (formed[key] || 0) + n * xi
+    }
+    ran[r.id] = xi
+  }
+  iodineSolubility(contents, V)
+  return ran
+}
+
+// I₂ dissolves in water only to 1.33 mM (0.34 g/L, 25 °C, CRC) but much more as I₃⁻ while I⁻ is present
+// (I₂ + I⁻ ⇌ I₃⁻, K ≈ 700). shortcut: capacity = 1.33 mM·V + n(I⁻); the excess is solid iodine (I2s), which
+// redissolves when capacity returns. Upgrade with the I₃⁻ equilibrium if a lesson needs exact colours.
+export const I2_SOLUBILITY = 1.33e-3
+function iodineSolubility(contents, V) {
+  const dissolved = contents.ions.I2 || 0
+  const solid = contents.precipitates.I2s || 0
+  if (!(dissolved + solid > 0)) return
+  const cap = I2_SOLUBILITY * V + (contents.ions['I-'] || 0)
+  const want = Math.min(dissolved + solid, cap)
+  contents.ions.I2 = want
+  const s = dissolved + solid - want
+  if (s > 1e-12) contents.precipitates.I2s = s
+  else delete contents.precipitates.I2s
+  if (!(want > 0)) delete contents.ions.I2
+}
+
+// Order matters: sparingly soluble salts first (AgI takes I⁻ before Cu²⁺ can; hydroxides form in base),
+// then the fast redox on what is left, then the salts again for the redox products.
+export function equilibrate(contents) {
   const formed = {}
-  if (V < 1e-6) return formed
+  if (aqueousLitres(contents) < 1e-6) return formed
+  kspEquilibrium(contents, formed)
+  const ran = ionRedox(contents, formed)
+  if (Object.keys(ran).length) {
+    Object.defineProperty(formed, 'redox', { value: ran }) // non-enumerable: callers iterate precipitates only
+    kspEquilibrium(contents, formed)
+  }
+  for (const key of Object.keys(formed)) if (formed[key] < 1e-12) delete formed[key]
+  return formed
+}
+
+function kspEquilibrium(contents, formed) {
+  const V = aqueousLitres(contents)
   const keys = candidatePrecipitates(contents)
   if (!keys.length) return formed
   for (let round = 0; round < 6; round += 1) {
@@ -195,7 +293,6 @@ export function equilibrate(contents) {
     }
     if (moved < 1e-14) break
   }
-  for (const key of Object.keys(formed)) if (formed[key] < 1e-12) delete formed[key]
   return formed
 }
 
@@ -254,7 +351,8 @@ export function withdraw(contents, mL, settledFraction = 0) {
   const nonAq = layers.filter(k => !LIQUIDS[k].aqueous).sort((a, b) => LIQUIDS[a].density - LIQUIDS[b].density)
   const aq = layers.filter(k => LIQUIDS[k].aqueous)
   const aqVolume = aq.reduce((s, k) => s + contents.liquids[k], 0)
-  const order = [...nonAq.filter(k => LIQUIDS[k].density < 1), 'AQ', ...nonAq.filter(k => LIQUIDS[k].density >= 1)]
+  const rho = polarPhase(contents).density
+  const order = [...nonAq.filter(k => LIQUIDS[k].density < rho), 'AQ', ...nonAq.filter(k => LIQUIDS[k].density >= rho)]
   for (const layer of order) {
     if (remaining <= 0) break
     if (layer === 'AQ') {
@@ -294,8 +392,11 @@ export function reagentParcel(reagent, mL) {
   }
   else if (reagent.kind === 'liquid') parcel.liquids[reagent.liquid] = mL
   else if (reagent.kind === 'indicator') {
-    // Indicators are dosed in drops; 1 unit = one 0.05 mL drop. Solvent volume is tracked as water/ethanol.
-    parcel.liquids[reagent.id === 'litmus' ? 'water' : 'ethanol'] = mL
+    // Indicators are dosed in drops; 1 unit = one 0.05 mL drop. The solvent is tracked: phenolphthalein and
+    // universal indicator are made up in 50 % ethanol, litmus and methyl orange in water (school preparations).
+    const eth = INDICATORS[reagent.indicator]?.ethanolFraction || 0
+    if (eth < 1) parcel.liquids.water = mL * (1 - eth)
+    if (eth > 0) parcel.liquids.ethanol = mL * eth
     parcel.indicators[reagent.indicator] = mL / 0.05
   }
   return parcel
@@ -323,7 +424,7 @@ export function elementInventory(contents, extra = {}) {
     }
     for (const [s, c] of Object.entries(atoms)) inv[s] = (inv[s] || 0) + c * n
   }
-  const ionFormula = { 'Na+': 'Na', 'K+': 'K', 'Ag+': 'Ag', 'Ba2+': 'Ba', 'Ca2+': 'Ca', 'Mg2+': 'Mg', 'Zn2+': 'Zn', 'Cu2+': 'Cu', 'Fe2+': 'Fe', 'Fe3+': 'Fe', 'Cl-': 'Cl', 'NO3-': 'NO3', 'I-': 'I', SO4: 'SO4', OAc: 'C2O2', NH3: 'N', CO3: 'CO3' }
+  const ionFormula = { I2: 'I2', 'Cu+': 'Cu', 'Na+': 'Na', 'K+': 'K', 'Ag+': 'Ag', 'Ba2+': 'Ba', 'Ca2+': 'Ca', 'Mg2+': 'Mg', 'Zn2+': 'Zn', 'Cu2+': 'Cu', 'Fe2+': 'Fe', 'Fe3+': 'Fe', 'Cl-': 'Cl', 'NO3-': 'NO3', 'I-': 'I', SO4: 'SO4', OAc: 'C2O2', NH3: 'N', CO3: 'CO3' }
   for (const [ion, n] of Object.entries(contents.ions)) add(ionFormula[ion], n)
   for (const [key, n] of Object.entries(contents.precipitates)) {
     // Hydroxide O/H come from water, so only the metal and non-OH anion are tracked.

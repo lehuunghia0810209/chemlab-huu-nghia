@@ -10,6 +10,7 @@ import { LIB_SHELVES, shelfOf, TOOLS, libraryItems, searchLibrary } from './libr
 import { observe } from './observations.js'
 import { objectTitle, solidName } from './labels.js'
 import { GUIDED } from '../guided.js'
+import { DISCOVER } from '../data/manifest.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
 import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
 import { assess } from '../engine/safety.js'
@@ -941,9 +942,11 @@ export function initDynamicLab(host) {
       if (vol < 0.05) return '<span class="dlab-bar-note">Rót chất lỏng vào từ chai hóa chất.</span>'
       if (!targets.length) return '<span class="dlab-bar-note">Lấy thêm một cốc để rót sang.</span>'
       const reagent = o.stock && REAGENT_BY_ID[o.reagent]
-      if (reagent?.kind === 'indicator') return `<span class="dlab-bar-label">Nhỏ 3 giọt vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drops">Nhỏ vào cốc</button>`
-      const amount = o.stock ? 50 : Math.max(1, Math.round(Math.min(vol, 20)))
-      let h = `<span class="dlab-bar-label">Rót</span><input type="number" class="dlab-in" data-qa-in="ml" min="0.5" step="5" value="${amount}" aria-label="Thể tích rót (mL)"><span class="dlab-bar-label">mL vào</span>${sel('to', targets, 'Rót vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="pour">Rót vào cốc</button>`
+      if (reagent?.kind === 'indicator') return `<span class="dlab-bar-label">Nhỏ 3 giọt vào</span>${sel('to', targets, 'Nhỏ vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="drops">Nhỏ</button>`
+      // Default: at most half the free room of the first target (a 20 mL tube is not offered 50 mL).
+      const room = Math.max(1, EQUIPMENT[targets[0].type].capacityML - volumeOf(targets[0]))
+      const amount = Math.max(1, Math.round(Math.min(o.stock ? 50 : vol, o.stock ? 50 : 20, room / 2)))
+      let h = `<span class="dlab-bar-label">Rót</span><input type="number" class="dlab-in" data-qa-in="ml" min="0.5" step="5" value="${amount}" aria-label="Thể tích rót (mL)"><span class="dlab-bar-label">mL vào</span>${sel('to', targets, 'Rót vào')}<button type="button" class="dlab-btn dlab-btn--accent" data-qa="pour">Rót</button>`
       if (!o.stock) h += `<label class="dlab-tilt"><span>Nghiêng tay</span><input type="range" min="0" max="110" step="5" value="${Math.round(Math.abs(o.angle) * 180 / Math.PI)}" data-qa-in="tilt" aria-label="Nghiêng cốc để rót trực tiếp (độ)"></label><button type="button" class="dlab-btn" data-qa="stir">Khuấy</button>`
       return h
     }
@@ -1225,6 +1228,8 @@ export function initDynamicLab(host) {
     host.querySelectorAll('[data-side-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.sideTab === tab)))
     $('.dlab-obs-pane').hidden = tab !== 'obs'
     $('.dlab-detail-pane').hidden = tab !== 'detail'
+    $('.dlab-discover-pane').hidden = tab !== 'discover'
+    if (tab === 'discover') paintDiscover()
     ui.forcePanel = true
   }
   function toggleDrawer(which, force) {
@@ -1279,6 +1284,48 @@ export function initDynamicLab(host) {
     setModeButtons()
     toast('Thực hành tự do: lấy hóa chất và dụng cụ từ Thư viện.')
   }
+  // ── Sandbox discovery: modelled phenomena to try (from the reaction manifest). Laying out a card only puts
+  // the vessel, the reagent bottle and the tool on the bench; the student performs the action.
+  function paintDiscover() {
+    const pane = $('.dlab-discover-pane')
+    if (pane.dataset.done) return
+    pane.dataset.done = '1'
+    const groups = [...new Set(DISCOVER.map(e => e.group))]
+    pane.innerHTML = `<p class="dlab-hint">Các hiện tượng dưới đây được mô phỏng từ mô hình hóa học (không phải hoạt cảnh). Bấm “Bày dụng cụ”, rồi tự làm thí nghiệm. Tổ hợp khác vẫn thử được: mô phỏng sẽ nói rõ khi không phản ứng hoặc chưa hỗ trợ.</p>` +
+      groups.map(g => `<h3 class="dlab-disc-group">${esc(g)}</h3><ul class="dlab-disc">${DISCOVER.filter(e => e.group === g).map(e => `<li><b>${esc(e.title)}</b><span>${esc(e.inputs)}</span><button type="button" class="dlab-btn dlab-btn--sm" data-discover="${esc(e.id)}">Bày dụng cụ</button></li>`).join('')}</ul>`).join('')
+  }
+  $('.dlab-discover-pane').addEventListener('click', e => {
+    const b = e.target.closest('[data-discover]')
+    const entry = b && DISCOVER.find(x => x.id === b.dataset.discover)
+    if (entry) layOut(entry)
+  })
+  function layOut(entry) {
+    const d = entry.demo
+    const x = freeX()
+    const v = sim.dispatch({ type: 'add', equipmentType: d.vessel, x, y: 0 })
+    if (!v.ok) return
+    for (const [reagent, mL] of d.fill) sim.dispatch({ type: 'addReagentTo', id: v.id, reagent, mL }, { confirmed: true })
+    let next
+    let task
+    const vName = objLabel(byId(sim.state, v.id))
+    if (d.pour) {
+      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: x + 75, y: 0, reagent: d.pour[0] })
+      next = r.id
+      task = `Rót khoảng ${d.pour[1]} mL ${REAGENT_BY_ID[d.pour[0]].name} vào ${vName}.`
+    }
+    else if (d.solid) {
+      const reagent = REAGENT_BY_ID[d.solid[0]]
+      const r = sim.dispatch({ type: 'add', equipmentType: reagent.tool, x: x + 60, y: 0 })
+      next = r.id
+      task = `Dùng ${EQUIPMENT[reagent.tool].name.toLowerCase()} lấy ${reagent.name} (khoảng ${String(d.solid[1]).replace('.', ',')} g) rồi thả vào ${vName}.`
+    }
+    ui.userView = false
+    fitView()
+    if (next) select(next)
+    toast(`${entry.title} — đã bày dụng cụ. Việc của bạn: ${task}`)
+    announce(`Đã bày dụng cụ cho thí nghiệm ${entry.title}. ${task}`)
+  }
+
   function seedSandbox() {
     const s = createSim(Date.now() >>> 0)
     const add = (equipmentType, x, extra = {}) => s.dispatch({ type: 'add', equipmentType, x, y: extra.y ?? 0, ...extra }, { record: false })
@@ -1293,6 +1340,9 @@ export function initDynamicLab(host) {
   function setModeButtons() {
     $('[data-hd="sandbox"]').setAttribute('aria-pressed', String(ui.mode === 'sandbox'))
     $('[data-hd="guided"]').setAttribute('aria-pressed', String(ui.mode === 'guided'))
+    // "Khám phá" belongs to free practice; a guided lesson keeps its own steps.
+    $('[data-side-tab="discover"]').hidden = ui.mode !== 'sandbox'
+    if (ui.mode !== 'sandbox' && ui.sideTab === 'discover') setSideTab('obs')
   }
 
   // ── Guided Lab ─────────────────────────────────────────────────────
@@ -1746,6 +1796,7 @@ function template() {
           <div class="dlab-sidetabs" role="tablist" aria-label="Bảng bên phải">
             <button type="button" role="tab" class="dlab-tab" data-side-tab="obs" aria-selected="true">Quan sát</button>
             <button type="button" role="tab" class="dlab-tab" data-side-tab="detail" aria-selected="false">Chi tiết vật</button>
+            <button type="button" role="tab" class="dlab-tab" data-side-tab="discover" aria-selected="false">Khám phá</button>
           </div>
           <button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="side" aria-label="Thu gọn bảng quan sát">${icon('close')}</button>
         </div>
@@ -1754,6 +1805,7 @@ function template() {
           <div class="dlab-obs"></div>
         </div>
         <div class="dlab-detail-pane" hidden><div class="dlab-inspector"></div></div>
+        <div class="dlab-discover-pane" hidden></div>
       </aside>
       <footer class="dlab-dock" aria-label="Điều khiển mô phỏng">
         <button type="button" class="dlab-btn" data-tb="play" aria-pressed="false">${icon('pause')}<span>Tạm dừng</span></button>

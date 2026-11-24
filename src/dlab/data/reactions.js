@@ -9,7 +9,7 @@ export const KINETIC = [
   { id: 'fe-cu', solid: 'fe', driver: 'Cu2+', k: 2e-5, consumes: { 'Cu2+': 1 }, gives: { 'Fe2+': 1 }, deposit: { Cu: 1 }, dH: -153870, equation: 'Fe + Cu²⁺ → Fe²⁺ + Cu', observe: 'Lớp đồng màu đỏ bám lên đinh sắt, màu xanh của dung dịch nhạt dần.' },
   { id: 'zn-cu', solid: 'zn', driver: 'Cu2+', k: 3e-5, consumes: { 'Cu2+': 1 }, gives: { 'Zn2+': 1 }, deposit: { Cu: 1 }, dH: -218660, equation: 'Zn + Cu²⁺ → Zn²⁺ + Cu', observe: 'Kẽm phủ lớp đồng đỏ, dung dịch nhạt màu xanh.' },
   { id: 'cu-ag', solid: 'cu', driver: 'Ag+', k: 2e-5, consumes: { 'Ag+': 2 }, gives: { 'Cu2+': 1 }, deposit: { Ag: 2 }, dH: -146390, equation: 'Cu + 2Ag⁺ → Cu²⁺ + 2Ag', observe: 'Dây đồng phủ lớp bạc xám, dung dịch dần có màu xanh.' },
-  { id: 'na-water', solid: 'na', driver: 'water', k: 4e-4, gives: { 'Na+': 1 }, gas: { H2: 0.5 }, dH: -184280, moves: true, equation: '2Na + 2H₂O → 2NaOH + H₂↑', observe: 'Mẩu natri nổi, chạy trên mặt nước, tan dần, có khí thoát ra; dung dịch thành bazơ.' },
+  { id: 'na-water', solid: 'na', driver: 'water', water: 1, k: 4e-4, gives: { 'Na+': 1 }, gas: { H2: 0.5 }, dH: -184280, moves: true, equation: '2Na + 2H₂O → 2NaOH + H₂↑', observe: 'Mẩu natri nổi, chạy trên mặt nước, tan dần, có khí thoát ra; dung dịch thành bazơ.' },
   { id: 'caco3-acid', solid: 'caco3', driver: 'h', k: 1.5e-5, gives: { 'Ca2+': 1 }, gas: { CO2: 1 }, dH: -15250, equation: 'CaCO₃ + 2H⁺ → Ca²⁺ + CO₂↑ + H₂O', observe: 'Đá vôi sủi bọt khí không màu, tan dần.' }
 ]
 
@@ -32,18 +32,57 @@ export const ION_NAME = { 'K+': 'K⁺', 'Ba2+': 'Ba²⁺', 'Ca2+': 'Ca²⁺', 'N
 // Solution-phase processes outside the model, detected from the dissolved species alone.
 // minPH/maxPH: only in that pH range. Reported as "Chưa hỗ trợ mô phỏng", never given a guessed product.
 export const ION_HINTS = [
-  { all: ['Fe3+', 'I-'], reason: 'Fe³⁺ oxi hóa I⁻ thành I₂ — chưa được mô hình hóa.' },
-  { all: ['Cu2+', 'I-'], reason: 'Cu²⁺ + I⁻ (tạo CuI↓ và I₂) — chưa được mô hình hóa.' },
-  { all: ['Ag+'], minPH: 12, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
+  // Ag₂O forms when free [Ag⁺]·[OH⁻] exceeds K = 2,0·10⁻⁸ (½Ag₂O + ½H₂O ⇌ Ag⁺ + OH⁻, CRC) — e.g. pH ≈ 7,6
+  // in 0,05 M Ag⁺, but not over Ag₂CO₃ in carbonate (free Ag⁺ is tiny there).
+  { all: ['Ag+'], kspOH: 2.0e-8, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
+  { all: ['Ag+', 'NH3'], reason: 'Ag⁺/AgCl với NH₃ tạo phức [Ag(NH₃)₂]⁺ tan — chưa được mô hình hóa.' },
+  { all: ['Zn2+', 'NH3'], minPH: 9, reason: 'Zn²⁺ với NH₃ dư tạo phức [Zn(NH₃)₄]²⁺ — chưa được mô hình hóa.' },
+  { all: ['NO3-', 'I-'], maxPH: 3, reason: 'HNO₃ oxi hóa I⁻ thành I₂ (và tạo NO) — chưa được mô hình hóa.' },
+  { all: ['NO3-', 'Fe2+'], maxPH: 3, reason: 'HNO₃ oxi hóa Fe²⁺ thành Fe³⁺ (và tạo NO) — chưa được mô hình hóa.' },
+  { all: ['Ag+', 'Fe2+'], reason: 'Ag⁺ + Fe²⁺ → Ag↓ + Fe³⁺ (E° 0,80 > 0,77 V) — chưa được mô hình hóa.' },
+  { all: ['Cu2+', 'CO3'], minPH: 5.5, reason: 'Cu²⁺ với cacbonat thực tế tạo đồng cacbonat bazơ Cu₂(OH)₂CO₃ màu xanh lục; mô phỏng chỉ có Cu(OH)₂ — chưa mô hình hóa chính xác.' },
+  { all: ['I2'], minPH: 9, reason: 'I₂ trong kiềm chuyển thành I⁻/IO⁻ (mất màu) — chưa được mô hình hóa.' },
+  { all: ['Fe3+', 'I-'], minPH: 7.01, reason: 'Fe³⁺ + I⁻ trong môi trường kiềm: Fe(OH)₃ tạo trước, không sinh I₂ — mô hình không tính phản ứng oxi hóa – khử này.' },
   { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
   { all: ['Cu2+', 'NH3'], minPH: 9, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
 ]
 
+// Fast ionic redox in solution, run to completion (K ≫ 1). E° (CRC, 25 °C): Cu²⁺/CuI 0,86 V, Fe³⁺/Fe²⁺ 0,771 V,
+// I₂/I⁻ 0,5355 V → log K = nΔE°/0,05916 ≈ 11 (Cu) and 7,9 (Fe). shortcut: complete conversion; at < 1 mM
+// the Fe³⁺/I⁻ equilibrium would leave a few % unreacted — upgrade with an equilibrium solve if needed.
+export const ION_REDOX = [
+  { id: 'cu-i', maxPH: 7, reactants: { 'Cu2+': 2, 'I-': 4 }, products: { I2: 1 }, precipitate: { CuI: 2 }, equation: '2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂', observe: 'xuất hiện kết tủa CuI màu trắng ngà, dung dịch chuyển vàng nâu do I₂ (I₃⁻).' },
+  { id: 'fe-i', maxPH: 7, reactants: { 'Fe3+': 2, 'I-': 2 }, products: { 'Fe2+': 2, I2: 1 }, equation: '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂', observe: 'dung dịch chuyển vàng nâu do I₂ (I₃⁻) sinh ra.' }
+]
+
 // Electrochemistry. E° in volts (25 °C, CRC). Faraday quantities are exact; cell resistance is illustrative.
 export const ELECTRO = {
-  electrolysisCuCl2: { decomposition: 1.02, overpotential: 0.4, resistance: 4, equation: 'CuCl₂ → Cu (catot) + Cl₂↑ (anot)' },
-  daniell: { E0: 1.10, n: 2, equation: 'Zn + Cu²⁺ → Zn²⁺ + Cu, E° = 1,10 V' }
+  // The CuCl₂ model is valid only when Cu²⁺ is the first species reduced and Cl⁻ the first oxidised.
+  // A species that would discharge first (E°, CRC) makes the cell "chưa hỗ trợ" instead of giving Cu + Cl₂.
+  electrolysisCuCl2: {
+    // minCl: below ~0,1 M chloride O₂ evolution competes at the anode (model boundary, SGK uses 0,5–1 M CuCl₂).
+    decomposition: 1.02, overpotential: 0.4, resistance: 4, minCl: 0.1, equation: 'CuCl₂ → Cu (catot) + Cl₂↑ (anot)',
+    interferes: [
+      { ion: 'I-', why: 'I⁻ bị oxi hóa ở anot trước Cl⁻ (E° I₂/I⁻ 0,54 V < Cl₂/Cl⁻ 1,36 V) → tạo I₂, không phải Cl₂' },
+      { ion: 'I2', why: 'I₂ trong dung dịch bị khử ở catot trước Cu²⁺ (E° 0,54 V > 0,34 V)' },
+      { ion: 'Ag+', why: 'Ag⁺ bị khử ở catot trước Cu²⁺ (E° 0,80 V > 0,34 V) → bạc bám catot' },
+      { ion: 'Fe3+', why: 'Fe³⁺ bị khử ở catot trước Cu²⁺ (E° Fe³⁺/Fe²⁺ 0,77 V > 0,34 V)' },
+      { ion: 'Fe2+', why: 'Fe²⁺ bị oxi hóa ở anot trước Cl⁻ (E° Fe³⁺/Fe²⁺ 0,77 V < 1,36 V)' },
+      { ion: 'NO3-', maxPH: 3, why: 'HNO₃ hòa tan đồng bám ở catot và bị khử tạo NO' },
+      { ion: 'NH3', why: 'NH₃ tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' }
+    ]
+  },
+  // E°(T) = E°(298) + ΔS°/(nF)·(T − 298,15); ΔS° from NBS S° (J/(mol·K)): Zn²⁺ −112,1, Cu 33,150, Zn 41,63,
+  // Cu²⁺ −99,6 → ΔS° = −20,98 J/(mol·K), dE°/dT = −0,109 mV/K (ΔCp neglected; valid 0–100 °C, liquid water).
+  // Measured cells read a larger slope (≈ −0,3 to −0,4 mV/K) because of the liquid-junction potential, not modelled.
+  daniell: { E0: 1.10, n: 2, dS: -20.98, equation: 'Zn + Cu²⁺ → Zn²⁺ + Cu, E° = 1,10 V' }
 }
+
+// Solid + liquid (not ion) reactions that happen but are not modelled. Checked only when water is absent,
+// because with water present the water reaction (modelled) dominates the observation.
+export const SOLVENT_HINTS = [
+  { solid: 'na', liquid: 'ethanol', reason: 'Na + etanol (2C₂H₅OH + 2Na → 2C₂H₅ONa + H₂↑, chậm hơn với nước) chưa được mô hình hóa định lượng.' }
+]
 
 // Solution-phase processes outside the model: reported as "chưa có mô hình" instead of being guessed.
 export const UNSUPPORTED_HINTS = [
@@ -52,6 +91,6 @@ export const UNSUPPORTED_HINTS = [
   { all: ['Fe3+', 'fe'], reason: 'Fe + Fe³⁺ chưa được mô hình hóa.' },
   { all: ['Fe3+', 'zn'], reason: 'Zn + Fe³⁺ (khử Fe³⁺) chưa được mô hình hóa.' },
   { all: ['Fe3+', 'mg'], reason: 'Mg + Fe³⁺ (khử Fe³⁺) chưa được mô hình hóa.' },
-  { all: ['zn'], minPH: 12.5, reason: 'Zn tan trong kiềm mạnh (Zn + 2OH⁻ + 2H₂O → [Zn(OH)₄]²⁻ + H₂↑) chưa được mô hình hóa.' },
-  { all: ['I-', 'Fe3+'], reason: 'Phản ứng oxi hóa I⁻ bởi Fe³⁺ chưa được mô hình hóa.' }
+  { all: ['SO4', 'caco3'], maxPH: 3, reason: 'CaCO₃ + H₂SO₄: lớp CaSO₄ ít tan bao phủ đá vôi làm phản ứng chậm dần rồi dừng — chưa được mô hình hóa.' },
+  { all: ['zn'], minPH: 12.5, reason: 'Zn tan trong kiềm mạnh (Zn + 2OH⁻ + 2H₂O → [Zn(OH)₄]²⁻ + H₂↑) chưa được mô hình hóa.' }
 ]

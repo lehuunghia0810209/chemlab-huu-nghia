@@ -1,0 +1,13 @@
+IMPORTANT: READ-ONLY. Do not run any terminal/shell command and do not create, modify or delete files. Use only built-in file viewing and code search tools. Web reading is allowed for checking published data.
+Repository D:\EduLab\ChemLab, folder src/dlab (a virtual school chemistry lab; engine in src/dlab/engine, data in src/dlab/data).
+The lead developer just changed (uncommitted; see `git diff` content by reading the files):
+1. Solvent model — src/dlab/data/materials.js (LIQUIDS bp/hvap, ETHANOL_WATER_DENSITY from Lange 1967 at 25 °C, ETHANOL_WATER_BOILING from the CRC "boiling points of aqueous solutions" table, PH_MAX_ETHANOL_FRACTION = 0.1), src/dlab/engine/chemistry.js (polarPhase, boilingOf, oilBelow, pHOf, withdraw layer order), src/dlab/engine/processes.js (refreshDerived pH, liquidDensity, the boiling block in stepContainer, solventNotes, SOLVENT_HINTS for Na + ethanol).
+2. Iodide redox — reactions.js ION_REDOX (2Cu2+ + 4I- -> 2CuI + I2; 2Fe3+ + 2I- -> 2Fe2+ + I2, run to completion), chemistry.js ionRedox() called at the start of equilibrate(), CuI in PRECIPITATES with redox:true, I2 in IONS.
+3. Electrolysis — ELECTRO.electrolysisCuCl2.interferes and the gate at the top of stepElectro in processes.js.
+4. Daniell cell — ELECTRO.daniell.dS (NBS entropies) and E = E°(T) − (RT ln10/2F)·log Q at the mean cell temperature.
+Tasks (adversarial scientific review, school chemistry level but numerically honest):
+A. Verify every number and source claim above against published data (CRC, NIST WebBook, NBS tables, Lange). Quote the values you find and say where they differ.
+B. Find scenarios where the new code gives a scientifically wrong or misleading result a student would see (e.g. pH shown where it should not be, or hidden where it should be; wrong layer order; wrong boiling behaviour; redox applied where it should not; CuI/I2 colours; electrolysis refused or allowed wrongly; Daniell sign/slope errors). Give file:line, a concrete input sequence, expected vs actual, severity P0–P3.
+C. Check conservation: atoms (Cu, I, Fe), charge, and that nothing is double-counted (I2 tracked in contents.ions; CuI in precipitates).
+D. List any other reaction the lab offers (see REAGENTS in materials.js and KINETIC/NO_REACTION/hints in reactions.js) that you believe is still modelled wrongly, with evidence.
+Do not invent data: when unsure, say "unverified". Under 1500 words, Markdown, English.

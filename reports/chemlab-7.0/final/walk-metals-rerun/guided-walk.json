@@ -1,0 +1,50 @@
+{
+  "base": "http://localhost:5173/",
+  "labs": [
+    {
+      "id": "metals",
+      "steps": [
+        {
+          "n": 1,
+          "how": "kẹp: Lấy đinh (gợi ý đúng) → Thả",
+          "ok": true
+        },
+        {
+          "n": 2,
+          "how": "chờ lớp Cu+tua",
+          "ok": true
+        },
+        {
+          "n": "2b",
+          "how": "kẹp: bấm đinh → Đặt lên bàn",
+          "ok": true
+        },
+        {
+          "n": 3,
+          "how": "kẹp: Lấy kẽm (gợi ý đúng) → Thả+tua",
+          "ok": true
+        },
+        {
+          "n": 4,
+          "how": "kẹp: Lấy natri → xác nhận → Thả",
+          "ok": true
+        },
+        {
+          "n": 5,
+          "how": "chờ natri tan+tua",
+          "ok": true
+        }
+      ],
+      "switched3d": {
+        "sameObjects": true,
+        "labels": 5
+      },
+      "done": "5/5",
+      "complete": true,
+      "realSeconds": 14.7,
+      "simSeconds": 64.6
+    }
+  ],
+  "console": [],
+  "aiRequests": 0
+}

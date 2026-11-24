@@ -7,6 +7,7 @@ import { createSceneHost } from '../../three/sceneHost.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume } from '../data/equipment.js'
 import { PRECIPITATES, REAGENT_BY_ID, GASES } from '../data/materials.js'
+import { oilBelow } from '../engine/chemistry.js'
 import { isContainer, volumeOf, solidRadiusMM, coatCoverage, byId, GW, GH, cellColor, fieldMean } from '../engine/processes.js'
 
 const S = 0.01 // 1 mm = 0.01 scene units
@@ -40,23 +41,32 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   // ── Bench: epoxy top with a rounded front edge, and a soft back wall ─────────
   const shared = new Set()
   const mat = (m) => { m.userData.shared = true; shared.add(m); return m }
-  const benchMat = mat(new THREE.MeshStandardMaterial({ color: 0x2d3644, roughness: 0.55, metalness: 0.05 }))
+  const benchTex = speckleTexture()
+  const benchMat = mat(new THREE.MeshStandardMaterial({ color: 0x46536a, map: benchTex, roughness: 0.52, metalness: 0.05 })) // slate epoxy resin top (dark enough for glass, light enough for shadows)
   const bench = new THREE.Mesh(new THREE.BoxGeometry(30, 0.12, 3.2), benchMat)
   bench.position.set(5, -0.06, 0.2)
   const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 30, 16), benchMat)
   edge.rotation.z = Math.PI / 2
   edge.position.set(5, -0.06, 1.8)
-  const wallTex = gradientTexture(['#dfe6ef', '#c4cfdc'])
+  const wallTex = tileTexture()
+  wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping
+  wallTex.repeat.set(30 / 1.5, 6 / 1.5) // 15 cm ceramic tiles, as on a school lab wall
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(30, 6), mat(new THREE.MeshBasicMaterial({ map: wallTex, toneMapped: false })))
   wall.position.set(5, 2.9, -1.4)
   scene.add(bench, edge, wall) // the wall is one unlit quad: kept at every quality so the bench never ends in a bare diagonal edge
 
   // ── Shared materials ──────────────────────────────────────────────────────
   // Standard (not Physical/clearcoat) glass: the physical shader cost ~10× on software GPUs.
-  const glassMat = mat(new THREE.MeshStandardMaterial({ color: 0xeef6ff, metalness: 0.1, roughness: 0.05, transparent: true, opacity: high ? 0.22 : 0.26, envMapIntensity: 1.8, side: THREE.FrontSide, depthWrite: false }))
-  const rimMat = mat(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false }))
+  const glassMat = mat(new THREE.MeshStandardMaterial({ color: 0xeef6ff, metalness: 0.1, roughness: 0.05, transparent: true, opacity: high ? 0.14 : 0.18, envMapIntensity: 1.8, side: THREE.FrontSide, depthWrite: false }))
+  // Schlick-style Fresnel on alpha (3 ALU ops per fragment): thin glass looks clear face-on and bright at the edges.
+  glassMat.onBeforeCompile = sh => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `diffuseColor.a = clamp( diffuseColor.a + 0.55 * pow( 1.0 - abs( dot( normal, normalize( vViewPosition ) ) ), 3.0 ), 0.0, 0.85 );
+#include <opaque_fragment>`)
+  }
+  glassMat.customProgramCacheKey = () => 'dlab-fresnel-glass'
+  const rimMat = mat(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }))
   const tickMat = mat(new THREE.MeshBasicMaterial({ color: 0x5b6b80, transparent: true, opacity: 0.7, depthWrite: false }))
-  const steel = mat(new THREE.MeshStandardMaterial({ color: 0xb9c0c8, metalness: 0.85, roughness: 0.28 }))
+  const steel = mat(new THREE.MeshStandardMaterial(high ? { color: 0xb9c0c8, metalness: 0.85, roughness: 0.28 } : { color: 0xc9d3df, metalness: 0.35, roughness: 0.32 }))
   const darkPlastic = mat(new THREE.MeshStandardMaterial({ color: 0x2b313a, roughness: 0.6 }))
   const lightPlastic = mat(new THREE.MeshStandardMaterial({ color: 0xe9edf2, roughness: 0.5 }))
   const rubber = mat(new THREE.MeshStandardMaterial({ color: 0xa3261c, roughness: 0.7 }))
@@ -74,6 +84,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   const partMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), MAX)
   partMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3)
   bubbleMesh.frustumCulled = partMesh.frustumCulled = false
+  bubbleMesh.renderOrder = 3
   const streamMeshes = []
   const streamGeo = new THREE.CylinderGeometry(1, 0.7, 1, 12, 1, true)
   scene.add(bubbleMesh, partMesh)
@@ -111,14 +122,72 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     return new THREE.LatheGeometry(pts, seg)
   }
 
+  // Pouring spout: the rim is pulled out and up over ±0.45 rad around −x (where real beakers have their lip).
+  function addSpout(geo, def) {
+    const H = (innerHeight(def) + 2) * S
+    const p = geo.attributes.position
+    for (let i = 0; i < p.count; i += 1) {
+      const x = p.getX(i); const y = p.getY(i); const z = p.getZ(i)
+      const t = Math.max(0, 1 - (H - y) / (7 * S)) // 0 below the top 7 mm, 1 at the rim
+      if (!(t > 0)) continue
+      const a = Math.atan2(z, -x)
+      const k = Math.max(0, 1 - Math.abs(a) / 0.45)
+      if (!(k > 0)) continue
+      const bump = k * k * (3 - 2 * k) * t * t
+      const r = Math.hypot(x, z)
+      if (!(r > 0)) continue
+      const nr = r + bump * 3.2 * S
+      p.setXYZ(i, x * nr / r, y + bump * 1.5 * S, z * nr / r)
+    }
+    geo.computeVertexNormals()
+    return geo
+  }
+  // Printed enamel graduations: a strip of the glass wall with ticks every minor step and numbers on majors.
+  // Marks come from levelForVolume, the same function the engine uses, so the scale reads the true volume.
+  function graduations(o, def) {
+    const cyl = def.shape === 'cylinder'
+    const minor = cyl ? 1 : def.capacityML >= 250 ? 10 : 5
+    const major = cyl ? 10 : def.capacityML >= 250 ? 50 : 20
+    const top = cyl ? def.capacityML : def.capacityML * 0.8
+    const H = innerHeight(def)
+    const c = document.createElement('canvas')
+    c.width = 128
+    c.height = 512
+    const x = c.getContext('2d')
+    x.fillStyle = '#ffffff'
+    x.font = 'bold 34px system-ui, sans-serif'
+    x.textBaseline = 'middle'
+    const py = mL => 512 - (levelForVolume(o.type, mL) + 2) / (H + 4) * 512
+    for (let i = 1; i * minor <= top + 1e-9; i += 1) {
+      const mL = i * minor
+      const isMajor = (mL % major) === 0
+      x.fillRect(0, py(mL) - (isMajor ? 2.5 : 1.5), isMajor ? 54 : 30, isMajor ? 5 : 3)
+      if (isMajor) x.fillText(String(mL), 60, py(mL))
+    }
+    x.font = '24px system-ui, sans-serif'
+    x.fillText('mL', 60, Math.max(20, py(top) - 34))
+    const tex = new THREE.CanvasTexture(c)
+    tex.colorSpace = THREE.SRGBColorSpace
+    const r = (hw(def, H * 0.5) + 1.45) * S
+    // Open partial cylinder facing the default camera (+z, slightly left), drawn after the glass.
+    const geo = new THREE.CylinderGeometry(r, r, (H + 4) * S, 24, 1, true, -0.55, 0.75)
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, color: 0xf4f8ff }))
+    m.position.y = (H + 4) * S / 2
+    m.renderOrder = 3
+    return m
+  }
+
   function vessel(o, def) {
     const g = new THREE.Group()
     const porcelainBowl = def.material === 'porcelain'
-    const shell = new THREE.Mesh(glassShell(def), porcelainBowl ? porcelain : glassMat)
+    const shellGeo = glassShell(def)
+    if (['beaker', 'cylinder'].includes(def.shape) && !o.stock) addSpout(shellGeo, def)
+    const shell = new THREE.Mesh(shellGeo, porcelainBowl ? porcelain : glassMat)
     shell.renderOrder = 2
     const base = new THREE.Mesh(new THREE.CircleGeometry(Math.max(S, (hw(def, 0) + 0.6) * S), seg).rotateX(-Math.PI / 2).translate(0, 1 * S, 0), porcelainBowl ? porcelain : glassMat)
     base.renderOrder = 2
-    g.add(base)
+    if (def.shape !== 'tube') g.add(base)
+    else base.geometry.dispose()
     const H = innerHeight(def)
     const rimR = (hw(def, H) + 0.9) * S
     const rimRing = new THREE.Mesh(new THREE.TorusGeometry(rimR, 0.55 * S, 8, seg), rimMat)
@@ -126,10 +195,17 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     rimRing.position.y = (H + 2.2) * S
     g.add(shell)
     if (!porcelainBowl) g.add(rimRing)
-    // Graduation ticks on the front, at real volume marks.
-    if (['beaker', 'cylinder', 'flask'].includes(def.shape) && !o.stock) {
-      const marks = def.shape === 'cylinder' ? [10, 20, 30, 40] : def.capacityML >= 250 ? [50, 100, 150, 200] : [20, 40, 60, 80]
-      for (const mL of marks) {
+    // Graduations printed at real volume marks. The flask's sloped wall keeps simple ticks
+    // (a straight strip would not follow its cone).
+    if (['beaker', 'cylinder'].includes(def.shape) && !o.stock) g.add(graduations(o, def))
+    if (def.shape === 'cylinder') { // hexagonal foot keeps a tall cylinder from tipping
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(def.w * 0.95 * S, def.w * 1.05 * S, 4 * S, 6), glassMat)
+      foot.position.y = 1 * S
+      foot.renderOrder = 2
+      g.add(foot)
+    }
+    if (def.shape === 'flask' && !o.stock) {
+      for (const mL of [25, 50, 75]) {
         const y = levelForVolume(o.type, mL)
         const r = (hw(def, y) + 1.4) * S
         const tick = new THREE.Mesh(new THREE.BoxGeometry(def.w * 0.18 * S, 0.5 * S, 0.3 * S), tickMat)
@@ -152,6 +228,10 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const surface = new THREE.Mesh(new THREE.CircleGeometry(1, seg), new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.08, metalness: 0, depthWrite: false, envMapIntensity: 1.4 }))
     surface.rotation.x = -Math.PI / 2
     surface.renderOrder = 1
+    // Bright meniscus line where the liquid meets the glass: makes the level readable from any angle.
+    const meniscus = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, seg), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide }))
+    meniscus.position.z = 0.0003
+    surface.add(meniscus)
     const settled = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, seg), new THREE.MeshStandardMaterial({ roughness: 0.9 }))
     settled.visible = false
     g.add(liquid, settled)
@@ -218,16 +298,22 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         add(new THREE.SphereGeometry(2.6 * S, 12, 8), glassMat, h)
         break
       case 'spatula':
-        add(new THREE.BoxGeometry(4 * S, h * 0.8, 1.2 * S), steel, h * 0.55)
+        add(new THREE.BoxGeometry(4 * S, h - 4 * S, 1.2 * S), steel, (h + 4 * S) / 2)
         add(new THREE.SphereGeometry(6 * S, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI).scale(1, 0.45, 0.8), steel, 5 * S)
+        add(new THREE.BoxGeometry(6 * S, 14 * S, 1.6 * S), steel, h - 7 * S) // flat blade end
         break
       case 'tongs': {
         for (const s of [-1, 1]) {
-          const arm = add(new THREE.BoxGeometry(2.4 * S, h, 3 * S), steel, h / 2, s * 4 * S)
-          arm.rotation.z = s * 0.05
-          add(new THREE.BoxGeometry(5 * S, 8 * S, 3.6 * S), darkPlastic, 6 * S, s * 3.2 * S)
+          const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(s * 1.5 * S, h - 2 * S, 0),
+            new THREE.Vector3(s * 6 * S, h * 0.62, 0),
+            new THREE.Vector3(s * 5 * S, h * 0.3, 0),
+            new THREE.Vector3(s * 2.4 * S, 8 * S, 0)
+          ])
+          add(new THREE.TubeGeometry(curve, high ? 24 : 12, 1.3 * S, 8), steel)
+          add(new THREE.BoxGeometry(2.6 * S, 8 * S, 3.6 * S), darkPlastic, 6 * S, s * 2.4 * S) // rubber-coated jaws
         }
-        add(new THREE.CylinderGeometry(4 * S, 4 * S, 6 * S, 12).rotateX(Math.PI / 2), steel, h - 3 * S)
+        add(new THREE.CylinderGeometry(3 * S, 3 * S, 5 * S, 12).rotateX(Math.PI / 2), steel, h - 3 * S)
         break
       }
       case 'litmusPaper': {
@@ -415,7 +501,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const vfov = camera.fov * Math.PI / 180
     const aspect = w / h
     const spanX = (x1 - x0) + 0.35
-    const spanY = top + 0.9 // head-room above the tallest object: a vessel lifted to pour must stay in view
+    const spanY = top + 0.9 // head-room above the tallest object: a vessel lifted to pour must stay in view (0.55 was tried: T02 lifted out of view)
     const dist = Math.max(1.6, (spanX / 2) / (Math.tan(vfov / 2) * aspect * freeW) * 1.08, (spanY / 2) / (Math.tan(vfov / 2) * freeH) * 1.15)
     const target = new THREE.Vector3((x0 + x1) / 2, Math.min(spanY * 0.42, 1.4), 0)
     const dir = new THREE.Vector3(Math.sin(0.1), 0.48, Math.cos(0.1)).normalize() // from the front, a little above and to the side: depth without vessels hiding each other
@@ -630,13 +716,16 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const mean = fieldMean(o)
     const tilted = Math.abs(o.angle) > 0.02
     const oil = o.contents.liquids.oil || 0
-    const aqFrac = oil > 0.01 && level > 0 ? levelForVolume(o.type, Math.max(0, vol - oil)) / level : 1
+    const sinks = oil > 0.01 && oilBelow(o.contents)
+    // Oil band in texture rows: above aqFrac when it floats, below oilFrac when it sinks (ethanol-rich liquid).
+    const aqFrac = oil > 0.01 && level > 0 && !sinks ? levelForVolume(o.type, Math.max(0, vol - oil)) / level : 1
+    const oilFrac = sinks && level > 0 ? levelForVolume(o.type, oil) / level : 0
     const x = liq.tex.getContext('2d')
     const img = x.createImageData(GW, GH)
     let sum = [0, 0, 0, 0]
     for (let j = 0; j < GH; j += 1) {
       for (let i = 0; i < GW; i += 1) {
-        const c = (j + 0.5) / GH > aqFrac ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
+        const c = (j + 0.5) / GH > aqFrac || (j + 0.5) / GH < oilFrac ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
         const k = ((GH - 1 - j) * GW + i) * 4
         img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]
         img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.14, (c[3] ?? 0.3) * 1.1)))
@@ -679,6 +768,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     for (const extra of [node.userData.shadow, node.userData.ring, node.userData.body?.userData?.liq?.surface]) {
       if (!extra) continue
       scene.remove(extra)
+      for (const child of extra.children) disposeTree(child) // meniscus ring
       extra.material?.dispose()
       if (extra.geometry !== planeGeo && extra.geometry !== ringGeo) extra.geometry?.dispose()
     }
@@ -757,6 +847,10 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     handled = true // the click that follows this press must not re-select what is now under the cursor
     dragging = e.pointerId
     controls.enabled = false
+    // Grabbing an object stops any orbit inertia left from an earlier camera drag: the view holds still while
+    // the student carries something. shortcut: uses OrbitControls internals (three 0.186); re-check on upgrade.
+    controls._sphericalDelta?.set(0, 0, 0)
+    controls._panOffset?.set(0, 0, 0)
     canvas.setPointerCapture(e.pointerId)
     canvas.focus({ preventScroll: true })
     canvas.style.cursor = 'grabbing'
@@ -887,17 +981,39 @@ const SRGB = THREE_NS.SRGBColorSpace
 const hashZ = i => (((i * 2654435761) >>> 0) % 1000) / 500 - 1
 const subscript = f => String(f).replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join(''))
 
-function gradientTexture(stops) {
+// One 15 cm ceramic tile with grout lines (repeated by the material).
+function tileTexture() {
   const c = document.createElement('canvas')
-  c.width = 2
-  c.height = 256
+  c.width = c.height = 64
   const x = c.getContext('2d')
-  const g = x.createLinearGradient(0, 0, 0, 256)
-  stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s))
+  const g = x.createLinearGradient(0, 0, 64, 64)
+  g.addColorStop(0, '#e9eef4')
+  g.addColorStop(1, '#dde4ec')
   x.fillStyle = g
-  x.fillRect(0, 0, 2, 256)
+  x.fillRect(0, 0, 64, 64)
+  x.fillStyle = '#d4dbe4'
+  x.fillRect(0, 63, 64, 1)
+  x.fillRect(63, 0, 1, 64)
   const t = new THREE_NS.CanvasTexture(c)
   t.colorSpace = THREE_NS.SRGBColorSpace
+  return t
+}
+// Fine speckle of an epoxy bench top (deterministic so screenshots are reproducible).
+function speckleTexture() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 128
+  const x = c.getContext('2d')
+  x.fillStyle = '#e4e8ec' // near-white: the material colour sets the tone, the map only adds grain
+  x.fillRect(0, 0, 128, 128)
+  for (let i = 0; i < 900; i += 1) {
+    const h = (i * 2654435761) >>> 0
+    x.fillStyle = h % 3 ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.18)'
+    x.fillRect(h % 128, (h >>> 8) % 128, 1, 1)
+  }
+  const t = new THREE_NS.CanvasTexture(c)
+  t.colorSpace = THREE_NS.SRGBColorSpace
+  t.wrapS = t.wrapT = THREE_NS.RepeatWrapping
+  t.repeat.set(60, 6)
   return t
 }
 function radialTexture() {

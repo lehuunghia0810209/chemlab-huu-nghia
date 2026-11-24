@@ -1,11 +1,12 @@
 // Per-step processes: transfer, kinetics, thermal, electrochemistry, physics and the visual fields.
 // Everything here runs inside the fixed timestep, so results do not depend on the render frame rate.
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
-import { IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass } from '../data/materials.js'
-import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME } from '../data/reactions.js'
-import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents } from './chemistry.js'
+import { WEAK, IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass, PH_MAX_ETHANOL_FRACTION } from '../data/materials.js'
+import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME, SOLVENT_HINTS, ION_REDOX } from '../data/reactions.js'
+import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents, polarPhase, boilingOf, oilBelow, freeConc, NUCLEATION_LOG } from './chemistry.js'
 
 export const ROOM_T = 25
+const vn = (x, d) => x.toFixed(d).replace('.', ',') // Vietnamese decimal comma in messages
 export const GW = 10
 export const GH = 14
 const MAX_PARTICLES = 140
@@ -47,6 +48,13 @@ export function volumeOf(c) {
 
 export function surfaceY(c) {
   return c.y + levelForVolume(c.type, Math.min(volumeOf(c), EQUIPMENT[c.type].capacityML))
+}
+
+// Top of the water–ethanol phase. Under a floating oil layer a pH probe, litmus or an electrode must reach
+// below the oil to touch the solution (oil is non-polar and insulating).
+export function polarSurfaceY(c) {
+  if (!((c.contents?.liquids.oil || 0) > 0.01) || oilBelow(c.contents)) return surfaceY(c)
+  return c.y + levelForVolume(c.type, Math.min(polarPhase(c.contents).mL, EQUIPMENT[c.type].capacityML))
 }
 
 // Topmost upright container whose cavity holds the point.
@@ -115,7 +123,8 @@ export function bulkColor(contents, pH) {
 
 export function refreshDerived(c) {
   const V = aqueousLitres(c.contents)
-  const h = V > 1e-6 ? solveH(c.contents.ions, V) : null
+  // pH is an aqueous-scale quantity: not reported for pure ethanol or ethanol-rich mixtures.
+  const h = V > 1e-6 && polarPhase(c.contents).pHApplies ? solveH(c.contents.ions, V) : null
   c.pH = h ? -Math.log10(h) : null
   c.I = h ? ionicStrength(c.contents.ions, V, h) : 0
   const color = bulkColor(c.contents, c.pH)
@@ -170,6 +179,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
   const Ctot = C1 + C2
   if (Ctot > 0) c.T = (C1 * c.T + C2 * T + result.heatJ) / Ctot
   if (result.neutralised > 1e-5) noteOnce(state, `neutral-${c.id}`, `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
+  redoxNotes(state, c, result.formed)
   for (const [key, mol] of Object.entries(result.formed)) {
     spawnParticles(state, c, key, mol, u, v)
     noteOnce(state, `ppt-${key}-${c.id}`, `Xuất hiện kết tủa ${PRECIPITATES[key].formula} (${PRECIPITATES[key].name}) trong ${label(c)}.`)
@@ -269,14 +279,42 @@ function ionHints(state, c) {
   for (const r of ION_HINTS) {
     if (!r.all.every(has)) continue
     if (state.notes[`ionhint-${r.all.join('+')}-${c.id}`] != null) continue
-    if (r.minPH != null) {
+    if (r.kspOH != null) {
+      const V = aqueousLitres(c.contents)
+      if (V < 1e-6) continue
+      const h = solveH(c.contents.ions, V)
+      // Same supersaturation rule as every precipitate (Q > 10^NUCLEATION_LOG·K): a factor ~2 is inside the Ksp data spread.
+      if (!(freeConc(r.all[0], c.contents, h, V) * 1e-14 / h > r.kspOH * 10 ** NUCLEATION_LOG)) continue
+    }
+    if (r.minPH != null || r.maxPH != null) {
       const V = aqueousLitres(c.contents)
       if (V < 1e-6) continue
       pH ??= -Math.log10(solveH(c.contents.ions, V))
-      if (!(pH >= r.minPH)) continue
+      if (r.minPH != null && !(pH >= r.minPH)) continue
+      if (r.maxPH != null && !(pH <= r.maxPH)) continue
     }
     noteOnce(state, `ionhint-${r.all.join('+')}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${r.reason}`, 'warn')
   }
+}
+
+function redoxNotes(state, c, formed) {
+  for (const [id, xi] of Object.entries(formed?.redox || {})) {
+    const r = ION_REDOX.find(x => x.id === id)
+    if (xi > 1e-7 && r) {
+      c.activeReactions[`redox-${id}`] = state.t
+      noteOnce(state, `redox-${id}-${c.id}`, `${r.equation}: trong ${label(c)} ${r.observe}`)
+    }
+  }
+}
+
+// Mixed or non-aqueous solvent: say what the model does not compute instead of showing aqueous numbers.
+function solventNotes(state, c) {
+  const p = polarPhase(c.contents)
+  if (!((c.contents.liquids.ethanol || 0) > 0.05) || p.pHApplies) return
+  const ions = Object.values(c.contents.ions).some(v => v > 1e-7)
+  if (!(c.contents.liquids.water > 0.001)) noteOnce(state, `solvent-eth-${c.id}`, `${label(c)} chứa etanol, không phải dung dịch nước: không có pH theo thang của nước, giấy quỳ và máy đo pH không cho kết quả có nghĩa.`, 'info')
+  else noteOnce(state, `solvent-mix-${c.id}`, `Hỗn hợp nước–etanol (etanol ≈ ${Math.round(p.ethanolVol * 100)} % thể tích) tan hoàn toàn vào nhau. Mô hình không tính pH khi etanol > ${Math.round(PH_MAX_ETHANOL_FRACTION * 100)} %.`, 'info')
+  if (ions) c.unsupported = 'Ion trong hỗn hợp nhiều etanol: pH, Ksp và tốc độ phản ứng vẫn dùng số liệu của nước — chỉ mang tính định tính, chưa được mô hình hóa định lượng.'
 }
 
 // Gas leaving a vessel: counted for the whole bench and for the vessel it came from, so a guided step
@@ -323,11 +361,11 @@ export function solidRadiusMM(s) {
   return Math.max(0.6, Math.cbrt(3 * V / (4 * Math.PI)) * 10)
 }
 
+// Density a solid meets: the polar phase (measured water–ethanol density) or, with no polar phase, the oil.
 function liquidDensity(contents) {
-  let m = 0
-  let v = 0
-  for (const [k, mL] of Object.entries(contents.liquids)) { m += mL * LIQUIDS[k].density; v += mL }
-  return v > 0 ? m / v : 0
+  const p = polarPhase(contents)
+  if (p.mL > 0.05) return p.density
+  return (contents.liquids.oil || 0) > 0 ? LIQUIDS.oil.density : 0
 }
 
 function stepSolid(state, s, c, h) {
@@ -339,8 +377,11 @@ function stepSolid(state, s, c, h) {
   const floats = vol > 0.5 && reagent.density < rho
   const rad = solidRadiusMM(s)
   const hw = Math.max(1, halfWidthAt(def, Math.max(0, s.ly)) - rad)
-  // Vertical: float at the surface or sink to the bottom (simple damped motion).
-  const targetY = floats ? Math.max(0, level - rad * 0.6) : 0
+  // Vertical: float at the top of the polar phase (under a floating oil layer, e.g. Na sinks through oil and
+  // rests on the water) or sink to the bottom (simple damped motion).
+  const p = polarPhase(c.contents)
+  const floatLevel = (c.contents.liquids.oil || 0) > 0.01 && !oilBelow(c.contents) && reagent.density > LIQUIDS.oil.density ? levelForVolume(c.type, p.mL) : level
+  const targetY = floats ? Math.max(0, floatLevel - rad * 0.6) : 0
   s.vy += ((targetY - s.ly) * 30 - s.vy * 8) * h
   s.ly += s.vy * h
   if (s.ly < 0) { s.ly = 0; s.vy = 0 }
@@ -423,6 +464,12 @@ function stepKinetics(state, s, c, h, rad, level) {
     noteOnce(state, `unsup-${s.reagent}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${hintFirst.reason}`, 'warn')
     return
   }
+  const solventHint = SOLVENT_HINTS.find(r => r.solid === s.reagent && (c.contents.liquids[r.liquid] || 0) > 0.05 && !((c.contents.liquids.water || 0) > 0.05))
+  if (solventHint) {
+    c.unsupported = solventHint.reason
+    noteOnce(state, `unsup-${s.reagent}-${solventHint.liquid}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${solventHint.reason}`, 'warn')
+    return
+  }
   let anyRule = false
   for (const rule of KINETIC) {
     if (rule.solid !== s.reagent) continue
@@ -431,7 +478,10 @@ function stepKinetics(state, s, c, h, rad, level) {
     else if (rule.driver === 'water') driver = (c.contents.liquids.water || 0) > 0.05 ? 1 : 0
     else driver = (c.contents.ions[rule.driver] || 0) / V
     // Acid attack on metals is modelled for dilute acids (pH < 3); hydrolysed salt solutions do not count.
-    if (rule.driver === 'h' && driver < 1e-3) continue
+    // A weak acid (CH₃COOH) keeps reacting while undissociated acid remains, at the rate its small [H⁺] gives
+    // (shortcut: the rate uses [H⁺] only; real surfaces are also attacked by the molecular acid).
+    const molecularHA = rule.driver === 'h' ? (c.contents.ions.OAc || 0) / V * hConc / (WEAK.acetate.Ka + hConc) : 0
+    if (rule.driver === 'h' && driver < 1e-3 && !(molecularHA > 1e-2)) continue
     if (!(driver > 0)) continue
     if (rule.nitrateUnsupported && (c.contents.ions['NO3-'] || 0) / V > 0.01 && hConc > 1e-3) {
       c.unsupported = 'Kim loại với HNO₃ không giải phóng H₂ mà tạo NOx — phản ứng này chưa được mô hình hóa.'
@@ -444,7 +494,10 @@ function stepKinetics(state, s, c, h, rad, level) {
     // Acid attack cannot use more H⁺ than is free in one step (a hot, small volume used to overshoot to pH 13).
     if (rule.driver === 'h') xi = Math.min(xi, 0.5 * hConc * V / Object.entries(rule.gives || {}).reduce((z, [ion, n]) => z + n * (IONS[ion]?.z || 1), 0))
     for (const [ion, n] of Object.entries(rule.consumes || {})) xi = Math.min(xi, (c.contents.ions[ion] || 0) / n)
+    // 2Na + 2H₂O: the water is used up too (18,015 g/mol), so a trace of water cannot run the whole piece.
+    if (rule.water) xi = Math.min(xi, (c.contents.liquids.water || 0) * LIQUIDS.water.density / 18.015 / rule.water)
     if (!(xi > 0)) continue
+    if (rule.water) c.contents.liquids.water -= rule.water * xi * 18.015 / LIQUIDS.water.density
     s.massG -= xi * REAGENT_BY_ID[s.reagent].molarMass
     for (const [ion, n] of Object.entries(rule.consumes || {})) c.contents.ions[ion] -= n * xi
     for (const [ion, n] of Object.entries(rule.gives || {})) c.contents.ions[ion] = (c.contents.ions[ion] || 0) + n * xi
@@ -482,9 +535,9 @@ function stepKinetics(state, s, c, h, rad, level) {
     const M = REAGENT_BY_ID[s.reagent].formula
     for (const ion of Em == null || no || hint ? [] : drivers.filter(d => ION_E0[d] != null && d !== `${M}2+` && d !== `${M}+`)) {
       if (KINETIC.some(r => r.solid === s.reagent && r.driver === ion)) continue
-      if (ION_E0[ion] < Em) noteOnce(state, `norx-${s.reagent}-${ion}-${c.id}`, `Không có phản ứng: ${M} yếu hơn kim loại của ion ${ION_NAME[ion]} (E° ${ION_E0[ion].toFixed(2)} V < ${Em.toFixed(2)} V) nên không khử được ${ION_NAME[ion]}.`, 'info')
+      if (ION_E0[ion] < Em) noteOnce(state, `norx-${s.reagent}-${ion}-${c.id}`, `Không có phản ứng: ${M} yếu hơn kim loại của ion ${ION_NAME[ion]} (E° ${vn(ION_E0[ion], 2)} V < ${vn(Em, 2)} V) nên không khử được ${ION_NAME[ion]}.`, 'info')
       else {
-        c.unsupported = `${M} + ${ION_NAME[ion]}: theo dãy hoạt động có phản ứng (E° ${ION_E0[ion].toFixed(2)} V > ${Em.toFixed(2)} V) nhưng chưa được mô hình hóa định lượng.`
+        c.unsupported = `${M} + ${ION_NAME[ion]}: theo dãy hoạt động có phản ứng (E° ${vn(ION_E0[ion], 2)} V > ${vn(Em, 2)} V) nhưng chưa được mô hình hóa định lượng.`
         noteOnce(state, `unsup-${s.reagent}-${ion}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${c.unsupported}`, 'warn')
       }
     }
@@ -510,18 +563,29 @@ export function stepElectro(state, h) {
     const el = wire && byId(state, wire.to)
     if (!p.on || !el) { p.status = p.on ? 'Chưa nối dây tới điện cực.' : 'Đang tắt.'; continue }
     const c = containerAt(state, el.x, el.y + 2)
-    if (!c || surfaceY(c) < el.y + 4) { p.status = 'Điện cực chưa nhúng vào dung dịch.'; continue }
+    if (!c || polarSurfaceY(c) < el.y + 4) { p.status = 'Điện cực chưa nhúng vào dung dịch' + (c && surfaceY(c) >= el.y + 4 ? ' (mới ở trong lớp dầu).' : '.'); continue }
     const V = aqueousLitres(c.contents)
     const cu = c.contents.ions['Cu2+'] || 0
     const cl = c.contents.ions['Cl-'] || 0
+    const e0 = ELECTRO.electrolysisCuCl2
     if (!(cu > 1e-7 && cl > 1e-7)) {
       p.status = cu > 0 || cl > 0 ? 'Đã hết Cu²⁺ hoặc Cl⁻: giai đoạn điện phân nước chưa được mô hình hóa, dòng điện ngừng.' : 'Hệ điện phân này chưa được mô hình hóa (mô hình hỗ trợ dung dịch CuCl₂).'
+      continue
+    }
+    // A species that discharges first, in more than a trace (1 % of the Cu²⁺), makes the Cu + Cl₂ result wrong.
+    const amount = x => (c.contents.ions[x.ion] || 0) + (x.ion === 'I2' ? c.contents.precipitates.I2s || 0 : 0) // solid iodine counts too
+    const first = e0.interferes.find(x => amount(x) > Math.max(1e-6, 0.01 * cu) && !(x.maxPH < (c.pH ?? 7)))
+    const why = first ? first.why : !polarPhase(c.contents).pHApplies ? 'dung môi không phải nước' : V > 0 && cl / V < e0.minCl ? `Cl⁻ quá loãng (< ${e0.minCl} M): ở anot O₂ cạnh tranh với Cl₂` : null
+    if (why) {
+      p.status = `Chưa hỗ trợ mô phỏng điện phân dung dịch này: ${why}.`
+      c.unsupported = p.status
+      noteOnce(state, `electro-unsup-${first?.ion || why.slice(0, 12)}-${c.id}`, p.status, 'warn')
       continue
     }
     const e = ELECTRO.electrolysisCuCl2
     const I = Math.max(0, (p.volts - e.decomposition - e.overpotential) / e.resistance)
     p.current = I
-    p.status = I > 0 ? `Đang điện phân, I = ${I.toFixed(2)} A.` : `Hiệu điện thế chưa đủ để điện phân (cần > ${(e.decomposition + e.overpotential).toFixed(2)} V).`
+    p.status = I > 0 ? `Đang điện phân, I = ${vn(I, 2)} A.` : `Hiệu điện thế chưa đủ để điện phân (cần > ${vn(e.decomposition + e.overpotential, 2)} V).`
     if (!(I > 0) || V <= 0) continue
     let ne = I * h / FARADAY
     ne = Math.min(ne, cu * 2, cl)
@@ -553,10 +617,15 @@ export function stepElectro(state, h) {
     const cZn = (zn.c.contents.ions['Zn2+'] || 0) / Vz
     const cCu = (cu.c.contents.ions['Cu2+'] || 0) / Vc
     if (!(cZn > 0) || !(cCu > 0)) { m.reading = 0; m.status = 'Cần dung dịch Zn²⁺ quanh thanh Zn và Cu²⁺ quanh thanh Cu.'; continue }
-    const E = ELECTRO.daniell.E0 - 0.05916 / ELECTRO.daniell.n * Math.log10(cZn / cCu)
+    if (![zn.c, cu.c].every(x => polarPhase(x.contents).pHApplies)) { m.reading = null; m.status = 'Chưa hỗ trợ: pin Daniell chỉ được mô hình hóa trong dung dịch nước (etanol ≤ 10 %).'; continue }
+    const d = ELECTRO.daniell
+    const TK = 273.15 + (zn.c.T + cu.c.T) / 2
+    const E0T = d.E0 + d.dS / (d.n * FARADAY) * (TK - 298.15)
+    const E = E0T - (8.314462618 * TK * Math.LN10) / (d.n * FARADAY) * Math.log10(cZn / cCu)
     m.reading = E
-    m.status = `Pin Zn–Cu: E = ${E.toFixed(3)} V (Nernst, 25 °C).`
-    noteOnce(state, `daniell-${m.id}`, `Pin điện hóa Zn–Cu: vôn kế chỉ ≈ ${E.toFixed(2)} V. Zn là cực âm, Cu là cực dương.`)
+    m.status = `Pin Zn–Cu: E = ${vn(E, 3)} V (Nernst, ${(TK - 273.15).toFixed(0)} °C).`
+    if (Math.abs(zn.c.T - cu.c.T) > 2) noteOnce(state, `daniell-dT-${m.id}`, 'Hai cốc của pin khác nhiệt độ: mô hình dùng nhiệt độ trung bình (pin nhiệt điện không được mô hình hóa).', 'info')
+    noteOnce(state, `daniell-${m.id}`, `Pin điện hóa Zn–Cu: vôn kế chỉ ≈ ${vn(E, 2)} V. Zn là cực âm, Cu là cực dương.`)
   }
 }
 
@@ -565,6 +634,7 @@ export function stepContainer(state, c, h) {
   const def = EQUIPMENT[c.type]
   const vis = c.vis
   ionHints(state, c)
+  solventNotes(state, c)
   // Pouring by tilt: liquid above what the tilted vessel can retain flows over the lower lip.
   if (Math.abs(c.angle) > 0.05 && c.condition !== 'UNUSABLE') {
     const vol = volumeOf(c)
@@ -618,14 +688,28 @@ export function stepContainer(state, c, h) {
   P -= UA * (c.T - ROOM_T)
   c.T += P * h / C
   const water = c.contents.liquids.water || 0
-  if (water > 0 && c.T > 100) {
-    const excessJ = (c.T - 100) * C
-    const evapG = Math.min(water * LIQUIDS.water.density, excessJ / 2257)
-    c.contents.liquids.water = water - evapG / LIQUIDS.water.density
-    c.T = 100 + (excessJ - evapG * 2257) / C
-    state.steam = (state.steam || 0) + evapG
-    if (evapG > 0) { c.boiling = state.t; emitBubbles(state, c, 'steam', evapG / 18 * 0.3, (rand(state) - 0.5) * 1.4, 0.02); c.dirty = true }
-    noteOnce(state, `boil-${c.id}`, `Nước trong ${label(c)} sôi ở 100 °C và bay hơi.`)
+  const eth = c.contents.liquids.ethanol || 0
+  // Boiling of the water–ethanol phase at its bubble point (1 atm, CRC table); the vapour carries
+  // ethanol and water in the tabulated vapour ratio, so the liquid gets richer in water and the bp rises.
+  const bp = water + eth > 0.001 ? boilingOf(c.contents) : null
+  if (bp && c.T > bp.T) {
+    const excessJ = (c.T - bp.T) * C
+    const y = bp.vapourWt / 100
+    const L = y * LIQUIDS.ethanol.hvap + (1 - y) * LIQUIDS.water.hvap
+    const evapG = Math.min(water * LIQUIDS.water.density + eth * LIQUIDS.ethanol.density, excessJ / L)
+    const gE = Math.min(eth * LIQUIDS.ethanol.density, evapG * y)
+    const gW = Math.min(water * LIQUIDS.water.density, evapG - gE)
+    if (water > 0) c.contents.liquids.water = water - gW / LIQUIDS.water.density
+    if (eth > 0) c.contents.liquids.ethanol = eth - gE / LIQUIDS.ethanol.density
+    for (const k of ['water', 'ethanol']) if (c.contents.liquids[k] != null && c.contents.liquids[k] < 1e-9) delete c.contents.liquids[k]
+    c.T = bp.T + Math.max(0, excessJ - gW * LIQUIDS.water.hvap - gE * LIQUIDS.ethanol.hvap) / C
+    state.steam = (state.steam || 0) + gW
+    state.ethanolVapour = (state.ethanolVapour || 0) + gE
+    if (gW + gE > 0) { c.boiling = state.t; emitBubbles(state, c, 'steam', (gW / 18 + gE / 46) * 0.3, (rand(state) - 0.5) * 1.4, 0.02); c.dirty = true }
+    if (eth < 1e-6) noteOnce(state, `boil-${c.id}`, `Nước trong ${label(c)} sôi ở 100 °C và bay hơi.`)
+    else if (water < 1e-6) noteOnce(state, `boil-eth-${c.id}`, `Etanol trong ${label(c)} sôi ở khoảng 78 °C (thấp hơn nước nhiều). Hơi etanol dễ bắt lửa.`, 'warn')
+    else if (Math.abs(bp.vapourWt - polarPhase(c.contents).ethanolWt) < 0.5) noteOnce(state, `boil-azeo-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} (≈ 95,5 % khối lượng etanol) sôi ở ${bp.T.toFixed(1)} °C như hỗn hợp đẳng phí: hơi có cùng thành phần với chất lỏng nên nhiệt độ sôi gần như không đổi. Hơi etanol dễ bắt lửa.`, 'warn')
+    else noteOnce(state, `boil-mix-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} bắt đầu sôi ở ${bp.T.toFixed(1)} °C; hơi giàu etanol hơn chất lỏng nên nhiệt độ sôi tăng dần. Hơi etanol dễ bắt lửa.`, 'warn')
   }
   if (volumeOf(c) < 0.05 && burner && def.breakable && c.T > 300) damage(state, c, 'WARNING', `${def.name} bị đun khô ở ${c.T.toFixed(0)} °C — nguy cơ nứt vỡ khi gặp chất lỏng lạnh.`)
   if (burner && c.condition === 'CRACKED') damage(state, c, 'UNUSABLE', `${def.name} đã nứt lại bị đun nóng nên vỡ — không còn sử dụng được.`)
@@ -635,6 +719,7 @@ export function stepContainer(state, c, h) {
   for (const s of state.objects) if (s.type === 'solid' && s.in === c.id) stepSolid(state, s, c, h)
   if (c.dirty && state.step % 6 === 0) {
     const formed = equilibrate(c.contents)
+    redoxNotes(state, c, formed)
     for (const [key, mol] of Object.entries(formed)) {
       const src = c.lastSource || { u: 0, v: 0.5 }
       spawnParticles(state, c, key, mol, src.u, src.v)
@@ -770,7 +855,7 @@ export function stepTools(state, h) {
     }
     if (o.type === 'thermometer' || o.type === 'phMeter') {
       const c = containerAt(state, o.x, o.y + 1)
-      const wet = c && o.y < surfaceY(c)
+      const wet = c && o.y < (o.type === 'phMeter' ? polarSurfaceY(c) : surfaceY(c))
       o.reading = o.type === 'thermometer' ? (wet ? c.T : ROOM_T) : (wet ? c.pH : null)
     }
   }
@@ -781,7 +866,7 @@ function stepLitmus(state, o, h) {
   const N = def.segments
   if (!o.seg) o.seg = Array.from({ length: N }, () => ({ wet: 0, rgb: INDICATORS.litmus.neutral.slice() }))
   const c = containerAt(state, o.x, o.y + 1)
-  const surf = c ? surfaceY(c) : -Infinity
+  const surf = c ? polarSurfaceY(c) : -Infinity
   const depth = surf - o.y
   if (c && depth > 0 && c.pH != null) {
     o.inside = c.id
