@@ -1,0 +1,9 @@
+IMPORTANT: do not run any terminal/shell command (they are denied). Use only your built-in file viewing and code search tools to read files.
+You are an independent reviewer (READ-ONLY: do not modify, create or delete any file; do not run git commands that change state; do not deploy).
+Repository: D:\EduLab\ChemLab. Scope: the "Dynamic Laboratory" only: src/dlab/** (engine/, data/, ui/, guided.js, persistence.js) and its tests scripts/test-dlab.mjs, scripts/lib/dlab-journeys.mjs.
+
+Task: an adversarial architecture + scientific audit. Report in English, as Markdown, with file:line evidence for every claim.
+1. Architecture: is there exactly one simulation core and one canonical state shared by 2D (ui/render2d.js), 3D (ui/render3d.js) and Guided Lab (guided.js)? Find any place where a renderer or the UI changes chemical composition, or where a guided step can be completed by something other than the simulation state of its own target objects (wrong vessel, stale events, notes from earlier steps).
+2. Chemistry: check src/dlab/data/materials.js, reactions.js and engine/chemistry.js, engine/processes.js. For each supported reaction (acid-base and indicators, Cu2+ + OH- precipitation, Fe + Cu2+, Zn + H+, Na + water, NaCl dissolution/solubility, electrolysis of CuCl2, Daniell cell, NaHCO3 + CH3COOH, organic miscibility) check stoichiometry, mass/charge conservation, units, constants (Ksp, solubility, E°, rate constants) against reputable sources (IUPAC, NIST, CRC, PubChem). Give the source URL for every constant you dispute. Do NOT invent sources; if unsure say "unverified".
+3. List combinations that would produce a fake product, negative amounts, or silent no-op instead of "UNSUPPORTED".
+4. Rank findings P0/P1/P2/P3 with a concrete failure scenario each. Keep it under 2500 words.

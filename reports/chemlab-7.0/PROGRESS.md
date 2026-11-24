@@ -55,6 +55,27 @@ Test: DLab 53/53, E2E 59/56/55 (WebKit P01 29,1 fps), 448/448, 5/5 Guided Lab.
 
 Chi tiết: `POST_CODEX_QA_FIX_REPORT.md`. Chưa push.
 
+## Phiên 2026-11-24 (3) — Complete Lab Rebuild (directive 5 phase)
+
+Quyết định kiến trúc: KEEP lõi (một state, một engine), REFACTOR có trọng điểm.
+
+**Lỗi bài Kết tủa bước 5** có hai nguyên nhân:
+- Đích mặc định là cốc gần nhất.
+- `34fd4de` mang lựa chọn “Thả vào” sang vật khác.
+
+Đã sửa và có test G09.
+
+**Antigravity** (`agy`, chỉ đọc) đã review 2 vòng. Đã kiểm chứng và sửa 4 lỗi P0 và 12 lỗi P1:
+- Bảo toàn chất, vượt quá lượng axit.
+- “Chưa hỗ trợ” thay cho im lặng; thêm kết tủa.
+- Điều kiện bước Guided, vật bị cất, Hoàn tác/Đặt lại.
+
+**3D:** lớp dầu, catot, dây.
+
+**Test:** unit 57/57; E2E 61/58/58; 448/448; 5/5 bài.
+
+Commits: `fc43ae4`, `1707961`, `6f2bc1c`, `a306197`, `15e6d45`, cộng commit báo cáo. Chi tiết và phần chưa làm: `COMPLETE_LAB_REBUILD_REPORT.md` §18. Chưa push.
+
 ## Còn lại / blocker
 
 1. Chuyên gia duyệt SCIENTIFIC_VALIDATION §8 (D31).

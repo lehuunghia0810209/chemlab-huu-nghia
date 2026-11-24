@@ -222,6 +222,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     assert.equal(t.contents.liquids.oil, 20)
     await wait(page, L => L.state.streams.length === 0) // sample after the pour stream has gone
     await page.waitForTimeout(300)
+    await settled(page) // the details panel may re-frame the bench once the pointer rests; sample the settled frame
+    await page.waitForTimeout(100)
     const s = await surface(page, ids.T)
     const top = await pixel(page, 300, s - 3)
     const low = await pixel(page, 300, 4)
