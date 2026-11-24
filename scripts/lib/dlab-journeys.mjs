@@ -1180,6 +1180,33 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await btn(page, 'Vừa khung').click()
   })
 
+  await test('G10 Guided: cất cốc của bài không làm treo, có hướng dẫn phục hồi; Hoàn tác lùi cả tiến độ', async page => {
+    await btn(page, 'Có hướng dẫn').click()
+    await page.locator('.dlab-choice', { hasText: 'Nhận biết' }).click()
+    const strip = page.locator('.dlab-gstrip')
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
+    const r = await st(page, L => ({ A: L.state.objects.find(o => o.label === 'Ống A').id, B: L.state.objects.find(o => o.label === 'Ống B').id, P: L.state.objects.find(o => o.type === 'litmusPaper').id }))
+    await select(page, r.P)
+    await page.locator('[data-qa-in="to"]').selectOption(r.A)
+    await btn(page, 'Nhúng').click()
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 2/5' }).waitFor()
+    // Put Ống B away with the keyboard: the render loop must keep running and say how to recover.
+    await select(page, r.B)
+    await page.locator('.dlab-canvas').focus()
+    await page.keyboard.press('Delete')
+    await page.locator('.dlab-gprogress', { hasText: 'bị cất khỏi bàn' }).waitFor()
+    const t0 = await st(page, L => L.state.t)
+    await page.waitForTimeout(600)
+    assert.ok(await st(page, L => L.state.t) > t0, 'simulation still running')
+    await page.keyboard.press('Control+z')
+    await page.locator('.dlab-gprogress', { hasText: 'bị cất khỏi bàn' }).waitFor({ state: 'detached' })
+    assert.ok(await st(page, (L, id) => Boolean(L.state.objects.find(o => o.id === id)), r.B), 'Ống B is back')
+    // Undo once more takes back the dip into A: the lesson goes back to step 1 with it.
+    await page.keyboard.press('Control+z')
+    await page.keyboard.press('Control+z')
+    await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
+  })
+
   await test('G09 kết tủa bước 4–5 với đích MẶC ĐỊNH: HCl vào Cốc A, muối vào Cốc B; thả nhầm cốc thì có hướng dẫn phục hồi', async page => {
     await btn(page, 'Có hướng dẫn').click()
     await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()

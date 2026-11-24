@@ -69,7 +69,14 @@ export const PRECIPITATES = {
   'Cu(OH)2': { name: 'Đồng(II) hiđroxit', formula: 'Cu(OH)2', cation: 'Cu2+', anion: 'OH', p: 1, q: 2, Ksp: 2.2e-20, color: [90, 160, 230], density: 3.37 },
   'Fe(OH)3': { name: 'Sắt(III) hiđroxit', formula: 'Fe(OH)3', cation: 'Fe3+', anion: 'OH', p: 1, q: 3, Ksp: 2.79e-39, color: [160, 80, 30], density: 3.4 },
   'Fe(OH)2': { name: 'Sắt(II) hiđroxit', formula: 'Fe(OH)2', cation: 'Fe2+', anion: 'OH', p: 1, q: 2, Ksp: 4.87e-17, color: [200, 220, 200], density: 3.4 },
-  'Mg(OH)2': { name: 'Magie hiđroxit', formula: 'Mg(OH)2', cation: 'Mg2+', anion: 'OH', p: 1, q: 2, Ksp: 5.61e-12, color: [248, 248, 248], density: 2.34 }
+  'Mg(OH)2': { name: 'Magie hiđroxit', formula: 'Mg(OH)2', cation: 'Mg2+', anion: 'OH', p: 1, q: 2, Ksp: 5.61e-12, color: [248, 248, 248], density: 2.34 },
+  // Added 2026-11-24 (CRC 25 °C). Zn(OH)₂ redissolving in excess base (amphoteric) is NOT modelled: flagged as unsupported.
+  BaCO3: { name: 'Bari cacbonat', formula: 'BaCO3', cation: 'Ba2+', anion: 'CO3', p: 1, q: 1, Ksp: 2.58e-9, color: [250, 250, 250], density: 4.29 },
+  ZnCO3: { name: 'Kẽm cacbonat', formula: 'ZnCO3', cation: 'Zn2+', anion: 'CO3', p: 1, q: 1, Ksp: 1.46e-10, color: [248, 248, 245], density: 4.4 },
+  Ag2CO3: { name: 'Bạc cacbonat', formula: 'Ag2CO3', cation: 'Ag+', anion: 'CO3', p: 2, q: 1, Ksp: 8.46e-12, color: [240, 232, 200], density: 6.08 },
+  CaSO4: { name: 'Canxi sunfat', formula: 'CaSO4', cation: 'Ca2+', anion: 'SO4', p: 1, q: 1, Ksp: 4.93e-5, color: [250, 250, 250], density: 2.96 },
+  Ag2SO4: { name: 'Bạc sunfat', formula: 'Ag2SO4', cation: 'Ag+', anion: 'SO4', p: 2, q: 1, Ksp: 1.2e-5, color: [250, 250, 250], density: 5.45 },
+  'Zn(OH)2': { name: 'Kẽm hiđroxit', formula: 'Zn(OH)2', cation: 'Zn2+', anion: 'OH', p: 1, q: 2, Ksp: 3e-17, color: [250, 250, 250], density: 3.05 }
 }
 
 // Pure liquids: density g/mL, heat capacity J/(g·K), aqueous = hosts dissolved ions.

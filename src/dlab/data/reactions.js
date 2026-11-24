@@ -29,6 +29,16 @@ export const ION_E0 = { 'K+': -2.93, 'Ba2+': -2.91, 'Ca2+': -2.87, 'Na+': -2.71,
 export const METAL_E0 = { mg: -2.37, zn: -0.76, fe: -0.44, cu: 0.34 }
 export const ION_NAME = { 'K+': 'K⁺', 'Ba2+': 'Ba²⁺', 'Ca2+': 'Ca²⁺', 'Na+': 'Na⁺', 'Mg2+': 'Mg²⁺', 'Zn2+': 'Zn²⁺', 'Fe2+': 'Fe²⁺', 'Cu2+': 'Cu²⁺', 'Ag+': 'Ag⁺' }
 
+// Solution-phase processes outside the model, detected from the dissolved species alone.
+// minPH/maxPH: only in that pH range. Reported as "Chưa hỗ trợ mô phỏng", never given a guessed product.
+export const ION_HINTS = [
+  { all: ['Fe3+', 'I-'], reason: 'Fe³⁺ oxi hóa I⁻ thành I₂ — chưa được mô hình hóa.' },
+  { all: ['Cu2+', 'I-'], reason: 'Cu²⁺ + I⁻ (tạo CuI↓ và I₂) — chưa được mô hình hóa.' },
+  { all: ['Ag+'], minPH: 8.5, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
+  { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
+  { all: ['Cu2+', 'NH4+'], minPH: 9, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
+]
+
 // Electrochemistry. E° in volts (25 °C, CRC). Faraday quantities are exact; cell resistance is illustrative.
 export const ELECTRO = {
   electrolysisCuCl2: { decomposition: 1.02, overpotential: 0.4, resistance: 4, equation: 'CuCl₂ → Cu (catot) + Cl₂↑ (anot)' },
@@ -37,7 +47,7 @@ export const ELECTRO = {
 
 // Solution-phase processes outside the model: reported as "chưa có mô hình" instead of being guessed.
 export const UNSUPPORTED_HINTS = [
-  { all: ['NO3-', 'cu'], reason: 'Cu với HNO₃ (tạo NO/NO₂) chưa được mô hình hóa định lượng.' },
+  { all: ['NO3-', 'cu'], maxPH: 3, reason: 'Cu với HNO₃ (tạo NO/NO₂) chưa được mô hình hóa định lượng.' },
   { all: ['Fe3+', 'cu'], reason: 'Cu + Fe³⁺ chưa được mô hình hóa.' },
   { all: ['Fe3+', 'fe'], reason: 'Fe + Fe³⁺ chưa được mô hình hóa.' },
   { all: ['I-', 'Fe3+'], reason: 'Phản ứng oxi hóa I⁻ bởi Fe³⁺ chưa được mô hình hóa.' }

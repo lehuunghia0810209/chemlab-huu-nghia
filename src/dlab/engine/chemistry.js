@@ -239,7 +239,8 @@ export function mix(target, parcel) {
   const formed = equilibrate(target)
   const after = freeProtons(target)
   const xi = Math.max(0, before.h + added.h - after.h, before.oh + added.oh - after.oh)
-  return { heatJ: -NEUTRALIZATION_DH * xi, waterFormed: xi, formed }
+  // neutralised: H⁺ and OH⁻ both consumed (OH⁻ taken by a precipitate or a metal ion alone is not neutralisation).
+  return { heatJ: -NEUTRALIZATION_DH * xi, waterFormed: xi, neutralised: Math.min(Math.max(0, before.h + added.h - after.h), Math.max(0, before.oh + added.oh - after.oh)), formed }
 }
 
 // Removes `mL` from the container, top layer first for immiscible liquids (what actually pours out).

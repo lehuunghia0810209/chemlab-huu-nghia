@@ -2,7 +2,7 @@
 // Everything here runs inside the fixed timestep, so results do not depend on the render frame rate.
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
 import { IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass } from '../data/materials.js'
-import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_E0, METAL_E0, ION_NAME } from '../data/reactions.js'
+import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME } from '../data/reactions.js'
 import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents } from './chemistry.js'
 
 export const ROOM_T = 25
@@ -169,7 +169,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
   const result = mix(c.contents, parcel)
   const Ctot = C1 + C2
   if (Ctot > 0) c.T = (C1 * c.T + C2 * T + result.heatJ) / Ctot
-  if (result.waterFormed > 1e-7) noteOnce(state, `neutral-${c.id}`, `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
+  if (result.neutralised > 1e-6) noteOnce(state, `neutral-${c.id}`, `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
   for (const [key, mol] of Object.entries(result.formed)) {
     spawnParticles(state, c, key, mol, u, v)
     noteOnce(state, `ppt-${key}-${c.id}`, `Xuất hiện kết tủa ${PRECIPITATES[key].formula} (${PRECIPITATES[key].name}) trong ${label(c)}.`)
@@ -262,6 +262,22 @@ function trimParticles(c) {
   }
 }
 
+// Dissolved species the model cannot react: say so once per vessel instead of showing nothing.
+function ionHints(state, c) {
+  let pH
+  for (const r of ION_HINTS) {
+    if (!r.all.every(k => (c.contents.ions[k] || 0) > 1e-7)) continue
+    if (state.notes[`ionhint-${r.all.join('+')}-${c.id}`] != null) continue
+    if (r.minPH != null) {
+      const V = aqueousLitres(c.contents)
+      if (V < 1e-6) continue
+      pH ??= -Math.log10(solveH(c.contents.ions, V))
+      if (!(pH >= r.minPH)) continue
+    }
+    noteOnce(state, `ionhint-${r.all.join('+')}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${r.reason}`, 'warn')
+  }
+}
+
 // Gas leaving a vessel: counted for the whole bench and for the vessel it came from, so a guided step
 // can ask "did THIS vessel give off H₂" instead of reading a bench-wide total.
 export function releaseGas(state, c, gas, mol) {
@@ -344,7 +360,7 @@ function stepDissolve(state, s, c, h) {
   const waterG = (c.contents.liquids.water || 0) * LIQUIDS.water.density
   if (waterG < 0.05) return
   const M = molarMass(sol.formula)
-  const dissolvedG = (c.contents.ions[sol.counter === 'CO3' ? 'CO3' : sol.counter] || 0) * M
+  const dissolvedG = Math.min(...Object.entries(SALT_IONS[key]).map(([ion, n]) => (c.contents.ions[ion] || 0) / n)) * M
   const sat = solubilityAt(key, c.T) * waterG / 100
   const driving = 1 - dissolvedG / sat
   const k = 2e-4 * (1 + 3 * c.vis.stir) * 2 ** ((c.T - ROOM_T) / 10)
@@ -358,7 +374,7 @@ function stepDissolve(state, s, c, h) {
     noteOnce(state, `dissolve-${s.id}`, `${REAGENT_BY_ID[s.reagent].name} đang tan dần trong ${label(c)}.`)
     if (s.massG < 1e-6) { s.massG = 0; noteOnce(state, `dissolved-${s.id}`, `${REAGENT_BY_ID[s.reagent].name} đã tan hết.`) }
   }
-  else if (dn < 0) {
+  else if (dn < 0 && sol.counter !== 'CO3') {
     // Supersaturated: the crystal grows back (crystallisation).
     s.massG -= dn * M
     for (const [ion, n] of Object.entries(SALT_IONS[key])) c.contents.ions[ion] = Math.max(0, (c.contents.ions[ion] || 0) + n * dn)
@@ -371,6 +387,7 @@ export function crystallize(state, c, h) {
   const waterG = (c.contents.liquids.water || 0) * LIQUIDS.water.density
   for (const [key, sol] of Object.entries(SOLUBILITY)) {
     const counter = sol.counter
+    if (counter === 'CO3') continue // total carbonate is not bicarbonate: boiling Na₂CO₃ must not crystallise NaHCO₃
     const n = Math.min((c.contents.ions[sol.ion] || 0) / SALT_IONS[key][sol.ion], (c.contents.ions[counter] || 0) / SALT_IONS[key][counter])
     if (!(n > 0)) continue
     const M = molarMass(sol.formula)
@@ -397,6 +414,14 @@ function stepKinetics(state, s, c, h, rad, level) {
   const stirBoost = 1 + c.vis.stir
   const tempBoost = 2 ** ((c.T - ROOM_T) / 10)
   const area = solidArea(s)
+  const present = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 0)
+  const pHnow = -Math.log10(hConc)
+  const hintFirst = UNSUPPORTED_HINTS.find(r => r.all.every(k => present.includes(k) || k === s.reagent) && !(r.maxPH < pHnow))
+  if (hintFirst) {
+    c.unsupported = hintFirst.reason
+    noteOnce(state, `unsup-${s.reagent}-${c.id}`, `Chưa hỗ trợ mô phỏng phản ứng này: ${hintFirst.reason}`, 'warn')
+    return
+  }
   let anyRule = false
   for (const rule of KINETIC) {
     if (rule.solid !== s.reagent) continue
@@ -415,6 +440,8 @@ function stepKinetics(state, s, c, h, rad, level) {
     anyRule = true
     let xi = rule.k * area * driver * stirBoost * tempBoost * h
     xi = Math.min(xi, s.massG / REAGENT_BY_ID[s.reagent].molarMass)
+    // Acid attack cannot use more H⁺ than is free in one step (a hot, small volume used to overshoot to pH 13).
+    if (rule.driver === 'h') xi = Math.min(xi, 0.5 * hConc * V / Object.entries(rule.gives || {}).reduce((z, [ion, n]) => z + n * (IONS[ion]?.z || 1), 0))
     for (const [ion, n] of Object.entries(rule.consumes || {})) xi = Math.min(xi, (c.contents.ions[ion] || 0) / n)
     if (!(xi > 0)) continue
     s.massG -= xi * REAGENT_BY_ID[s.reagent].molarMass
@@ -446,8 +473,8 @@ function stepKinetics(state, s, c, h, rad, level) {
   if (!anyRule && !c.unsupported) {
     const drivers = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 0)
     const no = NO_REACTION.find(r => r.solid === s.reagent && (r.driver === 'h' ? hConc > 1e-3 : drivers.includes(r.driver)))
-    if (no) noteOnce(state, `norx-${s.reagent}-${c.id}`, `Không có phản ứng: ${no.reason}`, 'info')
-    const hint = UNSUPPORTED_HINTS.find(r => r.all.every(k => drivers.includes(k) || k === s.reagent))
+    const hint = UNSUPPORTED_HINTS.find(r => r.all.every(k => drivers.includes(k) || k === s.reagent) && !(r.maxPH < -Math.log10(hConc)))
+    if (no && !hint) noteOnce(state, `norx-${s.reagent}-${c.id}`, `Không có phản ứng: ${no.reason}`, 'info')
     if (hint) { c.unsupported = hint.reason; noteOnce(state, `unsup-${s.reagent}-${c.id}`, `Chưa có mô hình: ${hint.reason}`, 'warn') }
     // Any other metal + metal-ion pair: classified by E°, never silently ignored or given a guessed product.
     const Em = METAL_E0[s.reagent]
@@ -536,6 +563,7 @@ export function stepElectro(state, h) {
 export function stepContainer(state, c, h) {
   const def = EQUIPMENT[c.type]
   const vis = c.vis
+  ionHints(state, c)
   // Pouring by tilt: liquid above what the tilted vessel can retain flows over the lower lip.
   if (Math.abs(c.angle) > 0.05 && c.condition !== 'UNUSABLE') {
     const vol = volumeOf(c)

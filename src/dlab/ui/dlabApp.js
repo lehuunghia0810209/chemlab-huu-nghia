@@ -1316,8 +1316,13 @@ export function initDynamicLab(host) {
     if (!g) { box.hidden = true; ui.highlight = []; paintStrip(null); return }
     box.hidden = false
     const st = sim.state
+    // Undo/reset bring the simulation clock back: progress made after that moment is undone with it.
+    while (g.done.length && g.done[g.done.length - 1] > st.t + 1e-9) g.done.pop()
+    // A lesson object put away (or a check that cannot read its objects) must not stop the render loop.
+    g.missing = Object.values(g.roles).some(id => !byId(st, id))
+    const safe = fn => { try { return fn() } catch { return false } }
     const idx = g.done.length
-    if (idx < g.lab.steps.length && g.lab.steps[idx].check(st, g.roles)) { g.done.push(st.t); ui.solidChoice = {}; announce(`Hoàn thành bước ${idx + 1}`) }
+    if (!g.missing && idx < g.lab.steps.length && safe(() => g.lab.steps[idx].check(st, g.roles))) { g.done.push(st.t); ui.solidChoice = {}; announce(`Hoàn thành bước ${idx + 1}`) }
     const current = g.done.length
     const step = g.lab.steps[current]
     ui.highlight = step ? (step.target || []).map(r => g.roles[r]).filter(Boolean) : []
@@ -1364,10 +1369,11 @@ export function initDynamicLab(host) {
     }
     else {
       const names = (step.target || []).map(r => byId(st, g.roles[r])).filter(Boolean).map(o => objectTitle(st, o, { hideContents: g.lab.hideContents }))
-      const canWait = step.wait?.(st, g.roles)
+      let canWait = false
+      try { canWait = !g.missing && step.wait?.(st, g.roles) } catch {}
       html = `<div class="dlab-gstrip-main"><span class="dlab-gstep">Bước ${current + 1}/${total}</span><p class="dlab-gtask">${esc(step.text)}</p></div>
         <p class="dlab-gmeta">${names.length ? `<span><b>Thao tác với:</b> ${esc(names.join('; '))}</span>` : ''}</p>
-        ${(() => { const t = step.progress?.(st, g.roles) || misplaced(st, g, step); return t ? `<p class="dlab-gprogress" role="status">${esc(t)}</p>` : '' })()}
+        ${(() => { let t; try { t = g.missing ? 'Một dụng cụ hoặc cốc của bài đã bị cất khỏi bàn. Bấm “Hoàn tác” hoặc “Đặt lại” để tiếp tục.' : step.progress?.(st, g.roles) || misplaced(st, g, step) } catch { t = '' } return t ? `<p class="dlab-gprogress" role="status">${esc(t)}</p>` : '' })()}
         <div class="dlab-gacts">${canWait ? `<button type="button" class="dlab-btn dlab-btn--accent" data-gs="ffwd" ${ui.ffwd ? 'disabled' : ''}>${icon('forward')}<span>${ui.ffwd ? `Đang tua… ${fmtTime(st.t - ui.ffwd.t0)}` : 'Tua đến hiện tượng'}</span></button>` : ''}<button type="button" class="dlab-btn dlab-btn--ghost" data-gs="help" aria-expanded="${Boolean(ui.stripHelp)}">Gợi ý</button><button type="button" class="dlab-btn dlab-btn--ghost" data-gs="lesson">Bài học</button></div>
         ${ui.stripHelp && step.help ? `<p class="dlab-ghelp">${esc(step.help)}${step.done ? `<br><b>Hoàn thành khi:</b> ${esc(step.done)}` : ''}</p>` : ''}`
     }

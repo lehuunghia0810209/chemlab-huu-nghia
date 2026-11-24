@@ -782,6 +782,60 @@ test('guided steps: each has a completion sign and help; waiting steps can be fa
   assert.ok(Math.abs((sim2.state.t - t3) - small) < 0.6 * small, `2 g ${(sim2.state.t - t3).toFixed(0)} s vs 0.1 g ${small.toFixed(0)} s`)
 })
 
+// Findings of the independent (Antigravity) audit, reproduced as failing scenarios and fixed in the engine.
+test('audit fixes: no fabricated atoms, no overshoot, unsupported before any rule, honest notes', () => {
+  const naTotal = st => st.objects.reduce((a, o) => a + (o.contents?.ions['Na+'] || 0) + (o.type === 'solid' && o.reagent === 'nacl-s' ? o.massG / molarMass('NaCl') : 0), 0)
+  { // NaCl crystal in HCl (no Na⁺ yet) must dissolve, never grow by "using" Na that is not there.
+    const l = lab(11); const b = l.put('beaker100', 300); l.fill(b, 'hcl', 30)
+    const k = l.put('spatula', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'nacl-s', massG: 1 }); l.sim.dispatch({ type: 'release', tool: k.id })
+    const n0 = naTotal(l.s()); l.sim.runFor(30)
+    near(naTotal(l.s()), n0, 1e-7, 'Na conserved (float rounding only)')
+    assert.ok(l.s().objects.find(o => o.type === 'solid').massG < 1, 'it dissolves')
+  }
+  { // Boiling Na₂CO₃ must not crystallise NaHCO₃.
+    const l = lab(12); const b = l.put('beaker100', 300); l.fill(b, 'na2co3', 20)
+    byId(l.s(), b.id).T = 100; byId(l.s(), b.id).contents.liquids.water = 2; l.sim.runFor(5)
+    assert.ok(!l.s().objects.some(o => o.type === 'solid' && o.reagent === 'nahco3-s'), 'no NaHCO₃ crystal from carbonate')
+  }
+  { // Mg in a small hot volume of HCl: acid attack stops when the acid is used, it never turns the solution basic.
+    const l = lab(13); const b = l.put('beaker100', 300); l.fill(b, 'hcl', 5); byId(l.s(), b.id).T = 95
+    const k = l.put('tongs', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'mg', massG: 0.5 }); l.sim.dispatch({ type: 'release', tool: k.id })
+    for (let i = 0; i < 40; i += 1) { l.sim.runFor(0.25); assert.ok(byId(l.s(), b.id).pH < 7.5, `pH ${byId(l.s(), b.id).pH}`) }
+    assert.ok(!(byId(l.s(), b.id).contents.precipitates['Mg(OH)2'] > 0), 'no Mg(OH)₂ from HCl')
+    assert.ok(l.s().gas.H2 <= 5 * 0.5 / 1000 / 2 + 1e-9, 'H₂ ≤ half the HCl')
+  }
+  { // Iron in FeCl₃: unsupported (Fe³⁺ redox), no H₂ from its low pH.
+    const l = lab(14); const b = l.put('beaker100', 300); l.fill(b, 'fecl3', 30)
+    const k = l.put('tongs', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'fe', massG: 1 }); l.sim.dispatch({ type: 'release', tool: k.id })
+    l.sim.runFor(10)
+    assert.equal(l.s().gas.H2 || 0, 0, 'no H₂')
+    assert.match(l.s().log.map(e => e.text).join('|'), /Chưa hỗ trợ mô phỏng phản ứng này: Fe \+ Fe³⁺/)
+  }
+  { // FeCl₃ + KI (no solid at all) is reported, not silently ignored.
+    const l = lab(15); const b = l.put('beaker100', 300); l.fill(b, 'fecl3', 10); l.fill(b, 'ki', 10); l.sim.runFor(1)
+    assert.match(l.s().log.map(e => e.text).join('|'), /Fe³⁺ oxi hóa I⁻/)
+  }
+  { // "Trung hòa" only when H⁺ and OH⁻ meet: CuSO₄ + NaOH is a precipitation, HCl + NaOH is a neutralisation.
+    const l = lab(16); const a = l.put('beaker100', 200); l.fill(a, 'cuso4', 20); l.fill(a, 'naoh', 4)
+    const b = l.put('beaker100', 400); l.fill(b, 'hcl', 10); l.fill(b, 'naoh', 5); l.sim.runFor(0.5)
+    const text = l.s().log.map(e => e.text).join('|')
+    assert.ok(!text.includes(`trung hòa trong ${label(byId(l.s(), a.id))}`), 'no neutralisation note for CuSO₄ + NaOH')
+    assert.ok(text.includes(`trung hòa trong ${label(byId(l.s(), b.id))}`), 'neutralisation note for HCl + NaOH')
+  }
+  { // Textbook precipitates now in the registry, from Ksp (CRC).
+    for (const [x, y, key] of [['znso4', 'na2co3', 'ZnCO3'], ['bacl2', 'na2co3', 'BaCO3'], ['znso4', 'naoh', 'Zn(OH)2']]) {
+      const l = lab(17); const b = l.put('beaker100', 300); l.fill(b, x, 10); l.fill(b, y, 10)
+      assert.ok(byId(l.s(), b.id).contents.precipitates[key] > 0, `${x} + ${y} → ${key}`)
+    }
+  }
+  { // A save with a rounding residue (−1e−15 mol after a reactant ran out) still loads.
+    const l = lab(18); const b = l.put('beaker100', 300); l.fill(b, 'hcl', 10)
+    const save = { schema: 1, state: JSON.parse(JSON.stringify(l.s())) }
+    save.state.objects.find(o => o.id === b.id).contents.ions['Cl-'] = -1e-15
+    assert.equal(validateSave(save), null)
+  }
+})
+
 // Metal + metal-ion pairs without a rule are classified by E° (CRC), never silently ignored or given a product.
 test('reaction coverage: unmodelled metal/ion pairs are NO_REACTION or UNSUPPORTED by E°, with no invented product', () => {
   const run = (metal, sol) => {

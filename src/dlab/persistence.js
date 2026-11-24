@@ -21,7 +21,7 @@ export function validateSave(save) {
     if (o.reagent && !REAGENT_BY_ID[o.reagent]) return 'Hóa chất không hợp lệ.'
     if (o.contents) {
       for (const group of ['liquids', 'ions', 'indicators', 'precipitates']) {
-        for (const v of Object.values(o.contents[group] || {})) if (!(Number.isFinite(v) && v >= 0)) return 'Lượng chất âm hoặc không hợp lệ.'
+        for (const v of Object.values(o.contents[group] || {})) if (!(Number.isFinite(v) && v >= -1e-12)) return 'Lượng chất âm hoặc không hợp lệ.'
       }
     }
     if (typeof o.label === 'string' && o.label.length > 120) return 'Nhãn quá dài.'
