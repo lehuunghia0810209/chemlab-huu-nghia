@@ -205,7 +205,10 @@ Tôi không dùng kết quả của lần đạt để thay cho lần hỏng.
 - `curl` mất 10–15 ms cả trước lẫn sau (đo bằng `Invoke-WebRequest` thì khoảng 400 ms, nhưng đó là độ trễ riêng của lệnh PowerShell).
 - Trên máy hiện có 2 server dev ChemLab và 1 server dev PhysicsLab chạy song song, cùng nhiều tiến trình khác.
 - Kết luận: trong phiên này **không tái hiện được** chuyện 5173 bị treo, và không thấy dấu hiệu rò tài nguyên theo số handle. Phần bộ nhớ tăng có thể do Vite cache module. Nhận định “sự cố môi trường” của Codex chưa được chứng minh hay bác bỏ.
-- Một tiến trình `vite preview --port 4173` (PID 1372) do lệnh debug của tôi khởi động vẫn đang chạy. Lệnh tắt bị chặn quyền, nên cần chủ sở hữu tự tắt.
+- Tiến trình `vite preview --port 4173 --strictPort` (PID 1372, cha là npx PID 10352) vẫn đang chạy.
+  - Được tạo lúc 24/11/2026 10:52:38–40, trùng thời điểm và đúng câu lệnh debug của phiên này.
+  - Đang lắng nghe trên `::1:4173`.
+  - Lệnh tắt bị chặn quyền; chủ sở hữu có thể tắt bằng `Stop-Process -Id 1372,10352`.
 
 ## 13. Giới hạn còn lại
 
@@ -232,9 +235,11 @@ Tôi không dùng kết quả của lần đạt để thay cho lần hỏng.
 
 ## 15. Commit
 
-**Chưa commit.** Lệnh `git add`/`git commit` bị chặn quyền trong phiên này. Các thay đổi nằm trong working tree, HEAD vẫn là `acfaaae`.
+**Commit `34fd4de`** (cục bộ, chưa push), cha là `acfaaae`. Chủ sở hữu cho phép ngày 24/11/2026, sau lần bị chặn quyền đầu tiên.
+- Commit gồm 31 file, theo pathspec rõ ràng.
+- Các file mới được `git add` theo đúng tên; không dùng `git add .` hay `git add -A`.
 
-Nếu chủ sở hữu đồng ý, commit bằng pathspec rõ ràng gồm:
+Pathspec đã commit:
 - `src/dlab/engine/{processes,sim}.js`
 - `src/dlab/guided.js`
 - `src/dlab/ui/{dlab.css,dlabApp.js,labels.js,library.js,render2d.js,render3d.js}`
