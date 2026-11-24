@@ -303,8 +303,13 @@ export function initDynamicLab(host) {
   }
 
   // Usable, non-stock vessels on the bench, nearest to x first.
+  // Vessels to offer as a target. In a guided step the step's own target vessels (by object id) come
+  // first, so every "Rót/Nhỏ/Thả vào" list defaults to the right vessel; then the nearest ones.
   function vessels(x = view.x, exclude = null) {
-    return sim.state.objects.filter(c => isContainer(c) && !c.stock && c.id !== exclude && c.condition !== 'UNUSABLE').sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))
+    const step = ui.guided && ui.guided.lab.steps[ui.guided.done.length]
+    const want = new Set((step?.target || []).map(r => ui.guided.roles[r]))
+    return sim.state.objects.filter(c => isContainer(c) && !c.stock && c.id !== exclude && c.condition !== 'UNUSABLE')
+      .sort((a, b) => want.has(b.id) - want.has(a.id) || Math.abs(a.x - x) - Math.abs(b.x - x))
   }
   function chooseVessel(title, pool) {
     return choiceDialog(title, pool.map(c => ({ value: c.id, title: objLabel(c), sub: volumeOf(c) > 0.05 ? `${num(volumeOf(c), 1)} mL${c.pH != null ? ` · pH ${num(c.pH, 1)}` : ''}` : 'đang trống' }))).then(id => id && byId(sim.state, id))
@@ -667,7 +672,7 @@ export function initDynamicLab(host) {
   }
 
   // Re-rendering on every tick would detach buttons mid-click; when only numbers change, update text in place.
-  function patch(el, html) {
+  function patch(el, html, keepPicks = true) {
     if (el.dataset.html === html) return
     // Only numbers in text may change in place; any attribute change (an option's value when the list is
     // re-ordered) rebuilds the markup, or the visible name and the real target could disagree.
@@ -681,7 +686,7 @@ export function initDynamicLab(host) {
     }
     else {
       // Keep what the student picked in a list (target vessel, source…) if it is still offered.
-      const picked = [...el.querySelectorAll('select[data-qa-in]')].map(s => [s.dataset.qaIn, s.value])
+      const picked = keepPicks ? [...el.querySelectorAll('select[data-qa-in]')].map(s => [s.dataset.qaIn, s.value]) : []
       el.innerHTML = html
       el.dataset.skel = skeleton
       for (const [k, v] of picked) { const s = el.querySelector(`select[data-qa-in="${k}"]`); if (s && [...s.options].some(o => o.value === v)) s.value = v }
@@ -890,6 +895,7 @@ export function initDynamicLab(host) {
     if (!o) {
       const hasStuff = sim.state.objects.length > 0
       bar.dataset.kind = 'hint'
+      bar.dataset.owner = ''
       patch(bar, `<p class="dlab-bar-hint">${icon('help')}<span>${hasStuff ? 'Chọn một vật trên bàn để thấy các thao tác chính. Kéo vật để di chuyển.' : 'Lấy dụng cụ và hóa chất từ Thư viện để bắt đầu.'}</span></p>`)
     }
     else {
@@ -897,7 +903,10 @@ export function initDynamicLab(host) {
       const r = o.type === 'solid' || o.stock ? REAGENT_BY_ID[o.reagent] : null
       const name = o.type === 'solid' ? solidName(o) : objLabel(o)
       const head = `<div class="dlab-bar-head">${iconFor(r ? { reagentDef: r } : { type: o.type })}<div><strong>${esc(name)}</strong><span>${esc(summary(o))}</span></div></div>`
-      patch(bar, `${head}<div class="dlab-bar-acts">${quickActions(o)}<button type="button" class="dlab-btn dlab-btn--ghost" data-qa="details">Chi tiết</button></div>`)
+      // A pick is kept only while the bar still belongs to the same object (never carried to another tool).
+      const same = bar.dataset.owner === o.id
+      bar.dataset.owner = o.id
+      patch(bar, `${head}<div class="dlab-bar-acts">${quickActions(o)}<button type="button" class="dlab-btn dlab-btn--ghost" data-qa="details">Chi tiết</button></div>`, same)
     }
     if (bar.offsetHeight !== before) reframe()
   }
@@ -1331,6 +1340,19 @@ export function initDynamicLab(host) {
   // Step strip above the bench: step n/N, the task, the objects to use, how completion is recognised,
   // help on request, and — for steps that are only waiting — a jump to the next phenomenon.
   const strip = $('.dlab-gstrip')
+  // Recovery for any step that needs a solid in a given vessel: if the piece went into another vessel,
+  // say where it is and what to do, from the step's own data (need + target roles), for every lesson.
+  function misplaced(st, g, step) {
+    const target = (step.target || []).map(r => byId(st, g.roles[r])).find(c => c && isContainer(c) && !c.stock)
+    if (!target || !step.need?.length) return ''
+    for (const n of step.need) {
+      const wrong = st.objects.find(o => o.type === 'solid' && o.reagent === n.reagent && o.in && o.in !== target.id)
+      if (wrong && !st.objects.some(o => o.type === 'solid' && o.reagent === n.reagent && o.in === target.id)) {
+        return `${REAGENT_BY_ID[n.reagent].name} đang ở ${objLabel(byId(st, wrong.in))}, không phải ${objLabel(target)}. Lấy mẩu mới và thả vào ${objLabel(target)}.`
+      }
+    }
+    return ''
+  }
   function paintStrip(g, step, current) {
     if (!g) { if (!strip.hidden) { strip.hidden = true; requestAnimationFrame(resize) } return }
     const st = sim.state
@@ -1344,7 +1366,7 @@ export function initDynamicLab(host) {
       const canWait = step.wait?.(st, g.roles)
       html = `<div class="dlab-gstrip-main"><span class="dlab-gstep">Bước ${current + 1}/${total}</span><p class="dlab-gtask">${esc(step.text)}</p></div>
         <p class="dlab-gmeta">${names.length ? `<span><b>Thao tác với:</b> ${esc(names.join('; '))}</span>` : ''}${step.done ? `<span><b>Hoàn thành khi:</b> ${esc(step.done)}</span>` : ''}</p>
-        ${step.progress ? `<p class="dlab-gprogress" role="status">${esc(step.progress(st, g.roles))}</p>` : ''}
+        ${(() => { const t = step.progress?.(st, g.roles) || misplaced(st, g, step); return t ? `<p class="dlab-gprogress" role="status">${esc(t)}</p>` : '' })()}
         <div class="dlab-gacts">${canWait ? `<button type="button" class="dlab-btn dlab-btn--accent" data-gs="ffwd" ${ui.ffwd ? 'disabled' : ''}>${icon('forward')}<span>${ui.ffwd ? `Đang tua… ${fmtTime(st.t - ui.ffwd.t0)}` : 'Tua đến hiện tượng'}</span></button>` : ''}<button type="button" class="dlab-btn dlab-btn--ghost" data-gs="help" aria-expanded="${Boolean(ui.stripHelp)}">Gợi ý</button><button type="button" class="dlab-btn dlab-btn--ghost" data-gs="lesson">Bài học</button></div>
         ${ui.stripHelp && step.help ? `<p class="dlab-ghelp">${esc(step.help)}</p>` : ''}`
     }

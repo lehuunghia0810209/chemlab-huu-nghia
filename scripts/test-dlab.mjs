@@ -782,6 +782,32 @@ test('guided steps: each has a completion sign and help; waiting steps can be fa
   assert.ok(Math.abs((sim2.state.t - t3) - small) < 0.6 * small, `2 g ${(sim2.state.t - t3).toFixed(0)} s vs 0.1 g ${small.toFixed(0)} s`)
 })
 
+// A guided step is completed only by evidence from its own target objects, never by a bench-wide total.
+test('guided steps: gas from another vessel does not complete a step; gas is counted per vessel and conserved', () => {
+  const sim = createSim(8)
+  const lab = GUIDED.find(g => g.id === 'metals')
+  const roles = lab.setup(sim)
+  const t = byId(sim.state, roles.tongs)
+  // Zinc into the WATER dish (wrong vessel) — no H₂ from zinc there; then a second acid beaker elsewhere makes H₂.
+  const other = sim.dispatch({ type: 'add', equipmentType: 'beaker100', x: 120, y: 0 }, { record: false }).id
+  sim.dispatch({ type: 'addReagentTo', id: other, reagent: 'hcl', mL: 40 }, { record: false })
+  sim.dispatch({ type: 'move', id: t.id, x: 120, y: 160 })
+  sim.dispatch({ type: 'pick', tool: t.id, reagent: 'zn', massG: 0.5 })
+  sim.dispatch({ type: 'release', tool: t.id })
+  sim.runFor(20)
+  assert.ok(sim.state.gas.H2 > 2e-5, 'H₂ was made on the bench')
+  assert.equal(lab.steps[2].check(sim.state, roles), false, 'but not in the step’s acid beaker: step 3 not done')
+  const vessels = sim.state.objects.filter(o => o.gasOut)
+  near(vessels.reduce((a, c) => a + (c.gasOut.H2 || 0), 0), sim.state.gas.H2, 1e-12, 'per-vessel H₂ adds up to the bench total')
+  // Zinc into the right beaker completes it.
+  sim.dispatch({ type: 'move', id: t.id, x: byId(sim.state, roles.acid).x, y: 160 })
+  sim.dispatch({ type: 'pick', tool: t.id, reagent: 'zn', massG: 0.5 })
+  sim.dispatch({ type: 'release', tool: t.id })
+  let n = 0
+  while (!lab.steps[2].check(sim.state, roles) && n++ < 120) sim.runFor(0.5)
+  assert.ok(lab.steps[2].check(sim.state, roles))
+})
+
 // CL7-QA-001: the precipitate step states how much NaOH the model needs and reports progress from state.
 test('guided precipitate: NaOH amount is stated from the model, progress is quantitative, drops reach it', () => {
   const lab = GUIDED.find(g => g.id === 'precipitate')

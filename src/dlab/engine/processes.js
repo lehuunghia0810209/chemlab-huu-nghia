@@ -262,6 +262,14 @@ function trimParticles(c) {
   }
 }
 
+// Gas leaving a vessel: counted for the whole bench and for the vessel it came from, so a guided step
+// can ask "did THIS vessel give off H₂" instead of reading a bench-wide total.
+export function releaseGas(state, c, gas, mol) {
+  state.gas[gas] = (state.gas[gas] || 0) + mol
+  c.gasOut = c.gasOut || {}
+  c.gasOut[gas] = (c.gasOut[gas] || 0) + mol
+}
+
 // ── Solids ───────────────────────────────────────────────────────────────
 // Reacting area (cm²). A ribbon keeps its face area while it thins; a wire/nail thins radially;
 // granules and powder shrink as spheres. Shape-based educational approximation.
@@ -418,7 +426,7 @@ function stepKinetics(state, s, c, h, rad, level) {
     const u = s.lx / Math.max(1, halfWidthAt(EQUIPMENT[c.type], 0))
     const v = Math.min(1, s.ly / Math.max(1, level))
     for (const [gas, n] of Object.entries(rule.gas || {})) {
-      state.gas[gas] = (state.gas[gas] || 0) + n * xi
+      releaseGas(state, c, gas, n * xi)
       emitBubbles(state, c, gas, n * xi, u, v)
     }
     if (rule.moves && s.ly > 0) {
@@ -481,7 +489,7 @@ export function stepElectro(state, h) {
     c.contents.ions['Cu2+'] = cu - ne / 2
     c.contents.ions['Cl-'] = cl - ne
     el.cuDeposit = (el.cuDeposit || 0) + ne / 2
-    state.gas.Cl2 = (state.gas.Cl2 || 0) + ne / 2
+    releaseGas(state, c, 'Cl2', ne / 2)
     el.charge = (el.charge || 0) + ne * FARADAY
     const hw = Math.max(1, halfWidthAt(EQUIPMENT[c.type], 0))
     emitBubbles(state, c, 'Cl2', ne / 2, (el.x + 10 - c.x) / hw, Math.max(0, (el.y - c.y) / Math.max(1, surfaceY(c) - c.y)))
@@ -549,7 +557,7 @@ export function stepContainer(state, c, h) {
     if (h2co3 > sat) {
       const dn = Math.min((h2co3 - sat) * V * (1 - Math.exp(-h * (2 + 4 * vis.stir))), c.contents.ions.CO3)
       c.contents.ions.CO3 -= dn
-      state.gas.CO2 = (state.gas.CO2 || 0) + dn
+      releaseGas(state, c, 'CO2', dn)
       emitBubbles(state, c, 'CO2', dn, (rand(state) - 0.5) * 1.6, rand(state) * 0.6)
       c.dirty = true
       if (dn > 1e-7) { c.activeReactions.co2 = state.t; noteOnce(state, `co2-${c.id}`, `Sủi bọt khí CO₂ không màu trong ${label(c)}.`) }
