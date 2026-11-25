@@ -8,13 +8,13 @@ import { isContainer, volumeOf, label, byId } from '../engine/processes.js'
 // Short textbook explanations shown once a modelled reaction has run to completion (UI text only).
 const EXPLAIN = {
   'na-water': 'Natri là kim loại rất hoạt động: khử nước tạo NaOH (dung dịch có tính bazơ) và khí H₂. Natri nhẹ hơn nước nên nổi; khí thoát ra không đều đẩy mẩu natri chạy trên mặt nước.',
-  'mg-acid': 'Mg đứng trước H trong dãy hoạt động hóa học nên đẩy được H₂ ra khỏi axit loãng.',
-  'zn-acid': 'Zn đứng trước H trong dãy hoạt động hóa học nên đẩy được H₂ ra khỏi axit loãng.',
-  'fe-acid': 'Fe đứng trước H nên tác dụng với axit loãng, tạo muối sắt(II) và khí H₂.',
+  'mg-acid': 'Mg đứng trước H trong dãy hoạt động hóa học nên đẩy được H₂ ra khỏi dung dịch axit không có tính oxi hóa mạnh (như HCl, H₂SO₄ loãng).',
+  'zn-acid': 'Zn đứng trước H trong dãy hoạt động hóa học nên đẩy được H₂ ra khỏi dung dịch axit không có tính oxi hóa mạnh (như HCl, H₂SO₄ loãng).',
+  'fe-acid': 'Fe đứng trước H nên tác dụng với dung dịch axit không có tính oxi hóa mạnh (như HCl, H₂SO₄ loãng), tạo muối sắt(II) và khí H₂.',
   'fe-cu': 'Fe hoạt động mạnh hơn Cu nên đẩy Cu ra khỏi dung dịch muối; đồng đỏ bám lên đinh sắt, màu xanh của Cu²⁺ nhạt dần.',
   'zn-cu': 'Zn hoạt động mạnh hơn Cu nên đẩy Cu ra khỏi dung dịch muối.',
   'cu-ag': 'Cu hoạt động mạnh hơn Ag nên đẩy Ag ra khỏi dung dịch muối; dung dịch có màu xanh của Cu²⁺.',
-  'caco3-acid': 'Muối cacbonat tác dụng với axit mạnh, giải phóng khí CO₂.'
+  'caco3-acid': 'Muối cacbonat tác dụng với axit mạnh hơn H₂CO₃ (như HCl, CH₃COOH), giải phóng khí CO₂.'
 }
 
 const fmt = (x, d = 1) => Number(x).toLocaleString('vi-VN', { maximumFractionDigits: d })
@@ -53,7 +53,7 @@ export function observe(state) {
       if (now - t > 1.2) continue
       const rule = KINETIC.find(r => r.id === id)
       if (rule) happening.push({ key: `${id}-${c.id}`, where: label(c), text: rule.observe, equation: rule.equation })
-      else if (id === 'co2') happening.push({ key: `co2-${c.id}`, where: label(c), text: 'Sục khí CO₂ vào dung dịch: có bọt khí.' })
+      else if (id === 'co2') happening.push({ key: `co2-${c.id}`, where: label(c), text: c.co2Feed ? 'Đang sục khí CO₂ vào dung dịch: có bọt khí.' : 'Khí CO₂ thoát ra khỏi dung dịch: sủi bọt khí không màu.' })
     }
     const solids = state.objects.filter(s => s.type === 'solid' && s.in === c.id && s.massG > 0 && REAGENT_BY_ID[s.reagent]?.dissolves)
     for (const s of solids) if (now - (state.notes[`dissolve-${s.id}`] ?? -99) < 30) happening.push({ key: `dis-${s.id}`, where: label(c), text: `${REAGENT_BY_ID[s.reagent].name} đang tan dần.` })

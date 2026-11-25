@@ -1099,7 +1099,7 @@ test('review 3: salts before redox, no redox in base, indicator drops keep pH, o
   const k2 = lab(44); const K = k2.put('beaker100', 300); k2.fill(K, 'ki', 50)
   const el2 = k2.put('electrodes', 300, { y: 10 }); const p2 = k2.put('power', 450)
   k2.sim.dispatch({ type: 'wire', from: p2.id, to: el2.id }); k2.sim.dispatch({ type: 'power', id: p2.id, on: true, volts: 6 }, { confirmed: true }); k2.sim.runFor(1)
-  assert.match(byId(k2.s(), p2.id).status, /chưa được mô hình hóa \(mô hình hỗ trợ dung dịch CuCl₂\)/)
+  assert.match(byId(k2.s(), p2.id).status, /chưa được mô hình hóa \(mô hình hiện chỉ hỗ trợ dung dịch CuCl₂/)
   // AgNO₃ + a little NaOH is flagged (Ag₂O), Ag₂CO₃ in carbonate is not.
   const a = lab(45); const A = a.put('beaker100', 300); a.fill(A, 'agno3', 10); a.fill(A, 'naoh', 3); a.sim.runFor(0.5)
   assert.match(a.s().log.map(x => x.text).join('|'), /Ag₂O/)
@@ -1252,6 +1252,98 @@ test('ammine complexes: model — Cu(OH)₂ forms then dissolves in excess NH₃
     l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(1)
     assert.doesNotMatch(byId(l.s(), p.id).status, /phức/, `${JSON.stringify(fills)}: ${byId(l.s(), p.id).status}`)
     assert.ok(!(byId(l.s(), c.id).contents.precipitates.CuI > 0))
+  }
+})
+
+// Foundation scientific audit (Antigravity review, verified): each confirmed defect, now a regression test.
+test('audit: Ca(OH)₂ / CaSO₄ / carbonate hints fire only when real; AgCl is not free Ag⁺; Na safety; guided checks', () => {
+  const notes = l => Object.keys(l.s().notes)
+  const mixN = fills => { const l = lab(90); const B = l.put('beaker250', 300); for (const [r, mL] of fills) l.fill(B, r, mL); l.sim.runFor(0.5); return notes(l) }
+  assert.ok(mixN([['cacl2', 20], ['naoh', 20]]).some(k => k.startsWith('ionhint-Ca2+-')), 'CaCl₂ + NaOH: Ca(OH)₂ flagged')
+  assert.ok(!mixN([['caoh2', 100]]).some(k => k.startsWith('ionhint-Ca2+-')), 'limewater 0,02 M alone is not supersaturated')
+  assert.ok(mixN([['cacl2', 20], ['na2so4', 20]]).some(k => k.startsWith('ionhint-Ca2++SO4-')), 'CaSO₄ flagged at 0,1 M')
+  assert.ok(!mixN([['cacl2', 2], ['na2so4', 2], ['water', 100]]).some(k => k.startsWith('ionhint-Ca2++SO4-')), 'dilute CaSO₄ stays dissolved')
+  assert.ok(!mixN([['agno3', 10], ['nacl', 20], ['feso4', 10]]).some(k => k.startsWith('ionhint-Ag++Fe2+-')), 'AgCl (E° 0,22 V) is not Ag⁺ for Fe²⁺')
+  assert.ok(mixN([['agno3', 10], ['feso4', 10]]).some(k => k.startsWith('ionhint-Ag++Fe2+-')), 'free Ag⁺ + Fe²⁺ flagged')
+  // Na: acidity is checked even when the pH display is hidden (ethanol > 10 %); ethanol-rich liquid, narrow mouths, hot water.
+  const na = (vessel, fills, T) => {
+    const l = lab(61); const v = l.put(vessel, 300); for (const [r, mL] of fills) l.fill(v, r, mL); if (T) byId(l.s(), v.id).T = T
+    const k = l.put('tongs', 300, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
+    return l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true }).verdict
+  }
+  assert.equal(na('dish', [['hcl', 100], ['ethanol', 30]]).level, 'block', 'HCl + ethanol: still blocked')
+  assert.equal(na('dish', [['ethanol', 100]]).level, 'block', 'ethanol: blocked')
+  assert.doesNotMatch(na('dish', [['ethanol', 100]]).reasons.join(' '), /50 mL nước/, 'no advice to add water to sodium + ethanol')
+  assert.equal(na('flask', [['water', 90]]).level, 'block', 'narrow-mouthed flask')
+  assert.equal(na('dish', [['water', 150]], 70).level, 'block', 'hot water')
+  assert.notEqual(na('dish', [['water', 150], ['phenolphthalein', 0.15]]).level, 'block', 'water with indicator drops is allowed')
+  // Guided lab 1, step 5: a hidden pH (null) or no neutralisation does not pass.
+  const step5 = GUIDED[0].steps[4].check
+  const B = { id: 'B', contents: { indicators: { phenolphthalein: 2 }, ions: { 'Cl-': 1e-4 }, liquids: {}, precipitates: {} }, pH: null }
+  assert.equal(step5({ objects: [B], notes: {} }, { B: 'B' }), false, 'pH null')
+  assert.equal(step5({ objects: [{ ...B, pH: 7 }], notes: {} }, { B: 'B' }), false, 'no neutralisation note')
+  assert.equal(step5({ objects: [{ ...B, pH: 7 }], notes: { 'neutral-B': 1 } }, { B: 'B' }), true, 'neutralised')
+  // Neutralisation wording: H⁺ + OH⁻ only for a strong acid with a strong base.
+  { const l = lab(91); const B2 = l.put('beaker250', 300); l.fill(B2, 'na2co3', 20); l.fill(B2, 'hcl', 20); assert.doesNotMatch(l.s().log.map(e => e.text).join('|'), /H⁺ \+ OH⁻ → H₂O/, 'carbonate + acid') }
+  { const l = lab(92); const B2 = l.put('beaker250', 300); l.fill(B2, 'naoh', 20); l.fill(B2, 'hcl', 20); assert.match(l.s().log.map(e => e.text).join('|'), /H⁺ \+ OH⁻ → H₂O/, 'NaOH + HCl') }
+  // Fe nail over Cu(OH)₂ in excess NaOH: no displacement reported.
+  { const l = lab(93); const B2 = l.put('beaker250', 300); l.fill(B2, 'cuso4', 10); l.fill(B2, 'naoh', 40); const k = l.put('tongs', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'fe', massG: 2 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true }); l.sim.runFor(5); assert.ok(!notes(l).some(n => n.startsWith('rx-fe-cu-')), 'no Fe + Cu²⁺ over Cu(OH)₂ in base') }
+  // Boiling HCl dry leaves no "crystals".
+  { const l = lab(94); const B2 = l.put('beaker100', 300); l.fill(B2, 'hcl', 1); const b = l.put('burner', 300); byId(l.s(), B2.id).y = 0; l.sim.dispatch({ type: 'move', id: B2.id, x: 300, y: EQUIPMENT.burner.h }, { confirmed: true }); l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { confirmed: true }); l.sim.runFor(240); const t = l.s().log.map(e => e.text).join('|'); if (/đã cạn|bay hơi hết/.test(t)) assert.doesNotMatch(t, /chất rắn kết tinh/, 'HCl leaves no crystals') }
+})
+
+// Gate 5: quantitative checks against hand-solved equilibria (constants written here from the cited tables, not read
+// from the engine). Equimolar mixing leaves [M] = [X] = √Ksp (no hydrolysis or protonation at pH ≈ 7 for these ions).
+test('validation: equimolar AgCl, AgI, BaSO₄ leave √Ksp dissolved (CRC Ksp, 25 °C)', () => {
+  for (const [a, b, ion, Ksp] of [['agno3', 'nacl', 'Ag+', 1.77e-10], ['agno3', 'ki', 'Ag+', 8.52e-17], ['bacl2', 'na2so4', 'Ba2+', 1.08e-10]]) {
+    const { sim, put, fill, s } = makeLab(5)
+    const B = put('beaker250', 300)
+    const mA = 10 * REAGENT_BY_ID[a].M
+    fill(B, a, 10); fill(B, b, mA / REAGENT_BY_ID[b].M) // equal moles of cation and anion
+    sim.runFor(0.5)
+    const c = byId(s(), B.id)
+    const V = (c.contents.liquids.water || 0) / 1000
+    const freeM = (c.contents.ions[ion] || 0) / V
+    // BaSO₄: a few % of the sulfate is HSO₄⁻ near pH 7 is negligible (pKa2 1,99), so √Ksp holds to < 1 %.
+    rel(freeM, Math.sqrt(Ksp), 0.02, `${a} + ${b}: dissolved ${ion}`)
+  }
+})
+// AgCl partly dissolved in NH₃: s² = Ksp·β₂·L², L = N − 2s − [NH₄⁺], [NH₄⁺] ≈ √(Kb·L) (β₁ term < 0,1 %, neglected).
+// 1 mmol AgCl (10 mL 0,1 M AgNO₃ + 2 mL 0,5 M NaCl) + 5 mL NH₃ 2 M, V = 17 mL → s ≈ 0,0239 M (0,41 mmol).
+test('validation: AgCl partly dissolved in NH₃ matches the hand solution (Ksp 1,77·10⁻¹⁰, lg β₂ 7,05, Kb 1,79·10⁻⁵)', () => {
+  const Ksp = 1.77e-10; const b2 = 10 ** 7.05; const Kb = 1e-14 / 5.6e-10
+  const V = 0.017; const N = 0.010 / V
+  let sAg = 0
+  for (let i = 0; i < 50; i += 1) { const L0 = N - 2 * sAg; const L = L0 - Math.sqrt(Kb * L0); sAg = Math.sqrt(Ksp * b2) * L }
+  const { sim, put, fill, s } = makeLab(6)
+  const B = put('beaker100', 300)
+  fill(B, 'agno3', 10); fill(B, 'nacl', 2); fill(B, 'nh3-2m', 5)
+  sim.runFor(0.5)
+  const c = byId(s(), B.id)
+  rel(1e-3 - (c.contents.precipitates.AgCl || 0), sAg * V, 0.03, 'AgCl dissolved (mol)')
+})
+
+// Gate 1 (scientific core): every manifest scenario conserves the elements it was given. The input is computed here
+// from the reagent formulas and amounts (not from the engine); the bench + gas released must account for it.
+// H and O are excluded (exchanged with water); stock bottles are not on the bench inventory.
+test('gate 1: every manifest scenario conserves elements (input from formulas vs bench + gas out)', () => {
+  const atoms = f => { const out = {}; const re = /([A-Z][a-z]?)(\d*)|\(([^()]+)\)(\d*)/g; let m; while ((m = re.exec(f))) { if (m[1]) out[m[1]] = (out[m[1]] || 0) + Number(m[2] || 1); else { const inner = atoms(m[3]); for (const [e, n] of Object.entries(inner)) out[e] = (out[e] || 0) + n * Number(m[4] || 1) } } return out }
+  const GAS = { H2: {}, O2: {}, CO2: { C: 1 }, Cl2: { Cl: 2 }, steam: {}, NH3: { N: 1 } }
+  for (const e of MANIFEST.filter(x => x.demo)) {
+    const d = e.demo
+    const input = {}
+    const addIn = (f, mol) => { for (const [el, n] of Object.entries(atoms(f))) if (el !== 'H' && el !== 'O') input[el] = (input[el] || 0) + n * mol }
+    for (const [r, mL] of [...d.fill, ...(d.pour ? [d.pour] : [])]) { const R = REAGENT_BY_ID[r]; if (R.kind === 'solution') addIn(R.formula, R.M * mL / 1000) }
+    if (d.solid) addIn(REAGENT_BY_ID[d.solid[0]].formula, d.solid[1] / molarMass(REAGENT_BY_ID[d.solid[0]].formula))
+    const { s } = runDemo(d)
+    const out = {}
+    for (const [el, n] of Object.entries(benchInventory(s))) if (el !== 'H' && el !== 'O') out[el] = n
+    for (const o of s.objects) for (const [g, mol] of Object.entries(o.gasOut || {})) for (const [el, n] of Object.entries(GAS[g] || {})) out[el] = (out[el] || 0) + n * mol
+    for (const el of new Set([...Object.keys(input), ...Object.keys(out)])) {
+      const a = input[el] || 0; const b = out[el] || 0
+      assert.ok(Math.abs(a - b) <= 1e-9 + 1e-6 * Math.max(a, b), `${e.id}: ${el} in ${a} vs out ${b}`)
+    }
   }
 })
 

@@ -1,0 +1,34 @@
+Foundation scientific audit regression (result lines from the run logs; *.log is git-ignored)
+== npm run check
+PASS — version và dữ liệu ChemLab nhất quán.
+PASS — 49 chemistry core checks passed.
+PASS — 242 learning checks passed.
+PASS — 783 question checks passed (537 questions).
+PASS — 84 exam checks passed.
+PASS — 850 exam paper checks passed.
+PASS — 78 ChemLab 6.2 final checks passed.
+PASS — 15 ChemAI access-control checks passed.
+PASS — ChemAI Gemini API mock tests passed.
+PASS — 16 ChemAI Groq adapter checks passed.
+PASS — 31 ChemAI public-mode and token-budget checks passed.
+PASS — 27 ChemAI 6.7 routing checks passed.
+PASS — 20 ChemAI feedback/limit checks passed.
+PASS — 19 ChemAI rendering checks passed.
+PASS — 9 ChemAI evaluation grader checks passed.
+PASS — 23 ChemAI accuracy checks passed.
+== unit
+Dynamic Lab: 123/123 passed
+== sci-validate
+PASS — 104 checks passed, 0 skipped
+== e2e chromium
+      perf chromium high: 60.0 fps, p95 16.8 ms, long tasks 0, particles 480
+      perf chromium low: 60.0 fps, p95 16.7 ms, long tasks 0, particles 480
+Dynamic Lab E2E (chromium): 96/96 passed
+== guided walk
+DONE acid-base 5/5  ["1:giấy quỳ: Nhúng","2:giấy quỳ: Nhúng","3:giấy quỳ: Nhúng","4:ống nhỏ giọt: Hút → 5 giọt","5:chai HCl: Rót 9 mL"]
+DONE precipitate 5/5  ["1:ống nhỏ giọt: 8 thao tác","2:chờ lắng+tua","3:đũa: Khuấy","4:chai HCl: Rót 15 mL","5:thìa: Lấy muối (gợi ý đúng) → Thả+tua"]
+DONE metals 5/5  ["1:kẹp: Lấy đinh (gợi ý đúng) → Thả","2:chờ lớp Cu+tua","2b:kẹp: bấm đinh → Đặt lên bàn","3:kẹp: Lấy kẽm (gợi ý đúng) → Thả+tua","4:kẹp: Lấy natri → xác nhận → Thả","5:chờ natri tan+tua"]
+DONE electrolysis 5/5  ["1:kéo điện cực vào cốc","2:nguồn: Nối dây → 6 V → Bật","3:chờ Cu bám catot+tua","4:kẹp: Zn → Cốc B, Cu → Cốc C","5:cầu muối + vôn kế (bảng Chi tiết)"]
+DONE organic 4/4  ["1:giấy quỳ: Nhúng","2:thìa: NaHCO₃ (gợi ý đúng) → Thả+tua","3:chai oil: Rót 3 mL","4:chai ethanol: Rót 3 mL"]
+console errors 0 ChemAI requests 0
+== not run in this round: e2e firefox/webkit, check:browser

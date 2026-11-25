@@ -1,5 +1,6 @@
 // Safety Engine: every command is assessed BEFORE it runs.
 // level: ok | warn (needs confirmation, explained) | block (outside the safe educational model).
+import { solveH, aqueousLitres, polarPhase } from './chemistry.js'
 import { EQUIPMENT } from '../data/equipment.js'
 import { REAGENT_BY_ID } from '../data/materials.js'
 import { byId, containerAt, containerBelow, isContainer, volumeOf, label } from './processes.js'
@@ -39,9 +40,14 @@ export function assess(state, cmd) {
       const r = REAGENT_BY_ID[tool.load.reagent]
       const c = containerAt(state, tool.x, tool.y + 1) || containerBelow(state, tool.x, tool.y + 40)
       if (r.id === 'na' && c) {
-        if (c.type === 'testTube' || c.type === 'cylinder') block.push(`Không thả natri vào ${EQUIPMENT[c.type].name}: miệng hẹp làm khí và nhiệt dồn lại. Dùng chậu hoặc cốc rộng chứa nhiều nước.`)
-        if (c.pH != null && c.pH < 4) block.push('Natri với dung dịch axit phản ứng quá mãnh liệt — nằm ngoài phạm vi an toàn của phòng thí nghiệm ảo.')
-        if ((c.contents.liquids.water || 0) < 50 && !block.length) block.push('Cần ít nhất 50 mL nước để mẩu natri nhỏ phản ứng an toàn.')
+        if (['testTube', 'cylinder', 'flask', 'bottle'].includes(c.type)) block.push(`Không thả natri vào ${EQUIPMENT[c.type].name}: miệng hẹp làm khí H₂ và nhiệt dồn lại, dễ gây nổ bắn. Dùng chậu thủy tinh hoặc cốc miệng rộng chứa nhiều nước lạnh.`)
+        // Acidity from the ions themselves, not the displayed pH (hidden when ethanol > 10 %, which must not lift the block).
+        const V = aqueousLitres(c.contents)
+        if (V > 1e-6 && solveH(c.contents.ions, V) > 1e-4) block.push('Natri với dung dịch axit phản ứng quá mãnh liệt — nằm ngoài phạm vi an toàn của phòng thí nghiệm ảo.')
+        // A few drops of an ethanolic indicator in a basin of water do not count; an ethanol-rich liquid does.
+        if (polarPhase(c.contents).ethanolVol > 0.05) block.push('Không thả natri vào chất lỏng có etanol: phản ứng sinh H₂ và tỏa nhiệt, hơi etanol dễ bắt lửa. Mô phỏng chỉ cho thả natri vào nước.')
+        if (c.T > 40) block.push(`Không thả natri vào nước nóng (${c.T.toFixed(0)} °C): phản ứng cực kỳ mãnh liệt, dễ bắn dung dịch kiềm nóng.`)
+        if ((c.contents.liquids.water || 0) < 50 && !block.length) block.push('Cần ít nhất 50 mL nước ở nhiệt độ phòng trong chậu hoặc cốc miệng rộng để mẩu natri nhỏ phản ứng an toàn.')
         if (!block.length) warn.push('Phản ứng mạnh, tỏa nhiệt và sinh H₂ dễ cháy. Đứng xa, không cúi sát miệng chậu.')
       }
       if (c && c.condition === 'UNUSABLE') block.push(`${label(c)} đã hỏng, không thể chứa chất.`)
@@ -98,5 +104,12 @@ function heatChecks(c, warn, block) {
   if (c.condition === 'CRACKED') block.push(`${label(c)} đang bị nứt — đun nóng sẽ làm vỡ.`)
   if (c.condition === 'UNUSABLE') block.push(`${label(c)} đã vỡ.`)
   if ((c.contents?.liquids.ethanol || 0) > 0) warn.push('Có etanol dễ cháy trong dụng cụ: hơi etanol bắt lửa khi đun. Chỉ đun cách thủy, tránh lửa trần.')
+  // Volatile acids and ammonia give corrosive or irritating vapour when heated (HCl, HNO₃/NO₂, CH₃COOH, NH₃).
+  const ions = c.contents?.ions || {}
+  const V = c.contents ? aqueousLitres(c.contents) : 0
+  const acidic = V > 1e-6 && solveH(ions, V) > 1e-3
+  const fumes = [(acidic && (ions['Cl-'] || 0) > 1e-6) && 'HCl', (acidic && (ions['NO3-'] || 0) > 1e-6) && 'HNO₃', (acidic && (ions.OAc || 0) > 1e-6) && 'CH₃COOH', (!acidic && (ions.NH3 || 0) > 1e-6) && 'NH₃'].filter(Boolean)
+  if (fumes.length) warn.push(`Đun nóng dung dịch có ${fumes.join(', ')} làm thoát hơi ăn mòn hoặc gây kích ứng: chỉ đun trong tủ hút, đeo kính bảo hộ.`)
+  if ((ions['Ag+'] || 0) > 1e-6 && (ions.NH3 || 0) > 1e-6) block.push('Không đun nóng hoặc để cạn dung dịch bạc–amoniac: có thể tạo bạc nitrua dễ nổ.')
   if (volumeOf(c) < 0.05) warn.push('Đun dụng cụ rỗng làm thủy tinh rất nóng; cho chất lỏng lạnh vào sau đó có thể làm nứt.')
 }

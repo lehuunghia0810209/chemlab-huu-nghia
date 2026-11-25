@@ -1,7 +1,7 @@
 // Guided Labs: data only. They place equipment through the same commands as Sandbox and
 // check progress by reading the shared simulation state — no separate animation system.
 import { surfaceY, byId, volumeOf, coatCoverage } from './engine/processes.js'
-import { mix, reagentParcel } from './engine/chemistry.js'
+import { mix, reagentParcel, oilBelow } from './engine/chemistry.js'
 import { REAGENT_BY_ID } from './data/materials.js'
 
 const add = (sim, equipmentType, x, extra = {}) => sim.dispatch({ type: 'add', equipmentType, x, y: extra.y ?? 0, ...extra }, { record: false }).id
@@ -57,11 +57,11 @@ export const GUIDED = [
       { text: 'Lấy giấy quỳ mới (thư viện → Giấy quỳ tím), nhúng vào ống B.', done: 'Có giấy quỳ đã nhúng trong ống B.', help: 'Thư viện → Giấy quỳ tím (hoặc chọn giấy cũ → Chi tiết → Lấy giấy quỳ mới), rồi nhúng vào Ống B.', target: ['B'], check: (s, r) => papersIn(s, r.B).length > 0 },
       { text: 'Lấy giấy quỳ mới, nhúng vào ống C.', done: 'Có giấy quỳ đã nhúng trong ống C.', help: 'Lấy giấy quỳ mới từ Thư viện rồi nhúng vào Ống C.', target: ['C'], check: (s, r) => papersIn(s, r.C).length > 0 },
       { text: 'Hút phenolphtalein bằng ống nhỏ giọt, nhỏ 2–3 giọt vào ống làm quỳ hóa xanh.', done: 'Ống B có phenolphtalein.', help: 'Chọn ống nhỏ giọt → “Hút từ” chai Phenolphtalein → “Nhỏ vào” Ống B → 1 giọt (vài lần).', target: ['dropper', 'phph', 'B'], check: (s, r) => (obj(s, r.B).contents.indicators.phenolphthalein || 0) > 0 },
-      { text: 'Nhỏ từ từ HCl vào ống B (hút bằng ống nhỏ giọt) đến khi mất màu hồng.', done: 'Màu hồng trong ống B biến mất (pH < 8,2).', help: 'Chọn chai HCl → Rót khoảng 9 mL vào Ống B, hoặc hút HCl bằng một ống nhỏ giọt sạch và nhỏ nhiều lần.', target: ['acid', 'B'], check: (s, r) => (obj(s, r.B).contents.indicators.phenolphthalein || 0) > 0 && (obj(s, r.B).contents.ions['Cl-'] || 0) > 0 && obj(s, r.B).pH < 8.2 }
+      { text: 'Thêm từ từ HCl vào ống B đến khi vừa mất màu hồng.', done: 'Màu hồng trong ống B biến mất (pH < 8,2).', help: 'Chọn chai HCl → Rót khoảng 7 mL vào Ống B, rồi nhỏ tiếp từng ít (rót hoặc dùng ống nhỏ giọt sạch) đến khi vừa mất màu hồng.', target: ['acid', 'B'], check: (s, r) => { const b = obj(s, r.B); return (b.contents.indicators.phenolphthalein || 0) > 0 && (b.contents.ions['Cl-'] || 0) > 0 && b.pH != null && b.pH < 8.2 && s.notes[`neutral-${r.B}`] != null } }
     ],
     observe: 'A: quỳ đỏ. B: quỳ xanh, phenolphtalein hồng. C: quỳ không đổi màu. Thêm axit vào B, màu hồng biến mất khi pH < 8,2.',
     explain: 'HCl phân li tạo H⁺ (pH < 7). NaOH tạo OH⁻ (pH > 7). NaCl là muối của axit mạnh và bazơ mạnh nên trung tính. H⁺ + OH⁻ → H₂O làm pH giảm dần.',
-    conclusion: 'A là axit, B là bazơ, C là muối trung tính. Phản ứng trung hòa tạo nước và muối, tỏa nhiệt.'
+    conclusion: 'A là dung dịch axit, B là dung dịch bazơ, C là dung dịch có môi trường trung tính (ở đây là dung dịch muối NaCl). Phản ứng trung hòa giữa axit và bazơ tạo muối và nước, tỏa nhiệt.'
   },
   {
     id: 'precipitate',
@@ -98,7 +98,7 @@ export const GUIDED = [
         } },
       { text: 'Để yên và quan sát kết tủa lắng xuống đáy.', done: 'Phần lớn kết tủa đã nằm ở đáy cốc.', help: 'Không khuấy. Chờ, tăng tốc 4×, hoặc bấm “Tua đến hiện tượng”.', wait: () => true, target: ['beaker'], check: (s, r) => { const v = obj(s, r.beaker).vis.parts; return v.length > 5 && v.filter(p => p.settled).length / v.length > 0.6 } },
       { text: 'Dùng đũa thủy tinh khuấy: kết tủa lơ lửng trở lại.', done: 'Kết tủa lơ lửng trở lại trong dung dịch.', help: 'Chọn đũa thủy tinh → “Khuấy” Cốc A.', target: ['rod', 'beaker'], check: (s, r) => obj(s, r.beaker).vis.stir > 0.3 },
-      { text: 'Nhỏ HCl vào cốc đến khi kết tủa tan hết, dung dịch xanh trong trở lại.', done: 'Không còn kết tủa, dung dịch xanh trong.', help: 'Chọn chai HCl → Rót khoảng 10–15 mL vào Cốc A, hoặc nhỏ nhiều lần bằng ống nhỏ giọt; khuấy giúp tan nhanh.', wait: (s, r) => (obj(s, r.beaker).pH ?? 7) < 4, target: ['hcl', 'beaker'], check: (s, r) => { const c = obj(s, r.beaker).contents; return s.notes[`ppt-Cu(OH)2-${r.beaker}`] != null && !((c.precipitates['Cu(OH)2'] || 0) > 1e-7) && (c.ions['Cl-'] || 0) > 1e-4 && (c.ions['Cu2+'] || 0) > 1e-3 } },
+      { text: 'Nhỏ HCl vào cốc đến khi kết tủa tan hết, dung dịch xanh trong trở lại.', done: 'Không còn kết tủa, dung dịch xanh trong.', help: 'Chọn chai HCl → Rót khoảng 10–15 mL vào Cốc A, hoặc nhỏ nhiều lần bằng ống nhỏ giọt đến khi kết tủa tan hết.', wait: (s, r) => (obj(s, r.beaker).pH ?? 7) < 4, target: ['hcl', 'beaker'], check: (s, r) => { const b = obj(s, r.beaker); const c = b.contents; return s.notes[`ppt-Cu(OH)2-${r.beaker}`] != null && !((c.precipitates['Cu(OH)2'] || 0) > 1e-7) && (c.ions['Cl-'] || 0) > 1e-4 && (c.ions['Cu2+'] || 0) > 1e-3 && b.pH != null && b.pH < 7 } },
       { text: 'Dùng thìa lấy 2 g muối ăn thả vào cốc nước, khuấy và quan sát muối tan.', done: 'Muối ăn trong cốc nước tan gần hết (còn dưới 0,2 g).', help: 'Chọn thìa → “Muối ăn (tinh thể)”, 2 g → Lấy → Thả vào Cốc B (nước). Khuấy giúp tan nhanh.', need: [{ reagent: 'nacl-s', massG: 2 }], wait: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'nacl-s' && o.in === r.water), target: ['spatula', 'water'], check: (s, r) => { const p = solidsIn(s, 'nacl-s', r.water); return p.length > 0 && p.reduce((a, o) => a + (o.mass0 ?? o.massG) - o.massG, 0) >= 1.8 && p.every(o => o.massG < 0.2) } }
     ],
     observe: 'Kết tủa xanh lam xuất hiện ở chỗ giọt NaOH rơi xuống, lắng dần; khuấy thì lơ lửng. Thêm HCl, kết tủa tan. Muối ăn tan dần, nhanh hơn khi khuấy.',
@@ -110,7 +110,7 @@ export const GUIDED = [
     group: 'Kim loại và phản ứng trong dung dịch',
     title: 'Kim loại tác dụng với dung dịch muối, axit và nước',
     goal: 'Quan sát Fe đẩy Cu khỏi dung dịch CuSO₄, Zn tác dụng với axit, Na tác dụng với nước.',
-    knowledge: 'Dãy hoạt động: Na > Mg > Zn > Fe > (H) > Cu > Ag. Kim loại mạnh hơn đẩy kim loại yếu hơn khỏi dung dịch muối; kim loại trước H đẩy H₂ khỏi axit loãng.',
+    knowledge: 'Dãy hoạt động: Na > Mg > Zn > Fe > (H) > Cu > Ag. Từ Mg trở về sau, kim loại hoạt động mạnh hơn đẩy kim loại yếu hơn ra khỏi dung dịch muối (kim loại kiềm như Na tác dụng với nước trước, không đẩy trực tiếp kim loại khỏi dung dịch muối). Kim loại đứng trước H đẩy H₂ ra khỏi dung dịch axit không có tính oxi hóa mạnh như HCl, H₂SO₄ loãng (không áp dụng cho HNO₃).',
     equipment: ['2 cốc 100 mL', 'Chậu thủy tinh', 'Kẹp hóa chất', 'Ống nhỏ giọt'],
     chemicals: ['CuSO₄ 0,5 M', 'HCl 0,5 M', 'Đinh sắt', 'Kẽm viên', 'Natri', 'Phenolphtalein'],
     safety: 'Natri phản ứng mãnh liệt với nước: chỉ dùng mẩu nhỏ, dùng kẹp, đứng xa.',
@@ -195,8 +195,8 @@ export const GUIDED = [
     steps: [
       { text: 'Nhúng giấy quỳ vào ống CH₃COOH.', done: 'Giấy quỳ đã nhúng trong Ống nghiệm A (CH₃COOH).', help: 'Chọn giấy quỳ → “Nhúng vào” Ống nghiệm A → Nhúng.', target: ['paper', 'acid'], check: (s, r) => papersIn(s, r.acid).length > 0 },
       { text: 'Dùng thìa lấy NaHCO₃ (0,5 g) thả vào ống axit axetic, quan sát bọt khí.', done: 'Có khí CO₂ thoát ra.', help: 'Chọn thìa → “Bột NaHCO₃”, 0,5 g → Lấy → Thả vào Ống nghiệm A.', need: [{ reagent: 'nahco3-s', massG: 0.5 }], wait: (s, r) => s.objects.some(o => o.type === 'solid' && o.reagent === 'nahco3-s' && o.in === r.acid), target: ['spatula', 'acid'], check: (s, r) => (obj(s, r.acid).gasOut?.CO2 || 0) > 1e-5 && solidsIn(s, 'nahco3-s', r.acid).length > 0 },
-      { text: 'Rót khoảng 3 mL dầu ăn vào ống B (nước).', done: 'Ống nghiệm B có dầu ăn.', help: 'Chọn chai Dầu ăn → Rót 3 mL vào Ống nghiệm B.', target: ['oil', 't2'], check: (s, r) => (obj(s, r.t2).contents.liquids.oil || 0) > 1 && (obj(s, r.t2).contents.liquids.water || 0) > 1 },
-      { text: 'Rót khoảng 3 mL etanol vào ống C (nước).', done: 'Ống nghiệm C có etanol.', help: 'Chọn chai Etanol → Rót 3 mL vào Ống nghiệm C.', target: ['eth', 't3'], check: (s, r) => (obj(s, r.t3).contents.liquids.ethanol || 0) > 1 && (obj(s, r.t3).contents.liquids.water || 0) > 1 }
+      { text: 'Rót khoảng 3 mL dầu ăn vào ống B (nước).', done: 'Ống nghiệm B có dầu ăn.', help: 'Chọn chai Dầu ăn → Rót 3 mL vào Ống nghiệm B.', target: ['oil', 't2'], check: (s, r) => { const c = obj(s, r.t2).contents; return (c.liquids.oil || 0) > 1 && (c.liquids.water || 0) > 1 && !oilBelow(c) } },
+      { text: 'Rót khoảng 3 mL etanol vào ống C (nước).', done: 'Ống nghiệm C có etanol.', help: 'Chọn chai Etanol → Rót 3 mL vào Ống nghiệm C.', target: ['eth', 't3'], check: (s, r) => { const c = obj(s, r.t3).contents; return (c.liquids.ethanol || 0) > 1 && (c.liquids.water || 0) > 1 && !((c.liquids.oil || 0) > 0.01) } }
     ],
     observe: 'Quỳ hóa đỏ. NaHCO₃ sủi bọt khí không màu. Ống 2 tách hai lớp: dầu vàng nổi trên nước. Ống 3 đồng nhất một lớp.',
     explain: 'CH₃COOH + NaHCO₃ → CH₃COONa + CO₂ + H₂O. Dầu ăn không phân cực, không tan trong nước và có khối lượng riêng 0,92 g/mL < 1 g/mL. Etanol tạo liên kết hiđro với nước nên tan hoàn toàn.',

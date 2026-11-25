@@ -37,11 +37,18 @@ export const ION_HINTS = [
   { all: ['Ag+'], kspOH: 2.0e-8, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
   { all: ['NO3-', 'I-'], maxPH: 3, reason: 'HNO₃ oxi hóa I⁻ thành I₂ (và tạo NO) — chưa được mô hình hóa.' },
   { all: ['NO3-', 'Fe2+'], maxPH: 3, reason: 'HNO₃ oxi hóa Fe²⁺ thành Fe³⁺ (và tạo NO) — chưa được mô hình hóa.' },
-  { all: ['Ag+', 'Fe2+'], reason: 'Ag⁺ + Fe²⁺ → Ag↓ + Fe³⁺ (E° 0,80 > 0,77 V) — chưa được mô hình hóa.' },
+  { all: ['Ag+', 'Fe2+'], dissolved: true, reason: 'Ag⁺ + Fe²⁺ ⇌ Ag↓ + Fe³⁺ (E° 0,80 > 0,77 V, phản ứng thuận nghịch) — chưa được mô hình hóa.' },
   { all: ['Cu2+', 'CO3'], minPH: 5.5, reason: 'Cu²⁺ với cacbonat thực tế tạo đồng cacbonat bazơ Cu₂(OH)₂CO₃ màu xanh lục; mô phỏng chỉ có Cu(OH)₂ — chưa mô hình hóa chính xác.' },
-  { all: ['I2'], minPH: 9, reason: 'I₂ trong kiềm chuyển thành I⁻/IO⁻ (mất màu) — chưa được mô hình hóa.' },
-  { all: ['Fe3+', 'I-'], minPH: 7.01, reason: 'Fe³⁺ + I⁻ trong môi trường kiềm: Fe(OH)₃ tạo trước, không sinh I₂ — mô hình không tính phản ứng oxi hóa – khử này.' },
+  // IO⁻ is not stable at room temperature: the overall change is 3I₂ + 6OH⁻ → 5I⁻ + IO₃⁻ + 3H₂O.
+  { all: ['I2'], minPH: 9, reason: 'I₂ trong kiềm tự oxi hóa – khử thành I⁻ và IO₃⁻ (3I₂ + 6OH⁻ → 5I⁻ + IO₃⁻ + 3H₂O, dung dịch mất màu) — chưa được mô hình hóa.' },
   // pH > 12: excess NaOH (pH ≈ 13), not NH₃ 2 M (pH ≈ 11,8), where zinc dissolves as [Zn(NH₃)₄]²⁺ (modelled).
+  // Sparingly soluble salts whose ideal Ksp would contradict the library's own solutions (limewater 0,02 M would be
+  // supersaturated): flagged when Q exceeds the product at the measured solubility (concentration basis, 25 °C).
+  // Ca(OH)₂ ≈ 0,0216 M → 4s³ ≈ 4,0·10⁻⁵; CaSO₄ (gypsum) ≈ 0,015 M → s² ≈ 2,3·10⁻⁴ (CRC solubility tables; values to recheck).
+  { all: ['Ca2+'], qMin: { anion: 'OH', n: 2, K: 4.0e-5 }, reason: 'Ca²⁺ với kiềm đặc (vd. CaCl₂ + NaOH) tạo kết tủa trắng Ca(OH)₂ ít tan — chưa được mô hình hóa định lượng.' },
+  { all: ['Ca2+', 'SO4'], qMin: { anion: 'SO4', n: 1, K: 2.3e-4 }, reason: 'Ca²⁺ với SO₄²⁻ ở nồng độ cao tạo kết tủa trắng CaSO₄ ít tan — chưa được mô hình hóa định lượng.' },
+  { all: ['Mg2+', 'CO3'], minPH: 8, reason: 'Mg²⁺ với cacbonat thực tế tạo magie cacbonat bazơ màu trắng; mô phỏng chỉ có Mg(OH)₂ — chưa mô hình hóa chính xác.' },
+  { all: ['Fe2+', 'CO3'], minPH: 6.5, reason: 'Fe²⁺ với cacbonat thực tế tạo FeCO₃ màu trắng xanh; mô phỏng chỉ có Fe(OH)₂ — chưa mô hình hóa chính xác.' },
   { all: ['Zn2+'], minPH: 12, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' }
 ]
 

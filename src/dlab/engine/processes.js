@@ -189,7 +189,12 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
   const result = mix(c.contents, parcel)
   const Ctot = C1 + C2
   if (Ctot > 0) c.T = (C1 * c.T + C2 * T + result.heatJ) / Ctot
-  if (result.neutralised > 1e-5) noteOnce(state, `neutral-${c.id}`, `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
+  if (result.neutralised > 1e-5) {
+    // H⁺ + OH⁻ → H₂O is the net ionic equation only for a strong acid with a strong base; with carbonate, acetate or
+    // ammonia in the mixture the reaction is written with the weak species (CO₃²⁻ + 2H⁺ → CO₂ + H₂O, H⁺ + NH₃ → NH₄⁺…).
+    const weak = ['CO3', 'OAc', 'NH3'].some(k => (c.contents.ions[k] || 0) > 1e-6)
+    noteOnce(state, `neutral-${c.id}`, weak ? `Phản ứng axit – bazơ trong ${label(c)}, tỏa nhiệt.` : `Phản ứng trung hòa trong ${label(c)}: H⁺ + OH⁻ → H₂O, tỏa nhiệt.`)
+  }
   redoxNotes(state, c, result.formed)
   for (const [key, mol] of Object.entries(result.formed)) {
     spawnParticles(state, c, key, mol, u, v)
@@ -307,6 +312,14 @@ function ionHints(state, c) {
   const has = k => (c.contents.ions[k] || 0) > 1e-7 || Object.entries(c.contents.precipitates).some(([key, mol]) => mol > 1e-7 && PRECIPITATES[key]?.cation === k)
   for (const r of ION_HINTS) {
     if (!r.all.every(has)) continue
+    // Ag⁺ + Fe²⁺: only free Ag⁺ (AgCl, E° 0,22 V, cannot oxidise Fe²⁺).
+    if (r.dissolved || r.qMin) {
+      const V = aqueousLitres(c.contents)
+      if (V < 1e-6) continue
+      const h = solveH(c.contents.ions, V)
+      if (r.dissolved && !r.all.every(k => freeConc(k, c.contents, h, V) > 1e-5)) continue
+      if (r.qMin && !(freeConc(r.all[0], c.contents, h, V) * freeConc(r.qMin.anion, c.contents, h, V) ** r.qMin.n > r.qMin.K)) continue
+    }
     if (state.notes[`ionhint-${r.all.join('+')}-${c.id}`] != null) continue
     if (r.kspOH != null) {
       const V = aqueousLitres(c.contents)
@@ -507,6 +520,7 @@ function stepKinetics(state, s, c, h, rad, level) {
     if (rule.driver === 'h') driver = hConc
     else if (rule.driver === 'water') driver = (c.contents.liquids.water || 0) > 0.05 ? 1 : 0
     else driver = (c.contents.ions[rule.driver] || 0) / V
+    if (rule.driver !== 'h' && rule.driver !== 'water' && driver < 1e-6) continue // e.g. Cu²⁺ over Cu(OH)₂ in NaOH: no visible displacement
     // Acid attack on metals is modelled for dilute acids (pH < 3); hydrolysed salt solutions do not count.
     // A weak acid (CH₃COOH) keeps reacting while undissociated acid remains, at the rate its small [H⁺] gives
     // (shortcut: the rate uses [H⁺] only; real surfaces are also attacked by the molecular acid).
@@ -555,7 +569,7 @@ function stepKinetics(state, s, c, h, rad, level) {
     }
   }
   if (!anyRule && !c.unsupported) {
-    const drivers = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 0)
+    const drivers = Object.keys(c.contents.ions).filter(k => c.contents.ions[k] > 1e-7)
     const no = NO_REACTION.find(r => r.solid === s.reagent && (r.driver === 'h' ? hConc > 1e-3 : drivers.includes(r.driver)))
     const hint = UNSUPPORTED_HINTS.find(r => r.all.every(k => drivers.includes(k) || k === s.reagent) && !(r.maxPH < -Math.log10(hConc)) && !(r.minPH > -Math.log10(hConc)))
     if (no && !hint) noteOnce(state, `norx-${s.reagent}-${c.id}`, `Không có phản ứng: ${no.reason}`, 'info')
@@ -610,7 +624,7 @@ export function stepElectro(state, h) {
       continue
     }
     if (!(cu > 1e-7 && cl > 1e-7)) {
-      p.status = cu > 0 || cl > 0 ? 'Đã hết Cu²⁺ hoặc Cl⁻: giai đoạn điện phân nước chưa được mô hình hóa, dòng điện ngừng.' : 'Hệ điện phân này chưa được mô hình hóa (mô hình hỗ trợ dung dịch CuCl₂).'
+      p.status = state.notes[`electro-${c.id}`] != null ? 'Đã hết Cu²⁺ hoặc Cl⁻: các phản ứng điện phân tiếp theo chưa được mô hình hóa, dòng điện ngừng.' : 'Hệ điện phân này chưa được mô hình hóa (mô hình hiện chỉ hỗ trợ dung dịch CuCl₂ với điện cực than chì).'
       continue
     }
     // A species that discharges first, in more than a trace (1 % of the Cu²⁺), makes the Cu + Cl₂ result wrong.
@@ -749,7 +763,7 @@ export function stepContainer(state, c, h) {
     if (gW + gE > 0) { c.boiling = state.t; emitBubbles(state, c, 'steam', (gW / 18 + gE / 46) * 0.3, (rand(state) - 0.5) * 1.4, 0.02); c.dirty = true }
     if (eth < 1e-6) noteOnce(state, `boil-${c.id}`, `Nước trong ${label(c)} sôi ở 100 °C và bay hơi.`)
     else if (water < 1e-6) noteOnce(state, `boil-eth-${c.id}`, `Etanol trong ${label(c)} sôi ở khoảng 78 °C (thấp hơn nước nhiều). Hơi etanol dễ bắt lửa.`, 'warn')
-    else if (Math.abs(bp.vapourWt - polarPhase(c.contents).ethanolWt) < 0.5) noteOnce(state, `boil-azeo-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} (≈ 95,5 % khối lượng etanol) sôi ở ${bp.T.toFixed(1)} °C như hỗn hợp đẳng phí: hơi có cùng thành phần với chất lỏng nên nhiệt độ sôi gần như không đổi. Hơi etanol dễ bắt lửa.`, 'warn')
+    else if (Math.abs(polarPhase(c.contents).ethanolWt - 95.5) < 1) noteOnce(state, `boil-azeo-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} (≈ ${vn(polarPhase(c.contents).ethanolWt, 1)} % khối lượng etanol, gần điểm đẳng phí 95,5 %) sôi ở ${bp.T.toFixed(1)} °C như hỗn hợp đẳng phí: hơi có cùng thành phần với chất lỏng nên nhiệt độ sôi gần như không đổi. Hơi etanol dễ bắt lửa.`, 'warn')
     else noteOnce(state, `boil-mix-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} bắt đầu sôi ở ${bp.T.toFixed(1)} °C; hơi giàu etanol hơn chất lỏng nên nhiệt độ sôi tăng dần. Hơi etanol dễ bắt lửa.`, 'warn')
   }
   if (volumeOf(c) < 0.05 && burner && def.breakable && c.T > 300) damage(state, c, 'WARNING', `${def.name} bị đun khô ở ${c.T.toFixed(0)} °C — nguy cơ nứt vỡ khi gặp chất lỏng lạnh.`)
@@ -798,9 +812,17 @@ function crystallizeDry(state, c) {
   // Evaporated to dryness: dissolved ions become a residue on the bottom (reported, not modelled further).
   const ions = Object.entries(c.contents.ions).filter(([, v]) => v > 0)
   if (!ions.length) return
+  // HCl, HNO₃, CH₃COOH, NH₃ (and I₂) leave with the vapour when nothing non-volatile holds them as a salt.
+  const VOLATILE = ['Cl-', 'NO3-', 'OAc', 'NH3', 'I2']
+  if (ions.every(([k]) => VOLATILE.includes(k) || IONS[k]?.z <= 0 && !['SO4', 'CO3'].includes(k))) {
+    for (const [ion] of ions) delete c.contents.ions[ion]
+    noteOnce(state, `dry-${c.id}`, `${label(c)} đã bay hơi hết: axit hoặc amoniac dễ bay hơi không để lại chất rắn (hơi thoát ra ăn mòn, gây kích ứng).`)
+    c.dirty = true
+    return
+  }
   c.residue = { ...(c.residue || {}) }
   for (const [ion, mol] of ions) { c.residue[ion] = (c.residue[ion] || 0) + mol; delete c.contents.ions[ion] }
-  noteOnce(state, `dry-${c.id}`, `${label(c)} đã cạn: còn lại chất rắn kết tinh ở đáy.`)
+  noteOnce(state, `dry-${c.id}`, `${label(c)} đã cạn: còn lại cặn chất rắn ở đáy.`)
   c.dirty = true
 }
 
@@ -949,7 +971,7 @@ function stepLitmus(state, o, h) {
         seg.rgb = seg.rgb.map((x, j) => x + (target[j] - x) * k)
       }
     }
-    noteOnce(state, `litmus-${o.id}-${c.id}`, `Nhúng giấy quỳ vào ${label(c)} (pH ≈ ${c.pH.toFixed(1)}): ${c.pH < 5 ? 'quỳ chuyển đỏ — môi trường axit' : c.pH > 8 ? 'quỳ chuyển xanh — môi trường bazơ' : 'quỳ không đổi màu — môi trường gần trung tính'}.`)
+    noteOnce(state, `litmus-${o.id}-${c.id}`, `Nhúng giấy quỳ vào ${label(c)} (pH ≈ ${c.pH.toFixed(1)}): ${c.pH < 5 ? 'quỳ chuyển đỏ — môi trường axit' : c.pH > 8.3 ? 'quỳ chuyển xanh — môi trường bazơ' : 'quỳ chưa đổi màu rõ (pH trong khoảng chuyển màu 5,0–8,3 của quỳ; dùng máy đo pH để biết chính xác)'}.`)
   }
   else {
     o.inside = null

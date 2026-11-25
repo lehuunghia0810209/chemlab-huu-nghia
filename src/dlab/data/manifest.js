@@ -7,7 +7,7 @@
 // An entry without a demo names the unit tests (title prefixes in scripts/test-dlab.mjs) that check it; the registry
 // test fails if a named test does not exist, and the report marks an entry with neither as not verified.
 import { KINETIC, NO_REACTION, UNSUPPORTED_HINTS, ION_HINTS, SOLVENT_HINTS, ION_REDOX, ELECTRO } from './reactions.js'
-import { PRECIPITATES } from './materials.js'
+import { PRECIPITATES, REAGENT_BY_ID as RBI } from './materials.js'
 
 export const STATUS = {
   SUPPORTED: 'Được mô hình hóa',
@@ -18,6 +18,9 @@ export const STATUS = {
 }
 
 // Solution that supplies a driver ion for a demo.
+// A reagent id shown as its formula with subscripts ("agno3" → "AgNO₃"), never an upper-cased id ("AGNO3").
+const fml = id => (RBI[id]?.formula || id).replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join(''))
+
 const SOURCE = { h: 'hcl', 'Cu2+': 'cuso4', 'Ag+': 'agno3', 'Zn2+': 'znso4', 'Fe2+': 'feso4', 'Fe3+': 'fecl3', 'Mg2+': 'mgcl2' }
 const SOLID_NAME = { mg: 'Mg', zn: 'Zn', fe: 'Fe', cu: 'Cu', na: 'Na', caco3: 'CaCO₃' }
 
@@ -28,7 +31,7 @@ const kinetic = KINETIC.map(r => ({
   group: r.solid === 'na' ? 'Kim loại kiềm' : r.driver === 'h' ? 'Axit tác dụng với chất rắn' : 'Kim loại tác dụng với dung dịch muối',
   inputs: `${SOLID_NAME[r.solid]} + ${r.driver === 'water' ? 'nước' : r.driver === 'h' ? 'HCl 0,5 M' : `dung dịch chứa ${r.driver}`}`,
   conditions: r.driver === 'h' ? 'Axit loãng, pH < 3, 25 °C (tốc độ tăng gấp đôi mỗi 10 °C)' : '25 °C, chất rắn nhúng trong dung dịch',
-  products: [...Object.keys(r.gives || {}), ...Object.keys(r.gas || {}).map(g => `${g}↑`), ...Object.keys(r.deposit || {}).map(m => `${m} bám`)].join(', '),
+  products: r.equation.split('→')[1].replace(/,.*$/, '').trim(), // the full product side, water and hydroxide included
   observe: r.observe,
   model: 'Động học bề mặt: tốc độ = k·diện tích·[tác nhân]; tỉ lượng và ΔH định lượng (NBS); hằng số k là xấp xỉ giáo dục để hiện tượng diễn ra trong vài chục giây.',
   source: 'Tỉ lượng: phương trình cân bằng; ΔH: NBS Tables 1982; k: mô hình',
@@ -48,18 +51,27 @@ const PPT_DEMO = {
   'Cu(OH)2': ['cuso4', 'naoh'], 'Fe(OH)3': ['fecl3', 'naoh'], 'Fe(OH)2': ['feso4', 'naoh'], 'Mg(OH)2': ['mgcl2', 'naoh'],
   BaCO3: ['bacl2', 'na2co3'], ZnCO3: ['znso4', 'na2co3'], Ag2CO3: ['agno3', 'na2co3'], 'Zn(OH)2': ['znso4', 'naoh']
 }
+// What a school bench shows that the Ksp model does not (stated, not hidden).
+const PPT_LIMITS = {
+  ZnCO3: 'Thực tế ZnSO₄ + Na₂CO₃ (nhất là dư Na₂CO₃) thường tạo kẽm cacbonat bazơ; mô hình xấp xỉ thành ZnCO₃.',
+  'Fe(OH)2': 'Trong không khí, Fe(OH)₂ trắng xanh bị oxi hóa dần thành Fe(OH)₃ nâu đỏ (4Fe(OH)₂ + O₂ + 2H₂O → 4Fe(OH)₃) — chưa được mô hình hóa.',
+  'Zn(OH)2': 'Zn(OH)₂ lưỡng tính tan trong kiềm mạnh dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa (có cảnh báo khi pH > 12).',
+  AgCl: 'AgCl không tan trong axit loãng; tan trong NH₃ (xem mục phức chất).',
+  BaSO4: 'BaSO₄ không tan trong axit loãng.',
+  AgI: 'AgI không tan trong axit loãng và hầu như không tan trong NH₃.'
+}
 const precipitates = Object.entries(PRECIPITATES).filter(([, p]) => !p.redox).map(([key, p]) => ({
   id: `ppt-${key}`,
   status: 'SUPPORTED',
   title: `${p.formula}↓ (${p.name})`,
   group: 'Phản ứng tạo kết tủa',
-  inputs: PPT_DEMO[key] ? `${PPT_DEMO[key][0].toUpperCase()} + ${PPT_DEMO[key][1].toUpperCase()}` : `ion ${p.cation} + ${p.anion}`,
+  inputs: PPT_DEMO[key] ? `${fml(PPT_DEMO[key][0])} + ${fml(PPT_DEMO[key][1])}` : `ion ${p.cation} + ${p.anion}`,
   conditions: '25 °C, dung dịch loãng; kết tủa xuất hiện khi Q > 10·Ksp, tan lại khi Q < Ksp',
   products: `${p.formula}↓`,
-  observe: `Kết tủa ${p.name.toLowerCase()} xuất hiện, lắng dần, tan lại khi điều kiện làm Q < Ksp.`,
+  observe: `Kết tủa ${p.name[0].toLowerCase() + p.name.slice(1)} xuất hiện, lắng dần, tan lại khi điều kiện làm Q < Ksp.`, // keeps (II)/(III)
   model: 'Cân bằng Ksp với pH tính theo cân bằng điện tích; nồng độ lý tưởng (hoạt độ = nồng độ).',
   source: `Ksp = ${p.Ksp} (CRC, 25 °C)`,
-  limits: 'Ngưỡng tạo mầm 10·Ksp là xấp xỉ giáo dục; lực ion > 0,1 M làm số liệu kém chính xác.',
+  limits: ['Ngưỡng tạo mầm 10·Ksp là xấp xỉ giáo dục; lực ion > 0,1 M làm số liệu kém chính xác.', PPT_LIMITS[key]].filter(Boolean).join(' '),
   demo: PPT_DEMO[key] ? { vessel: 'beaker100', fill: [[PPT_DEMO[key][0], 20]], pour: [PPT_DEMO[key][1], key.includes('OH') ? 6 : 20], run: 2, expect: { ppt: key } } : null
 }))
 
@@ -80,9 +92,9 @@ const redox = ION_REDOX.map(r => ({
 
 const processes = [
   { id: 'neutralisation', status: 'SUPPORTED', title: 'H⁺ + OH⁻ → H₂O (trung hòa)', group: 'Axit – bazơ', inputs: 'HCl + NaOH (+ phenolphtalein)', conditions: '25 °C', products: 'NaCl, H₂O, nhiệt', observe: 'Màu chỉ thị đổi theo pH; dung dịch ấm lên.', model: 'pH từ cân bằng điện tích; nhiệt trung hòa −55,84 kJ/mol.', source: 'Kw 1,0·10⁻¹⁴; ΔH từ NBS', limits: 'Nhiệt dùng tổng H⁺/OH⁻ mất đi (có thể dư 1–2 °C khi kết tủa hiđroxit).', demo: { vessel: 'beaker100', fill: [['naoh', 20]], pour: ['hcl', 20], run: 1, expect: { note: 'neutral-' } } },
-  { id: 'co2-carbonate', status: 'SUPPORTED', title: 'HCO₃⁻/CO₃²⁻ + H⁺ → CO₂↑', group: 'Axit – bazơ', inputs: 'NaHCO₃ + CH₃COOH (hoặc Na₂CO₃ + HCl)', conditions: '25 °C, 1 atm', products: 'CO₂↑', observe: 'Sủi bọt khí không màu.', model: 'Phân bố H₂CO₃/HCO₃⁻/CO₃²⁻ theo pH; khí thoát khi [H₂CO₃*] vượt độ tan Henry.', source: 'Ka1, Ka2 (CRC); Henry 3,4·10⁻² mol/(L·atm)', limits: 'Tốc độ thoát khí là xấp xỉ.', demo: { vessel: 'beaker100', fill: [['na2co3', 20]], pour: ['hcl', 20], run: 3, expect: { gas: 'CO2' } } },
-  { id: 'dissolve-salts', status: 'SUPPORTED', title: 'Hòa tan và kết tinh NaCl, KNO₃, NaHCO₃', group: 'Hòa tan – kết tinh', inputs: 'Tinh thể + nước', conditions: '0–100 °C', products: 'Ion trong dung dịch; tinh thể khi quá bão hòa', observe: 'Tinh thể nhỏ dần; KNO₃ kết tinh lại khi làm nguội.', model: 'Độ tan theo bảng nhiệt độ (nội suy tuyến tính).', source: 'CRC Handbook (độ tan g/100 g nước)', limits: 'Tốc độ tan là xấp xỉ.', demo: { vessel: 'beaker100', fill: [['water', 20]], solid: ['nacl-s', 2], run: 20, expect: { ion: 'Na+' } } },
-  { id: 'boiling', status: 'SUPPORTED', title: 'Đun sôi nước, etanol và hỗn hợp nước–etanol', group: 'Nhiệt – chuyển pha', inputs: 'Nước / etanol + bếp', conditions: '1 atm', products: 'Hơi nước, hơi etanol', observe: 'Nước sôi ở 100 °C; etanol ~78 °C; hỗn hợp sôi giữa hai giá trị, nhiệt độ sôi tăng dần.', model: 'Cân bằng nhiệt + điểm sôi và thành phần hơi theo bảng (nước–etanol).', source: 'CRC "Boiling points of aqueous solutions"; NIST WebBook (ΔvapH)', limits: 'Ống thủy tinh hở, áp suất 1 atm; không mô hình hơi bắt lửa.', demo: null, tests: ['solvent: ethanol is not water'] },
+  { id: 'co2-carbonate', status: 'SUPPORTED', title: 'CO₃²⁻ + 2H⁺ → CO₂↑ + H₂O; HCO₃⁻ + H⁺ → CO₂↑ + H₂O', group: 'Axit – bazơ', inputs: 'NaHCO₃ + CH₃COOH (hoặc Na₂CO₃ + HCl)', conditions: '25 °C, 1 atm', products: 'CO₂↑, H₂O', observe: 'Sủi bọt khí không màu.', model: 'Phân bố H₂CO₃/HCO₃⁻/CO₃²⁻ theo pH; khí thoát khi [H₂CO₃*] vượt độ tan Henry.', source: 'Ka1, Ka2 (CRC); Henry 3,4·10⁻² mol/(L·atm)', limits: 'Tốc độ thoát khí là xấp xỉ.', demo: { vessel: 'beaker100', fill: [['na2co3', 20]], pour: ['hcl', 20], run: 3, expect: { gas: 'CO2' } } },
+  { id: 'dissolve-salts', status: 'SUPPORTED', title: 'Hòa tan NaCl, KNO₃, NaHCO₃; kết tinh NaCl, KNO₃', group: 'Hòa tan – kết tinh', inputs: 'Tinh thể + nước', conditions: '0–100 °C (NaCl, KNO₃); ≤ 60 °C cho NaHCO₃', products: 'Ion trong dung dịch; tinh thể khi quá bão hòa', observe: 'Tinh thể nhỏ dần; KNO₃ kết tinh lại khi làm nguội.', model: 'Độ tan theo bảng nhiệt độ (nội suy tuyến tính).', source: 'CRC Handbook (độ tan g/100 g nước)', limits: 'Tốc độ tan là xấp xỉ. Không kết tinh lại NaHCO₃ và không mô hình phản ứng nhiệt phân 2NaHCO₃ → Na₂CO₃ + CO₂↑ + H₂O khi đun trên khoảng 50–60 °C.', demo: { vessel: 'beaker100', fill: [['water', 20]], solid: ['nacl-s', 2], run: 20, expect: { ion: 'Na+' } } },
+  { id: 'boiling', status: 'SUPPORTED', title: 'Đun sôi nước, etanol và hỗn hợp nước–etanol', group: 'Nhiệt – chuyển pha', inputs: 'Nước / etanol + bếp', conditions: '1 atm', products: 'Hơi nước, hơi etanol', observe: 'Nước sôi ở 100 °C; etanol ~78,3 °C. Hỗn hợp có dưới 95,5 % khối lượng etanol sôi giữa hai giá trị và nhiệt độ sôi tăng dần khi etanol bay hơi trước; hỗn hợp đẳng phí (~95,5 %) sôi gần như không đổi ở ~78,1 °C.', model: 'Cân bằng nhiệt + điểm sôi và thành phần hơi theo bảng (nước–etanol).', source: 'CRC "Boiling points of aqueous solutions"; NIST WebBook (ΔvapH)', limits: 'Ống thủy tinh hở, áp suất 1 atm; không mô hình hơi bắt lửa.', demo: null, tests: ['solvent: ethanol is not water'] },
   { id: 'layers', status: 'SUPPORTED', title: 'Hòa tan / phân lớp: nước, etanol, dầu ăn', group: 'Nhiệt – chuyển pha', inputs: 'Nước + dầu; etanol + dầu; nước + etanol', conditions: '25 °C', products: '—', observe: 'Dầu nổi trên nước, chìm dưới etanol; nước và etanol tan hoàn toàn.', model: 'Khối lượng riêng hỗn hợp nước–etanol theo bảng; dầu không tan.', source: 'Lange\'s Handbook 1967 (khối lượng riêng 25 °C)', limits: 'Bỏ qua co thể tích khi trộn (≤ 3,5 %); dầu ăn coi như không tan trong etanol.', demo: { vessel: 'beaker100', fill: [['ethanol', 30]], pour: ['oil', 10], run: 1, expect: { oilBelow: true } } },
   { id: 'electrolysis-cucl2', status: 'SUPPORTED', title: ELECTRO.electrolysisCuCl2.equation, group: 'Điện hóa', inputs: 'Dung dịch CuCl₂, điện cực than chì, nguồn 1–12 V', conditions: 'U > 1,42 V; chỉ khi không có ion điện phân trước', products: 'Cu (catot), Cl₂↑ (anot)', observe: 'Đồng đỏ bám catot, khí vàng lục ở anot.', model: 'Định luật Faraday; I = (U − 1,02 − 0,4)/R.', source: 'F = 96485 C/mol (CODATA); điện trở bình: mô hình', limits: 'Điện trở và quá thế là minh họa; giai đoạn điện phân nước không được mô hình hóa.', demo: null, tests: ['electrolysis CuCl2 follows Faraday'] },
   { id: 'daniell', status: 'SUPPORTED', title: ELECTRO.daniell.equation, group: 'Điện hóa', inputs: 'Zn/ZnSO₄ ‖ CuSO₄/Cu, cầu muối KNO₃', conditions: '0–100 °C', products: 'Suất điện động', observe: 'Vôn kế chỉ ≈ 1,1 V; Zn là cực âm.', model: 'E = E°(T) − (RT ln10/2F)·lg([Zn²⁺]/[Cu²⁺]); dE°/dT từ ΔS° (NBS).', source: 'E° 1,10 V; S° NBS 1982', limits: 'Bỏ qua thế tiếp xúc lỏng (pin thật dốc hơn ≈ −0,3 mV/K) và ΔCp.', demo: null, tests: ['Daniell cell: Nernst voltage', 'Daniell cell: E follows E°(T)'] },
@@ -90,11 +102,11 @@ const processes = [
   { id: 'ammine-cu', status: 'SUPPORTED', title: 'Cu(OH)₂ tan trong NH₃ dư → [Cu(NH₃)₄]²⁺', group: 'Phức chất', inputs: 'CuSO₄ + NH₃ 2 M (dư)', conditions: '25 °C; NH₃ đủ đặc và dư', products: '[Cu(NH₃)₄]²⁺ (xanh thẫm)', observe: 'Kết tủa xanh lam tạo ra rồi tan dần khi thêm NH₃; dung dịch chuyển xanh thẫm.', model: 'Cân bằng tạo phức từng nấc Cu(NH₃)ᵢ (i = 1–4) cùng Ksp, cân bằng điện tích và cân bằng khối lượng NH₃; màu theo lượng phức.', source: 'lg β (25 °C): Lange’s Handbook, số liệu Bjerrum; Ksp (CRC). Đối chiếu NIST SRD 46 (I = 0).', limits: 'Dùng lg β₄ = 13,32 (Bjerrum, môi trường muối amoni) cùng Ksp CRC 2,2·10⁻²⁰; với lg β₄ = 11,75 (NIST, I = 0) thì 30 mL NH₃ 2 M không hòa tan hết. Hoạt độ = nồng độ. 5 mL CuSO₄ 0,5 M + 50 mL NH₃ 0,5 M chỉ tan ≈ 80 % (NH₃ loãng không đệm không thể hòa tan hết Cu(OH)₂); pha loãng trước bằng nước cũng để lại vài %. Không mô hình muối sunfat bazơ và [Cu(NH₃)₅]²⁺.', demo: { vessel: 'beaker100', fill: [['cuso4', 5], ['nh3-2m', 3]], pour: ['nh3-2m', 27], run: 1, expect: { note: 'ammine-dis-Cu(OH)2-' } }, tests: ['ammine complexes: model'] },
   { id: 'ammine-ag', status: 'SUPPORTED', title: 'AgCl tan trong NH₃ → [Ag(NH₃)₂]⁺; AgI không tan', group: 'Phức chất', inputs: 'AgNO₃ + NaCl, rồi NH₃ 2 M', conditions: '25 °C', products: '[Ag(NH₃)₂]⁺ (không màu)', observe: 'Kết tủa trắng AgCl tan dần trong NH₃; kết tủa vàng AgI hầu như không tan.', model: 'Ksp·β₂·[NH₃]² so với [Cl⁻]/[I⁻], giải cùng cân bằng điện tích.', source: 'lg β (25 °C): Lange’s Handbook, số liệu Bjerrum; Ksp (CRC). Đối chiếu NIST SRD 46 (I = 0).', limits: 'Ag₂O tạo ra khi mới nhỏ ít NH₃ chưa được mô hình hóa (báo "Chưa hỗ trợ"). An toàn: dung dịch bạc–amoniac để lâu hoặc khô có thể tạo bạc nitrua dễ nổ — pha xong dùng ngay và đổ bỏ đúng quy định.', demo: { vessel: 'beaker100', fill: [['agno3', 10], ['nacl', 2]], pour: ['nh3-2m', 15], run: 1, expect: { note: 'ammine-Ag+-' } }, tests: ['ammine complexes: model'] },
   { id: 'ammine-zn', status: 'APPROX', title: 'Zn(OH)₂ tan trong NH₃ dư → [Zn(NH₃)₄]²⁺', group: 'Phức chất', inputs: 'ZnSO₄ + NH₃ 2 M (dư)', conditions: '25 °C', products: '[Zn(NH₃)₄]²⁺ (không màu)', observe: 'Kết tủa trắng tạo ra rồi tan phần lớn khi NH₃ dư.', model: 'Như phức đồng (β từng nấc, Ksp).', source: 'lg β (25 °C): Lange’s Handbook, số liệu Bjerrum; Ksp (CRC). Đối chiếu NIST SRD 46 (I = 0).', limits: 'Với Ksp của Zn(OH)₂ kết tinh, mô hình còn ≈ 6 % kết tủa sau 30 mL NH₃ 2 M; Zn(OH)₂ mới kết tủa tan hơn nên thực tế thường tan hết.', demo: { vessel: 'beaker100', fill: [['znso4', 5]], pour: ['nh3-2m', 30], run: 1, expect: { note: 'ammine-Zn2+-' } }, tests: ['ammine complexes: model'] },
-  { id: 'redissolve', status: 'SUPPORTED', title: 'Kết tủa hiđroxit tan trong axit', group: 'Phản ứng tạo kết tủa', inputs: 'Cu(OH)₂ + HCl', conditions: '25 °C', products: 'Cu²⁺', observe: 'Kết tủa xanh tan, dung dịch xanh trong.', model: 'Ksp + cân bằng điện tích: Q < Ksp thì kết tủa tan.', source: 'Ksp (CRC)', limits: '—', demo: null, tests: ['Cu(OH)2 forms with base and redissolves in acid'] }
+  { id: 'redissolve', status: 'SUPPORTED', title: 'Kết tủa hiđroxit tan trong axit', group: 'Phản ứng tạo kết tủa', inputs: 'Cu(OH)₂ + HCl', conditions: '25 °C', products: 'Cu²⁺, H₂O', observe: 'Kết tủa xanh tan, dung dịch xanh trong.', model: 'Ksp + cân bằng điện tích: Q < Ksp thì kết tủa tan.', source: 'Ksp (CRC)', limits: '—', demo: null, tests: ['Cu(OH)2 forms with base and redissolves in acid'] }
 ]
 
 const noReaction = [
-  ...NO_REACTION.map(r => ({ id: `norx-${r.solid}-${r.driver}`, status: 'NO_REACTION', title: `${SOLID_NAME[r.solid]} + ${r.driver === 'h' ? 'axit loãng' : r.driver}`, group: 'Không phản ứng', inputs: `${SOLID_NAME[r.solid]} + ${r.driver === 'h' ? 'HCl' : SOURCE[r.driver]?.toUpperCase()}`, conditions: '25 °C', products: '—', observe: r.reason, model: 'Dãy hoạt động / E°', source: 'E° (CRC)', limits: '—', demo: { vessel: 'beaker100', fill: [[SOURCE[r.driver], 30]], solid: [r.solid, 1], run: 5, expect: { note: `norx-${r.solid}-` } } })),
+  ...NO_REACTION.map(r => ({ id: `norx-${r.solid}-${r.driver}`, status: 'NO_REACTION', title: `${SOLID_NAME[r.solid]} + ${r.driver === 'h' ? 'axit loãng' : r.driver}`, group: 'Không phản ứng', inputs: `${SOLID_NAME[r.solid]} + ${r.driver === 'h' ? 'HCl' : fml(SOURCE[r.driver])}`, conditions: '25 °C', products: '—', observe: r.reason, model: 'Dãy hoạt động / E°', source: 'E° (CRC)', limits: '—', demo: { vessel: 'beaker100', fill: [[SOURCE[r.driver], 30]], solid: [r.solid, 1], run: 5, expect: { note: `norx-${r.solid}-` } } })),
   { id: 'norx-e0-fe-mg', status: 'NO_REACTION', title: 'Kim loại yếu + ion kim loại mạnh hơn (tự phân loại theo E°)', group: 'Không phản ứng', inputs: 'VD: Fe + MgCl₂', conditions: '25 °C', products: '—', observe: 'Báo "Không có phản ứng" kèm so sánh E°.', model: 'So sánh E° ion/kim loại', source: 'E° (CRC)', limits: 'Chỉ cho các cặp kim loại – ion có trong bảng E°.', demo: { vessel: 'beaker100', fill: [['mgcl2', 30]], solid: ['fe', 1], run: 5, expect: { note: 'norx-fe-Mg2+' } } }
 ]
 
@@ -104,8 +116,9 @@ const SOLID_HINT_DEMO = { 'NO3-+cu': 'hno3', 'Fe3++cu': 'fecl3', 'Fe3++fe': 'fec
 const ION_HINT_DEMO = {
   'Ag+': [['agno3', 10], ['naoh', 3]],
   'NO3-+I-': [['hno3', 10], ['ki', 10]], 'NO3-+Fe2+': [['hno3', 10], ['feso4', 10]], 'Ag++Fe2+': [['agno3', 10], ['feso4', 10]],
-  'Cu2++CO3': [['cuso4', 5], ['na2co3', 30]], I2: [['fecl3', 5], ['ki', 10], ['naoh', 20]], 'Fe3++I-': [['ki', 20], ['naoh', 5], ['fecl3', 2]],
-  'Zn2+': [['znso4', 5], ['naoh', 30]]
+  'Cu2++CO3': [['cuso4', 5], ['na2co3', 30]], I2: [['fecl3', 5], ['ki', 10], ['naoh', 20]],
+  'Zn2+': [['znso4', 5], ['naoh', 30]],
+  'Ca2+': [['cacl2', 20], ['naoh', 20]], 'Ca2++SO4': [['cacl2', 20], ['na2so4', 20]], 'Mg2++CO3': [['mgcl2', 10], ['na2co3', 20]], 'Fe2++CO3': [['feso4', 10], ['na2co3', 20]]
 }
 const unsupported = [
   ...UNSUPPORTED_HINTS.map((r, i) => {
@@ -116,7 +129,7 @@ const unsupported = [
   }),
   ...ION_HINTS.map((r, i) => {
     const fill = ION_HINT_DEMO[r.all.join('+')]
-    return { id: `ionhint-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: fill ? fill.map(([x]) => x.toUpperCase()).join(' + ') : r.all.join(' + '), conditions: [r.minPH != null && `pH > ${r.minPH}`, r.maxPH != null && `pH < ${r.maxPH}`].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason,
+    return { id: `ionhint-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: fill ? fill.map(([x]) => fml(x)).join(' + ') : r.all.join(' + '), conditions: [r.minPH != null && `pH > ${r.minPH}`, r.maxPH != null && `pH < ${r.maxPH}`].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason,
       demo: fill ? { vessel: 'beaker100', fill, run: 1, expect: { hint: `ionhint-${r.all.join('+')}-` } } : null }
   }),
   ...SOLVENT_HINTS.map(r => ({ id: `solvent-${r.solid}-${r.liquid}`, status: 'UNSUPPORTED', title: `${SOLID_NAME[r.solid]} + ${r.liquid}`, group: 'Chưa hỗ trợ', inputs: `${SOLID_NAME[r.solid]} + etanol khan`, conditions: '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason, demo: null, tests: ['solvent: ethanol is not water'] })),
