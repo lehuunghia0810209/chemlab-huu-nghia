@@ -27,15 +27,22 @@ export const SOURCES = {
 // Dissolved species used in the charge balance. z = charge.
 // hydrolysisKa: M^z+ + H2O ⇌ MOH + H+ ; dimerBeta: 2M^z+ + 2H2O ⇌ M2(OH)2 + 2H+ (I = 0, 25 °C).
 // Sources: COST Action 1802 hydrolysis compilation (2024) of Baes & Mesmer 1976 / IUPAC Powell 2007, 2013.
+// ammine: cumulative βᵢ of M(NH₃)ᵢ, 25 °C, Lange's Handbook (Bjerrum's data, measured in ammonium-salt media, not I = 0).
+// Published lg β₄ for Cu(NH₃)₄²⁺ spans 11,75 (NIST SRD 46, I = 0) – 13,3 (Lange); an ammonia/ammonium mixture is itself a
+// salt medium, so the Bjerrum set is used. Cross-checked (round 4): 5 mL CuSO₄ 0,5 M + ≥ 20 mL NH₃ 2 M → ≥ 98 % as the
+// complex; with NH₃ 0,5 M only ≈ 80 % (unbuffered dilute NH₃ cannot finish dissolving Cu(OH)₂: the last solid would
+// use up the NH₄⁺ buffer), so the library also has the 2 M solution school labs use for this test. ammineColorPerM: [Cu(NH₃)₄]²⁺ has ε ≈ 55 at λmax ≈ 600 nm vs ≈ 12 at
+// ≈ 800 nm for Cu²⁺(aq) (Bjerrum, Ballhausen & Jørgensen 1954), and its band sits where the eye is most sensitive: the
+// perceived tint per mole is ≈ 15–25× that of Cu²⁺(aq) (colorPerM 1,6 → 30). The deep blue is set by the complex amount.
 export const IONS = {
   'Na+': { z: 1, label: 'Na⁺' },
   'K+': { z: 1, label: 'K⁺' },
-  'Ag+': { z: 1, label: 'Ag⁺' },
+  'Ag+': { z: 1, label: 'Ag⁺', ammine: [10 ** 3.24, 10 ** 7.05], ammineLabel: '[Ag(NH₃)₂]⁺', ammineColorWord: 'không màu' },
   'Ba2+': { z: 2, label: 'Ba²⁺' },
   'Ca2+': { z: 2, label: 'Ca²⁺' },
   'Mg2+': { z: 2, label: 'Mg²⁺' },
-  'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 10 ** -8.96 }, // Powell 2013
-  'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.95, dimerBeta: 10 ** -10.43, color: [70, 140, 230], colorPerM: 1.6 }, // Powell 2007
+  'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 10 ** -8.96, ammine: [10 ** 2.37, 10 ** 4.81, 10 ** 7.31, 10 ** 9.46], ammineLabel: '[Zn(NH₃)₄]²⁺', ammineColorWord: 'không màu' }, // Powell 2013
+  'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.95, dimerBeta: 10 ** -10.43, color: [70, 140, 230], colorPerM: 1.6, ammine: [10 ** 4.31, 10 ** 7.98, 10 ** 11.02, 10 ** 13.32], ammineLabel: '[Cu(NH₃)₄]²⁺', ammineColorWord: 'màu xanh thẫm', ammineColor: [22, 38, 150], ammineColorPerM: 30 }, // Powell 2007
   'Fe2+': { z: 2, label: 'Fe²⁺', hydrolysisKa: 10 ** -9.5, color: [150, 200, 140], colorPerM: 0.8 }, // Baes & Mesmer 1976
   'Fe3+': { z: 3, label: 'Fe³⁺', hydrolysisKa: 10 ** -2.19, color: [205, 140, 40], colorPerM: 3 }, // Baes & Mesmer 1976
   'Cl-': { z: -1, label: 'Cl⁻' },
@@ -180,6 +187,7 @@ export const REAGENTS = [
   solution('koh', 'Kali hiđroxit', 'Potassium hydroxide', 'KOH', 0.5, { 'K+': 1 }, { group: 'base', hazards: ['corrosive'], safety: 'Bazơ mạnh, ăn mòn da.' }),
   solution('caoh2', 'Nước vôi trong', 'Limewater', 'Ca(OH)2', 0.02, { 'Ca2+': 1 }, { group: 'base', hazards: ['irritant'], safety: 'Gây kích ứng mắt.' }),
   solution('nh3', 'Dung dịch amoniac', 'Aqueous ammonia', 'NH3', 0.5, { NH3: 1 }, { group: 'base', hazards: ['irritant'], safety: 'Mùi khai, gây kích ứng đường hô hấp; dùng nơi thoáng khí.' }),
+  solution('nh3-2m', 'Dung dịch amoniac', 'Aqueous ammonia', 'NH3', 2, { NH3: 1 }, { group: 'base', hazards: ['irritant'], safety: 'Mùi khai mạnh, gây kích ứng mắt và đường hô hấp; dùng trong tủ hút hoặc nơi thoáng khí.' }),
   solution('nacl', 'Natri clorua', 'Sodium chloride', 'NaCl', 0.5, { 'Na+': 1, 'Cl-': 1 }, { group: 'salt', hazards: [], safety: 'Ít nguy hiểm.' }),
   solution('na2so4', 'Natri sunfat', 'Sodium sulfate', 'Na2SO4', 0.2, { 'Na+': 2, SO4: 1 }, { group: 'salt', hazards: [], safety: 'Ít nguy hiểm.' }),
   solution('bacl2', 'Bari clorua', 'Barium chloride', 'BaCl2', 0.2, { 'Ba2+': 1, 'Cl-': 2 }, { group: 'salt', hazards: ['toxic'], safety: 'Hợp chất bari tan độc khi nuốt; rửa tay sau thí nghiệm.' }),

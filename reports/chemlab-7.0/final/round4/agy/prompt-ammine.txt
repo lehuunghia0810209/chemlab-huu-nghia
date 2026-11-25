@@ -1,0 +1,28 @@
+You are a physical chemistry reviewer. Do NOT read, open or edit any file and do not run tools: everything you need is in this prompt. Answer from your knowledge (and web search if available).
+
+Context: ChemLab Dynamic Lab (D:\EduLab\ChemLab, src/dlab/engine/chemistry.js, src/dlab/data/materials.js) models aqueous
+equilibria at 25 °C with activities = concentrations: charge-balance pH (bisection on log h), Ksp precipitation, metal
+hydrolysis. NH3 reagent is 0.5 M, CuSO4/ZnSO4 0.5 M, AgNO3 0.1 M. Cu(OH)2 Ksp = 2.2e-20, Zn(OH)2 3e-17 in the data.
+
+Planned change: ammine complexation inside the free-metal calculation. For metal M with cumulative constants
+beta_1..beta_n, at a given [H+] the free NH3 L solves the mass balance
+  N_total = L(1 + h/Ka) + sum_M C_M * sum_i i*beta_i*L^i / (alpha_hyd + sum_i beta_i*L^i)
+and free [M] = C_M / (alpha_hyd + sum_i beta_i L^i). Bound NH3 is not protonatable (charge balance uses only the
+unbound part). Then Ksp of Cu(OH)2 / Zn(OH)2 / AgCl redissolves automatically when NH3 is in excess.
+
+Tasks:
+1. Give the best-supported cumulative log beta values (25 °C) for Cu2+-NH3 (n = 1..4; say whether to include beta5),
+   Zn2+-NH3 (1..4) and Ag+-NH3 (1..2), with ionic strength and the source (NIST SRD 46 / Martell-Smith, IUPAC,
+   Lange, Bjerrum). Say which set fits an ideal (I->0) model and how much the values differ between sets.
+2. Check numerically, with your chosen constants: 5 mL 0.5 M CuSO4 + 50 mL 0.5 M NH3 -> does Cu(OH)2 dissolve fully?
+   And 5 mL CuSO4 + 2 mL NH3 -> Cu(OH)2 should stay (pale blue precipitate). Where is the crossover (mL of NH3)?
+   Same for 5 mL 0.5 M ZnSO4 (Zn(OH)2 dissolving) and 10 mL 0.1 M AgNO3 + NH3 (Ag2O then [Ag(NH3)2]+).
+   Also AgCl from 10 mL AgNO3 + 10 mL 0.1 M NaCl: how many mL of 0.5 M NH3 to dissolve? AgI must not dissolve.
+3. Is the Ksp 2.2e-20 for Cu(OH)2 the right one to pair with these betas, or do textbooks use fresh-precipitate values?
+4. The deep blue colour: give the molar absorptivity / lambda_max of [Cu(NH3)4]2+ vs [Cu(H2O)6]2+ (approx), so a
+   renderer can scale colour by complex concentration rather than a fixed colour.
+5. List any physical pitfall of this model (e.g. basic copper sulfate precipitate, Cu(NH3)5, NH4+ buffer) that a
+   school-level simulation should state as a limitation.
+
+Answer in English, concise, with a table of constants and the numerical checks. Cite sources precisely; mark anything
+you are not sure about as uncertain. Do not invent citations.

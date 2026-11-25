@@ -1,0 +1,12 @@
+firefox head r1: perf firefox high: 20.8 fps perf firefox low: 23.3 fps  exit 1
+firefox now r1: perf firefox high: 23.9 fps perf firefox low: 23.4 fps  exit 1
+webkit head r1: perf webkit high: 14.1 fps perf webkit low: 15.8 fps  exit 1
+webkit now r1: perf webkit high: 14.0 fps perf webkit low: 15.5 fps  exit 1
+firefox head r2: perf firefox high: 23.3 fps perf firefox low: 23.5 fps  exit 1
+firefox now r2: perf firefox high: 23.6 fps perf firefox low: 23.4 fps  exit 1
+webkit head r2: perf webkit high: 14.2 fps perf webkit low: 16.2 fps  exit 1
+webkit now r2: perf webkit high: 14.0 fps perf webkit low: 15.8 fps  exit 1
+firefox head r3: perf firefox high: 24.0 fps perf firefox low: 24.0 fps  exit 1
+firefox now r3: perf firefox high: 23.6 fps perf firefox low: 23.9 fps  exit 1
+webkit head r3: perf webkit high: 14.4 fps perf webkit low: 16.1 fps  exit 1
+webkit now r3: perf webkit high: 14.0 fps perf webkit low: 15.5 fps  exit 1

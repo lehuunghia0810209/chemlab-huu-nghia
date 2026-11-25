@@ -1,0 +1,22 @@
+You are an independent reviewer (chemistry model + 3D rendering + UX) for ChemLab Dynamic Lab, D:\EduLab\ChemLab.
+READ-ONLY: never write, edit or create files; never run commands. Answer in English.
+
+Read: reports/chemlab-7.0/final/round4/agy/round4.diff (the uncommitted change), and the files it touches as needed
+(src/dlab/engine/chemistry.js, src/dlab/engine/processes.js, src/dlab/data/materials.js, src/dlab/ui/labels.js,
+src/dlab/ui/render3d.js, src/dlab/data/manifest.js, scripts/test-dlab.mjs). Screenshots from the real app (Chromium):
+reports/chemlab-7.0/final/round4/wip/r4-*.png (ammine sequence 1→4, AgCl vs AgI, gas, precipitate, metal coat).
+Your own earlier research on the constants: reports/chemlab-7.0/final/round4/agy/agy-ammine.md.
+
+Check and report concrete defects (file:line, scenario, why it is wrong, suggested fix), ranked P0/P1/P2:
+1. Ammine speciation: freeAmmonia() N mass balance, chargeAt() with bound NH3, freeMetal() with S, ammineComplexes();
+   mass/charge conservation; bisection bounds; behaviour with ethanol/pH not applicable; NH3 with no metal (must be
+   unchanged); interaction with ionRedox (Cu2+ + I-), Ksp of AgCl/AgI/Ag2CO3, Zn amphoteric hint, electrolysis refusal.
+2. Data choice: Lange/Bjerrum betas + CRC Ksp 2.2e-20 kept (fresh Ksp rejected because it moved the guided
+   precipitation threshold from 3 mL to 12.6 mL NaOH), plus a new 2 M NH3 reagent. Is this defensible and honestly
+   documented? Anything misleading in manifest texts?
+3. Notes/labels: ammineNotes(), contentsName() complex naming, (NH4)2SO4 naming. False or missing notes?
+4. 3D: Points-based precipitate flocs, rim-lit bubbles, matte liquid body, thinner selection ring. Rendering or
+   disposal bugs, sorting with transparent glass, performance risks. Visual critique of the screenshots: what still
+   looks unconvincing for a school lab, in priority order, with concrete three.js-level fixes.
+5. Tests: does 'ammine complexes: model' really test the claims (independent expectations, not engine echo)?
+Be concise. Do not claim you ran anything.

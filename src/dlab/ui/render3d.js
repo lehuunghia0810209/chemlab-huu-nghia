@@ -76,7 +76,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   const porcelain = mat(new THREE.MeshStandardMaterial({ color: 0xf7f7f4, roughness: 0.35 }))
   const shadowTex = radialTexture()
   const shadowMat = mat(new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, color: 0x0b1220, opacity: 0.5 }))
-  const ringGeo = new THREE.RingGeometry(0.88, 1, 64)
+  const ringGeo = new THREE.RingGeometry(0.94, 1, 64) // a thin selection ring: it marked the object without drowning the bench
   ringGeo.rotateX(-Math.PI / 2)
   // Holder for hand tools standing on the bench: a 24 × 10 × 18 mm block with a slot.
   const HELD_UPRIGHT = new Set(['rod', 'spatula', 'tongs', 'dropper', 'pipette', 'thermometer'])
@@ -95,15 +95,32 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   planeGeo.rotateX(-Math.PI / 2)
 
   const nodes = new Map()
-  const bubbleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, roughness: 0.05, metalness: 0, envMapIntensity: 2, depthWrite: false }), MAX)
-  const partMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), MAX)
-  partMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3)
+  // Gas bubbles: clear in the middle, bright at the rim (same Fresnel-on-alpha idea as the glass), not white balls.
+  const bubbleMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, roughness: 0.05, metalness: 0, envMapIntensity: 2.2, depthWrite: false })
+  bubbleMat.onBeforeCompile = sh => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `diffuseColor.a = clamp( diffuseColor.a + 0.85 * pow( 1.0 - abs( dot( normal, normalize( vViewPosition ) ) ), 2.0 ), 0.0, 0.9 );
+#include <opaque_fragment>`)
+  }
+  bubbleMat.customProgramCacheKey = () => 'dlab-bubble-rim'
+  const bubbleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), bubbleMat, MAX)
+  // Precipitate: soft flocs (one Points draw call). Each simulated grain is drawn as a small cluster of FLOC
+  // puffs, so a suspension reads as a cloudy, gelatinous precipitate rather than a few hard crystals.
+  const FLOC = 4
+  const flocTex = radialTexture()
+  const partGeo = new THREE.BufferGeometry()
+  partGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX * FLOC * 3), 3))
+  partGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX * FLOC * 3), 3))
+  const partMesh = new THREE.Points(partGeo, new THREE.PointsMaterial({ size: 6.5 * S, map: flocTex, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true }))
   bubbleMesh.frustumCulled = partMesh.frustumCulled = false
-  bubbleMesh.renderOrder = 3
+  // Inside the vessel: after the liquid (1), before the glass shell (2), so the glass veils them like the liquid.
+  bubbleMesh.renderOrder = 1.6
+  partMesh.renderOrder = 1.5
+  bubbleMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3) // allocated up front: no shader recompile on the first bubble
   const streamMeshes = []
   const streamGeo = new THREE.CylinderGeometry(1, 0.7, 1, 12, 1, true)
   scene.add(bubbleMesh, partMesh)
   const m4 = new THREE.Matrix4()
+  const lastCounts = { b: 0, p: 0 }
   const q = new THREE.Quaternion()
   const v3 = new THREE.Vector3()
   const color = new THREE.Color()
@@ -263,9 +280,9 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     map.colorSpace = THREE.SRGBColorSpace
     map.magFilter = map.minFilter = THREE.LinearFilter
     const liquidGeo = new THREE.LatheGeometry(innerPts(def, 0.6), seg)
-    const liquid = new THREE.Mesh(liquidGeo, new THREE.MeshStandardMaterial({ map, transparent: true, roughness: 0.15, metalness: 0, side: THREE.DoubleSide, clippingPlanes: [plane], depthWrite: false }))
+    const liquid = new THREE.Mesh(liquidGeo, new THREE.MeshStandardMaterial({ map, transparent: true, roughness: 0.9, metalness: 0, envMapIntensity: 0.35, side: THREE.DoubleSide, clippingPlanes: [plane], depthWrite: false })) // matte body: the glass gives the shine; a glossy inner back face caught the warm key light as a pink patch in dark solutions
     liquid.renderOrder = 1
-    const surface = new THREE.Mesh(new THREE.CircleGeometry(1, seg), new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.08, metalness: 0, depthWrite: false, envMapIntensity: 1.4 }))
+    const surface = new THREE.Mesh(new THREE.CircleGeometry(1, seg), new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.22, metalness: 0, depthWrite: false, envMapIntensity: 0.55 })) // soft reflection: a sharp env highlight read as a pink stain on dark solutions
     surface.rotation.x = -Math.PI / 2
     surface.renderOrder = 1
     // Bright meniscus line where the liquid meets the glass: makes the level readable from any angle.
@@ -727,17 +744,29 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         bubbleMesh.setMatrixAt(b, m4)
         bubbleMesh.setColorAt(b++, color.setRGB(...(gas?.visible ? gas.color.map(c => c / 255) : [1, 1, 1]), SRGB))
       }
+      const pos = partGeo.attributes.position.array
+      const col = partGeo.attributes.color.array
       for (const part of o.vis.parts) {
         if (p >= MAX) break
         const y = part.v * level + 2
         const r = hw(def, y) - 2
         const z = hashZ(p + 17) * Math.sqrt(Math.max(0, 1 - part.u * part.u)) * r
-        q.setFromAxisAngle(v3.set(0.3, 1, 0.2).normalize(), p * 1.7)
-        const g = (0.9 + part.s * 1.6) * S // visualization size, not a particle-size measurement
-        m4.compose(v3.set((o.x + part.u * r) * S, (o.y + y) * S, z * S), q, sc.set(g * 1.2, g * 0.55, g * 0.9))
-        partMesh.setMatrixAt(p, m4)
         const c = PRECIPITATES[part.key].color
-        partMesh.setColorAt(p++, color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB))
+        color.setRGB(c[0] / 255 * 0.82, c[1] / 255 * 0.82, c[2] / 255 * 0.82, SRGB) // unlit points: shaded a little, as lit solids would be
+        // Puffs spread by the grain size (visualization size, not a particle-size measurement); settled grains lie flat.
+        // Kept inside the wall and below the surface (the puff radius included).
+        const spread = (0.8 + part.s * 1.4) * (part.settled ? 0.5 : 1)
+        const rIn = Math.max(0.5, r - spread - 3)
+        const yTop = Math.max(2.5, level - 2)
+        for (let f = 0; f < FLOC; f += 1) {
+          const k = (p * FLOC + f) * 3
+          const xr = Math.max(-rIn, Math.min(rIn, part.u * r + hashZ(p * 7 + f) * spread))
+          pos[k] = (o.x + xr) * S
+          pos[k + 1] = (o.y + Math.max(2.5, Math.min(yTop, y + hashZ(p * 11 + f + 3) * spread * (part.settled ? 0.3 : 0.8)))) * S
+          pos[k + 2] = Math.max(-rIn, Math.min(rIn, z + hashZ(p * 13 + f + 5) * spread)) * S
+          col[k] = color.r; col[k + 1] = color.g; col[k + 2] = color.b
+        }
+        p += 1
       }
     }
     bounds = xs.length ? { x0: Math.min(...xs) - 1, x1: Math.max(...xs) + 1 } : bounds
@@ -754,11 +783,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     })
     for (let i = state.streams.length; i < streamMeshes.length; i += 1) streamMeshes[i].visible = false
     bubbleMesh.count = b
-    partMesh.count = p
-    bubbleMesh.instanceMatrix.needsUpdate = true
-    if (bubbleMesh.instanceColor) bubbleMesh.instanceColor.needsUpdate = true
-    partMesh.instanceMatrix.needsUpdate = true
-    if (partMesh.instanceColor) partMesh.instanceColor.needsUpdate = true
+    partGeo.setDrawRange(0, p * FLOC)
+    if (b > 0 || lastCounts.b > 0) { bubbleMesh.instanceMatrix.needsUpdate = true; bubbleMesh.instanceColor.needsUpdate = true }
+    if (p > 0 || lastCounts.p > 0) { partGeo.attributes.position.needsUpdate = true; partGeo.attributes.color.needsUpdate = true }
+    lastCounts.b = b
+    lastCounts.p = p
     for (const [id, node] of nodes) {
       if (alive.has(id)) continue
       remove(node)
@@ -1063,6 +1092,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       standArmGeo.dispose()
       for (const m of shared) { m.map?.dispose(); m.dispose() }
       envTex?.dispose()
+      flocTex.dispose()
       host.dispose() // disposes remaining scene geometry/materials, renderer and controls
     }
   }

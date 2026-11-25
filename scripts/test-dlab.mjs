@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { ELECTRO } from '../src/dlab/data/reactions.js'
 import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
-import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw } from '../src/dlab/engine/chemistry.js'
+import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw, ammineComplexes } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
@@ -902,7 +902,7 @@ test('review 2: hints fire for real gaps only; no sulfate false positives; no ma
   const logOf = l => l.s().log.map(e => e.text).join('|')
   const sol = (pairs, seed = 21) => { const l = lab(seed); const b = l.put('beaker250', 300); for (const [r, mL] of pairs) l.fill(b, r, mL); l.sim.runFor(0.5); return { l, b: byId(l.s(), b.id) } }
   assert.match(logOf(sol([['znso4', 20], ['naoh', 50]]).l), /Zn\(OH\)₂ lưỡng tính/, 'excess base on Zn(OH)₂ is flagged')
-  assert.match(logOf(sol([['cuso4', 10], ['nh3', 60]]).l), /\[Cu\(NH₃\)₄\]²⁺/, 'Cu²⁺ + excess NH₃ is flagged')
+  assert.match(logOf(sol([['cuso4', 10], ['nh3', 60]]).l), /\[Cu\(NH₃\)₄\]²⁺/, 'Cu²⁺ + excess NH₃: the complex is reported')
   assert.doesNotMatch(logOf(sol([['agno3', 10], ['na2co3', 40]]).l), /Ag₂O/, 'Ag₂CO₃ + excess carbonate is not called Ag₂O')
   const s = sol([['na2so4', 10], ['agno3', 5]])
   assert.ok(!Object.keys(s.b.contents.precipitates).some(k => s.b.contents.precipitates[k] > 0), 'Na₂SO₄ + AgNO₃ stays clear (school Cl⁻/SO₄²⁻ test)')
@@ -1164,26 +1164,94 @@ test('electrolysis refuses every interference: no Cu, no Cl₂, the reason is na
   }
 })
 
-// Independent review round 3: the ammine hints follow the complex share, not the mere presence of NH₃.
-test('ammine complexes: AgI stays, AgCl dissolves, no Ag₂O with excess NH₃, no false hint over Cu(OH)₂ in strong base', () => {
-  const notes = l => Object.keys(l.s().notes)
-  const mixT = (fills, run = 1) => { const l = lab(80); const B = l.put('beaker250', 300); for (const [r, mL] of fills) l.fill(B, r, mL); l.sim.runFor(run); return { l, B } }
-  // AgI does not dissolve in ammonia (Ksp·β₂ ≈ 10⁻⁹); AgCl does.
-  { const { l } = mixT([['agno3', 10], ['ki', 10], ['nh3', 10]]); assert.ok(!notes(l).some(k => k.startsWith('ionhint-Ag++NH3')), 'AgI + NH₃: no complex hint') }
-  { const { l } = mixT([['agno3', 10], ['nacl', 10], ['nh3', 20]]); assert.ok(notes(l).some(k => k.startsWith('ionhint-Ag++NH3')), 'AgCl + excess NH₃: complex hint') }
-  // AgNO₃ + excess NH₃: the complex, not Ag₂O as well.
-  { const { l } = mixT([['agno3', 10], ['nh3', 10]]); const n = notes(l); assert.ok(n.some(k => k.startsWith('ionhint-Ag++NH3'))); assert.ok(!n.some(k => k === `ionhint-Ag+-${l.s().objects[0].id}` || /^ionhint-Ag\+-o/.test(k)), `no Ag₂O hint: ${n}`) }
-  // Cu(OH)₂ in strong base with a trace of NH₃: negligible complex, no hint.
-  { const { l } = mixT([['cucl2', 10], ['naoh', 30], ['nh3', 0.2]]); assert.ok(!notes(l).some(k => k.startsWith('ionhint-Cu2++NH3')), 'trace NH₃ over Cu(OH)₂ in NaOH') }
-  // Excess NH₃ over CuSO₄: the deep-blue complex is reported.
-  { const { l } = mixT([['cuso4', 5], ['nh3', 50]]); assert.ok(notes(l).some(k => k.startsWith('ionhint-Cu2++NH3'))) }
+// Round 4: ammine complexes are modelled (stepwise β, Ksp, charge and NH₃ mass balance), not only flagged.
+test('ammine complexes: model — Cu(OH)₂ forms then dissolves in excess NH₃, AgCl dissolves, AgI stays, mass is conserved', () => {
+  const run = (vessel, steps, dt = 0.2) => {
+    const l = lab(80); const B = l.put(vessel, 300)
+    for (const [r, mL, n = 1] of steps) for (let i = 0; i < n; i += 1) { l.fill(B, r, mL / n); l.sim.runFor(dt) }
+    const c = byId(l.s(), B.id)
+    return { l, c, notes: Object.keys(l.s().notes), cx: ammineComplexes(c.contents) }
+  }
+  // Expected from the constants alone (independent closed form at full complexation): with all Cu as Cu(NH₃)₄²⁺ in
+  // 35 mL, free NH₃ L = (C_N − 4·C_Cu) minus NH₄⁺; the solid must be gone when Ksp > [Cu²⁺]·[OH⁻]².
+  { // Drop-wise NH₃ 2 M into CuSO₄: pale-blue Cu(OH)₂ first, then the deep-blue complex, no solid left.
+    const a = run('beaker100', [['cuso4', 5], ['nh3-2m', 2, 4]])
+    assert.ok((a.c.contents.precipitates['Cu(OH)2'] || 0) > 1e-4, 'a little NH₃: Cu(OH)₂ precipitates')
+    const before = (a.c.contents.ions['Cu2+'] || 0) + (a.c.contents.precipitates['Cu(OH)2'] || 0)
+    for (let i = 0; i < 28; i += 1) { a.l.fill(a.c, 'nh3-2m', 1); a.l.sim.runFor(0.1) }
+    const c = byId(a.l.s(), a.c.id)
+    const cx = ammineComplexes(c.contents)['Cu2+'] || 0
+    assert.ok(!((c.contents.precipitates['Cu(OH)2'] || 0) > 1e-6), `excess NH₃ 2 M: Cu(OH)₂ dissolved (${c.contents.precipitates['Cu(OH)2']})`)
+    rel(cx, 2.5e-3, 0.01, 'all Cu held as ammine complexes')
+    rel((c.contents.ions['Cu2+'] || 0) + (c.contents.precipitates['Cu(OH)2'] || 0), before, 1e-9, 'copper conserved')
+    const notes = Object.keys(a.l.s().notes)
+    assert.ok(notes.some(k => k.startsWith('ammine-dis-Cu(OH)2-')), 'dissolution is reported')
+    assert.ok(notes.some(k => k.startsWith('ammine-Cu2+-')), 'complex is reported')
+    assert.ok(!c.vis.parts.some(p => p.key === 'Cu(OH)2'), 'no blue grains left once dissolved')
+    // Colour follows the complex: darker and bluer than the same copper as Cu²⁺(aq).
+    const plain = run('beaker100', [['cuso4', 5], ['water', 30]]).c
+    assert.ok(c.vis.target[0] < plain.vis.target[0] && c.vis.target[1] < plain.vis.target[1], `deep blue: ${c.vis.target} vs ${plain.vis.target}`)
+  }
+  { // Dilute NH₃ 0,5 M cannot finish dissolving it (no NH₄⁺ buffer left for the last solid): partial, stated in the manifest.
+    const { c, cx } = run('beaker250', [['cuso4', 5], ['nh3', 50, 10]])
+    const share = (cx['Cu2+'] || 0) / 2.5e-3
+    assert.ok(share > 0.6 && share < 0.95, `0,5 M NH₃: partial (${share})`)
+    assert.ok((c.contents.precipitates['Cu(OH)2'] || 0) > 0, 'some Cu(OH)₂ stays')
+  }
+  { // AgCl dissolves in NH₃, AgI does not (Ksp·β₂ ≈ 3·10⁻³ vs 1·10⁻⁹).
+    const agcl = run('beaker100', [['agno3', 10], ['nacl', 2], ['nh3-2m', 15, 5]])
+    assert.ok(!((agcl.c.contents.precipitates.AgCl || 0) > 1e-5), `AgCl dissolved: ${agcl.c.contents.precipitates.AgCl}`)
+    assert.ok(agcl.notes.some(k => k.startsWith('ammine-Ag+-')))
+    const agi = run('beaker100', [['agno3', 10], ['ki', 10], ['nh3-2m', 30, 5]])
+    assert.ok(agi.c.contents.precipitates.AgI > 0.99e-3, 'AgI stays')
+    assert.ok(!agi.notes.some(k => k.startsWith('ammine-')), 'no complex reported over AgI')
+  }
+  { // Acid dissolving Cu(OH)₂ next to some complex is not called "dissolved in excess NH₃".
+    const { notes } = run('beaker250', [['cuso4', 5], ['nh3', 20], ['hcl', 30, 3]])
+    assert.ok(!notes.some(k => k.startsWith('ammine-dis-')), `acid: ${notes.filter(k => k.startsWith('ammine'))}`)
+  }
+  { // Review 4: ZnSO₄ + NH₃ 2 M is the ammine complex, not the amphoteric [Zn(OH)₄]²⁻ hint (NH₃ 2 M is pH ≈ 11,8).
+    const { notes } = run('beaker100', [['znso4', 5], ['nh3-2m', 30, 5]])
+    assert.ok(notes.some(k => k.startsWith('ammine-Zn2+-')))
+    assert.ok(!notes.some(k => k.startsWith('ionhint-Zn2+-')), `no amphoteric hint: ${notes}`)
+    const naoh = run('beaker250', [['znso4', 20], ['naoh', 50]]).notes
+    assert.ok(naoh.some(k => k.startsWith('ionhint-Zn2+-')), 'excess NaOH still flagged')
+  }
+  { // Review 4: CuCl₂ just past 2 NH₃ : 1 Cu — almost all Cu in Cu(OH)₂, the dissolved rest is complex: not electrolysed as CuCl₂.
+    const { l, c } = run('beaker250', [['cucl2', 10], ['water', 40], ['nh3-2m', 5.5]], 0.1)
+    const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
+    l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(1)
+    assert.match(byId(l.s(), p.id).status, /phức/, byId(l.s(), p.id).status)
+    assert.ok(!(byId(l.s(), el.id).cuDeposit > 0), 'no copper deposited')
+    assert.ok(c)
+  }
+  { // Review 4 labels: HCl with a trace of NH₃ stays an acid; NH₃ is not named when it is all NH₄⁺.
+    const t = fills => { const r = run('beaker100', fills); return contentsName(r.c) }
+    assert.match(t([['hcl', 20], ['nh3', 1]]), /HCl/)
+    assert.doesNotMatch(t([['cuso4', 10], ['nh3', 2]]), /NH₃(?!\))/)
+    assert.match(t([['cuso4', 5], ['nh3-2m', 30]]), /\[Cu\(NH₃\)₄\]SO₄/)
+  }
+  { // AgNO₃ + excess NH₃: the complex, not Ag₂O as well.
+    const { notes } = run('beaker100', [['agno3', 10], ['nh3', 10]])
+    assert.ok(notes.some(k => k.startsWith('ammine-Ag+-')))
+    assert.ok(!notes.some(k => /^ionhint-Ag\+-o/.test(k)), `no Ag₂O hint: ${notes}`)
+  }
+  { // Trace NH₃ over Cu(OH)₂ in strong base: negligible complex, nothing reported, solid stays.
+    const { c, notes } = run('beaker250', [['cucl2', 10], ['naoh', 30], ['nh3', 0.2]])
+    assert.ok(!notes.some(k => k.startsWith('ammine-')), 'trace NH₃ in NaOH')
+    rel(c.contents.precipitates['Cu(OH)2'], 5e-3, 0.01, 'Cu(OH)₂ stays')
+  }
+  { // pH of NH₃ alone is unchanged by the speciation code (no metal): pH = 14 + log√(Kb·C).
+    const { c } = run('beaker100', [['nh3', 20]])
+    near(c.pH, 14 + Math.log10(Math.sqrt(1e-14 / 5.6e-10 * 0.5)), 0.02, 'pH of 0,5 M NH₃')
+  }
   // Electrolysis: CuSO₄ + NH₃ (no chloride) and the trace-NH₃-in-base case are not called an ammine interference.
   for (const fills of [[['cuso4', 10], ['nh3', 30]], [['cucl2', 10], ['naoh', 30], ['nh3', 0.2]]]) {
-    const { l, B } = mixT(fills, 0.1)
+    const { l, c } = run('beaker250', fills.map(([r, mL]) => [r, mL]), 0.1)
     const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
     l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(1)
     assert.doesNotMatch(byId(l.s(), p.id).status, /phức/, `${JSON.stringify(fills)}: ${byId(l.s(), p.id).status}`)
-    assert.ok(!(byId(l.s(), B.id).contents.precipitates.CuI > 0))
+    assert.ok(!(byId(l.s(), c.id).contents.precipitates.CuI > 0))
   }
 })
 

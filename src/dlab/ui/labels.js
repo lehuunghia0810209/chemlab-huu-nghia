@@ -1,7 +1,8 @@
 // Object names for labels (pure: no DOM). Everything is derived from the simulation state, so a label
 // follows the chemistry: pour HCl into "Cốc A — CuSO₄" and it becomes "Cốc A — CuSO₄ + HCl".
-import { REAGENT_BY_ID, IONS, LIQUIDS, INDICATORS, PRECIPITATES } from '../data/materials.js'
+import { REAGENT_BY_ID, IONS, LIQUIDS, INDICATORS, PRECIPITATES, WEAK } from '../data/materials.js'
 import { byId, isContainer, label, coatCoverage } from '../engine/processes.js'
+import { ammineComplexes } from '../engine/chemistry.js'
 
 const sub = f => String(f).replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join(''))
 const METAL = { 'Na+': ['Na', 1], 'K+': ['K', 1], 'Ag+': ['Ag', 1], 'Ba2+': ['Ba', 2], 'Ca2+': ['Ca', 2], 'Mg2+': ['Mg', 2], 'Zn2+': ['Zn', 2], 'Cu2+': ['Cu', 2], 'Fe2+': ['Fe', 2], 'Fe3+': ['Fe', 3] }
@@ -16,7 +17,7 @@ function salt(metal, zm, anion) {
   const nm = l / zm
   const na = l / za
   if (a === 'CH3COO') return na === 1 ? `CH3COO${metal}` : `(CH3COO)${na}${metal}`
-  return `${metal}${nm > 1 ? nm : ''}${poly && na > 1 ? `(${a})${na}` : `${a}${na > 1 ? na : ''}`}`
+  return `${nm > 1 && !/^[A-Z][a-z]?$/.test(metal) && !metal.startsWith('[') ? `(${metal})${nm}` : `${metal}${nm > 1 ? nm : ''}`}${poly && na > 1 ? `(${a})${na}` : `${a}${na > 1 ? na : ''}`}`
 }
 
 // "CuSO₄", "HCl", "NaOH + phenolphtalein", "CuSO₄, FeSO₄", "Nước"…; null when empty.
@@ -40,16 +41,30 @@ export function contentsName(c) {
     if (budget < q * 0.95) acid.push(k)
     budget = Math.max(0, budget - q)
   }
-  for (const [k] of metals) {
-    const [m, z] = METAL[k]
+  // A metal mostly held as an ammine complex is named as the complex salt, e.g. [Cu(NH3)4]SO4.
+  const cx = ammineComplexes(c.contents)
+  const metalName = (k, n) => (cx[k] || 0) > 0.5 * n ? IONS[k].ammineLabel.replace(/[⁺²]+$/, '').replace(/[₀-₉]/g, d => '₀₁₂₃₄₅₆₇₈₉'.indexOf(d)) : METAL[k][0]
+  for (const [k, n] of metals) {
+    const [, z] = METAL[k]
+    const m = metalName(k, n)
     // A little metal ion in a lot of acid (zinc dissolving in HCl) is still named as its salt: ZnCl₂ + HCl.
     const pair = inSalt[0] || anions[0]?.[0]
     if (pair) parts.push(salt(m, z, ANION[pair]))
     if (!pair || (budget > charge * 0.03 && k === metals[0][0])) parts.push(BASE[m] || IONS[k].label)
   }
-  if (metals.length) for (const k of inSalt.slice(1)) parts.push(salt(...METAL[metals[0][0]], ANION[k]))
-  for (const k of acid) parts.push(ANION[k][3])
-  if ((ions.NH3 || 0) > 1e-6) parts.push('NH3')
+  if (metals.length) for (const k of inSalt.slice(1)) parts.push(salt(metalName(...metals[0]), METAL[metals[0][0]][1], ANION[k]))
+  // Anion charge left over is balanced by NH₄⁺ when there is enough of it (CuSO₄ + a little NH₃ holds (NH₄)₂SO₄, not
+  // H₂SO₄); HCl with a trace of NH₃ stays HCl (+ NH₄Cl). NH₃ is named only when free NH₃ is a real share (pH ≳ 8).
+  const Ka = WEAK.ammonia.Ka
+  const h = c.pH != null ? 10 ** -c.pH : 1e-7
+  const nh3 = ions.NH3 || 0
+  const nh4 = nh3 * h / (h + Ka)
+  const left = anions.reduce((s, [k, n]) => s + ANION[k][1] * n, 0) - charge
+  for (const k of acid) {
+    if (nh4 > 1e-6) parts.push(salt('NH4', 1, ANION[k]))
+    if (!(nh4 >= left * 0.95)) parts.push(ANION[k][3])
+  }
+  if (nh3 > 1e-6 && nh3 - nh4 > 0.05 * nh3) parts.push('NH3')
   if ((ions.I2 || 0) > 1e-6) parts.push('I2')
   const named = [...new Set(parts)].map(sub)
   for (const [k] of big(precipitates, 1e-7)) named.push(`${sub(PRECIPITATES[k].formula)}↓`)

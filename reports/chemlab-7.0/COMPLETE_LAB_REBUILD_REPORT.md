@@ -1,6 +1,6 @@
-# ChemLab 7.0 — Complete Lab Rebuild Report (bản 3)
+# ChemLab 7.0 — Complete Lab Rebuild Report (bản 4)
 
-Cập nhật 25/11/2026. Báo cáo này viết cho chủ sở hữu để nghiệm thu. **§0 là phần mới của bản 3**; từ §1 trở đi là nội dung bản 2, giữ lại làm lịch sử.
+Cập nhật 25/11/2026. Báo cáo này viết cho chủ sở hữu để nghiệm thu. **§R4 là phần mới của bản 4**; §0 là bản 3, từ §1 trở đi là bản 2 — giữ lại làm lịch sử.
 
 | Mục | Giá trị |
 |---|---|
@@ -8,16 +8,209 @@ Cập nhật 25/11/2026. Báo cáo này viết cho chủ sở hữu để nghi�
 | Nhánh | `feature/chemlab-7.0-dynamic-laboratory` |
 | Bản 1 | `a14ab46` → `ea7ee23` (đã commit cục bộ) |
 | Bản 2 | Tiếp từ `ea7ee23`; commit cục bộ `51ea6f7` |
-| Bản 3 | Tiếp từ `51ea6f7`; commit cục bộ, xem §19 |
+| Bản 3 | Tiếp từ `51ea6f7`; commit cục bộ `faaa52f` |
+| Bản 4 | Tiếp từ `faaa52f`; commit cục bộ, xem §19 |
+| Nghiệm thu trên máy | `http://[::1]:5180/#dlab` (Vite dev của phiên này) |
 
 **Phạm vi:**
 - Chỉ sửa Dynamic Lab.
 - Không động tới ChemAI, Groq, Cloudflare, Production 6.7.0 hay các Lab khác.
 - Không push, không merge, không deploy, không đổi version.
 
-**Trạng thái: PARTIAL.** Xem bảng nghiệm thu §0.9. Hai lý do chính:
-1. **Phức amin chưa được mô hình hóa.** Lab báo trung thực "Chưa hỗ trợ", nhưng hình vẫn hiện kết tủa.
-2. **3D đã nâng cấp rõ rệt nhưng chưa ở mức sản phẩm hoàn chỉnh.**
+**Trạng thái bản 4: PARTIAL.** Xem bảng nghiệm thu §R4.9. Hai lý do chính:
+1. **FPS Firefox/WebKit dưới ngưỡng trên máy hiện tại.** Không thấy suy giảm so với bản 3 khi đo cùng điều kiện (§R4.7), nhưng chưa được xác minh đạt.
+2. **3D đã nâng cấp nhưng chưa ở mức sản phẩm hoàn chỉnh.**
+
+Phức amin (lý do PARTIAL của bản 3) **đã được mô hình hóa** (§R4.2).
+
+## R4. Bản 4 — phức đồng–amoniac, 3D, hiệu năng engine (25/11/2026)
+
+Tiếp từ `faaa52f`. Phần này viết cho chủ sở hữu để nghiệm thu; chi tiết kỹ thuật nằm trong mã và test.
+
+### R4.1 Kết quả nhanh
+
+| Kịch bản chính | Kết quả | Bằng chứng |
+|---|---|---|
+| CuSO₄ + NH₃ 2 M nhỏ dần: Cu(OH)₂ xanh nhạt → tan → dung dịch xanh thẫm | PASS: engine (unit), thẻ Khám phá qua giao diện (X06) trên cả 3 trình duyệt, ảnh từ app | `round4/shots/r4-ammine-1…4`, video `r4-ammine-sequence-3d.webm` |
+| AgCl tan trong NH₃, AgI không tan | PASS (unit + X06 + ảnh) | `round4/shots/r4-agcl-dissolves-agi-stays-3d.png` |
+| S07 màu chỉ thị lan (sửa đồng bộ test, xem R4.6) | PASS trên 3 trình duyệt (riêng 9/9, trong bộ đầy đủ 3/3) | `round4/s07-fix/`, `round4/final/` |
+| P01/P01b FPS cảnh bận | Chromium PASS 60/60 fps; **Firefox FAIL 26,4 / 23,7 fps; WebKit FAIL 12,8 / 13,2 fps** (ngưỡng 30 giữ nguyên) | `round4/final/e2e-*.log`, `round4/perf-ab/` |
+| 29 thẻ Khám phá qua giao diện thật (gồm 3 thẻ phức mới) | PASS 29/29 trên Chromium, Firefox, WebKit | `round4/final/e2e-*` |
+| 5 Guided Lab qua giao diện | PASS 5/5 bài, 0 lỗi console, 0 yêu cầu ChemAI | `round4/final/walk/` |
+| Unit test engine | PASS 116/116 | `node scripts/test-dlab.mjs` |
+| E2E Chromium / Firefox / WebKit | Chromium **96/96 PASS** (60 fps). Firefox **90/92**, WebKit **90/92**: chỉ P01/P01b FAIL (FPS, xem R4.7); S07 PASS | `round4/final/e2e-*.log` |
+| `npm run check`, `npm run check:browser` | PASS (exit 0) / PASS 448/448 | `round4/final/check-browser.log` |
+| Lỗi console, yêu cầu ChemAI | 0 / 0 | log trên |
+
+### R4.2 Phức đồng–amoniac: đã mô hình hóa, không còn "Chưa hỗ trợ"
+
+**Trước:** CuSO₄ + NH₃ dư vẫn hiện kết tủa Cu(OH)₂, kèm dòng "Chưa hỗ trợ".
+
+**Sau:** engine tính phức thật.
+- Phức từng nấc M(NH₃)ᵢ cho Cu²⁺ (i = 1–4), Zn²⁺ (1–4), Ag⁺ (1–2), giải **cùng lúc** với pH (cân bằng điện tích), cân bằng khối lượng NH₃ và Ksp. NH₃ đã liên kết trong phức không bị proton hóa; phức giữ nguyên điện tích của ion kim loại.
+- Vì [Cu²⁺] tự do giảm, Cu(OH)₂ tự tan theo Ksp — không có quy tắc "nếu NH₃ dư thì xóa kết tủa". Đồng được bảo toàn (có test).
+- Màu dung dịch tính từ **lượng phức** trong engine (Beer–Lambert, phức hấp thụ mạnh hơn Cu²⁺(aq) ≈ 19 lần theo ε và vùng nhạy của mắt), không theo số lần bấm. 2D và 3D dùng cùng màu đó.
+- Hạt kết tủa biến mất theo đúng lượng kết tủa còn lại của từng chất (trước đây chỉ tính tổng, hạt Cu(OH)₂ có thể còn sót cạnh AgCl).
+- Bảng quan sát: "Kết tủa Cu(OH)₂ tan trong NH₃ dư, tạo phức [Cu(NH₃)₄]²⁺ màu xanh thẫm." Nhãn cốc: `[Cu(NH₃)₄]SO₄`, `[Ag(NH₃)₂]Cl`; phần anion dư khi có NH₃ được gọi là `(NH₄)₂SO₄` thay vì `H₂SO₄` (lỗi cũ).
+
+**Dữ liệu và quyết định (Antigravity nghiên cứu, Claude kiểm chứng lại bằng engine):**
+
+| Mục | Giá trị dùng | Ghi chú |
+|---|---|---|
+| lg β Cu–NH₃ (1→4) | 4,31; 7,98; 11,02; 13,32 | Lange (số liệu Bjerrum, môi trường muối amoni). NIST SRD 46 ở I = 0 cho lg β₄ = 11,75 — các nguồn lệch tới ≈ 1,5 đơn vị log |
+| lg β Zn–NH₃ (1→4) | 2,37; 4,81; 7,31; 9,46 | Lange; NIST I = 0: 8,89–9,0 |
+| lg β Ag–NH₃ (1→2) | 3,24; 7,05 | Lange; NIST I = 0: 3,31; 7,22 |
+| Ksp Cu(OH)₂ | 2,2·10⁻²⁰ (giữ nguyên, CRC) | Đã thử Ksp "kết tủa mới" 2,3·10⁻¹⁹ (Hidmi & Edwards 1999): bài Guided "kết tủa" sẽ cần 12,6 mL NaOH thay vì 3 mL, trái quan sát thực tế. **Không đổi.** |
+| Dung dịch NH₃ 2 M (mới trong tủ hóa chất) | 2 M | Antigravity chỉ ra và engine xác nhận: **NH₃ 0,5 M không đệm không thể hòa tan hết Cu(OH)₂** với bất kỳ hằng số hợp lý nào (phần kết tủa cuối cùng tiêu hết NH₄⁺, pH vọt lên). Thí nghiệm ở trường dùng NH₃ 2–6 M. |
+
+Kết quả mô hình (5 mL CuSO₄ 0,5 M):
+
+| NH₃ thêm vào | Kết quả |
+|---|---|
+| 2 mL NH₃ 2 M | Kết tủa Cu(OH)₂ xanh nhạt |
+| 10 mL NH₃ 2 M | ≈ 96 % đã thành phức |
+| 30 mL NH₃ 2 M | 100 % thành phức, không còn kết tủa, xanh thẫm |
+| 50 mL NH₃ 0,5 M | ≈ 81 % thành phức, còn kết tủa — ghi rõ trong manifest là giới hạn thật của NH₃ loãng |
+| AgCl (1 mmol) + 10 mL NH₃ 2 M | AgCl tan |
+| AgI + 30 mL NH₃ 2 M | AgI gần như không đổi (Ksp·β₂ ≈ 10⁻⁹) |
+| ZnSO₄ 5 mL + 30 mL NH₃ 2 M | ≈ 94 % tan; còn ≈ 6 % — ghi `APPROX` (Zn(OH)₂ mới kết tủa thực tế tan hơn) |
+
+Không ảnh hưởng hệ cũ: pH của 4000 hỗn hợp ngẫu nhiên không có kim loại tạo phức trùng với bản `faaa52f` tới 5·10⁻¹³; toàn bộ unit test cũ (AgCl, AgI, Ag₂CO₃, CuCl₂ + KI, điện phân, Guided "kết tủa" 3 mL) vẫn đạt.
+
+**Hiệu năng engine:** lần đầu, mỗi lần trộn có NH₃ + Cu tốn 45 ms (rót bằng cách nghiêng gọi trộn 60 lần/giây → sẽ đứng hình). Thay bisection bằng Illinois có chặn (không bao giờ chậm hơn bisection) và khởi động ấm quanh nghiệm trước: còn 2,8 ms/bước khi rót NH₃ 2 M vào CuSO₄ (0,4 ms với NaOH). Các trường hợp không có NH₃ nhanh hơn trước.
+
+### R4.3 3D
+
+| Trước (`round3/after-final`) | Sau (`round4/after`, `round4/shots`) |
+|---|---|
+| Kết tủa là các khối đa diện lớn, trông như đá viên | Kết tủa dạng bông keo mềm (Points, một draw call), mỗi hạt mô phỏng vẽ thành một cụm; lơ lửng rồi lắng theo engine |
+| Bọt khí là quả cầu trắng đục | Bọt trong ở giữa, sáng ở viền (Fresnel theo góc nhìn) |
+| Dung dịch thẫm màu có vệt hồng tím (phản xạ đèn ấm trên mặt trong khối lỏng) | Khối lỏng nhám, mặt thoáng phản xạ dịu; độ bóng do lớp thủy tinh đảm nhận |
+| Vòng chọn dày, lấn át cốc | Vòng mảnh |
+| Màu phức không có | Màu xanh thẫm theo lượng phức |
+
+Không có hiệu ứng nào chạy độc lập với engine: hạt, bọt, màu và mức chất lỏng đều đọc từ trạng thái mô phỏng.
+
+### R4.4 Review độc lập của Antigravity
+
+Antigravity làm hai việc, cả hai **chỉ đọc**: không chạy lệnh, không thao tác trình duyệt. Lượt review được cấp quyền đọc file trong repo bằng `--settings` riêng cho phiên (`round4/agy/agy-settings-readonly.json`); ghi file và mọi lệnh shell đều bị chặn.
+
+1. **Nghiên cứu hằng số** (`round4/agy/agy-ammine.md`): bảng β theo nguồn và lực ion, phép tính kiểm tra, ε/λmax cho màu. Phát hiện quan trọng nhất: NH₃ 0,5 M không đệm không thể hòa tan hết Cu(OH)₂. Engine tái hiện đúng kết luận này, nên lab có thêm NH₃ 2 M.
+2. **Review mã và ảnh** (`round4/agy/agy-review.md`). Tôi kiểm lại từng mục:
+
+| Phát hiện (mức Antigravity đánh giá) | Kiểm chứng | Xử lý |
+|---|---|---|
+| ZnSO₄ + NH₃ 2 M bật nhầm cảnh báo Zn(OH)₂ lưỡng tính (P1) | Đúng: pH của NH₃ 2 M ≈ 11,8 > ngưỡng 11,5 | Ngưỡng thành pH 12 (NaOH dư vẫn bị báo); có test |
+| Điện phân CuCl₂ + NH₃ vừa quá tỉ lệ 2:1 lọt qua chốt chặn (P1) | Đúng: phần đồng tan gần như toàn là phức, nhưng tỉ lệ tính trên tổng đồng | So với đồng **đang tan**; có test, không có Cu bám |
+| Nhãn "2 M 2 M" trên chai (P1) | Đúng | Tên hóa chất không kèm nồng độ |
+| "HCl + vết NH₃" bị gọi là "NH₄Cl + NH₃"; "+ NH₃" giả ở pH 4 (P1) | Đúng | Axit chỉ đổi thành muối amoni khi NH₄⁺ đủ cân bằng; "NH₃" chỉ hiện khi NH₃ tự do đáng kể; có test |
+| Ghi chú "tan trong NH₃ dư" khi axit mới là thứ hòa tan kết tủa (P1) | Đúng (tôi cũng tự phát hiện trước) | Chỉ ghi khi lượng phức tăng; có test |
+| Thứ tự vẽ trong suốt: hạt kết tủa ngang hàng thủy tinh, nhảy trước/sau (P1) | Đúng theo mã | Hạt và bọt vẽ sau chất lỏng, trước thủy tinh |
+| Hạt kết tủa như "chấm bi phát sáng", lòi ra ngoài thành cốc (P1) | Đúng một phần (ảnh) | Nhỏ hơn, mờ hơn, tối nhẹ; kẹp trong thành và dưới mặt thoáng |
+| Hiệu năng giải lồng ba tầng (P2) | Đúng: đo được 45 ms/lần trộn | Illinois + khởi động ấm: 2,8 ms/bước khi rót |
+| Khoảng nghiệm đảo ngược khi NH₃ cực loãng (P2) | Đúng theo mã | Chặn dưới theo nồng độ |
+| Phức trong dung môi nhiều etanol (P2) | Đúng | Không ghi chú phức khi thang pH không áp dụng |
+| Upload GPU mỗi khung khi không có hạt; biên dịch lại shader ở bọt đầu tiên (P2) | Đúng | Chỉ upload khi có thay đổi; cấp phát màu bọt từ đầu |
+| Manifest: chưa nói rõ dùng β₄ cao nhất, thiếu lượng tham chiếu, demo rót một lần không thấy kết tủa, thiếu cảnh báo bạc nitrua (P2) | Đúng | Sửa nội dung; demo nhỏ 3 mL trước rồi rót tiếp, kỳ vọng ghi chú "kết tủa tan" |
+| `[Ag(NH₃)₂]₂SO₄` bị bọc ngoặc thừa (P2) | Đúng | Sửa |
+| Pin Daniell và Cu²⁺ + I⁻ chưa tính phức amin (P2) | Đúng | **Chưa sửa**, ghi ở giới hạn (cần NH₃ cùng lúc với pin/iotua; không có bài nào dùng) |
+| Thủy tinh, màu phức có thể thẫm hơn (góp ý hình ảnh) | Ý kiến | Màu phức đã thẫm hơn; thủy tinh giữ nguyên |
+
+
+### R4.6 S07 (màu chỉ thị lan từ vị trí tiếp xúc) — nguyên nhân đã xác minh
+
+Triệu chứng: trong lượt hồi quy đầy đủ, S07 hỏng trên WebKit; pixel ở chỗ giọt rơi không có chút hồng nào (`228,238,250`, đúng màu NaOH nền).
+
+Điều tra (bằng chứng ở `round4/s07-ab/`, `round4/s07-fix/`, `scripts/dlab-s07-latency.mjs`):
+
+| Câu hỏi | Kết quả đo |
+|---|---|
+| Chạy riêng, HEAD `faaa52f` và round 4, WebKit | 6/6 đạt (3 + 3), CPU 40–62 % → không do mã round 4 |
+| Engine có hồng ngay khi giọt chạm mặt không? | Có: độ hồng 124 ở ô tiếp xúc, phía xa −16, ngay bước đầu (node, `cellColor`) |
+| Canvas có hồng ngay không? | Có: khung đầu tiên đã hồng hơn phía xa ≈ 25 đơn vị, tăng dần khi màu lan xuống ô dưới. Giá trị trên canvas thấp hơn engine vì màu dung dịch vẽ trong suốt lên nền và ảnh lưới được làm mịn. **Không có độ trễ hiển thị.** |
+| Chế độ đồ họa khi test chạy | Firefox hôm nay chạy khoảng 23 fps ngay cả với bàn trống → sau khoảng 3 s lab **tự chuyển sang "Đồ họa: Tiết kiệm"** (cơ chế bản 3, có báo cho học sinh). Ở Tiết kiệm, dung dịch được tô một màu trung bình nên không còn "hồng gần, nhạt xa" để đo |
+
+**Nguyên nhân:** S07 kiểm tra một tính năng của chế độ Cao (màu lan dần) mà không chọn chế độ đó. Khi máy chậm hơn 25 fps, cơ chế tự chuyển chế độ đã đổi sang Tiết kiệm trước khi test đọc pixel. Hành vi sản phẩm là đúng như thiết kế.
+
+**Sửa:**
+- S07 chọn "Đồ họa: Cao" qua menu như học sinh vẫn làm (giống P01; lựa chọn của học sinh không bao giờ bị ghi đè) và kiểm tra lại chế độ lúc đọc pixel.
+- S07 chờ theo **thời gian mô phỏng** (0,1 s sau giọt thứ 3 — đúng 400 ms ở 0,25× như thiết kế ban đầu) rồi chờ 2 khung hình, thay cho chờ cố định 400 ms thời gian thực. Lý do: `sim.advance` giới hạn mỗi khung 0,25 s, nên khi trình duyệt khựng, 400 ms thực có thể ứng với ít thời gian mô phỏng hơn nhiều. Timeout hữu hạn (10 s, 60 s).
+- Tiêu chí "hồng gần hơn xa ≥ 25" giữ nguyên, không nới.
+- Renderer 2D: cốc vừa có chất thêm vào được tải lại lưới màu ngay, không chờ đến lượt trong hàng đợi luân phiên (bản 3). Không phải nguyên nhân của S07, nhưng là độ trễ thật có thể thấy ở FPS thấp khi có nhiều cốc.
+
+Sau khi sửa, chạy riêng: 9/9 đạt (3 lượt × Chromium, Firefox, WebKit).
+
+### R4.7 Hiệu năng — so sánh A/B trong cùng điều kiện
+
+Chi tiết: `round4/perf-ab/FINDINGS.md`.
+
+- Bản round 3 `faaa52f` (từng đạt 41/39 fps trên Firefox và 33/37 fps trên WebKit) đo lại hôm nay chỉ còn 21–24 và 14–16 fps. Round 4 nằm trong khoảng ±3 % so với bản đó.
+- Profile CPU (Chromium, cùng cảnh, 240 khung): HEAD và round 4 tương đương ở mọi thành phần.
+  - Vẽ 2D: 0,3–0,4 s.
+  - Engine: 0,13–0,17 s.
+  - Solver Ksp/pH: không lọt top.
+  - Render loop và nhãn: 0,13–0,18 s.
+  - Phần lớn thời gian là raster/compositing gốc của trình duyệt: khoảng 2 s.
+- Trong lúc đo, Chrome và VS Code của chủ sở hữu dùng khoảng 38 % và 34 % một nhân. Tôi không tắt.
+- **Kết luận có giới hạn:** chưa thấy suy giảm hiệu năng do round 4. FPS trên Firefox và WebKit **vẫn dưới ngưỡng** trên máy hiện tại, và chưa chứng minh được tải máy là nguyên nhân duy nhất. Trạng thái: **PERFORMANCE NOT VERIFIED / FAIL UNDER CURRENT ENVIRONMENT.** Ngưỡng 30 fps giữ nguyên.
+
+### R4.8 Lượt hồi quy cuối (một bản build, tuần tự, có giới hạn thời gian, 25/11 22:13–22:54)
+
+Môi trường (`round4/final/env.log`): i5-12450HX, 12 luồng, 16 GB, Windows 11; Chromium 156 (headless, WebGL qua SwiftShader — phần mềm), Firefox 157, WebKit 27.2 (chuỗi renderer bị che: "GTX 980 or similar", "Apple GPU" — không xác nhận được GPU thật). Tải CPU trước mỗi bước: 18–47 % (`round4/final/steps.log`).
+
+| Bước | Kết quả | Ghi chú |
+|---|---|---|
+| `npx vite build` | PASS | |
+| `node scripts/test-dlab.mjs` | PASS 116/116 | |
+| `npm run check` | PASS | |
+| E2E Chromium | PASS 96/96 | P01 Cao/Tiết kiệm 60,0 / 60,0 fps, p95 16,7 / 16,8 ms (đồ họa chọn qua menu) |
+| E2E Firefox | **90/92** | P01 **FAIL 26,4 fps** (p95 48,6 ms), P01b **FAIL 23,7 fps** (p95 50,0 ms); CPU 47 % lúc bắt đầu |
+| E2E WebKit | **90/92** | P01 **FAIL 12,8 fps** (p95 92 ms), P01b **FAIL 13,2 fps** (p95 195 ms); CPU 30 % lúc bắt đầu |
+| S07 (trong bộ trên) | PASS ×3 | |
+| X06 29 thẻ Khám phá | PASS ×3 | gồm 3 thẻ phức chất |
+| Guided walk (5 bài, qua UI) | PASS 5/5 | 0 lỗi console, 0 yêu cầu ChemAI |
+| `npm run check:browser` | PASS 448/448 | |
+
+### R4.9 Bảng nghiệm thu bản 4
+
+| # | Hạng mục | Trạng thái |
+|---|---|---|
+| 1 | Phức đồng–amoniac (và Ag, Zn) mô hình hóa, đồng bộ 2D/3D, màu theo engine | PASS |
+| 2 | Không ảnh hưởng hệ đã đúng (AgCl, AgI, Guided "kết tủa", pH) | PASS |
+| 3 | 3D nâng cấp (kết tủa, bọt, chất lỏng, vòng chọn, thứ tự vẽ) | PASS về những gì đã làm; **chưa phải mức sản phẩm hoàn chỉnh** (procedural, không bóng đổ thật) |
+| 4 | Sandbox 29 thẻ, Guided 5/5, Save/Load/Undo/Reset, 2D/3D | PASS (X06, walk, S18–S20, X02/X04, G10) |
+| 5 | S07 | PASS sau khi xác minh nguyên nhân và sửa đồng bộ test (R4.6) |
+| 6 | Hiệu năng Firefox/WebKit | **FAIL UNDER CURRENT ENVIRONMENT / PERFORMANCE NOT VERIFIED**: không thấy suy giảm so với `faaa52f` khi đo cùng điều kiện, nhưng FPS dưới ngưỡng |
+| 7 | Review độc lập (Antigravity) | PASS: 13 mục đã sửa, 1 mục ghi vào giới hạn (Daniell, Cu²⁺ + I⁻ với phức), 1 góp ý hình ảnh làm một phần |
+| 8 | Bằng chứng từ app thật | PASS (`round4/after`, `round4/shots`, video `.webm`) |
+
+**Trạng thái bản 4: PARTIAL.** Chưa đủ điều kiện READY FOR OWNER ACCEPTANCE vì mục 6 (FPS Firefox/WebKit chưa đạt trên máy hiện tại) và mục 3 (3D chưa hoàn chỉnh).
+
+### R4.10 Bằng chứng
+
+| Nội dung | Đường dẫn |
+|---|---|
+| Ảnh 3D trước (bản 3) / sau (bản 4), cùng script cùng cảnh | `final/round3/after-final/` → `final/round4/after/` |
+| Chuỗi phức đồng–amoniac (3D, 4 ảnh) + 2D có bảng Quan sát | `final/round4/shots/r4-ammine-1…5` |
+| Video chuỗi phức (Playwright, 3D) | `final/round4/shots/r4-ammine-sequence-3d.webm` |
+| AgCl tan / AgI không tan | `final/round4/shots/r4-agcl-dissolves-agi-stays-3d.png` |
+| Cận cảnh: khí đang thoát, kết tủa lơ lửng / đã lắng, lớp kim loại bám | `final/round4/shots/r4-closeup-*` |
+| Sandbox, tab Khám phá có nhóm Phức chất | `final/round4/shots/r4-sandbox-discover.png` |
+| Antigravity: nghiên cứu hằng số, review | `final/round4/agy/` |
+| A/B hiệu năng, profile | `final/round4/perf-ab/` |
+| S07: A/B và sau sửa | `final/round4/s07-ab/`, `final/round4/s07-fix/` |
+| Hồi quy cuối | `final/round4/final/` (ảnh, JSON FPS); các dòng kết quả trích nguyên văn từ log ở `final/round4/RESULTS.txt` (`*.log` bị `.gitignore` loại, log đầy đủ còn trên máy) |
+
+### R4.11 Giới hạn còn lại sau bản 4
+
+- 3D vẫn là hình procedural (không .glb), không có bóng đổ thật hay khúc xạ; giá đỡ dụng cụ cầm tay vẫn là giải pháp trung gian.
+- Phức amin: mô hình lý tưởng (hoạt độ = nồng độ); không có muối sunfat bazơ, [Cu(NH₃)₅]²⁺, phức hỗn hợp hiđroxo–amin; Ag₂O khi mới nhỏ ít NH₃ vẫn chỉ báo "Chưa hỗ trợ".
+- Khi chưa khuấy, NH₃ (nhẹ hơn nước) nằm ở nửa trên; ranh giới hai lớp trong 3D có thể ánh tím. Khuấy thì đều màu.
+- Rót NH₃ vào dung dịch đồng ở tốc độ 4× tốn ≈ 11 ms/khung cho engine; chưa đo FPS riêng cho kịch bản này trên WebKit.
+- Pin Daniell và phản ứng Cu²⁺ + I⁻ chưa tính đến phức amin nếu học sinh thêm NH₃ vào đó.
+- Hạt kết tủa 3D không bị lớp chất lỏng phía trước phủ màu (cần tách khối lỏng thành hai mặt).
+- Chưa kiểm thử trên GPU thật hay điện thoại thật.
+
 
 ## 0. Bản 3 — đợt hoàn thiện sau checkpoint `51ea6f7` (25/11/2026)
 
@@ -537,7 +730,8 @@ Antigravity không sửa dòng code nào.
 | `15e6d45` | Bản 1: review 2 |
 | `ea7ee23` | Bản 1: báo cáo |
 | `51ea6f7` | Bản 2 (67 file), commit cục bộ sau khi chủ sở hữu cho phép |
-| (commit bản 3) | Bản 3: phức amin, test manifest, hiệu năng 2D WebKit, sửa T02, 3D, X06/P03, báo cáo và bằng chứng `final/round3/` |
+| `faaa52f` | Bản 3: phức amin (hint), test manifest, hiệu năng 2D WebKit, sửa T02, 3D, X06/P03, báo cáo và bằng chứng `final/round3/` |
+| (commit bản 4) | Bản 4: mô hình phức amin, NH₃ 2 M, solver Illinois, 3D kết tủa/bọt/chất lỏng, S07, review Antigravity, bằng chứng `final/round4/` |
 
 Mỗi commit chỉ stage đúng file theo pathspec. Không đụng tới các file `.claude/` của chủ sở hữu (11 file đang staged, cùng `.claude/settings.json`), `QA_CODEX_FULL_AUDIT.md` và `qa-codex/`. Các thư mục ảnh trung gian `final/round3/after-{a,b,c}` không commit. Không push, không merge, không deploy.
 

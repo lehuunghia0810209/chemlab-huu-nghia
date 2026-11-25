@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["read_file(D:/EduLab/ChemLab)", "list_dir(D:/EduLab/ChemLab)"],
+    "deny": ["write_file(D:/EduLab)", "write_file(C:/Users)", "command(git)", "command(npm)", "command(npx)", "command(node)", "command(rm)", "command(del)"]
+  }
+}

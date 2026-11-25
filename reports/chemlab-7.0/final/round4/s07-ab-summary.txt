@@ -1,0 +1,6 @@
+webkit head r1 (cpu 42%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit now r1 (cpu 62%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit head r2 (cpu 46%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit now r2 (cpu 40%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit head r3 (cpu 56%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit now r3 (cpu 51%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0

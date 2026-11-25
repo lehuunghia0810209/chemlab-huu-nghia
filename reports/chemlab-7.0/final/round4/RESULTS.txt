@@ -1,0 +1,161 @@
+ChemLab 7.0 round 4 — result lines extracted verbatim from the run logs (*.log is git-ignored; the full logs stay in this folder on the machine).
+
+== final/steps.log (final regression, one build, sequential)
+22:13:51 START build (cpu 45%)
+22:13:57 END build exit 0
+22:13:57 START env (cpu 38%)
+22:14:14 END env exit 0
+22:14:14 START unit (cpu 36%)
+22:14:42 END unit exit 0
+22:14:42 START check (cpu 24%)
+22:15:54 END check exit 0
+22:15:54 START e2e-chromium (cpu 18%)
+22:22:27 END e2e-chromium exit 0
+22:22:27 START e2e-firefox (cpu 47%)
+22:37:45 END e2e-firefox exit 1
+22:37:45 START e2e-webkit (cpu 30%)
+22:46:46 END e2e-webkit exit 1
+22:46:46 START walk (cpu 19%)
+22:47:46 END walk exit 0
+22:47:46 START check-browser (cpu 28%)
+22:54:15 END check-browser exit 0
+22:54:15 ALL DONE
+
+== final/env.log
+{
+ "at": "2026-11-25T15:14:00.078Z",
+ "cpu": "12th Gen Intel(R) Core(TM) i5-12450HX",
+ "logicalCpus": 12,
+ "memGB": 16,
+ "cpuLoadPct": 29,
+ "browsers": {
+  "chromium": {
+   "version": "156.0.8078.4",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "headless": true
+  },
+  "firefox": {
+   "version": "157.0",
+   "webglRenderer": "ANGLE (NVIDIA, NVIDIA GeForce GTX 980 Direct3D11 vs_5_0 ps_5_0), or similar",
+   "headless": true
+  },
+  "webkit": {
+   "version": "27.2",
+   "webglRenderer": "Apple GPU",
+   "headless": true
+  }
+ }
+}
+
+== final/unit.log
+Dynamic Lab: 116/116 passed
+exit 0
+
+== final/check.log
+PASS — 49 chemistry core checks passed.
+Dynamic Lab: 116/116 passed
+PASS — 242 learning checks passed.
+PASS — 783 question checks passed (537 questions).
+PASS — 84 exam checks passed.
+PASS — 850 exam paper checks passed.
+PASS — 78 ChemLab 6.2 final checks passed.
+PASS — 15 ChemAI access-control checks passed.
+PASS — ChemAI Gemini API mock tests passed.
+PASS — 16 ChemAI Groq adapter checks passed.
+PASS — 31 ChemAI public-mode and token-budget checks passed.
+PASS — 27 ChemAI 6.7 routing checks passed.
+PASS — 20 ChemAI feedback/limit checks passed.
+PASS — 19 ChemAI rendering checks passed.
+PASS — 9 ChemAI evaluation grader checks passed.
+PASS — 23 ChemAI accuracy checks passed.
+exit 0
+
+== final/e2e-chromium.log
+      perf chromium high: 60.0 fps, p95 16.7 ms, long tasks 0, particles 480
+      perf chromium low: 60.0 fps, p95 16.8 ms, long tasks 0, particles 480
+PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc
+PASS  P01 hiệu năng khung hình với cảnh bận (đồ họa cao)
+PASS  P01b hiệu năng khung hình với cảnh bận (đồ họa tiết kiệm)
+Dynamic Lab E2E (chromium): 96/96 passed
+exit 0
+
+== final/e2e-firefox.log
+      perf firefox high: 26.4 fps, p95 48.6 ms, long tasks 0, particles 480
+      perf firefox low: 23.7 fps, p95 50.0 ms, long tasks 0, particles 480
+PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc
+FAIL  P01 hiệu năng khung hình với cảnh bận (đồ họa cao)
+FAIL  P01b hiệu năng khung hình với cảnh bận (đồ họa tiết kiệm)
+Dynamic Lab E2E (firefox): 90/92 passed
+exit 1
+
+== final/e2e-webkit.log
+      perf webkit high: 12.8 fps, p95 92.0 ms, long tasks 0, particles 480
+      perf webkit low: 13.2 fps, p95 195.0 ms, long tasks 0, particles 480
+PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc
+FAIL  P01 hiệu năng khung hình với cảnh bận (đồ họa cao)
+FAIL  P01b hiệu năng khung hình với cảnh bận (đồ họa tiết kiệm)
+Dynamic Lab E2E (webkit): 90/92 passed
+exit 1
+
+== final/walk.log
+DONE acid-base 5/5  ["1:giấy quỳ: Nhúng","2:giấy quỳ: Nhúng","3:giấy quỳ: Nhúng","4:ống nhỏ giọt: Hút → 5 giọt","5:chai HCl: Rót 9 mL"]
+DONE precipitate 5/5  ["1:ống nhỏ giọt: 8 thao tác","2:chờ lắng+tua","3:đũa: Khuấy","4:chai HCl: Rót 15 mL","5:thìa: Lấy muối (gợi ý đúng) → Thả+tua"]
+DONE metals 5/5  ["1:kẹp: Lấy đinh (gợi ý đúng) → Thả","2:chờ lớp Cu+tua","2b:kẹp: bấm đinh → Đặt lên bàn","3:kẹp: Lấy kẽm (gợi ý đúng) → Thả+tua","4:kẹp: Lấy natri → xác nhận → Thả","5:chờ natri tan+tua"]
+DONE electrolysis 5/5  ["1:kéo điện cực vào cốc","2:nguồn: Nối dây → 6 V → Bật","3:chờ Cu bám catot+tua","4:kẹp: Zn → Cốc B, Cu → Cốc C","5:cầu muối + vôn kế (bảng Chi tiết)"]
+DONE organic 4/4  ["1:giấy quỳ: Nhúng","2:thìa: NaHCO₃ (gợi ý đúng) → Thả+tua","3:chai oil: Rót 3 mL","4:chai ethanol: Rót 3 mL"]
+console errors 0 ChemAI requests 0
+exit 0
+
+== final/check-browser.log
+PASS — 448/448 checks passed.
+exit 0
+
+== perf A/B HEAD faaa52f vs round 4 (perf-ab-summary.txt)
+firefox head r1: perf firefox high: 20.8 fps perf firefox low: 23.3 fps  exit 1
+firefox now r1: perf firefox high: 23.9 fps perf firefox low: 23.4 fps  exit 1
+webkit head r1: perf webkit high: 14.1 fps perf webkit low: 15.8 fps  exit 1
+webkit now r1: perf webkit high: 14.0 fps perf webkit low: 15.5 fps  exit 1
+firefox head r2: perf firefox high: 23.3 fps perf firefox low: 23.5 fps  exit 1
+firefox now r2: perf firefox high: 23.6 fps perf firefox low: 23.4 fps  exit 1
+webkit head r2: perf webkit high: 14.2 fps perf webkit low: 16.2 fps  exit 1
+webkit now r2: perf webkit high: 14.0 fps perf webkit low: 15.8 fps  exit 1
+firefox head r3: perf firefox high: 24.0 fps perf firefox low: 24.0 fps  exit 1
+firefox now r3: perf firefox high: 23.6 fps perf firefox low: 23.9 fps  exit 1
+webkit head r3: perf webkit high: 14.4 fps perf webkit low: 16.1 fps  exit 1
+webkit now r3: perf webkit high: 14.0 fps perf webkit low: 15.5 fps  exit 1
+
+== S07 A/B before the fix (s07-ab-summary.txt)
+webkit head r1 (cpu 42%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit now r1 (cpu 62%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit head r2 (cpu 46%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit now r2 (cpu 40%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit head r3 (cpu 56%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+webkit now r3 (cpu 51%): PASS  S07 màu chỉ thị lan từ vị trí tiếp xúc  exit 0
+
+== S07 after the fix (s07-fix/*.log)
+s07-fix/chromium-r1.log: PASS  Dynamic Lab E2E (chromium): 1/1 passed
+s07-fix/chromium-r2.log: PASS  Dynamic Lab E2E (chromium): 1/1 passed
+s07-fix/chromium-r3.log: PASS  Dynamic Lab E2E (chromium): 1/1 passed
+s07-fix/firefox-r1.log: PASS  Dynamic Lab E2E (firefox): 1/1 passed
+s07-fix/firefox-r2.log: PASS  Dynamic Lab E2E (firefox): 1/1 passed
+s07-fix/firefox-r3.log: PASS  Dynamic Lab E2E (firefox): 1/1 passed
+s07-fix/webkit-r1.log: PASS  Dynamic Lab E2E (webkit): 1/1 passed
+s07-fix/webkit-r2.log: PASS  Dynamic Lab E2E (webkit): 1/1 passed
+s07-fix/webkit-r3.log: PASS  Dynamic Lab E2E (webkit): 1/1 passed
+
+== first regression on the pre-fix build (21:05–21:38): failures
+e2e-firefox.log:
+FAIL  P01 hiệu năng khung hình với cảnh bận (đồ họa cao)
+      fps 21.077905772596885
+FAIL  P01b hiệu năng khung hình với cảnh bận (đồ họa tiết kiệm)
+      fps 23.708993749072256
+Dynamic Lab E2E (firefox): 90/92 passed
+e2e-webkit.log:
+FAIL  S07 màu chỉ thị lan từ vị trí tiếp xúc
+      pink near 228,238,250 vs far 245,249,253
+--
+FAIL  P01 hiệu năng khung hình với cảnh bận (đồ họa cao)
+      fps 17.249137543122842
+FAIL  P01b hiệu năng khung hình với cảnh bận (đồ họa tiết kiệm)
+      fps 15.391822257913404
+Dynamic Lab E2E (webkit): 89/92 passed

@@ -1,0 +1,37 @@
+{
+ "label": "head",
+ "fps": 60.4,
+ "profiledMs": 4085,
+ "byFile": {
+  "(program)": 2070,
+  "(idle)": 930,
+  "render2d.js": 305,
+  "processes.js": 126,
+  "dlabApp.js": 126,
+  "stroke": 63,
+  "fill": 56,
+  "labels.js": 51,
+  "(garbage collector)": 50,
+  "getBoundingClientRect": 45,
+  "drawImage": 38,
+  "fillText": 28,
+  "fillRect": 18,
+  "restore": 15
+ },
+ "topFunctions": {
+  "(program) @(program)": 2070,
+  "(idle) @(idle)": 930,
+  "(anon) @render2d.js": 230,
+  "stroke @stroke": 63,
+  "fill @fill": 56,
+  "(garbage collector) @(garbage collector)": 50,
+  "getBoundingClientRect @getBoundingClientRect": 45,
+  "cellColor @processes.js": 44,
+  "drawImage @drawImage": 38,
+  "withFrame @render2d.js": 34,
+  "fillText @fillText": 28,
+  "mixRgba @processes.js": 27,
+  "paintLabels @dlabApp.js": 23,
+  "fillRect @fillRect": 18
+ }
+}

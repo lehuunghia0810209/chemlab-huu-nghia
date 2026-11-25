@@ -1,0 +1,65 @@
+{
+  "facts": [
+    [
+      "CuSO₄ 5 mL + nước 20 mL",
+      {
+        "ppt": 0,
+        "pH": 4.382059932442139,
+        "title": null,
+        "rgb": [
+          200,
+          224,
+          247
+        ]
+      }
+    ],
+    [
+      "NH₃ 2 M tổng 2 mL",
+      {
+        "ppt": 0.0019504519927446907,
+        "pH": 5.059281680694358,
+        "title": null,
+        "rgb": [
+          142,
+          187,
+          235
+        ]
+      }
+    ],
+    [
+      "NH₃ 2 M tổng 7 mL",
+      {
+        "ppt": 0.0006106572970859621,
+        "pH": 9.886348868021162,
+        "title": null,
+        "rgb": [
+          66,
+          98,
+          185
+        ]
+      }
+    ],
+    [
+      "NH₃ 2 M tổng 30 mL",
+      {
+        "ppt": 0.00009209904809308567,
+        "pH": 11.429840206342092,
+        "title": null,
+        "rgb": [
+          76,
+          94,
+          179
+        ]
+      }
+    ],
+    [
+      "Ghi chú engine",
+      [
+        "Xuất hiện kết tủa Cu(OH)2 (Đồng(II) hiđroxit) trong Cốc A.",
+        "Trong Cốc A có phức [Cu(NH₃)₄]²⁺ (màu xanh thẫm): NH₃ liên kết với ion Cu²⁺.",
+        "Kết tủa Cu(OH)₂ tan trong NH₃ dư, tạo phức [Cu(NH₃)₄]²⁺ màu xanh thẫm."
+      ]
+    ]
+  ],
+  "errors": []
+}

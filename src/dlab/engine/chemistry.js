@@ -62,6 +62,25 @@ export function totalVolumeML(contents) {
   return Object.values(contents.liquids).reduce((sum, v) => sum + v, 0)
 }
 
+// Root of an increasing function on a bracket [lo, hi] with f(lo) < 0 < f(hi): Illinois steps (regula falsi with the
+// stale end halved), and a bisection step whenever the bracket did not at least halve — never slower than bisection,
+// usually 4–5× faster. Stops when the bracket is below tol.
+function rootUp(f, lo, hi, flo, fhi, tol) {
+  let side = 0
+  let width = hi - lo
+  let bisect = false
+  for (let i = 0; i < 200 && hi - lo > tol; i += 1) {
+    const x = bisect ? (lo + hi) / 2 : (lo * fhi - hi * flo) / (fhi - flo)
+    const fx = f(x)
+    if (fx === 0) return x
+    if (fx > 0) { hi = x; fhi = fx; if (side === 1) flo /= 2; side = 1 }
+    else { lo = x; flo = fx; if (side === -1) fhi /= 2; side = -1 }
+    bisect = hi - lo > width / 2
+    width = hi - lo
+  }
+  return (lo + hi) / 2
+}
+
 function weakCharge(kind, C, h) {
   const w = WEAK[kind]
   if (kind === 'sulfate') return -C * (1 + w.Ka2 / (w.Ka2 + h))
@@ -74,24 +93,86 @@ function weakCharge(kind, C, h) {
   return 0
 }
 
-// Free aquo-ion concentration of a hydrolysing metal with total C at [H⁺] = h.
-// Mass balance C = x(1 + K1/h) + 2·β22·x²/h² is a quadratic in x.
-function freeMetal(info, C, h) {
-  const b = 1 + info.hydrolysisKa / h
+// Free aquo-ion concentration of a metal with total dissolved C at [H⁺] = h and ammine sum S = Σβᵢ·Lⁱ.
+// Mass balance C = x(1 + K1/h + S) + 2·β22·x²/h² is a quadratic in x.
+function freeMetal(info, C, h, S = 0) {
+  const b = 1 + (info.hydrolysisKa ? info.hydrolysisKa / h : 0) + S
   if (!info.dimerBeta) return C / b
   const a = 2 * info.dimerBeta / (h * h)
   return 2 * C / (b + Math.sqrt(b * b + 4 * a * C))
 }
 
-function chargeAt(h, conc) {
+// Ammine complexes M(NH₃)ᵢ (cumulative βᵢ, IONS[ion].ammine). Returns [S, D] = [Σβᵢ·Lⁱ, Σi·βᵢ·Lⁱ] at free NH₃ L.
+function ammineSums(info, L) {
+  let S = 0
+  let D = 0
+  let Li = 1
+  for (let i = 0; i < info.ammine.length; i += 1) {
+    Li *= L // Lⁱ⁺¹ by repeated multiplication (this is the innermost loop of the pH solve)
+    const t = info.ammine[i] * Li
+    S += t
+    D += (i + 1) * t
+  }
+  return [S, D]
+}
+
+// Free NH₃ (mol/L) at [H⁺] = h. conc: [[ion, mol/L]]. Mass balance on nitrogen,
+// N = L·(1 + h/Ka) + Σ x_M·D_M(L), is increasing in L: bisection on log L. Without a complexing metal, closed form.
+function freeAmmonia(conc, h) {
+  const N = conc.find(([ion]) => ion === 'NH3')?.[1] || 0
+  if (!(N > 0)) return 0
+  const Ka = WEAK.ammonia.Ka
+  const metals = conc.filter(([ion, c]) => c > 0 && IONS[ion].ammine)
+  if (!metals.length) return N * Ka / (Ka + h)
+  const excess = lg => {
+    const L = 10 ** lg
+    let bound = 0
+    for (const [ion, c] of metals) {
+      const info = IONS[ion]
+      const [S, D] = ammineSums(info, L)
+      bound += freeMetal(info, c, h, S) * D
+    }
+    return L * (1 + h / Ka) + bound - N
+  }
+  const top = Math.log10(N * Ka / (Ka + h)) // L can only be lower than without metals
+  const ftop = excess(top)
+  if (ftop <= 0) return 10 ** top
+  // Runs inside the pH root, so it sets the cost of every mix with NH₃ and a complexing metal: start from a narrow
+  // bracket around the previous root (successive calls differ little) and fall back to the full one.
+  const [lo, hi, flo, fhi] = warmBracket(excess, lastLgL, 0.25, Math.min(-30, top - 20), top, ftop)
+  lastLgL = rootUp(excess, lo, hi, flo, fhi, 1e-9)
+  return 10 ** lastLgL
+}
+let lastLgL = -3
+let lastLgH = -7
+
+// A bracket [lo, hi] with f(lo) < 0 < f(hi) for an increasing f: ±d around a guess when that already brackets the root,
+// else the full range [min, max] (f(max) = fmax > 0 known).
+function warmBracket(f, guess, d, min, max, fmax) {
+  const a = Math.max(min, guess - d)
+  const b = Math.min(max, guess + d)
+  if (b > a) {
+    const fa = f(a)
+    if (fa < 0) {
+      const fb = b === max ? fmax : f(b)
+      if (fb > 0) return [a, b, fa, fb]
+      return [b, max, fb, fmax]
+    }
+    return [min, a, f(min), fa]
+  }
+  return [min, max, f(min), fmax]
+}
+
+function chargeAt(h, conc, L) {
   let sum = h - KW / h
   for (const [ion, c] of conc) {
     const info = IONS[ion]
-    if (info.weak) sum += weakCharge(info.weak, c, h)
+    if (info.weak === 'ammonia') sum += L * h / WEAK.ammonia.Ka // NH₄⁺; NH₃ bound in a complex is not protonated
+    else if (info.weak) sum += weakCharge(info.weak, c, h)
     else {
-      sum += info.z * c
+      sum += info.z * c // a complex keeps the metal's charge
       if (info.hydrolysisKa) {
-        const x = freeMetal(info, c, h)
+        const x = freeMetal(info, c, h, info.ammine && L > 0 ? ammineSums(info, L)[0] : 0)
         sum -= x * info.hydrolysisKa / h + (info.dimerBeta ? 2 * info.dimerBeta * x * x / (h * h) : 0)
       }
     }
@@ -102,16 +183,18 @@ function chargeAt(h, conc) {
 // Returns [H⁺] in mol/L. Charge balance is monotonic in h, so bisection on log h always converges.
 export function solveH(ions, litres) {
   if (!(litres > 0)) return 1e-7
-  const conc = []
-  for (const [ion, mol] of Object.entries(ions)) if (mol > 0 && IONS[ion]) conc.push([ion, mol / litres])
+  const conc = concList(ions, litres)
+  const f = lg => chargeAt(10 ** lg, conc, freeAmmonia(conc, 10 ** lg))
   let lo = -16
   let hi = 1.5
-  for (let i = 0; i < 56; i += 1) {
-    const mid = (lo + hi) / 2
-    if (chargeAt(10 ** mid, conc) > 0) hi = mid
-    else lo = mid
-  }
-  return 10 ** ((lo + hi) / 2)
+  let flo = f(lo)
+  let fhi = f(hi)
+  if (!(flo < 0)) return 10 ** lo
+  if (!(fhi > 0)) return 10 ** hi
+  // Charge balance is monotonic in h. Warm start around the previous pH (the Ksp solve calls this many times in a row).
+  const [a, b, fa, fb] = warmBracket(f, lastLgH, 0.2, lo, hi, fhi)
+  lastLgH = rootUp(f, a, b, fa, fb, 1e-12)
+  return 10 ** lastLgH
 }
 
 // Ionic strength I = ½Σc·z² (mol/L) at the solved [H⁺]. Hydrolysed metal ions are counted at full charge.
@@ -120,6 +203,7 @@ export const IDEAL_I_LIMIT = 0.1
 export function ionicStrength(ions, litres, h) {
   if (!(litres > 0)) return 0
   let twoI = h + KW / h
+  const L = freeAmmonia(concList(ions, litres), h)
   for (const [ion, mol] of Object.entries(ions)) {
     const info = IONS[ion]
     const c = mol / litres
@@ -127,7 +211,7 @@ export function ionicStrength(ions, litres, h) {
     if (!info.weak) { twoI += c * info.z * info.z; continue }
     if (info.weak === 'sulfate') { const f = WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h); twoI += c * (4 * f + (1 - f)) }
     else if (info.weak === 'acetate') twoI += c * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
-    else if (info.weak === 'ammonia') twoI += c * h / (h + WEAK.ammonia.Ka)
+    else if (info.weak === 'ammonia') twoI += L * h / WEAK.ammonia.Ka
     else if (info.weak === 'carbonate') {
       const w = WEAK.carbonate
       const D = h * h + w.Ka1 * h + w.Ka1 * w.Ka2
@@ -143,12 +227,20 @@ export function pHOf(contents) {
   return -Math.log10(solveH(contents.ions, V))
 }
 
+function concList(ions, V) {
+  const conc = []
+  for (const [ion, mol] of Object.entries(ions)) if (mol > 0 && IONS[ion]) conc.push([ion, mol / V])
+  return conc
+}
+
 // Free (uncomplexed, unprotonated) concentration of an ion at the given h.
 export function freeConc(ion, contents, h, V) {
   if (ion === 'OH') return KW / h
   const C = (contents.ions[ion] || 0) / V
   const info = IONS[ion]
   if (!info) return 0
+  if (info.ammine && (contents.ions.NH3 || 0) > 0) return freeMetal(info, C, h, ammineSums(info, freeAmmonia(concList(contents.ions, V), h))[0])
+  if (info.ammine && !info.hydrolysisKa) return C
   if (info.hydrolysisKa) return freeMetal(info, C, h)
   if (info.weak === 'sulfate') return C * WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h)
   if (info.weak === 'carbonate') {
@@ -156,8 +248,25 @@ export function freeConc(ion, contents, h, V) {
     return C * w.Ka1 * w.Ka2 / (h * h + w.Ka1 * h + w.Ka1 * w.Ka2)
   }
   if (info.weak === 'acetate') return C * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
-  if (info.weak === 'ammonia') return C * WEAK.ammonia.Ka / (WEAK.ammonia.Ka + h) // unprotonated NH₃
+  if (info.weak === 'ammonia') return freeAmmonia(concList(contents.ions, V), h) // unprotonated, unbound NH₃
   return C
+}
+
+// Moles of each metal held as ammine complexes, Σ M(NH₃)ᵢ (the analytical total stays in contents.ions[metal]).
+export function ammineComplexes(contents) {
+  const out = {}
+  const V = aqueousLitres(contents)
+  if (V < 1e-6 || !((contents.ions.NH3 || 0) > 0)) return out
+  const h = solveH(contents.ions, V)
+  const L = freeAmmonia(concList(contents.ions, V), h)
+  for (const [ion, mol] of Object.entries(contents.ions)) {
+    const info = IONS[ion]
+    if (!info?.ammine || !(mol > 0)) continue
+    const [S] = ammineSums(info, L)
+    const held = freeMetal(info, mol / V, h, S) * S * V
+    if (held > 1e-12) out[ion] = held
+  }
+  return out
 }
 
 // Dissolved CO₂ (H₂CO₃*) concentration, used for degassing.
@@ -280,12 +389,9 @@ function kspEquilibrium(contents, formed) {
         continue
       }
       if (hi <= lo) continue
-      for (let i = 0; i < 48; i += 1) {
-        const mid = (lo + hi) / 2
-        if (trial(mid) > 0) lo = mid
-        else hi = mid
-      }
-      const xi = (lo + hi) / 2
+      // log Q falls as more solid forms: root of −trial on [lo, hi] (trial(lo) > 0 checked above).
+      const fhi = -trial(hi)
+      const xi = fhi > 0 ? rootUp(x => -trial(x), lo, hi, -trial(lo), fhi, (hi - lo) * 1e-14) : hi
       if (Math.abs(xi) > 1e-15) {
         shift(contents, ppt, key, xi)
         moved += Math.abs(xi)

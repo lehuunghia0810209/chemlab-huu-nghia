@@ -120,23 +120,33 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   })
 
   await test('S07 màu chỉ thị lan từ vị trí tiếp xúc', async page => {
+    // The colour gradient is a "Đồ họa: Cao" feature ("Tiết kiệm" fills one mean colour). Pick "Cao" in the menu, as a
+    // student would: on a machine under 25 fps the automatic fallback otherwise switches to "Tiết kiệm" after ~4 s.
+    await menu(page, 'Đồ họa: Cao')
+    await menu(page, 'Đồ họa: Tiết kiệm')
+    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Cao')
     const ids = await dropperBench(page)
     await st(page, L => { L.state.speed = 0.25 })
     for (let i = 0; i < 3; i += 1) await panelBtn(page, 'Nhỏ 1 giọt').click()
     await wait(page, (L, id) => (L.state.objects.find(o => o.id === id).contents.indicators.phenolphthalein || 0) > 2.9, ids.A)
-    await page.waitForTimeout(400)
+    // Sample at a fixed MODEL time after the drops (0,1 s = the 400 ms at 0,25× this test was written for), then let two
+    // frames draw it. A wall-clock wait read the canvas too early when a busy browser skipped model time (frames > 0,25 s).
+    const tLand = await st(page, L => L.state.t)
+    await wait(page, (L, t) => L.state.t >= t + 0.1, tLand, 10000)
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))
     const a = await obj(page, ids.A)
     const s = await surface(page, ids.A)
     const pink = c => c[0] - c[1]
     const strongest = async xs => { let best = [0, 255, 0]; for (const x of xs) for (const dy of [2, 4, 6]) { const c = await pixel(page, x, s - dy); if (pink(c) > pink(best)) best = c } return best }
+    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Cao', 'measured in the mode named')
     const near = await strongest([316, 320, 324, 328, 332])
     const far = await strongest([268, 272, 276, 280, 284])
     assert.ok(pink(near) > pink(far) + 25, `pink near ${near} vs far ${far}`)
     const f = a.vis.field
     const mean0 = f.reduce((x, y) => x + y, 0) / f.length
     assert.ok(Math.max(...f.slice(130, 140)) > 5 * mean0, 'tracer concentrated at the surface contact')
-    await st(page, L => { L.state.speed = 4 })
-    await page.waitForTimeout(6000)
+    const t1 = await st(page, L => { L.state.speed = 4; return L.state.t })
+    await wait(page, (L, t) => L.state.t >= t + 24, t1, 60000) // 24 s of model time (6 s at 4×)
     const lf = (await obj(page, ids.A)).vis.field
     const mean = lf.reduce((x, y) => x + y, 0) / lf.length
     assert.ok(Math.min(...lf) / mean > Math.min(...f) / mean0 + 0.1, 'spreads with time')

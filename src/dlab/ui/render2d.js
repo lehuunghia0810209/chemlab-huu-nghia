@@ -622,8 +622,12 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
         }
         img.seen = renderCount
         if (img.dirty) dirtyFields.add(img) // back in the queue after a tilt or low-quality spell dropped it
-        if (img.fresh || img === fieldTurn) {
+        // A vessel that just received something (a drop, a pour) is shown at once, not after its turn in the queue:
+        // the queue only spreads out the slow background changes (diffusion), never the answer to a student's action.
+        const injected = (c.vis.lastInject ?? -1) > (img.injected ?? -1)
+        if (img.fresh || img === fieldTurn || (injected && img.dirty)) {
           img.ctx.putImageData(img.data, 0, 0)
+          img.injected = c.vis.lastInject ?? -1
           img.fresh = img.dirty = false
           img.last = performance.now()
           if (img === fieldTurn) fieldTurn = null

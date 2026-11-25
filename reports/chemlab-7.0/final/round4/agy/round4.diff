@@ -1,0 +1,700 @@
+diff --git a/scripts/test-dlab.mjs b/scripts/test-dlab.mjs
+index 647c6c4..de9cac7 100644
+--- a/scripts/test-dlab.mjs
++++ b/scripts/test-dlab.mjs
+@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
+ import { readFileSync } from 'node:fs'
+ import { ELECTRO } from '../src/dlab/data/reactions.js'
+ import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
+-import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw } from '../src/dlab/engine/chemistry.js'
++import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw, ammineComplexes } from '../src/dlab/engine/chemistry.js'
+ import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
+ import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
+ import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
+@@ -902,7 +902,7 @@ test('review 2: hints fire for real gaps only; no sulfate false positives; no ma
+   const logOf = l => l.s().log.map(e => e.text).join('|')
+   const sol = (pairs, seed = 21) => { const l = lab(seed); const b = l.put('beaker250', 300); for (const [r, mL] of pairs) l.fill(b, r, mL); l.sim.runFor(0.5); return { l, b: byId(l.s(), b.id) } }
+   assert.match(logOf(sol([['znso4', 20], ['naoh', 50]]).l), /Zn\(OH\)₂ lưỡng tính/, 'excess base on Zn(OH)₂ is flagged')
+-  assert.match(logOf(sol([['cuso4', 10], ['nh3', 60]]).l), /\[Cu\(NH₃\)₄\]²⁺/, 'Cu²⁺ + excess NH₃ is flagged')
++  assert.match(logOf(sol([['cuso4', 10], ['nh3', 60]]).l), /\[Cu\(NH₃\)₄\]²⁺/, 'Cu²⁺ + excess NH₃: the complex is reported')
+   assert.doesNotMatch(logOf(sol([['agno3', 10], ['na2co3', 40]]).l), /Ag₂O/, 'Ag₂CO₃ + excess carbonate is not called Ag₂O')
+   const s = sol([['na2so4', 10], ['agno3', 5]])
+   assert.ok(!Object.keys(s.b.contents.precipitates).some(k => s.b.contents.precipitates[k] > 0), 'Na₂SO₄ + AgNO₃ stays clear (school Cl⁻/SO₄²⁻ test)')
+@@ -1164,26 +1164,69 @@ test('electrolysis refuses every interference: no Cu, no Cl₂, the reason is na
+   }
+ })
+ 
+-// Independent review round 3: the ammine hints follow the complex share, not the mere presence of NH₃.
+-test('ammine complexes: AgI stays, AgCl dissolves, no Ag₂O with excess NH₃, no false hint over Cu(OH)₂ in strong base', () => {
+-  const notes = l => Object.keys(l.s().notes)
+-  const mixT = (fills, run = 1) => { const l = lab(80); const B = l.put('beaker250', 300); for (const [r, mL] of fills) l.fill(B, r, mL); l.sim.runFor(run); return { l, B } }
+-  // AgI does not dissolve in ammonia (Ksp·β₂ ≈ 10⁻⁹); AgCl does.
+-  { const { l } = mixT([['agno3', 10], ['ki', 10], ['nh3', 10]]); assert.ok(!notes(l).some(k => k.startsWith('ionhint-Ag++NH3')), 'AgI + NH₃: no complex hint') }
+-  { const { l } = mixT([['agno3', 10], ['nacl', 10], ['nh3', 20]]); assert.ok(notes(l).some(k => k.startsWith('ionhint-Ag++NH3')), 'AgCl + excess NH₃: complex hint') }
+-  // AgNO₃ + excess NH₃: the complex, not Ag₂O as well.
+-  { const { l } = mixT([['agno3', 10], ['nh3', 10]]); const n = notes(l); assert.ok(n.some(k => k.startsWith('ionhint-Ag++NH3'))); assert.ok(!n.some(k => k === `ionhint-Ag+-${l.s().objects[0].id}` || /^ionhint-Ag\+-o/.test(k)), `no Ag₂O hint: ${n}`) }
+-  // Cu(OH)₂ in strong base with a trace of NH₃: negligible complex, no hint.
+-  { const { l } = mixT([['cucl2', 10], ['naoh', 30], ['nh3', 0.2]]); assert.ok(!notes(l).some(k => k.startsWith('ionhint-Cu2++NH3')), 'trace NH₃ over Cu(OH)₂ in NaOH') }
+-  // Excess NH₃ over CuSO₄: the deep-blue complex is reported.
+-  { const { l } = mixT([['cuso4', 5], ['nh3', 50]]); assert.ok(notes(l).some(k => k.startsWith('ionhint-Cu2++NH3'))) }
++// Round 4: ammine complexes are modelled (stepwise β, Ksp, charge and NH₃ mass balance), not only flagged.
++test('ammine complexes: model — Cu(OH)₂ forms then dissolves in excess NH₃, AgCl dissolves, AgI stays, mass is conserved', () => {
++  const run = (vessel, steps, dt = 0.2) => {
++    const l = lab(80); const B = l.put(vessel, 300)
++    for (const [r, mL, n = 1] of steps) for (let i = 0; i < n; i += 1) { l.fill(B, r, mL / n); l.sim.runFor(dt) }
++    const c = byId(l.s(), B.id)
++    return { l, c, notes: Object.keys(l.s().notes), cx: ammineComplexes(c.contents) }
++  }
++  // Expected from the constants alone (independent closed form at full complexation): with all Cu as Cu(NH₃)₄²⁺ in
++  // 35 mL, free NH₃ L = (C_N − 4·C_Cu) minus NH₄⁺; the solid must be gone when Ksp > [Cu²⁺]·[OH⁻]².
++  { // Drop-wise NH₃ 2 M into CuSO₄: pale-blue Cu(OH)₂ first, then the deep-blue complex, no solid left.
++    const a = run('beaker100', [['cuso4', 5], ['nh3-2m', 2, 4]])
++    assert.ok((a.c.contents.precipitates['Cu(OH)2'] || 0) > 1e-4, 'a little NH₃: Cu(OH)₂ precipitates')
++    const before = (a.c.contents.ions['Cu2+'] || 0) + (a.c.contents.precipitates['Cu(OH)2'] || 0)
++    for (let i = 0; i < 28; i += 1) { a.l.fill(a.c, 'nh3-2m', 1); a.l.sim.runFor(0.1) }
++    const c = byId(a.l.s(), a.c.id)
++    const cx = ammineComplexes(c.contents)['Cu2+'] || 0
++    assert.ok(!((c.contents.precipitates['Cu(OH)2'] || 0) > 1e-6), `excess NH₃ 2 M: Cu(OH)₂ dissolved (${c.contents.precipitates['Cu(OH)2']})`)
++    rel(cx, 2.5e-3, 0.01, 'all Cu held as ammine complexes')
++    rel((c.contents.ions['Cu2+'] || 0) + (c.contents.precipitates['Cu(OH)2'] || 0), before, 1e-9, 'copper conserved')
++    const notes = Object.keys(a.l.s().notes)
++    assert.ok(notes.some(k => k.startsWith('ammine-dis-Cu(OH)2-')), 'dissolution is reported')
++    assert.ok(notes.some(k => k.startsWith('ammine-Cu2+-')), 'complex is reported')
++    assert.ok(!c.vis.parts.some(p => p.key === 'Cu(OH)2'), 'no blue grains left once dissolved')
++    // Colour follows the complex: darker and bluer than the same copper as Cu²⁺(aq).
++    const plain = run('beaker100', [['cuso4', 5], ['water', 30]]).c
++    assert.ok(c.vis.target[0] < plain.vis.target[0] && c.vis.target[1] < plain.vis.target[1], `deep blue: ${c.vis.target} vs ${plain.vis.target}`)
++  }
++  { // Dilute NH₃ 0,5 M cannot finish dissolving it (no NH₄⁺ buffer left for the last solid): partial, stated in the manifest.
++    const { c, cx } = run('beaker250', [['cuso4', 5], ['nh3', 50, 10]])
++    const share = (cx['Cu2+'] || 0) / 2.5e-3
++    assert.ok(share > 0.6 && share < 0.95, `0,5 M NH₃: partial (${share})`)
++    assert.ok((c.contents.precipitates['Cu(OH)2'] || 0) > 0, 'some Cu(OH)₂ stays')
++  }
++  { // AgCl dissolves in NH₃, AgI does not (Ksp·β₂ ≈ 3·10⁻³ vs 1·10⁻⁹).
++    const agcl = run('beaker100', [['agno3', 10], ['nacl', 2], ['nh3-2m', 15, 5]])
++    assert.ok(!((agcl.c.contents.precipitates.AgCl || 0) > 1e-5), `AgCl dissolved: ${agcl.c.contents.precipitates.AgCl}`)
++    assert.ok(agcl.notes.some(k => k.startsWith('ammine-Ag+-')))
++    const agi = run('beaker100', [['agno3', 10], ['ki', 10], ['nh3-2m', 30, 5]])
++    assert.ok(agi.c.contents.precipitates.AgI > 0.99e-3, 'AgI stays')
++    assert.ok(!agi.notes.some(k => k.startsWith('ammine-')), 'no complex reported over AgI')
++  }
++  { // AgNO₃ + excess NH₃: the complex, not Ag₂O as well.
++    const { notes } = run('beaker100', [['agno3', 10], ['nh3', 10]])
++    assert.ok(notes.some(k => k.startsWith('ammine-Ag+-')))
++    assert.ok(!notes.some(k => /^ionhint-Ag\+-o/.test(k)), `no Ag₂O hint: ${notes}`)
++  }
++  { // Trace NH₃ over Cu(OH)₂ in strong base: negligible complex, nothing reported, solid stays.
++    const { c, notes } = run('beaker250', [['cucl2', 10], ['naoh', 30], ['nh3', 0.2]])
++    assert.ok(!notes.some(k => k.startsWith('ammine-')), 'trace NH₃ in NaOH')
++    rel(c.contents.precipitates['Cu(OH)2'], 5e-3, 0.01, 'Cu(OH)₂ stays')
++  }
++  { // pH of NH₃ alone is unchanged by the speciation code (no metal): pH = 14 + log√(Kb·C).
++    const { c } = run('beaker100', [['nh3', 20]])
++    near(c.pH, 14 + Math.log10(Math.sqrt(1e-14 / 5.6e-10 * 0.5)), 0.02, 'pH of 0,5 M NH₃')
++  }
+   // Electrolysis: CuSO₄ + NH₃ (no chloride) and the trace-NH₃-in-base case are not called an ammine interference.
+   for (const fills of [[['cuso4', 10], ['nh3', 30]], [['cucl2', 10], ['naoh', 30], ['nh3', 0.2]]]) {
+-    const { l, B } = mixT(fills, 0.1)
++    const { l, c } = run('beaker250', fills.map(([r, mL]) => [r, mL]), 0.1)
+     const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
+     l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(1)
+     assert.doesNotMatch(byId(l.s(), p.id).status, /phức/, `${JSON.stringify(fills)}: ${byId(l.s(), p.id).status}`)
+-    assert.ok(!(byId(l.s(), B.id).contents.precipitates.CuI > 0))
++    assert.ok(!(byId(l.s(), c.id).contents.precipitates.CuI > 0))
+   }
+ })
+ 
+diff --git a/src/dlab/data/manifest.js b/src/dlab/data/manifest.js
+index c71fd74..9df39f3 100644
+--- a/src/dlab/data/manifest.js
++++ b/src/dlab/data/manifest.js
+@@ -87,6 +87,9 @@ const processes = [
+   { id: 'electrolysis-cucl2', status: 'SUPPORTED', title: ELECTRO.electrolysisCuCl2.equation, group: 'Điện hóa', inputs: 'Dung dịch CuCl₂, điện cực than chì, nguồn 1–12 V', conditions: 'U > 1,42 V; chỉ khi không có ion điện phân trước', products: 'Cu (catot), Cl₂↑ (anot)', observe: 'Đồng đỏ bám catot, khí vàng lục ở anot.', model: 'Định luật Faraday; I = (U − 1,02 − 0,4)/R.', source: 'F = 96485 C/mol (CODATA); điện trở bình: mô hình', limits: 'Điện trở và quá thế là minh họa; giai đoạn điện phân nước không được mô hình hóa.', demo: null, tests: ['electrolysis CuCl2 follows Faraday'] },
+   { id: 'daniell', status: 'SUPPORTED', title: ELECTRO.daniell.equation, group: 'Điện hóa', inputs: 'Zn/ZnSO₄ ‖ CuSO₄/Cu, cầu muối KNO₃', conditions: '0–100 °C', products: 'Suất điện động', observe: 'Vôn kế chỉ ≈ 1,1 V; Zn là cực âm.', model: 'E = E°(T) − (RT ln10/2F)·lg([Zn²⁺]/[Cu²⁺]); dE°/dT từ ΔS° (NBS).', source: 'E° 1,10 V; S° NBS 1982', limits: 'Bỏ qua thế tiếp xúc lỏng (pin thật dốc hơn ≈ −0,3 mV/K) và ΔCp.', demo: null, tests: ['Daniell cell: Nernst voltage', 'Daniell cell: E follows E°(T)'] },
+   { id: 'indicators', status: 'APPROX', title: 'Chất chỉ thị: quỳ tím, phenolphtalein, metyl da cam', group: 'Axit – bazơ', inputs: 'Giấy quỳ / vài giọt chỉ thị', conditions: 'Dung dịch nước (etanol ≤ 10 %)', products: '—', observe: 'Màu theo khoảng pH.', model: 'Phenolphtalein, metyl da cam: tỉ lệ dạng axit/bazơ theo pKin; quỳ tím: bảng màu định tính.', source: 'Harris, Quantitative Chemical Analysis', limits: 'Màu quỳ là định tính.', demo: null, tests: ['litmus: dipped part turns red', 'indicator colour spreads'] },
++  { id: 'ammine-cu', status: 'SUPPORTED', title: 'Cu(OH)₂ tan trong NH₃ dư → [Cu(NH₃)₄]²⁺', group: 'Phức chất', inputs: 'CuSO₄ + NH₃ 2 M (dư)', conditions: '25 °C; NH₃ đủ đặc và dư', products: '[Cu(NH₃)₄]²⁺ (xanh thẫm)', observe: 'Kết tủa xanh lam tạo ra rồi tan dần khi thêm NH₃; dung dịch chuyển xanh thẫm.', model: 'Cân bằng tạo phức từng nấc Cu(NH₃)ᵢ (i = 1–4) cùng Ksp, cân bằng điện tích và cân bằng khối lượng NH₃; màu theo lượng phức.', source: 'lg β (25 °C): Lange’s Handbook, số liệu Bjerrum; Ksp (CRC). Đối chiếu NIST SRD 46 (I = 0).', limits: 'lg β₄ công bố từ 11,75 (I = 0) đến 13,3 tùy môi trường; mô hình coi hoạt độ = nồng độ. Với NH₃ 0,5 M chỉ tan ≈ 80 % (NH₃ loãng không đệm không thể hòa tan hết Cu(OH)₂). Không mô hình muối sunfat bazơ và [Cu(NH₃)₅]²⁺.', demo: { vessel: 'beaker100', fill: [['cuso4', 5]], pour: ['nh3-2m', 30], run: 1, expect: { note: 'ammine-Cu2+-' } }, tests: ['ammine complexes: model'] },
++  { id: 'ammine-ag', status: 'SUPPORTED', title: 'AgCl tan trong NH₃ → [Ag(NH₃)₂]⁺; AgI không tan', group: 'Phức chất', inputs: 'AgNO₃ + NaCl, rồi NH₃ 2 M', conditions: '25 °C', products: '[Ag(NH₃)₂]⁺ (không màu)', observe: 'Kết tủa trắng AgCl tan dần trong NH₃; kết tủa vàng AgI hầu như không tan.', model: 'Ksp·β₂·[NH₃]² so với [Cl⁻]/[I⁻], giải cùng cân bằng điện tích.', source: 'lg β (25 °C): Lange’s Handbook, số liệu Bjerrum; Ksp (CRC). Đối chiếu NIST SRD 46 (I = 0).', limits: 'Ag₂O tạo ra khi mới nhỏ ít NH₃ chưa được mô hình hóa (báo "Chưa hỗ trợ").', demo: { vessel: 'beaker100', fill: [['agno3', 10], ['nacl', 2]], pour: ['nh3-2m', 15], run: 1, expect: { note: 'ammine-Ag+-' } }, tests: ['ammine complexes: model'] },
++  { id: 'ammine-zn', status: 'APPROX', title: 'Zn(OH)₂ tan trong NH₃ dư → [Zn(NH₃)₄]²⁺', group: 'Phức chất', inputs: 'ZnSO₄ + NH₃ 2 M (dư)', conditions: '25 °C', products: '[Zn(NH₃)₄]²⁺ (không màu)', observe: 'Kết tủa trắng tạo ra rồi tan phần lớn khi NH₃ dư.', model: 'Như phức đồng (β từng nấc, Ksp).', source: 'lg β (25 °C): Lange’s Handbook, số liệu Bjerrum; Ksp (CRC). Đối chiếu NIST SRD 46 (I = 0).', limits: 'Với Ksp của Zn(OH)₂ kết tinh, mô hình còn ≈ 6 % kết tủa sau 30 mL NH₃ 2 M; Zn(OH)₂ mới kết tủa tan hơn nên thực tế thường tan hết.', demo: { vessel: 'beaker100', fill: [['znso4', 5]], pour: ['nh3-2m', 30], run: 1, expect: { note: 'ammine-Zn2+-' } }, tests: ['ammine complexes: model'] },
+   { id: 'redissolve', status: 'SUPPORTED', title: 'Kết tủa hiđroxit tan trong axit', group: 'Phản ứng tạo kết tủa', inputs: 'Cu(OH)₂ + HCl', conditions: '25 °C', products: 'Cu²⁺', observe: 'Kết tủa xanh tan, dung dịch xanh trong.', model: 'Ksp + cân bằng điện tích: Q < Ksp thì kết tủa tan.', source: 'Ksp (CRC)', limits: '—', demo: null, tests: ['Cu(OH)2 forms with base and redissolves in acid'] }
+ ]
+ 
+@@ -99,10 +102,10 @@ const noReaction = [
+ // checks that the engine really reports it, not only that the hint exists in the table.
+ const SOLID_HINT_DEMO = { 'NO3-+cu': 'hno3', 'Fe3++cu': 'fecl3', 'Fe3++fe': 'fecl3', 'Fe3++zn': 'fecl3', 'Fe3++mg': 'fecl3', 'SO4+caco3': 'h2so4', zn: 'naoh' }
+ const ION_HINT_DEMO = {
+-  'Ag+': [['agno3', 10], ['naoh', 3]], 'Ag++NH3': [['agno3', 10], ['nh3', 10]], 'Zn2++NH3': [['znso4', 10], ['nh3', 30]],
++  'Ag+': [['agno3', 10], ['naoh', 3]],
+   'NO3-+I-': [['hno3', 10], ['ki', 10]], 'NO3-+Fe2+': [['hno3', 10], ['feso4', 10]], 'Ag++Fe2+': [['agno3', 10], ['feso4', 10]],
+   'Cu2++CO3': [['cuso4', 5], ['na2co3', 30]], I2: [['fecl3', 5], ['ki', 10], ['naoh', 20]], 'Fe3++I-': [['ki', 20], ['naoh', 5], ['fecl3', 2]],
+-  'Zn2+': [['znso4', 5], ['naoh', 30]], 'Cu2++NH3': [['cuso4', 10], ['nh3', 30]]
++  'Zn2+': [['znso4', 5], ['naoh', 30]]
+ }
+ const unsupported = [
+   ...UNSUPPORTED_HINTS.map((r, i) => {
+@@ -113,7 +116,7 @@ const unsupported = [
+   }),
+   ...ION_HINTS.map((r, i) => {
+     const fill = ION_HINT_DEMO[r.all.join('+')]
+-    return { id: `ionhint-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: fill ? fill.map(([x]) => x.toUpperCase()).join(' + ') : r.all.join(' + '), conditions: [r.minPH != null && `pH > ${r.minPH}`, r.maxPH != null && `pH < ${r.maxPH}`, r.ammine && 'phức amin giữ > 5 % lượng kim loại (theo NH₃ tự do và Ksp)'].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason,
++    return { id: `ionhint-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: fill ? fill.map(([x]) => x.toUpperCase()).join(' + ') : r.all.join(' + '), conditions: [r.minPH != null && `pH > ${r.minPH}`, r.maxPH != null && `pH < ${r.maxPH}`].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason,
+       demo: fill ? { vessel: 'beaker100', fill, run: 1, expect: { hint: `ionhint-${r.all.join('+')}-` } } : null }
+   }),
+   ...SOLVENT_HINTS.map(r => ({ id: `solvent-${r.solid}-${r.liquid}`, status: 'UNSUPPORTED', title: `${SOLID_NAME[r.solid]} + ${r.liquid}`, group: 'Chưa hỗ trợ', inputs: `${SOLID_NAME[r.solid]} + etanol khan`, conditions: '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason, demo: null, tests: ['solvent: ethanol is not water'] })),
+diff --git a/src/dlab/data/materials.js b/src/dlab/data/materials.js
+index 5944319..eaaff06 100644
+--- a/src/dlab/data/materials.js
++++ b/src/dlab/data/materials.js
+@@ -27,15 +27,22 @@ export const SOURCES = {
+ // Dissolved species used in the charge balance. z = charge.
+ // hydrolysisKa: M^z+ + H2O ⇌ MOH + H+ ; dimerBeta: 2M^z+ + 2H2O ⇌ M2(OH)2 + 2H+ (I = 0, 25 °C).
+ // Sources: COST Action 1802 hydrolysis compilation (2024) of Baes & Mesmer 1976 / IUPAC Powell 2007, 2013.
++// ammine: cumulative βᵢ of M(NH₃)ᵢ, 25 °C, Lange's Handbook (Bjerrum's data, measured in ammonium-salt media, not I = 0).
++// Published lg β₄ for Cu(NH₃)₄²⁺ spans 11,75 (NIST SRD 46, I = 0) – 13,3 (Lange); an ammonia/ammonium mixture is itself a
++// salt medium, so the Bjerrum set is used. Cross-checked (round 4): 5 mL CuSO₄ 0,5 M + ≥ 20 mL NH₃ 2 M → ≥ 98 % as the
++// complex; with NH₃ 0,5 M only ≈ 80 % (unbuffered dilute NH₃ cannot finish dissolving Cu(OH)₂: the last solid would
++// use up the NH₄⁺ buffer), so the library also has the 2 M solution school labs use for this test. ammineColorPerM: [Cu(NH₃)₄]²⁺ has ε ≈ 55 at λmax ≈ 600 nm vs ≈ 12 at
++// ≈ 800 nm for Cu²⁺(aq) (Bjerrum, Ballhausen & Jørgensen 1954), and its band sits where the eye is most sensitive: the
++// perceived tint per mole is ≈ 15–25× that of Cu²⁺(aq) (colorPerM 1,6 → 30). The deep blue is set by the complex amount.
+ export const IONS = {
+   'Na+': { z: 1, label: 'Na⁺' },
+   'K+': { z: 1, label: 'K⁺' },
+-  'Ag+': { z: 1, label: 'Ag⁺' },
++  'Ag+': { z: 1, label: 'Ag⁺', ammine: [10 ** 3.24, 10 ** 7.05], ammineLabel: '[Ag(NH₃)₂]⁺', ammineColorWord: 'không màu' },
+   'Ba2+': { z: 2, label: 'Ba²⁺' },
+   'Ca2+': { z: 2, label: 'Ca²⁺' },
+   'Mg2+': { z: 2, label: 'Mg²⁺' },
+-  'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 10 ** -8.96 }, // Powell 2013
+-  'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.95, dimerBeta: 10 ** -10.43, color: [70, 140, 230], colorPerM: 1.6 }, // Powell 2007
++  'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 10 ** -8.96, ammine: [10 ** 2.37, 10 ** 4.81, 10 ** 7.31, 10 ** 9.46], ammineLabel: '[Zn(NH₃)₄]²⁺', ammineColorWord: 'không màu' }, // Powell 2013
++  'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.95, dimerBeta: 10 ** -10.43, color: [70, 140, 230], colorPerM: 1.6, ammine: [10 ** 4.31, 10 ** 7.98, 10 ** 11.02, 10 ** 13.32], ammineLabel: '[Cu(NH₃)₄]²⁺', ammineColorWord: 'màu xanh thẫm', ammineColor: [22, 38, 150], ammineColorPerM: 30 }, // Powell 2007
+   'Fe2+': { z: 2, label: 'Fe²⁺', hydrolysisKa: 10 ** -9.5, color: [150, 200, 140], colorPerM: 0.8 }, // Baes & Mesmer 1976
+   'Fe3+': { z: 3, label: 'Fe³⁺', hydrolysisKa: 10 ** -2.19, color: [205, 140, 40], colorPerM: 3 }, // Baes & Mesmer 1976
+   'Cl-': { z: -1, label: 'Cl⁻' },
+@@ -180,6 +187,7 @@ export const REAGENTS = [
+   solution('koh', 'Kali hiđroxit', 'Potassium hydroxide', 'KOH', 0.5, { 'K+': 1 }, { group: 'base', hazards: ['corrosive'], safety: 'Bazơ mạnh, ăn mòn da.' }),
+   solution('caoh2', 'Nước vôi trong', 'Limewater', 'Ca(OH)2', 0.02, { 'Ca2+': 1 }, { group: 'base', hazards: ['irritant'], safety: 'Gây kích ứng mắt.' }),
+   solution('nh3', 'Dung dịch amoniac', 'Aqueous ammonia', 'NH3', 0.5, { NH3: 1 }, { group: 'base', hazards: ['irritant'], safety: 'Mùi khai, gây kích ứng đường hô hấp; dùng nơi thoáng khí.' }),
++  solution('nh3-2m', 'Dung dịch amoniac 2 M', 'Aqueous ammonia 2 M', 'NH3', 2, { NH3: 1 }, { group: 'base', hazards: ['irritant'], safety: 'Mùi khai mạnh, gây kích ứng mắt và đường hô hấp; dùng trong tủ hút hoặc nơi thoáng khí.' }),
+   solution('nacl', 'Natri clorua', 'Sodium chloride', 'NaCl', 0.5, { 'Na+': 1, 'Cl-': 1 }, { group: 'salt', hazards: [], safety: 'Ít nguy hiểm.' }),
+   solution('na2so4', 'Natri sunfat', 'Sodium sulfate', 'Na2SO4', 0.2, { 'Na+': 2, SO4: 1 }, { group: 'salt', hazards: [], safety: 'Ít nguy hiểm.' }),
+   solution('bacl2', 'Bari clorua', 'Barium chloride', 'BaCl2', 0.2, { 'Ba2+': 1, 'Cl-': 2 }, { group: 'salt', hazards: ['toxic'], safety: 'Hợp chất bari tan độc khi nuốt; rửa tay sau thí nghiệm.' }),
+diff --git a/src/dlab/data/reactions.js b/src/dlab/data/reactions.js
+index dcabc13..2d54655 100644
+--- a/src/dlab/data/reactions.js
++++ b/src/dlab/data/reactions.js
+@@ -35,19 +35,13 @@ export const ION_HINTS = [
+   // Ag₂O forms when free [Ag⁺]·[OH⁻] exceeds K = 2,0·10⁻⁸ (½Ag₂O + ½H₂O ⇌ Ag⁺ + OH⁻, CRC) — e.g. pH ≈ 7,6
+   // in 0,05 M Ag⁺, but not over Ag₂CO₃ in carbonate (free Ag⁺ is tiny there).
+   { all: ['Ag+'], kspOH: 2.0e-8, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
+-  // Ammine complexes: reported when the complex would hold > 5 % of that metal (dissolved ion, or a precipitate
+-  // dissolving as Ksp·β·[NH₃]ⁿ/[anion]^q), from free NH₃. lg β: [Ag(NH₃)₂]⁺ 7,23; [Zn(NH₃)₄]²⁺ 9,46;
+-  // [Cu(NH₃)₄]²⁺ 13,1 (Lange's Handbook; Martell–Smith give 8,9–9,1 and 12,6 at I = 0 — the hint is qualitative).
+-  { all: ['Ag+', 'NH3'], ammine: { beta: 10 ** 7.23, n: 2 }, reason: 'Ag⁺/AgCl với NH₃ tạo phức [Ag(NH₃)₂]⁺ tan — chưa được mô hình hóa.' },
+-  { all: ['Zn2+', 'NH3'], ammine: { beta: 10 ** 9.46, n: 4 }, reason: 'Zn²⁺ với NH₃ dư tạo phức [Zn(NH₃)₄]²⁺ — chưa được mô hình hóa.' },
+   { all: ['NO3-', 'I-'], maxPH: 3, reason: 'HNO₃ oxi hóa I⁻ thành I₂ (và tạo NO) — chưa được mô hình hóa.' },
+   { all: ['NO3-', 'Fe2+'], maxPH: 3, reason: 'HNO₃ oxi hóa Fe²⁺ thành Fe³⁺ (và tạo NO) — chưa được mô hình hóa.' },
+   { all: ['Ag+', 'Fe2+'], reason: 'Ag⁺ + Fe²⁺ → Ag↓ + Fe³⁺ (E° 0,80 > 0,77 V) — chưa được mô hình hóa.' },
+   { all: ['Cu2+', 'CO3'], minPH: 5.5, reason: 'Cu²⁺ với cacbonat thực tế tạo đồng cacbonat bazơ Cu₂(OH)₂CO₃ màu xanh lục; mô phỏng chỉ có Cu(OH)₂ — chưa mô hình hóa chính xác.' },
+   { all: ['I2'], minPH: 9, reason: 'I₂ trong kiềm chuyển thành I⁻/IO⁻ (mất màu) — chưa được mô hình hóa.' },
+   { all: ['Fe3+', 'I-'], minPH: 7.01, reason: 'Fe³⁺ + I⁻ trong môi trường kiềm: Fe(OH)₃ tạo trước, không sinh I₂ — mô hình không tính phản ứng oxi hóa – khử này.' },
+-  { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
+-  { all: ['Cu2+', 'NH3'], ammine: { beta: 10 ** 13.1, n: 4 }, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
++  { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' }
+ ]
+ 
+ // Fast ionic redox in solution, run to completion (K ≫ 1). E° (CRC, 25 °C): Cu²⁺/CuI 0,86 V, Fe³⁺/Fe²⁺ 0,771 V,
+@@ -72,7 +66,7 @@ export const ELECTRO = {
+       { ion: 'Fe3+', why: 'Fe³⁺ bị khử ở catot trước Cu²⁺ (E° Fe³⁺/Fe²⁺ 0,77 V > 0,34 V)' },
+       { ion: 'Fe2+', why: 'Fe²⁺ bị oxi hóa ở anot trước Cl⁻ (E° Fe³⁺/Fe²⁺ 0,77 V < 1,36 V)' },
+       { ion: 'NO3-', maxPH: 3, why: 'HNO₃ hòa tan đồng bám ở catot và bị khử tạo NO' },
+-      { ion: 'NH3', ammine: { metal: 'Cu2+', beta: 10 ** 13.1, n: 4 }, why: 'NH₃ dư tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' } // complex share, not NH₃ presence: NH₄⁺ does not complex
++      { ion: 'NH3', ammine: { metal: 'Cu2+' }, why: 'NH₃ dư tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' } // complex share, not NH₃ presence: NH₄⁺ does not complex
+     ]
+   },
+   // E°(T) = E°(298) + ΔS°/(nF)·(T − 298,15); ΔS° from NBS S° (J/(mol·K)): Zn²⁺ −112,1, Cu 33,150, Zn 41,63,
+diff --git a/src/dlab/engine/chemistry.js b/src/dlab/engine/chemistry.js
+index 2f20f07..809cfd1 100644
+--- a/src/dlab/engine/chemistry.js
++++ b/src/dlab/engine/chemistry.js
+@@ -74,24 +74,66 @@ function weakCharge(kind, C, h) {
+   return 0
+ }
+ 
+-// Free aquo-ion concentration of a hydrolysing metal with total C at [H⁺] = h.
+-// Mass balance C = x(1 + K1/h) + 2·β22·x²/h² is a quadratic in x.
+-function freeMetal(info, C, h) {
+-  const b = 1 + info.hydrolysisKa / h
++// Free aquo-ion concentration of a metal with total dissolved C at [H⁺] = h and ammine sum S = Σβᵢ·Lⁱ.
++// Mass balance C = x(1 + K1/h + S) + 2·β22·x²/h² is a quadratic in x.
++function freeMetal(info, C, h, S = 0) {
++  const b = 1 + (info.hydrolysisKa ? info.hydrolysisKa / h : 0) + S
+   if (!info.dimerBeta) return C / b
+   const a = 2 * info.dimerBeta / (h * h)
+   return 2 * C / (b + Math.sqrt(b * b + 4 * a * C))
+ }
+ 
+-function chargeAt(h, conc) {
++// Ammine complexes M(NH₃)ᵢ (cumulative βᵢ, IONS[ion].ammine). Returns [S, D] = [Σβᵢ·Lⁱ, Σi·βᵢ·Lⁱ] at free NH₃ L.
++function ammineSums(info, L) {
++  let S = 0
++  let D = 0
++  for (let i = 0; i < info.ammine.length; i += 1) {
++    const t = info.ammine[i] * L ** (i + 1)
++    S += t
++    D += (i + 1) * t
++  }
++  return [S, D]
++}
++
++// Free NH₃ (mol/L) at [H⁺] = h. conc: [[ion, mol/L]]. Mass balance on nitrogen,
++// N = L·(1 + h/Ka) + Σ x_M·D_M(L), is increasing in L: bisection on log L. Without a complexing metal, closed form.
++function freeAmmonia(conc, h) {
++  const N = conc.find(([ion]) => ion === 'NH3')?.[1] || 0
++  if (!(N > 0)) return 0
++  const Ka = WEAK.ammonia.Ka
++  const metals = conc.filter(([ion, c]) => c > 0 && IONS[ion].ammine)
++  if (!metals.length) return N * Ka / (Ka + h)
++  const excess = lg => {
++    const L = 10 ** lg
++    let bound = 0
++    for (const [ion, c] of metals) {
++      const info = IONS[ion]
++      const [S, D] = ammineSums(info, L)
++      bound += freeMetal(info, c, h, S) * D
++    }
++    return L * (1 + h / Ka) + bound - N
++  }
++  let lo = -30
++  let hi = Math.log10(N * Ka / (Ka + h)) // L can only be lower than without metals
++  if (excess(hi) <= 0) return 10 ** hi
++  for (let i = 0; i < 50; i += 1) {
++    const mid = (lo + hi) / 2
++    if (excess(mid) > 0) hi = mid
++    else lo = mid
++  }
++  return 10 ** ((lo + hi) / 2)
++}
++
++function chargeAt(h, conc, L) {
+   let sum = h - KW / h
+   for (const [ion, c] of conc) {
+     const info = IONS[ion]
+-    if (info.weak) sum += weakCharge(info.weak, c, h)
++    if (info.weak === 'ammonia') sum += L * h / WEAK.ammonia.Ka // NH₄⁺; NH₃ bound in a complex is not protonated
++    else if (info.weak) sum += weakCharge(info.weak, c, h)
+     else {
+-      sum += info.z * c
++      sum += info.z * c // a complex keeps the metal's charge
+       if (info.hydrolysisKa) {
+-        const x = freeMetal(info, c, h)
++        const x = freeMetal(info, c, h, info.ammine && L > 0 ? ammineSums(info, L)[0] : 0)
+         sum -= x * info.hydrolysisKa / h + (info.dimerBeta ? 2 * info.dimerBeta * x * x / (h * h) : 0)
+       }
+     }
+@@ -102,13 +144,12 @@ function chargeAt(h, conc) {
+ // Returns [H⁺] in mol/L. Charge balance is monotonic in h, so bisection on log h always converges.
+ export function solveH(ions, litres) {
+   if (!(litres > 0)) return 1e-7
+-  const conc = []
+-  for (const [ion, mol] of Object.entries(ions)) if (mol > 0 && IONS[ion]) conc.push([ion, mol / litres])
++  const conc = concList(ions, litres)
+   let lo = -16
+   let hi = 1.5
+   for (let i = 0; i < 56; i += 1) {
+     const mid = (lo + hi) / 2
+-    if (chargeAt(10 ** mid, conc) > 0) hi = mid
++    if (chargeAt(10 ** mid, conc, freeAmmonia(conc, 10 ** mid)) > 0) hi = mid
+     else lo = mid
+   }
+   return 10 ** ((lo + hi) / 2)
+@@ -120,6 +161,7 @@ export const IDEAL_I_LIMIT = 0.1
+ export function ionicStrength(ions, litres, h) {
+   if (!(litres > 0)) return 0
+   let twoI = h + KW / h
++  const L = freeAmmonia(concList(ions, litres), h)
+   for (const [ion, mol] of Object.entries(ions)) {
+     const info = IONS[ion]
+     const c = mol / litres
+@@ -127,7 +169,7 @@ export function ionicStrength(ions, litres, h) {
+     if (!info.weak) { twoI += c * info.z * info.z; continue }
+     if (info.weak === 'sulfate') { const f = WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h); twoI += c * (4 * f + (1 - f)) }
+     else if (info.weak === 'acetate') twoI += c * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
+-    else if (info.weak === 'ammonia') twoI += c * h / (h + WEAK.ammonia.Ka)
++    else if (info.weak === 'ammonia') twoI += L * h / WEAK.ammonia.Ka
+     else if (info.weak === 'carbonate') {
+       const w = WEAK.carbonate
+       const D = h * h + w.Ka1 * h + w.Ka1 * w.Ka2
+@@ -143,12 +185,20 @@ export function pHOf(contents) {
+   return -Math.log10(solveH(contents.ions, V))
+ }
+ 
++function concList(ions, V) {
++  const conc = []
++  for (const [ion, mol] of Object.entries(ions)) if (mol > 0 && IONS[ion]) conc.push([ion, mol / V])
++  return conc
++}
++
+ // Free (uncomplexed, unprotonated) concentration of an ion at the given h.
+ export function freeConc(ion, contents, h, V) {
+   if (ion === 'OH') return KW / h
+   const C = (contents.ions[ion] || 0) / V
+   const info = IONS[ion]
+   if (!info) return 0
++  if (info.ammine && (contents.ions.NH3 || 0) > 0) return freeMetal(info, C, h, ammineSums(info, freeAmmonia(concList(contents.ions, V), h))[0])
++  if (info.ammine && !info.hydrolysisKa) return C
+   if (info.hydrolysisKa) return freeMetal(info, C, h)
+   if (info.weak === 'sulfate') return C * WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h)
+   if (info.weak === 'carbonate') {
+@@ -156,10 +206,27 @@ export function freeConc(ion, contents, h, V) {
+     return C * w.Ka1 * w.Ka2 / (h * h + w.Ka1 * h + w.Ka1 * w.Ka2)
+   }
+   if (info.weak === 'acetate') return C * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
+-  if (info.weak === 'ammonia') return C * WEAK.ammonia.Ka / (WEAK.ammonia.Ka + h) // unprotonated NH₃
++  if (info.weak === 'ammonia') return freeAmmonia(concList(contents.ions, V), h) // unprotonated, unbound NH₃
+   return C
+ }
+ 
++// Moles of each metal held as ammine complexes, Σ M(NH₃)ᵢ (the analytical total stays in contents.ions[metal]).
++export function ammineComplexes(contents) {
++  const out = {}
++  const V = aqueousLitres(contents)
++  if (V < 1e-6 || !((contents.ions.NH3 || 0) > 0)) return out
++  const h = solveH(contents.ions, V)
++  const L = freeAmmonia(concList(contents.ions, V), h)
++  for (const [ion, mol] of Object.entries(contents.ions)) {
++    const info = IONS[ion]
++    if (!info?.ammine || !(mol > 0)) continue
++    const [S] = ammineSums(info, L)
++    const held = freeMetal(info, mol / V, h, S) * S * V
++    if (held > 1e-12) out[ion] = held
++  }
++  return out
++}
++
+ // Dissolved CO₂ (H₂CO₃*) concentration, used for degassing.
+ export function carbonicAcid(contents, h, V) {
+   const C = (contents.ions.CO3 || 0) / V
+diff --git a/src/dlab/engine/processes.js b/src/dlab/engine/processes.js
+index 45f0abf..6721bd5 100644
+--- a/src/dlab/engine/processes.js
++++ b/src/dlab/engine/processes.js
+@@ -3,7 +3,7 @@
+ import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
+ import { WEAK, IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass, PH_MAX_ETHANOL_FRACTION } from '../data/materials.js'
+ import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME, SOLVENT_HINTS, ION_REDOX } from '../data/reactions.js'
+-import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents, polarPhase, boilingOf, oilBelow, freeConc, NUCLEATION_LOG } from './chemistry.js'
++import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents, polarPhase, boilingOf, oilBelow, freeConc, ammineComplexes, NUCLEATION_LOG } from './chemistry.js'
+ 
+ export const ROOM_T = 25
+ const vn = (x, d) => x.toFixed(d).replace('.', ',') // Vietnamese decimal comma in messages
+@@ -91,12 +91,21 @@ export function bulkColor(contents, pH) {
+   let rgb = [222, 238, 250]
+   let alpha = 0.18
+   if (V > 0) {
+-    for (const [ion, mol] of Object.entries(contents.ions)) {
++    const cx = ammineComplexes(contents)
++    for (const [ion, total] of Object.entries(contents.ions)) {
+       const info = IONS[ion]
+-      if (!info?.color) continue
+-      const a = 1 - Math.exp(-info.colorPerM * mol / V)
+-      rgb = mixRgb(rgb, info.color, a)
+-      alpha = Math.max(alpha, 0.18 + 0.6 * a)
++      const held = cx[ion] || 0
++      const mol = total - held
++      if (info?.color && mol > 0) {
++        const a = 1 - Math.exp(-info.colorPerM * mol / V)
++        rgb = mixRgb(rgb, info.color, a)
++        alpha = Math.max(alpha, 0.18 + 0.6 * a)
++      }
++      if (info?.ammineColor && held > 0) {
++        const a = 1 - Math.exp(-info.ammineColorPerM * held / V)
++        rgb = mixRgb(rgb, info.ammineColor, a)
++        alpha = Math.max(alpha, 0.18 + 0.6 * a)
++      }
+     }
+     for (const [key, drops] of Object.entries(contents.indicators)) {
+       if (!(drops > 0) || pH == null) continue
+@@ -175,6 +184,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
+   }
+   const C1 = liquidHeatCapacity(c.contents) + def.glassMassG * GLASS_CP
+   const C2 = liquidHeatCapacity(parcel)
++  const pptBefore = { ...c.contents.precipitates }
+   const result = mix(c.contents, parcel)
+   const Ctot = C1 + C2
+   if (Ctot > 0) c.T = (C1 * c.T + C2 * T + result.heatJ) / Ctot
+@@ -184,6 +194,8 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
+     spawnParticles(state, c, key, mol, u, v)
+     noteOnce(state, `ppt-${key}-${c.id}`, `Xuất hiện kết tủa ${PRECIPITATES[key].formula} (${PRECIPITATES[key].name}) trong ${label(c)}.`)
+   }
++  ammineNotes(state, c, pptBefore)
++  trimParticles(c) // a precipitate that redissolved (in NH₃ or acid) leaves no grains behind
+   injectTracer(state, c, u, v, Math.max(0.2, addVol))
+   refreshDerived(c)
+   overflow(state, c)
+@@ -265,39 +277,30 @@ export function takeFrom(state, from, mL) {
+ 
+ function trimParticles(c) {
+   const total = Object.values(c.contents.precipitates).reduce((s, v) => s + v, 0)
+-  const target = Math.min(MAX_PARTICLES, Math.round(total / PARTICLE_MOL))
+-  while (c.vis.parts.length > target) {
++  const keys = new Set(c.vis.parts.map(p => p.key))
++  for (const key of keys) {
++    const target = Math.round((c.contents.precipitates[key] || 0) / PARTICLE_MOL)
++    let have = c.vis.parts.filter(p => p.key === key).length
++    while (have > target) {
++      const idx = c.vis.parts.findIndex(p => p.key === key && !p.settled)
++      c.vis.parts.splice(idx >= 0 ? idx : c.vis.parts.findLastIndex(p => p.key === key), 1)
++      have -= 1
++    }
++  }
++  const cap = Math.min(MAX_PARTICLES, Math.round(total / PARTICLE_MOL))
++  while (c.vis.parts.length > cap) {
+     const idx = c.vis.parts.findIndex(p => !p.settled)
+     c.vis.parts.splice(idx >= 0 ? idx : c.vis.parts.length - 1, 1)
+   }
+ }
+ 
+-// Dissolved species the model cannot react: say so once per vessel instead of showing nothing.
+-// Share of a metal held as an ammine complex at the vessel's free NH₃: from the dissolved ion (β·[NH₃]ⁿ / (1 + β·[NH₃]ⁿ))
+-// and from each of its precipitates, which dissolve as the complex up to Ksp·β·[NH₃]ⁿ / [anion]^q. AgI stays (Ksp·β ≈ 10⁻⁹),
+-// AgCl dissolves; Cu(OH)₂ in strong base with a trace of NH₃ does not.
+-export function ammineShare(contents, metal, { beta, n }) {
+-  const V = aqueousLitres(contents)
+-  if (V < 1e-6) return 0
+-  const h = solveH(contents.ions, V)
+-  const f = beta * freeConc('NH3', contents, h, V) ** n
+-  const ion = contents.ions[metal] || 0
+-  let total = ion
+-  let held = ion * f / (1 + f)
+-  for (const [k, mol] of Object.entries(contents.precipitates)) {
+-    const ppt = PRECIPITATES[k]
+-    if (!(mol > 1e-9) || ppt?.cation !== metal || ppt.redox) continue
+-    total += mol * ppt.p
+-    const K = ppt.Ksp * f
+-    const a0 = freeConc(ppt.anion, contents, h, V)
+-    // Dissolving s mol/L also releases q·s anion: s·(a0 + q·s)^q = K. OH⁻ is held by the NH₃/NH₄⁺ buffer, so it stays a0.
+-    let s = ppt.anion === 'OH' ? K / Math.max(1e-30, a0) ** ppt.q : ppt.q === 1 ? (Math.sqrt(a0 * a0 + 4 * K) - a0) / 2 : 0
+-    if (ppt.anion !== 'OH' && ppt.q !== 1) { let lo = 0; let hi = 10; for (let i = 0; i < 60; i += 1) { const m = (lo + hi) / 2; if (m * (a0 + ppt.q * m) ** ppt.q > K) hi = m; else lo = m } s = lo }
+-    held += Math.min(mol * ppt.p, s * V)
+-  }
+-  return total > 1e-9 ? held / total : 0
++// Share of a metal (dissolved + precipitated) held as ammine complexes, from the engine's speciation.
++export function ammineShare(contents, metal) {
++  const total = (contents.ions[metal] || 0) + Object.entries(contents.precipitates).reduce((sum, [k, mol]) => sum + (PRECIPITATES[k]?.cation === metal ? mol * PRECIPITATES[k].p : 0), 0)
++  return total > 1e-9 ? (ammineComplexes(contents)[metal] || 0) / total : 0
+ }
+ 
++// Dissolved species the model cannot react: say so once per vessel instead of showing nothing.
+ function ionHints(state, c) {
+   let pH
+   const has = k => (c.contents.ions[k] || 0) > 1e-7 || Object.entries(c.contents.precipitates).some(([key, mol]) => mol > 1e-7 && PRECIPITATES[key]?.cation === k)
+@@ -309,12 +312,9 @@ function ionHints(state, c) {
+       if (V < 1e-6) continue
+       const h = solveH(c.contents.ions, V)
+       // Same supersaturation rule as every precipitate (Q > 10^NUCLEATION_LOG·K): a factor ~2 is inside the Ksp data spread.
+-      // Ag⁺ bound as [Ag(NH₃)₂]⁺ is not free to form Ag₂O (excess NH₃ gives the complex, not both).
+-      const agNH3 = ION_HINTS.find(x => x.ammine && x.all[0] === r.all[0])?.ammine
+-      const bound = agNH3 ? 1 + agNH3.beta * freeConc('NH3', c.contents, h, V) ** agNH3.n : 1
+-      if (!(freeConc(r.all[0], c.contents, h, V) / bound * 1e-14 / h > r.kspOH * 10 ** NUCLEATION_LOG)) continue
++      // freeConc is the uncomplexed Ag⁺: with excess NH₃ it is [Ag(NH₃)₂]⁺, not Ag₂O.
++      if (!(freeConc(r.all[0], c.contents, h, V) * 1e-14 / h > r.kspOH * 10 ** NUCLEATION_LOG)) continue
+     }
+-    if (r.ammine && !(ammineShare(c.contents, r.all[0], r.ammine) > 0.05)) continue
+     if (r.minPH != null || r.maxPH != null) {
+       const V = aqueousLitres(c.contents)
+       if (V < 1e-6) continue
+@@ -600,7 +600,7 @@ export function stepElectro(state, h) {
+     // Excess NH₃ binds copper as [Cu(NH₃)₄]²⁺: not "copper used up". Checked in a chloride, aqueous solution only (the
+     // other cases get their own message below); NH₄⁺ alone, or a trace of NH₃ over Cu(OH)₂ in strong base, does not count.
+     const ammine = e0.interferes.find(x => x.ammine)
+-    if (ammine && cl > 1e-7 && polarPhase(c.contents).pHApplies && ammineShare(c.contents, ammine.ammine.metal, ammine.ammine) > 0.05) {
++    if (ammine && cl > 1e-7 && polarPhase(c.contents).pHApplies && ammineShare(c.contents, ammine.ammine.metal) > 0.05) {
+       p.status = `Chưa hỗ trợ mô phỏng điện phân dung dịch này: ${ammine.why}.`
+       c.unsupported = p.status
+       noteOnce(state, `electro-unsup-NH3-${c.id}`, p.status, 'warn')
+@@ -756,8 +756,10 @@ export function stepContainer(state, c, h) {
+   // Solids inside.
+   for (const s of state.objects) if (s.type === 'solid' && s.in === c.id) stepSolid(state, s, c, h)
+   if (c.dirty && state.step % 6 === 0) {
++    const before = { ...c.contents.precipitates }
+     const formed = equilibrate(c.contents)
+     redoxNotes(state, c, formed)
++    ammineNotes(state, c, before)
+     for (const [key, mol] of Object.entries(formed)) {
+       const src = c.lastSource || { u: 0, v: 0.5 }
+       spawnParticles(state, c, key, mol, src.u, src.v)
+@@ -770,6 +772,19 @@ export function stepContainer(state, c, h) {
+   stepVisual(state, c, h)
+ }
+ 
++// Ammine complexes (modelled in chemistry.js): say when one holds a real share of the metal, and when a
++// precipitate dissolves into it ("Cu(OH)₂ tan trong NH₃ dư").
++function ammineNotes(state, c, before) {
++  const cx = ammineComplexes(c.contents)
++  for (const [metal, mol] of Object.entries(cx)) {
++    const info = IONS[metal]
++    if (!(ammineShare(c.contents, metal) > 0.05)) continue
++    const lost = Object.keys(before).filter(k => PRECIPITATES[k]?.cation === metal && (before[k] - (c.contents.precipitates[k] || 0)) > 1e-7)
++    for (const k of lost) noteOnce(state, `ammine-dis-${k}-${c.id}`, `Kết tủa ${PRECIPITATES[k].formula} tan trong NH₃ dư, tạo phức ${info.ammineLabel} ${info.ammineColorWord}.`)
++    if (mol > 1e-7) noteOnce(state, `ammine-${metal}-${c.id}`, `Trong ${label(c)} có phức ${info.ammineLabel} (${info.ammineColorWord}): NH₃ liên kết với ion ${info.label}.`)
++  }
++}
++
+ function crystallizeDry(state, c) {
+   // Evaporated to dryness: dissolved ions become a residue on the bottom (reported, not modelled further).
+   const ions = Object.entries(c.contents.ions).filter(([, v]) => v > 0)
+diff --git a/src/dlab/ui/labels.js b/src/dlab/ui/labels.js
+index f8d399e..bad779a 100644
+--- a/src/dlab/ui/labels.js
++++ b/src/dlab/ui/labels.js
+@@ -2,6 +2,7 @@
+ // follows the chemistry: pour HCl into "Cốc A — CuSO₄" and it becomes "Cốc A — CuSO₄ + HCl".
+ import { REAGENT_BY_ID, IONS, LIQUIDS, INDICATORS, PRECIPITATES } from '../data/materials.js'
+ import { byId, isContainer, label, coatCoverage } from '../engine/processes.js'
++import { ammineComplexes } from '../engine/chemistry.js'
+ 
+ const sub = f => String(f).replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join(''))
+ const METAL = { 'Na+': ['Na', 1], 'K+': ['K', 1], 'Ag+': ['Ag', 1], 'Ba2+': ['Ba', 2], 'Ca2+': ['Ca', 2], 'Mg2+': ['Mg', 2], 'Zn2+': ['Zn', 2], 'Cu2+': ['Cu', 2], 'Fe2+': ['Fe', 2], 'Fe3+': ['Fe', 3] }
+@@ -16,7 +17,7 @@ function salt(metal, zm, anion) {
+   const nm = l / zm
+   const na = l / za
+   if (a === 'CH3COO') return na === 1 ? `CH3COO${metal}` : `(CH3COO)${na}${metal}`
+-  return `${metal}${nm > 1 ? nm : ''}${poly && na > 1 ? `(${a})${na}` : `${a}${na > 1 ? na : ''}`}`
++  return `${nm > 1 && /^[A-Z][a-z]?$/.test(metal) === false ? `(${metal})${nm}` : `${metal}${nm > 1 ? nm : ''}`}${poly && na > 1 ? `(${a})${na}` : `${a}${na > 1 ? na : ''}`}`
+ }
+ 
+ // "CuSO₄", "HCl", "NaOH + phenolphtalein", "CuSO₄, FeSO₄", "Nước"…; null when empty.
+@@ -40,15 +41,20 @@ export function contentsName(c) {
+     if (budget < q * 0.95) acid.push(k)
+     budget = Math.max(0, budget - q)
+   }
+-  for (const [k] of metals) {
+-    const [m, z] = METAL[k]
++  // A metal mostly held as an ammine complex is named as the complex salt, e.g. [Cu(NH3)4]SO4.
++  const cx = ammineComplexes(c.contents)
++  const metalName = (k, n) => (cx[k] || 0) > 0.5 * n ? IONS[k].ammineLabel.replace(/[⁺²]+$/, '').replace(/[₀-₉]/g, d => '₀₁₂₃₄₅₆₇₈₉'.indexOf(d)) : METAL[k][0]
++  for (const [k, n] of metals) {
++    const [, z] = METAL[k]
++    const m = metalName(k, n)
+     // A little metal ion in a lot of acid (zinc dissolving in HCl) is still named as its salt: ZnCl₂ + HCl.
+     const pair = inSalt[0] || anions[0]?.[0]
+     if (pair) parts.push(salt(m, z, ANION[pair]))
+     if (!pair || (budget > charge * 0.03 && k === metals[0][0])) parts.push(BASE[m] || IONS[k].label)
+   }
+-  if (metals.length) for (const k of inSalt.slice(1)) parts.push(salt(...METAL[metals[0][0]], ANION[k]))
+-  for (const k of acid) parts.push(ANION[k][3])
++  if (metals.length) for (const k of inSalt.slice(1)) parts.push(salt(metalName(...metals[0]), METAL[metals[0][0]][1], ANION[k]))
++  // Anion charge left over is balanced by NH₄⁺ when ammonia is there (CuSO₄ + a little NH₃ holds (NH₄)₂SO₄, not H₂SO₄).
++  for (const k of acid) parts.push((ions.NH3 || 0) >= 1e-6 ? salt('NH4', 1, ANION[k]) : ANION[k][3])
+   if ((ions.NH3 || 0) > 1e-6) parts.push('NH3')
+   if ((ions.I2 || 0) > 1e-6) parts.push('I2')
+   const named = [...new Set(parts)].map(sub)
+diff --git a/src/dlab/ui/render3d.js b/src/dlab/ui/render3d.js
+index ae0ebb5..eb86fe6 100644
+--- a/src/dlab/ui/render3d.js
++++ b/src/dlab/ui/render3d.js
+@@ -76,7 +76,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+   const porcelain = mat(new THREE.MeshStandardMaterial({ color: 0xf7f7f4, roughness: 0.35 }))
+   const shadowTex = radialTexture()
+   const shadowMat = mat(new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, color: 0x0b1220, opacity: 0.5 }))
+-  const ringGeo = new THREE.RingGeometry(0.88, 1, 64)
++  const ringGeo = new THREE.RingGeometry(0.94, 1, 64) // a thin selection ring: it marked the object without drowning the bench
+   ringGeo.rotateX(-Math.PI / 2)
+   // Holder for hand tools standing on the bench: a 24 × 10 × 18 mm block with a slot.
+   const HELD_UPRIGHT = new Set(['rod', 'spatula', 'tongs', 'dropper', 'pipette', 'thermometer'])
+@@ -95,11 +95,25 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+   planeGeo.rotateX(-Math.PI / 2)
+ 
+   const nodes = new Map()
+-  const bubbleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, roughness: 0.05, metalness: 0, envMapIntensity: 2, depthWrite: false }), MAX)
+-  const partMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), MAX)
+-  partMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3)
++  // Gas bubbles: clear in the middle, bright at the rim (same Fresnel-on-alpha idea as the glass), not white balls.
++  const bubbleMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, roughness: 0.05, metalness: 0, envMapIntensity: 2.2, depthWrite: false })
++  bubbleMat.onBeforeCompile = sh => {
++    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `diffuseColor.a = clamp( diffuseColor.a + 0.85 * pow( 1.0 - abs( dot( normal, normalize( vViewPosition ) ) ), 2.0 ), 0.0, 0.9 );
++#include <opaque_fragment>`)
++  }
++  bubbleMat.customProgramCacheKey = () => 'dlab-bubble-rim'
++  const bubbleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), bubbleMat, MAX)
++  // Precipitate: soft flocs (one Points draw call). Each simulated grain is drawn as a small cluster of FLOC
++  // puffs, so a suspension reads as a cloudy, gelatinous precipitate rather than a few hard crystals.
++  const FLOC = 3
++  const flocTex = radialTexture()
++  const partGeo = new THREE.BufferGeometry()
++  partGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX * FLOC * 3), 3))
++  partGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX * FLOC * 3), 3))
++  const partMesh = new THREE.Points(partGeo, new THREE.PointsMaterial({ size: 8 * S, map: flocTex, vertexColors: true, transparent: true, opacity: 0.8, depthWrite: false, sizeAttenuation: true }))
+   bubbleMesh.frustumCulled = partMesh.frustumCulled = false
+   bubbleMesh.renderOrder = 3
++  partMesh.renderOrder = 2
+   const streamMeshes = []
+   const streamGeo = new THREE.CylinderGeometry(1, 0.7, 1, 12, 1, true)
+   scene.add(bubbleMesh, partMesh)
+@@ -263,9 +277,9 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     map.colorSpace = THREE.SRGBColorSpace
+     map.magFilter = map.minFilter = THREE.LinearFilter
+     const liquidGeo = new THREE.LatheGeometry(innerPts(def, 0.6), seg)
+-    const liquid = new THREE.Mesh(liquidGeo, new THREE.MeshStandardMaterial({ map, transparent: true, roughness: 0.15, metalness: 0, side: THREE.DoubleSide, clippingPlanes: [plane], depthWrite: false }))
++    const liquid = new THREE.Mesh(liquidGeo, new THREE.MeshStandardMaterial({ map, transparent: true, roughness: 0.9, metalness: 0, envMapIntensity: 0.35, side: THREE.DoubleSide, clippingPlanes: [plane], depthWrite: false })) // matte body: the glass gives the shine; a glossy inner back face caught the warm key light as a pink patch in dark solutions
+     liquid.renderOrder = 1
+-    const surface = new THREE.Mesh(new THREE.CircleGeometry(1, seg), new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.08, metalness: 0, depthWrite: false, envMapIntensity: 1.4 }))
++    const surface = new THREE.Mesh(new THREE.CircleGeometry(1, seg), new THREE.MeshStandardMaterial({ transparent: true, roughness: 0.22, metalness: 0, depthWrite: false, envMapIntensity: 0.55 })) // soft reflection: a sharp env highlight read as a pink stain on dark solutions
+     surface.rotation.x = -Math.PI / 2
+     surface.renderOrder = 1
+     // Bright meniscus line where the liquid meets the glass: makes the level readable from any angle.
+@@ -727,17 +741,25 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+         bubbleMesh.setMatrixAt(b, m4)
+         bubbleMesh.setColorAt(b++, color.setRGB(...(gas?.visible ? gas.color.map(c => c / 255) : [1, 1, 1]), SRGB))
+       }
++      const pos = partGeo.attributes.position.array
++      const col = partGeo.attributes.color.array
+       for (const part of o.vis.parts) {
+         if (p >= MAX) break
+         const y = part.v * level + 2
+         const r = hw(def, y) - 2
+         const z = hashZ(p + 17) * Math.sqrt(Math.max(0, 1 - part.u * part.u)) * r
+-        q.setFromAxisAngle(v3.set(0.3, 1, 0.2).normalize(), p * 1.7)
+-        const g = (0.9 + part.s * 1.6) * S // visualization size, not a particle-size measurement
+-        m4.compose(v3.set((o.x + part.u * r) * S, (o.y + y) * S, z * S), q, sc.set(g * 1.2, g * 0.55, g * 0.9))
+-        partMesh.setMatrixAt(p, m4)
+         const c = PRECIPITATES[part.key].color
+-        partMesh.setColorAt(p++, color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB))
++        color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB)
++        // Puffs spread by the grain size (visualization size, not a particle-size measurement); settled grains lie flat.
++        const spread = (0.8 + part.s * 1.4) * (part.settled ? 0.5 : 1)
++        for (let f = 0; f < FLOC; f += 1) {
++          const k = (p * FLOC + f) * 3
++          pos[k] = (o.x + part.u * r + hashZ(p * 7 + f) * spread) * S
++          pos[k + 1] = (o.y + y + hashZ(p * 11 + f + 3) * spread * (part.settled ? 0.3 : 0.8)) * S
++          pos[k + 2] = (z + hashZ(p * 13 + f + 5) * spread) * S
++          col[k] = color.r; col[k + 1] = color.g; col[k + 2] = color.b
++        }
++        p += 1
+       }
+     }
+     bounds = xs.length ? { x0: Math.min(...xs) - 1, x1: Math.max(...xs) + 1 } : bounds
+@@ -754,11 +776,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     })
+     for (let i = state.streams.length; i < streamMeshes.length; i += 1) streamMeshes[i].visible = false
+     bubbleMesh.count = b
+-    partMesh.count = p
++    partGeo.setDrawRange(0, p * FLOC)
+     bubbleMesh.instanceMatrix.needsUpdate = true
+     if (bubbleMesh.instanceColor) bubbleMesh.instanceColor.needsUpdate = true
+-    partMesh.instanceMatrix.needsUpdate = true
+-    if (partMesh.instanceColor) partMesh.instanceColor.needsUpdate = true
++    partGeo.attributes.position.needsUpdate = true
++    partGeo.attributes.color.needsUpdate = true
+     for (const [id, node] of nodes) {
+       if (alive.has(id)) continue
+       remove(node)
+@@ -1063,6 +1085,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+       standArmGeo.dispose()
+       for (const m of shared) { m.map?.dispose(); m.dispose() }
+       envTex?.dispose()
++      flocTex.dispose()
+       host.dispose() // disposes remaining scene geometry/materials, renderer and controls
+     }
+   }
