@@ -9,7 +9,7 @@ Cập nhật 25/11/2026. Báo cáo này viết cho chủ sở hữu để nghi�
 | Bản 1 | `a14ab46` → `ea7ee23` (đã commit cục bộ) |
 | Bản 2 | Tiếp từ `ea7ee23`; commit cục bộ `51ea6f7` |
 | Bản 3 | Tiếp từ `51ea6f7`; commit cục bộ `faaa52f` |
-| Bản 4 | Tiếp từ `faaa52f`; commit cục bộ, xem §19 |
+| Bản 4 | Tiếp từ `faaa52f`; commit cục bộ `d9cb21b` (+ commit ghi SHA vào báo cáo) |
 | Nghiệm thu trên máy | `http://[::1]:5180/#dlab` (Vite dev của phiên này) |
 
 **Phạm vi:**
@@ -731,7 +731,7 @@ Antigravity không sửa dòng code nào.
 | `ea7ee23` | Bản 1: báo cáo |
 | `51ea6f7` | Bản 2 (67 file), commit cục bộ sau khi chủ sở hữu cho phép |
 | `faaa52f` | Bản 3: phức amin (hint), test manifest, hiệu năng 2D WebKit, sửa T02, 3D, X06/P03, báo cáo và bằng chứng `final/round3/` |
-| (commit bản 4) | Bản 4: mô hình phức amin, NH₃ 2 M, solver Illinois, 3D kết tủa/bọt/chất lỏng, S07, review Antigravity, bằng chứng `final/round4/` |
+| `d9cb21b` | Bản 4 (178 file): mô hình phức amin, NH₃ 2 M, solver Illinois, 3D kết tủa/bọt/chất lỏng, S07, review Antigravity, bằng chứng `final/round4/` |
 
 Mỗi commit chỉ stage đúng file theo pathspec. Không đụng tới các file `.claude/` của chủ sở hữu (11 file đang staged, cùng `.claude/settings.json`), `QA_CODEX_FULL_AUDIT.md` và `qa-codex/`. Các thư mục ảnh trung gian `final/round3/after-{a,b,c}` không commit. Không push, không merge, không deploy.
 
