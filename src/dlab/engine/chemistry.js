@@ -156,6 +156,7 @@ export function freeConc(ion, contents, h, V) {
     return C * w.Ka1 * w.Ka2 / (h * h + w.Ka1 * h + w.Ka1 * w.Ka2)
   }
   if (info.weak === 'acetate') return C * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
+  if (info.weak === 'ammonia') return C * WEAK.ammonia.Ka / (WEAK.ammonia.Ka + h) // unprotonated NH₃
   return C
 }
 

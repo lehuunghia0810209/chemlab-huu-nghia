@@ -197,7 +197,9 @@
 .dlab-ghost { position: fixed; z-index: 1000; pointer-events: none; padding: .35rem .6rem; border-radius: var(--radius-sm, 8px); background: var(--dlab-accent); color: #fff; font-size: var(--text-sm, .875rem) }
 
 /* Side panel */
-.dlab-sidetabs { display: flex; gap: 4px }
+.dlab-sidetabs { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none } /* three tabs + close in a narrow drawer: scroll, never under the close button */
+.dlab-sidetabs::-webkit-scrollbar { display: none }
+.dlab-sidetabs .dlab-tab { padding: 0 .55rem }
 .dlab-obs-pane, .dlab-detail-pane { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 10px; align-content: start; padding-right: 2px }
 .dlab-obs { display: grid; gap: 10px; font-size: var(--text-sm, .875rem); line-height: 1.5 }
 .dlab-obs h4 { margin: 0 0 4px; font-size: var(--text-xs, .8125rem); text-transform: uppercase; letter-spacing: .04em; color: var(--dlab-muted) }

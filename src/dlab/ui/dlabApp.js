@@ -147,7 +147,29 @@ export function initDynamicLab(host) {
     sim.advance(dt)
     draw()
     if (three) three.update(sim.state, ui)
+    watchFrameRate(dt)
     frame = requestAnimationFrame(loop)
+  }
+  // A slow machine (no GPU, busy CPU): if frames stay under 25 fps for 4 s at "Cao" and the student never picked
+  // a quality, switch once to "Tiết kiệm" and say so. Only the drawing changes; the chemistry is the same.
+  const pace = { n: 0, sum: 0 }
+  function watchFrameRate(dt) {
+    if (ui.qualityChosen || ui.quality !== 'high') return
+    // Not a measure of drawing: fast-forward runs many model steps per frame, and a stall (3D loading, a dialog,
+    // a throttled background window) is one long gap. Either restarts the 4 s window.
+    if (ui.ffwd || dt > 0.5) { pace.n = pace.sum = 0; return }
+    pace.n += 1
+    pace.sum += dt
+    if (pace.sum < 4) return
+    const fps = pace.n / pace.sum
+    pace.n = pace.sum = 0
+    if (fps >= 25) return
+    ui.quality = 'low' // not ui.autoLow: that flag means "no GPU found" and drives the 3D message
+    const qb = $('[data-hd="quality"]')
+    if (qb) qb.textContent = 'Đồ họa: Tiết kiệm'
+    // The 2D drawing follows ui.quality at once; an open 3D view is left as it is (its own setting is saved, and
+    // 3D already starts in economy on a machine without a GPU).
+    toast(`Máy đang chạy chậm (khoảng ${Math.round(fps)} khung hình/giây) nên đã chuyển sang “Đồ họa: Tiết kiệm”. Kết quả thí nghiệm không đổi; đổi lại ở menu ⋯.`)
   }
   function start() {
     if (frame == null && visible()) { last = performance.now(); frame = requestAnimationFrame(loop) }
@@ -1262,7 +1284,7 @@ export function initDynamicLab(host) {
     if (what === 'cleanup') { const r = sim.dispatch({ type: 'cleanup' }); if (r.ok && !r.changed) toast('Bàn đã sạch, không có gì cần dọn.') }
     if (what === 'full') { if (document.fullscreenElement) document.exitFullscreen(); else host.requestFullscreen?.() }
     if (what === 'ai') askChemAI()
-    if (what === 'quality') { ui.qualityChosen = true; ui.quality = ui.quality === 'high' ? 'low' : 'high'; b.textContent = ui.quality === 'high' ? 'Đồ họa: Cao' : 'Đồ họa: Tiết kiệm'; three?.setQuality(ui.quality) }
+    if (what === 'quality') { ui.qualityChosen = true; ui.autoLow = false; ui.quality = ui.quality === 'high' ? 'low' : 'high'; b.textContent = ui.quality === 'high' ? 'Đồ họa: Cao' : 'Đồ họa: Tiết kiệm'; three?.setQuality(ui.quality) }
     if (what === 'lib' || what === 'side') toggleDrawer(what)
   })
   document.addEventListener('click', e => { const m = $('.dlab-menu'); if (m?.open && !m.contains(e.target)) m.open = false })

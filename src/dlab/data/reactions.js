@@ -35,8 +35,11 @@ export const ION_HINTS = [
   // Ag₂O forms when free [Ag⁺]·[OH⁻] exceeds K = 2,0·10⁻⁸ (½Ag₂O + ½H₂O ⇌ Ag⁺ + OH⁻, CRC) — e.g. pH ≈ 7,6
   // in 0,05 M Ag⁺, but not over Ag₂CO₃ in carbonate (free Ag⁺ is tiny there).
   { all: ['Ag+'], kspOH: 2.0e-8, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
-  { all: ['Ag+', 'NH3'], reason: 'Ag⁺/AgCl với NH₃ tạo phức [Ag(NH₃)₂]⁺ tan — chưa được mô hình hóa.' },
-  { all: ['Zn2+', 'NH3'], minPH: 9, reason: 'Zn²⁺ với NH₃ dư tạo phức [Zn(NH₃)₄]²⁺ — chưa được mô hình hóa.' },
+  // Ammine complexes: reported when the complex would hold > 5 % of that metal (dissolved ion, or a precipitate
+  // dissolving as Ksp·β·[NH₃]ⁿ/[anion]^q), from free NH₃. lg β: [Ag(NH₃)₂]⁺ 7,23; [Zn(NH₃)₄]²⁺ 9,46;
+  // [Cu(NH₃)₄]²⁺ 13,1 (Lange's Handbook; Martell–Smith give 8,9–9,1 and 12,6 at I = 0 — the hint is qualitative).
+  { all: ['Ag+', 'NH3'], ammine: { beta: 10 ** 7.23, n: 2 }, reason: 'Ag⁺/AgCl với NH₃ tạo phức [Ag(NH₃)₂]⁺ tan — chưa được mô hình hóa.' },
+  { all: ['Zn2+', 'NH3'], ammine: { beta: 10 ** 9.46, n: 4 }, reason: 'Zn²⁺ với NH₃ dư tạo phức [Zn(NH₃)₄]²⁺ — chưa được mô hình hóa.' },
   { all: ['NO3-', 'I-'], maxPH: 3, reason: 'HNO₃ oxi hóa I⁻ thành I₂ (và tạo NO) — chưa được mô hình hóa.' },
   { all: ['NO3-', 'Fe2+'], maxPH: 3, reason: 'HNO₃ oxi hóa Fe²⁺ thành Fe³⁺ (và tạo NO) — chưa được mô hình hóa.' },
   { all: ['Ag+', 'Fe2+'], reason: 'Ag⁺ + Fe²⁺ → Ag↓ + Fe³⁺ (E° 0,80 > 0,77 V) — chưa được mô hình hóa.' },
@@ -44,7 +47,7 @@ export const ION_HINTS = [
   { all: ['I2'], minPH: 9, reason: 'I₂ trong kiềm chuyển thành I⁻/IO⁻ (mất màu) — chưa được mô hình hóa.' },
   { all: ['Fe3+', 'I-'], minPH: 7.01, reason: 'Fe³⁺ + I⁻ trong môi trường kiềm: Fe(OH)₃ tạo trước, không sinh I₂ — mô hình không tính phản ứng oxi hóa – khử này.' },
   { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
-  { all: ['Cu2+', 'NH3'], minPH: 9, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
+  { all: ['Cu2+', 'NH3'], ammine: { beta: 10 ** 13.1, n: 4 }, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
 ]
 
 // Fast ionic redox in solution, run to completion (K ≫ 1). E° (CRC, 25 °C): Cu²⁺/CuI 0,86 V, Fe³⁺/Fe²⁺ 0,771 V,
@@ -69,7 +72,7 @@ export const ELECTRO = {
       { ion: 'Fe3+', why: 'Fe³⁺ bị khử ở catot trước Cu²⁺ (E° Fe³⁺/Fe²⁺ 0,77 V > 0,34 V)' },
       { ion: 'Fe2+', why: 'Fe²⁺ bị oxi hóa ở anot trước Cl⁻ (E° Fe³⁺/Fe²⁺ 0,77 V < 1,36 V)' },
       { ion: 'NO3-', maxPH: 3, why: 'HNO₃ hòa tan đồng bám ở catot và bị khử tạo NO' },
-      { ion: 'NH3', why: 'NH₃ tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' }
+      { ion: 'NH3', ammine: { metal: 'Cu2+', beta: 10 ** 13.1, n: 4 }, why: 'NH₃ dư tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' } // complex share, not NH₃ presence: NH₄⁺ does not complex
     ]
   },
   // E°(T) = E°(298) + ΔS°/(nF)·(T − 298,15); ΔS° from NBS S° (J/(mol·K)): Zn²⁺ −112,1, Cu 33,150, Zn 41,63,

@@ -273,6 +273,31 @@ function trimParticles(c) {
 }
 
 // Dissolved species the model cannot react: say so once per vessel instead of showing nothing.
+// Share of a metal held as an ammine complex at the vessel's free NH₃: from the dissolved ion (β·[NH₃]ⁿ / (1 + β·[NH₃]ⁿ))
+// and from each of its precipitates, which dissolve as the complex up to Ksp·β·[NH₃]ⁿ / [anion]^q. AgI stays (Ksp·β ≈ 10⁻⁹),
+// AgCl dissolves; Cu(OH)₂ in strong base with a trace of NH₃ does not.
+export function ammineShare(contents, metal, { beta, n }) {
+  const V = aqueousLitres(contents)
+  if (V < 1e-6) return 0
+  const h = solveH(contents.ions, V)
+  const f = beta * freeConc('NH3', contents, h, V) ** n
+  const ion = contents.ions[metal] || 0
+  let total = ion
+  let held = ion * f / (1 + f)
+  for (const [k, mol] of Object.entries(contents.precipitates)) {
+    const ppt = PRECIPITATES[k]
+    if (!(mol > 1e-9) || ppt?.cation !== metal || ppt.redox) continue
+    total += mol * ppt.p
+    const K = ppt.Ksp * f
+    const a0 = freeConc(ppt.anion, contents, h, V)
+    // Dissolving s mol/L also releases q·s anion: s·(a0 + q·s)^q = K. OH⁻ is held by the NH₃/NH₄⁺ buffer, so it stays a0.
+    let s = ppt.anion === 'OH' ? K / Math.max(1e-30, a0) ** ppt.q : ppt.q === 1 ? (Math.sqrt(a0 * a0 + 4 * K) - a0) / 2 : 0
+    if (ppt.anion !== 'OH' && ppt.q !== 1) { let lo = 0; let hi = 10; for (let i = 0; i < 60; i += 1) { const m = (lo + hi) / 2; if (m * (a0 + ppt.q * m) ** ppt.q > K) hi = m; else lo = m } s = lo }
+    held += Math.min(mol * ppt.p, s * V)
+  }
+  return total > 1e-9 ? held / total : 0
+}
+
 function ionHints(state, c) {
   let pH
   const has = k => (c.contents.ions[k] || 0) > 1e-7 || Object.entries(c.contents.precipitates).some(([key, mol]) => mol > 1e-7 && PRECIPITATES[key]?.cation === k)
@@ -284,8 +309,12 @@ function ionHints(state, c) {
       if (V < 1e-6) continue
       const h = solveH(c.contents.ions, V)
       // Same supersaturation rule as every precipitate (Q > 10^NUCLEATION_LOG·K): a factor ~2 is inside the Ksp data spread.
-      if (!(freeConc(r.all[0], c.contents, h, V) * 1e-14 / h > r.kspOH * 10 ** NUCLEATION_LOG)) continue
+      // Ag⁺ bound as [Ag(NH₃)₂]⁺ is not free to form Ag₂O (excess NH₃ gives the complex, not both).
+      const agNH3 = ION_HINTS.find(x => x.ammine && x.all[0] === r.all[0])?.ammine
+      const bound = agNH3 ? 1 + agNH3.beta * freeConc('NH3', c.contents, h, V) ** agNH3.n : 1
+      if (!(freeConc(r.all[0], c.contents, h, V) / bound * 1e-14 / h > r.kspOH * 10 ** NUCLEATION_LOG)) continue
     }
+    if (r.ammine && !(ammineShare(c.contents, r.all[0], r.ammine) > 0.05)) continue
     if (r.minPH != null || r.maxPH != null) {
       const V = aqueousLitres(c.contents)
       if (V < 1e-6) continue
@@ -568,13 +597,22 @@ export function stepElectro(state, h) {
     const cu = c.contents.ions['Cu2+'] || 0
     const cl = c.contents.ions['Cl-'] || 0
     const e0 = ELECTRO.electrolysisCuCl2
+    // Excess NH₃ binds copper as [Cu(NH₃)₄]²⁺: not "copper used up". Checked in a chloride, aqueous solution only (the
+    // other cases get their own message below); NH₄⁺ alone, or a trace of NH₃ over Cu(OH)₂ in strong base, does not count.
+    const ammine = e0.interferes.find(x => x.ammine)
+    if (ammine && cl > 1e-7 && polarPhase(c.contents).pHApplies && ammineShare(c.contents, ammine.ammine.metal, ammine.ammine) > 0.05) {
+      p.status = `Chưa hỗ trợ mô phỏng điện phân dung dịch này: ${ammine.why}.`
+      c.unsupported = p.status
+      noteOnce(state, `electro-unsup-NH3-${c.id}`, p.status, 'warn')
+      continue
+    }
     if (!(cu > 1e-7 && cl > 1e-7)) {
       p.status = cu > 0 || cl > 0 ? 'Đã hết Cu²⁺ hoặc Cl⁻: giai đoạn điện phân nước chưa được mô hình hóa, dòng điện ngừng.' : 'Hệ điện phân này chưa được mô hình hóa (mô hình hỗ trợ dung dịch CuCl₂).'
       continue
     }
     // A species that discharges first, in more than a trace (1 % of the Cu²⁺), makes the Cu + Cl₂ result wrong.
     const amount = x => (c.contents.ions[x.ion] || 0) + (x.ion === 'I2' ? c.contents.precipitates.I2s || 0 : 0) // solid iodine counts too
-    const first = e0.interferes.find(x => amount(x) > Math.max(1e-6, 0.01 * cu) && !(x.maxPH < (c.pH ?? 7)))
+    const first = e0.interferes.find(x => !x.ammine && amount(x) > Math.max(1e-6, 0.01 * cu) && !(x.maxPH < (c.pH ?? 7)))
     const why = first ? first.why : !polarPhase(c.contents).pHApplies ? 'dung môi không phải nước' : V > 0 && cl / V < e0.minCl ? `Cl⁻ quá loãng (< ${e0.minCl} M): ở anot O₂ cạnh tranh với Cl₂` : null
     if (why) {
       p.status = `Chưa hỗ trợ mô phỏng điện phân dung dịch này: ${why}.`

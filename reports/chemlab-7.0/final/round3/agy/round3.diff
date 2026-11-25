@@ -1,0 +1,818 @@
+diff --git a/scripts/dlab-final-evidence.mjs b/scripts/dlab-final-evidence.mjs
+index e2586eb..d79c7fa 100644
+--- a/scripts/dlab-final-evidence.mjs
++++ b/scripts/dlab-final-evidence.mjs
+@@ -9,7 +9,7 @@ import { chromium } from 'playwright-core'
+ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+ const label = process.argv[2] || 'after'
+ const base = process.argv[3] || 'http://localhost:5173/'
+-const out = path.join(root, 'reports', 'chemlab-7.0', 'final', 'shots')
++const out = process.env.SHOTS_DIR ? path.resolve(root, process.env.SHOTS_DIR) : path.join(root, 'reports', 'chemlab-7.0', 'final', 'shots') // one folder per run: evidence is never overwritten
+ await fs.mkdir(out, { recursive: true })
+ const browser = await chromium.launch({ headless: true })
+ const errors = []
+@@ -50,6 +50,28 @@ for (const quality of ['high', 'low']) {
+   }
+ }
+ 
++// Close-ups: the "look at the selected object" camera on a vessel where something happens (sandbox scenes).
++for (const [name, setup] of [
++  ['precipitate', L => { const v = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 300, y: 0 }).id; L.dispatch({ type: 'addReagentTo', id: v, reagent: 'cuso4', mL: 40 }); L.dispatch({ type: 'addReagentTo', id: v, reagent: 'naoh', mL: 8 }); return v }],
++  ['metals', L => {
++    const v = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 300, y: 0 }).id; L.dispatch({ type: 'addReagentTo', id: v, reagent: 'cuso4', mL: 40 })
++    const k = L.dispatch({ type: 'add', equipmentType: 'tongs', x: 300, y: 160 }).id
++    L.dispatch({ type: 'pick', tool: k, reagent: 'fe', massG: 2 }, { confirmed: true }); L.dispatch({ type: 'release', tool: k }, { confirmed: true }); return v
++  }],
++  ['gas', L => { const v = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 300, y: 0 }).id; L.dispatch({ type: 'addReagentTo', id: v, reagent: 'na2co3', mL: 30 }); L.dispatch({ type: 'addReagentTo', id: v, reagent: 'hcl', mL: 30 }); return v }]
++]) {
++  const p = await page()
++  await p.click('[data-speed="4"]').catch(() => {})
++  const id = await p.L((L, f) => { for (const o of [...L.state.objects]) L.dispatch({ type: 'remove', id: o.id }, { record: false }); const v = new Function('return ' + f)()(L); L.fit(); return v }, setup.toString())
++  await p.waitForTimeout(name === 'metals' ? 9000 : 2500)
++  await to3d(p, 'high')
++  await p.L((L, i) => L.select(i), id)
++  await p.locator('[data-tb="focus3d"]').click()
++  await p.waitForTimeout(1300)
++  await shot(p, `3d-high-closeup-${name}`)
++  await p.context().close()
++}
++
+ // Sandbox scenes from the new models: oil in ethanol vs water, CuCl₂ + KI.
+ {
+   const p = await page()
+diff --git a/scripts/dlab-manifest.mjs b/scripts/dlab-manifest.mjs
+index dc536bd..e6fbd32 100644
+--- a/scripts/dlab-manifest.mjs
++++ b/scripts/dlab-manifest.mjs
+@@ -13,18 +13,26 @@ let md = `# ChemLab 7.0 Dynamic Lab — Reaction & Process Support Manifest
+ 
+ Sinh tự động từ \`src/dlab/data/manifest.js\` bằng \`node scripts/dlab-manifest.mjs\`. Bảng này là đúng những gì engine khẳng định mô phỏng; không có mục nào được viết tay riêng cho báo cáo.
+ 
+-**Kiểm thử:** mỗi mục có cột "Kiểm thử engine = có" được \`scripts/test-dlab.mjs\` chạy thật trên engine (bày dụng cụ, một thao tác, kiểm tra sản phẩm, không bịa khí hay lớp kim loại với mục Không phản ứng hoặc Chưa hỗ trợ, và kiểm tra bảo toàn chất). Thẻ "Khám phá" trong Sandbox lấy đúng ${DISCOVER.length} mục có kịch bản.
++**Kiểm chứng:**
++- "Kịch bản trên engine": \`scripts/test-dlab.mjs\` chạy thật mục đó trên engine. Test bày dụng cụ, thực hiện một thao tác, rồi kiểm tra sản phẩm (hoặc lời báo "Chưa hỗ trợ"). Với mục Không phản ứng hoặc Chưa hỗ trợ, test còn kiểm tra engine không bịa ra khí hay lớp kim loại, và kiểm tra bảo toàn chất.
++- "Unit test riêng": mục được kiểm bởi test có tên ghi trong cột "Kiểm chứng". Test manifest đối chiếu để chắc các test đó tồn tại.
++- "Chưa kiểm chứng": mục chỉ có trong bảng, chưa có test chạy thật.
+ 
+-| Trạng thái | Số mục |
+-|---|---|
+-${order.map(s => `| ${STATUS[s]} (\`${s}\`) | ${MANIFEST.filter(e => e.status === s).length} |`).join('\n')}
++Thẻ "Khám phá" trong Sandbox lấy đúng ${DISCOVER.length} mục mô hình hóa có kịch bản.
++
++| Trạng thái | Số mục | Kịch bản trên engine | Unit test riêng | Chưa kiểm chứng |
++|---|---|---|---|---|
++${order.map(s => { const r = MANIFEST.filter(e => e.status === s); return `| ${STATUS[s]} (\`${s}\`) | ${r.length} | ${r.filter(e => e.demo).length} | ${r.filter(e => !e.demo && e.tests?.length).length} | ${r.filter(e => !e.demo && !e.tests?.length).length} |` }).join('\n')}
+ 
+ `
+ for (const s of order) {
+   const rows = MANIFEST.filter(e => e.status === s)
+   if (!rows.length) continue
+-  md += `## ${STATUS[s]}\n\n| ID | Phản ứng / quá trình | Đầu vào | Điều kiện | Sản phẩm | Quan sát | Mô hình | Nguồn | Kiểm thử engine | Giới hạn |\n|---|---|---|---|---|---|---|---|---|---|\n`
+-  for (const e of rows) md += `| \`${cell(e.id)}\` | ${cell(e.title)} | ${cell(e.inputs)} | ${cell(e.conditions)} | ${cell(e.products)} | ${cell(e.observe)} | ${cell(e.model)} | ${cell(e.source)} | ${e.demo ? 'có' : 'không (xem test riêng)'} | ${cell(e.limits)} |\n`
++  md += `## ${STATUS[s]}\n\n| ID | Phản ứng / quá trình | Đầu vào | Điều kiện | Sản phẩm | Quan sát | Mô hình | Nguồn | Kiểm chứng | Giới hạn |\n|---|---|---|---|---|---|---|---|---|---|\n`
++  for (const e of rows) {
++    const verified = e.demo ? 'kịch bản trên engine' : e.tests?.length ? `unit test: ${e.tests.map(t => `“${cell(t)}…”`).join(', ')}` : '**chưa kiểm chứng**'
++    md += `| \`${cell(e.id)}\` | ${cell(e.title)} | ${cell(e.inputs)} | ${cell(e.conditions)} | ${cell(e.products)} | ${cell(e.observe)} | ${cell(e.model)} | ${cell(e.source)} | ${verified} | ${cell(e.limits)} |\n`
++  }
+   md += '\n'
+ }
+ await fs.mkdir(path.dirname(out), { recursive: true })
+diff --git a/scripts/lib/dlab-journeys.mjs b/scripts/lib/dlab-journeys.mjs
+index fc4a738..6b637cd 100644
+--- a/scripts/lib/dlab-journeys.mjs
++++ b/scripts/lib/dlab-journeys.mjs
+@@ -2,6 +2,9 @@
+ import assert from 'node:assert/strict'
+ import fs from 'node:fs/promises'
+ import { createRequire } from 'node:module'
++import { DISCOVER } from '../../src/dlab/data/manifest.js'
++import { oilBelow } from '../../src/dlab/engine/chemistry.js'
++import { checkInvariants } from '../../src/dlab/engine/sim.js'
+ const axeSource = await fs.readFile(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8')
+ 
+ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld, outDir, browserName, aiRequests }) {
+@@ -477,7 +480,9 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
+   })
+ 
+   for (const mode of ['high', 'low']) await test(`P01${mode === 'low' ? 'b' : ''} hiệu năng khung hình với cảnh bận (${mode === 'low' ? 'đồ họa tiết kiệm' : 'đồ họa cao'})`, async page => {
+-    if (mode === 'low') await menu(page, 'Đồ họa: Cao')
++    // Both modes are picked in the menu, so the automatic slow-machine fallback never swaps the mode being measured.
++    await menu(page, 'Đồ họa: Cao')
++    if (mode === 'high') await menu(page, 'Đồ họa: Tiết kiệm')
+     await bench(page, Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`B${i}`, { type: 'beaker100', x: 140 + i * 70, fill: [['cuso4', 40]] }])))
+     await page.evaluate(() => {
+       const L = window.ChemLabDynamicLab
+@@ -501,9 +506,27 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
+     }))
+     await fs.writeFile(`${outDir}/${browserName}-p01-${mode}-perf.json`, JSON.stringify(r, null, 2))
+     console.log(`      perf ${browserName} ${mode}: ${r.fps.toFixed(1)} fps, p95 ${r.p95.toFixed(1)} ms, long tasks ${r.longTasks}, particles ${r.particles}`)
++    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), mode === 'high' ? 'Đồ họa: Cao' : 'Đồ họa: Tiết kiệm', 'measured in the mode named')
+     assert.ok(r.fps > 30, `fps ${r.fps}`)
+   })
+ 
++  // Slow machine (emulated by CPU throttling, Chromium/CDP only): "Cao" not picked by the student → falls back once
++  // to "Tiết kiệm" and says so; a quality the student picked is never overridden.
++  if (browserName === 'chromium') await test('P03 máy chậm: tự chuyển Đồ họa Tiết kiệm và báo rõ, không ghi đè lựa chọn', async page => {
++    await bench(page, Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`B${i}`, { type: 'beaker100', x: 140 + i * 70, fill: [['cuso4', 40]] }])))
++    const cdp = await page.context().newCDPSession(page)
++    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
++    await page.locator('.dlab-toast', { hasText: 'Máy đang chạy chậm' }).waitFor({ timeout: 30000 })
++    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
++    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Tiết kiệm')
++    // The student picks "Cao" again: kept even when slow.
++    await menu(page, 'Đồ họa: Tiết kiệm')
++    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
++    await page.waitForTimeout(6000)
++    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
++    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Cao', 'student choice kept')
++  })
++
+   await test('P02 mở/đóng 3D nhiều lần không rò rỉ', async page => {
+     await bench(page, { A: { type: 'beaker100', x: 300, fill: [['cuso4', 40]] } })
+     const heap = () => page.evaluate(() => performance.memory?.usedJSHeapSize ?? null)
+@@ -1136,7 +1159,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
+     // Orbit on empty space: camera moves, objects stay.
+     const before = JSON.stringify(await st(page, L => L.state.objects.map(o => [o.id, o.x, o.y])))
+     const c0 = await cam()
+-    const e = await at3(470, 230) // empty space above the dish (the library drawer covers the left edge)
++    const e = await at3(470, 150) // empty space above the dish (the library drawer covers the left edge)
++    assert.equal(await page.evaluate(p => document.elementFromPoint(p.x, p.y)?.tagName, e), 'CANVAS', 'the "empty space" point is on the 3D canvas, not under a panel')
+     await page.mouse.move(e.x, e.y); await page.mouse.down(); await page.mouse.move(e.x + 120, e.y + 10, { steps: 8 }); await page.mouse.up()
+     await page.waitForTimeout(300)
+     assert.notDeepEqual((await cam()).pos, c0.pos, 'dragging empty space orbits the camera')
+@@ -1309,6 +1333,45 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
+     assert.ok(!(await st(page, L => L.state.gas.Cl2 > 0)), 'no Cl₂ invented')
+   })
+ 
++  // Every Sandbox "Khám phá" card, done by hand: lay out, then the student's own action through the action bar
++  // (pour from the bottle, or take the solid with the tool and drop it in), at 4× speed. The result must be what
++  // the manifest claims and what the engine registry test gets for the same demo.
++  for (const e of DISCOVER) await test(`X06 Khám phá qua giao diện — ${e.id}: ${e.title}`, async page => {
++    await btn(page, 'Tự do').click()
++    const before = await st(page, L => L.state.objects.map(o => o.id))
++    await sideTab(page, 'Khám phá')
++    await page.locator('.dlab-disc li', { hasText: e.title }).first().getByRole('button', { name: 'Bày dụng cụ' }).click()
++    const d = e.demo
++    const ids = await st(page, (L, a) => {
++      const fresh = L.state.objects.filter(o => !a.before.includes(o.id))
++      return { v: fresh.find(o => o.type === a.vessel)?.id, helper: L.selected() }
++    }, { before, vessel: d.vessel })
++    assert.ok(ids.v && ids.helper, 'vessel and bottle/tool laid out, the helper selected')
++    await page.locator('[data-speed="4"]').first().click()
++    const confirm = async () => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }
++    if (d.pour) await pourBar(page, ids.helper, ids.v, d.pour[1])
++    else {
++      await page.locator('[data-qa-in="solid"]').selectOption(d.solid[0])
++      await page.locator('[data-qa-in="mass"]').fill(String(d.solid[1]))
++      await page.locator('.dlab-actionbar [data-qa="pick"]').click()
++      await confirm()
++      await page.locator('[data-qa-in="to"]').selectOption(ids.v)
++      await page.locator('.dlab-actionbar [data-qa="drop-solid"]').click()
++      await confirm()
++    }
++    const x = d.expect
++    await wait(page, (L, a) => {
++      const s = L.state
++      const c = s.objects.find(o => o.id === a.v)
++      const solid = s.objects.find(o => o.type === 'solid' && o.in === c.id)
++      return (!a.x.gas || (c.gasOut?.[a.x.gas] || 0) > 0) && (!a.x.ion || (c.contents.ions[a.x.ion] || 0) > 1e-7) &&
++        (!a.x.deposit || (solid?.coat?.[a.x.deposit] || 0) > 0) && (!a.x.ppt || (c.contents.precipitates[a.x.ppt] || 0) > 1e-9) &&
++        (!a.x.note || Object.keys(s.notes).some(k => k.startsWith(a.x.note))) && (!a.x.noPH || c.pH == null)
++    }, { v: ids.v, x }, d.run / 4 * 1000 + 25000)
++    if (x.oilBelow) assert.ok(oilBelow((await obj(page, ids.v)).contents), 'oil below the ethanol')
++    assert.equal(checkInvariants(await st(page, L => JSON.parse(JSON.stringify(L.state)))), null, 'invariants')
++  })
++
+   await test('X04 đổi bài giữa chừng: bài mới sạch, không mang trạng thái/tiến độ của bài cũ, không Hoàn tác về bài cũ', async page => {
+     await btn(page, 'Có hướng dẫn').click()
+     await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()
+diff --git a/scripts/test-dlab.mjs b/scripts/test-dlab.mjs
+index adb2561..0574f44 100644
+--- a/scripts/test-dlab.mjs
++++ b/scripts/test-dlab.mjs
+@@ -1,6 +1,8 @@
+ // ChemLab 7.0 Dynamic Lab — unit and integration tests.
+ // Expected values are computed independently here (closed-form), not read back from the engine.
+ import assert from 'node:assert/strict'
++import { readFileSync } from 'node:fs'
++import { ELECTRO } from '../src/dlab/data/reactions.js'
+ import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
+ import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw } from '../src/dlab/engine/chemistry.js'
+ import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
+@@ -1103,6 +1105,62 @@ test('review 3: salts before redox, no redox in base, indicator drops keep pH, o
+   assert.match(a.s().log.map(x => x.text).join('|'), /Ag₂O/)
+ })
+ 
++// Every INVALID manifest entry: the command is refused by safety.js (blocked, not just warned).
++test('safety: every blocked condition in the manifest is refused', () => {
++  const block = r => assert.equal(r.verdict?.level, 'block', JSON.stringify(r.verdict))
++  const naInto = (vessel, reagent, mL) => {
++    const l = lab(61); const v = l.put(vessel, 300); if (reagent) l.fill(v, reagent, mL)
++    const k = l.put('tongs', 300, { y: 160 })
++    l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
++    return l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true })
++  }
++  block(naInto('beaker250', 'hcl', 120)) // Na + acid
++  block(naInto('testTube', 'water', 15)); block(naInto('cylinder', 'water', 50)) // narrow mouth
++  block(naInto('beaker250', 'water', 30)) // < 50 mL water
++  for (const type of ['cylinder', 'dish']) { // not heat-resistant
++    const l = lab(62); const b = l.put('burner', 200); const v = l.put(type, 450)
++    l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { record: false })
++    block(l.sim.dispatch({ type: 'move', id: v.id, x: 200, y: 0 }))
++  }
++  { const l = lab(63); const p = l.put('power', 300); block(l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 15 }, { confirmed: true })) } // > 12 V
++  { // wrong tool both ways
++    const l = lab(64); const sp = l.put('spatula', 300, { y: 160 }); const k = l.put('tongs', 400, { y: 160 })
++    block(l.sim.dispatch({ type: 'pick', tool: sp.id, reagent: 'na', massG: 0.1 }, { confirmed: true }))
++    block(l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'nacl-s', massG: 1 }, { confirmed: true }))
++    block(l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'na', massG: 0.5 }, { confirmed: true })) // over the model's safe amount
++  }
++  { // a cracked vessel is not heated
++    const l = lab(65); const b = l.put('burner', 200); const v = l.put('beaker100', 450); l.fill(v, 'water', 20)
++    l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { record: false })
++    v.condition = 'CRACKED' // set up the precondition directly (cracking itself is covered by the damage test)
++    block(l.sim.dispatch({ type: 'move', id: v.id, x: 200, y: 0 }, { confirmed: true }))
++  }
++})
++
++// Every electrolysis interference in the manifest: the cell refuses, and no Cu or Cl₂ is invented.
++test('electrolysis refuses every interference: no Cu, no Cl₂, the reason is named', () => {
++  // Amounts above the 1 % trace threshold (KI is 0,1 M). In I⁻'s case the redox on mixing leaves I₂, also refused.
++  // Ag⁺ cannot stay free next to CuCl₂'s chloride (AgCl, Ksp 1,8·10⁻¹⁰), so it is checked as "no refusal" below.
++  const ADD = { 'I-': [['ki', 20]], I2: [['ki', 20]], 'Fe3+': [['fecl3', 5]], 'Fe2+': [['feso4', 5]], 'NO3-': [['hno3', 10]], NH3: [['nh3', 60]] }
++  for (const x of ELECTRO.electrolysisCuCl2.interferes) {
++    if (!ADD[x.ion]) continue
++    const l = lab(70); const B = l.put('beaker250', 300); l.fill(B, 'cucl2', x.ion === 'NH3' ? 10 : 40) // NH₃ must be in excess over 2·Cu²⁺
++    for (const [r, mL] of ADD[x.ion]) l.fill(B, r, mL)
++    const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
++    l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(5)
++    assert.ok(!(l.s().gas.Cl2 > 0) && !(byId(l.s(), el.id).cuDeposit > 0), `${x.ion}: nothing invented`)
++    assert.match(byId(l.s(), p.id).status, /Chưa hỗ trợ mô phỏng điện phân/, `${x.ion}: ${byId(l.s(), p.id).status}`)
++    assert.equal(checkInvariants(l.s()), null)
++  }
++  // Not interferences: Ag⁺ taken out as AgCl, and NH₄⁺ (a little NH₃ in the acidic CuCl₂ is all protonated).
++  for (const [r, mL] of [['agno3', 20], ['nh3', 3]]) {
++    const l = lab(71); const B = l.put('beaker250', 300); l.fill(B, 'cucl2', 40); l.fill(B, r, mL)
++    const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
++    l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(5)
++    assert.match(byId(l.s(), p.id).status, /Đang điện phân/, `${r}: ${byId(l.s(), p.id).status}`)
++  }
++})
++
+ // Registry: every manifest entry with a demo is run on the real engine and must give what it claims.
+ function runDemo(d) {
+   const l = lab(77)
+@@ -1131,6 +1189,7 @@ for (const e of MANIFEST.filter(x => x.demo)) {
+     if (x.oilBelow) assert.ok(oilBelow(c.contents), 'oil below')
+     if (x.unsupported) assert.ok(c.unsupported, 'reported as unsupported')
+     if (x.noPH) assert.equal(c.pH, null)
++    if (x.hint) assert.ok(Object.keys(s.notes).some(k => k.startsWith(x.hint)), `hint ${x.hint} reported`)
+     if (e.status === 'NO_REACTION' || e.status === 'UNSUPPORTED') {
+       assert.ok(!Object.values(c.gasOut || {}).some(v => v > 0), 'no gas invented')
+       assert.ok(!Object.values(solid?.coat || {}).some(v => v > 0), 'no deposit invented')
+@@ -1142,6 +1201,9 @@ test('manifest: every entry is complete and every Sandbox suggestion has a demo'
+   for (const e of MANIFEST) for (const k of ['id', 'status', 'title', 'inputs', 'conditions', 'products', 'observe', 'model', 'source', 'limits']) assert.ok(e[k] != null && e[k] !== '', `${e.id}.${k}`)
+   assert.equal(new Set(MANIFEST.map(e => e.id)).size, MANIFEST.length, 'unique ids')
+   assert.ok(DISCOVER.length >= 20 && DISCOVER.every(e => e.demo))
++  // An entry without a demo must name unit tests that exist; the report counts the rest as not verified.
++  const titles = [...readFileSync(new URL(import.meta.url), 'utf8').matchAll(/^test\('([^']+)'/gm)].map(m => m[1])
++  for (const e of MANIFEST) for (const t of e.tests || []) assert.ok(titles.some(x => x.startsWith(t)), `${e.id}: no test titled "${t}…"`)
+ })
+ 
+ const failed = results.filter(r => !r.pass)
+diff --git a/src/dlab/data/manifest.js b/src/dlab/data/manifest.js
+index 1def7c7..1f99e84 100644
+--- a/src/dlab/data/manifest.js
++++ b/src/dlab/data/manifest.js
+@@ -4,6 +4,8 @@
+ //   • the Sandbox "Gợi ý khám phá" panel (it only lays out the equipment; the student performs the action),
+ //   • scripts/dlab-manifest.mjs (the report table).
+ // status: SUPPORTED | APPROX (educational approximation) | NO_REACTION | UNSUPPORTED | INVALID (blocked by safety).
++// An entry without a demo names the unit tests (title prefixes in scripts/test-dlab.mjs) that check it; the registry
++// test fails if a named test does not exist, and the report marks an entry with neither as not verified.
+ import { KINETIC, NO_REACTION, UNSUPPORTED_HINTS, ION_HINTS, SOLVENT_HINTS, ION_REDOX, ELECTRO } from './reactions.js'
+ import { PRECIPITATES } from './materials.js'
+ 
+@@ -80,12 +82,12 @@ const processes = [
+   { id: 'neutralisation', status: 'SUPPORTED', title: 'H⁺ + OH⁻ → H₂O (trung hòa)', group: 'Axit – bazơ', inputs: 'HCl + NaOH (+ phenolphtalein)', conditions: '25 °C', products: 'NaCl, H₂O, nhiệt', observe: 'Màu chỉ thị đổi theo pH; dung dịch ấm lên.', model: 'pH từ cân bằng điện tích; nhiệt trung hòa −55,84 kJ/mol.', source: 'Kw 1,0·10⁻¹⁴; ΔH từ NBS', limits: 'Nhiệt dùng tổng H⁺/OH⁻ mất đi (có thể dư 1–2 °C khi kết tủa hiđroxit).', demo: { vessel: 'beaker100', fill: [['naoh', 20]], pour: ['hcl', 20], run: 1, expect: { note: 'neutral-' } } },
+   { id: 'co2-carbonate', status: 'SUPPORTED', title: 'HCO₃⁻/CO₃²⁻ + H⁺ → CO₂↑', group: 'Axit – bazơ', inputs: 'NaHCO₃ + CH₃COOH (hoặc Na₂CO₃ + HCl)', conditions: '25 °C, 1 atm', products: 'CO₂↑', observe: 'Sủi bọt khí không màu.', model: 'Phân bố H₂CO₃/HCO₃⁻/CO₃²⁻ theo pH; khí thoát khi [H₂CO₃*] vượt độ tan Henry.', source: 'Ka1, Ka2 (CRC); Henry 3,4·10⁻² mol/(L·atm)', limits: 'Tốc độ thoát khí là xấp xỉ.', demo: { vessel: 'beaker100', fill: [['na2co3', 20]], pour: ['hcl', 20], run: 3, expect: { gas: 'CO2' } } },
+   { id: 'dissolve-salts', status: 'SUPPORTED', title: 'Hòa tan và kết tinh NaCl, KNO₃, NaHCO₃', group: 'Hòa tan – kết tinh', inputs: 'Tinh thể + nước', conditions: '0–100 °C', products: 'Ion trong dung dịch; tinh thể khi quá bão hòa', observe: 'Tinh thể nhỏ dần; KNO₃ kết tinh lại khi làm nguội.', model: 'Độ tan theo bảng nhiệt độ (nội suy tuyến tính).', source: 'CRC Handbook (độ tan g/100 g nước)', limits: 'Tốc độ tan là xấp xỉ.', demo: { vessel: 'beaker100', fill: [['water', 20]], solid: ['nacl-s', 2], run: 20, expect: { ion: 'Na+' } } },
+-  { id: 'boiling', status: 'SUPPORTED', title: 'Đun sôi nước, etanol và hỗn hợp nước–etanol', group: 'Nhiệt – chuyển pha', inputs: 'Nước / etanol + bếp', conditions: '1 atm', products: 'Hơi nước, hơi etanol', observe: 'Nước sôi ở 100 °C; etanol ~78 °C; hỗn hợp sôi giữa hai giá trị, nhiệt độ sôi tăng dần.', model: 'Cân bằng nhiệt + điểm sôi và thành phần hơi theo bảng (nước–etanol).', source: 'CRC "Boiling points of aqueous solutions"; NIST WebBook (ΔvapH)', limits: 'Ống thủy tinh hở, áp suất 1 atm; không mô hình hơi bắt lửa.', demo: null },
++  { id: 'boiling', status: 'SUPPORTED', title: 'Đun sôi nước, etanol và hỗn hợp nước–etanol', group: 'Nhiệt – chuyển pha', inputs: 'Nước / etanol + bếp', conditions: '1 atm', products: 'Hơi nước, hơi etanol', observe: 'Nước sôi ở 100 °C; etanol ~78 °C; hỗn hợp sôi giữa hai giá trị, nhiệt độ sôi tăng dần.', model: 'Cân bằng nhiệt + điểm sôi và thành phần hơi theo bảng (nước–etanol).', source: 'CRC "Boiling points of aqueous solutions"; NIST WebBook (ΔvapH)', limits: 'Ống thủy tinh hở, áp suất 1 atm; không mô hình hơi bắt lửa.', demo: null, tests: ['solvent: ethanol is not water'] },
+   { id: 'layers', status: 'SUPPORTED', title: 'Hòa tan / phân lớp: nước, etanol, dầu ăn', group: 'Nhiệt – chuyển pha', inputs: 'Nước + dầu; etanol + dầu; nước + etanol', conditions: '25 °C', products: '—', observe: 'Dầu nổi trên nước, chìm dưới etanol; nước và etanol tan hoàn toàn.', model: 'Khối lượng riêng hỗn hợp nước–etanol theo bảng; dầu không tan.', source: 'Lange\'s Handbook 1967 (khối lượng riêng 25 °C)', limits: 'Bỏ qua co thể tích khi trộn (≤ 3,5 %); dầu ăn coi như không tan trong etanol.', demo: { vessel: 'beaker100', fill: [['ethanol', 30]], pour: ['oil', 10], run: 1, expect: { oilBelow: true } } },
+-  { id: 'electrolysis-cucl2', status: 'SUPPORTED', title: ELECTRO.electrolysisCuCl2.equation, group: 'Điện hóa', inputs: 'Dung dịch CuCl₂, điện cực than chì, nguồn 1–12 V', conditions: 'U > 1,42 V; chỉ khi không có ion điện phân trước', products: 'Cu (catot), Cl₂↑ (anot)', observe: 'Đồng đỏ bám catot, khí vàng lục ở anot.', model: 'Định luật Faraday; I = (U − 1,02 − 0,4)/R.', source: 'F = 96485 C/mol (CODATA); điện trở bình: mô hình', limits: 'Điện trở và quá thế là minh họa; giai đoạn điện phân nước không được mô hình hóa.', demo: null },
+-  { id: 'daniell', status: 'SUPPORTED', title: ELECTRO.daniell.equation, group: 'Điện hóa', inputs: 'Zn/ZnSO₄ ‖ CuSO₄/Cu, cầu muối KNO₃', conditions: '0–100 °C', products: 'Suất điện động', observe: 'Vôn kế chỉ ≈ 1,1 V; Zn là cực âm.', model: 'E = E°(T) − (RT ln10/2F)·lg([Zn²⁺]/[Cu²⁺]); dE°/dT từ ΔS° (NBS).', source: 'E° 1,10 V; S° NBS 1982', limits: 'Bỏ qua thế tiếp xúc lỏng (pin thật dốc hơn ≈ −0,3 mV/K) và ΔCp.', demo: null },
+-  { id: 'indicators', status: 'APPROX', title: 'Chất chỉ thị: quỳ tím, phenolphtalein, metyl da cam', group: 'Axit – bazơ', inputs: 'Giấy quỳ / vài giọt chỉ thị', conditions: 'Dung dịch nước (etanol ≤ 10 %)', products: '—', observe: 'Màu theo khoảng pH.', model: 'Phenolphtalein, metyl da cam: tỉ lệ dạng axit/bazơ theo pKin; quỳ tím: bảng màu định tính.', source: 'Harris, Quantitative Chemical Analysis', limits: 'Màu quỳ là định tính.', demo: null },
+-  { id: 'redissolve', status: 'SUPPORTED', title: 'Kết tủa hiđroxit tan trong axit', group: 'Phản ứng tạo kết tủa', inputs: 'Cu(OH)₂ + HCl', conditions: '25 °C', products: 'Cu²⁺', observe: 'Kết tủa xanh tan, dung dịch xanh trong.', model: 'Ksp + cân bằng điện tích: Q < Ksp thì kết tủa tan.', source: 'Ksp (CRC)', limits: '—', demo: null }
++  { id: 'electrolysis-cucl2', status: 'SUPPORTED', title: ELECTRO.electrolysisCuCl2.equation, group: 'Điện hóa', inputs: 'Dung dịch CuCl₂, điện cực than chì, nguồn 1–12 V', conditions: 'U > 1,42 V; chỉ khi không có ion điện phân trước', products: 'Cu (catot), Cl₂↑ (anot)', observe: 'Đồng đỏ bám catot, khí vàng lục ở anot.', model: 'Định luật Faraday; I = (U − 1,02 − 0,4)/R.', source: 'F = 96485 C/mol (CODATA); điện trở bình: mô hình', limits: 'Điện trở và quá thế là minh họa; giai đoạn điện phân nước không được mô hình hóa.', demo: null, tests: ['electrolysis CuCl2 follows Faraday'] },
++  { id: 'daniell', status: 'SUPPORTED', title: ELECTRO.daniell.equation, group: 'Điện hóa', inputs: 'Zn/ZnSO₄ ‖ CuSO₄/Cu, cầu muối KNO₃', conditions: '0–100 °C', products: 'Suất điện động', observe: 'Vôn kế chỉ ≈ 1,1 V; Zn là cực âm.', model: 'E = E°(T) − (RT ln10/2F)·lg([Zn²⁺]/[Cu²⁺]); dE°/dT từ ΔS° (NBS).', source: 'E° 1,10 V; S° NBS 1982', limits: 'Bỏ qua thế tiếp xúc lỏng (pin thật dốc hơn ≈ −0,3 mV/K) và ΔCp.', demo: null, tests: ['Daniell cell: Nernst voltage', 'Daniell cell: E follows E°(T)'] },
++  { id: 'indicators', status: 'APPROX', title: 'Chất chỉ thị: quỳ tím, phenolphtalein, metyl da cam', group: 'Axit – bazơ', inputs: 'Giấy quỳ / vài giọt chỉ thị', conditions: 'Dung dịch nước (etanol ≤ 10 %)', products: '—', observe: 'Màu theo khoảng pH.', model: 'Phenolphtalein, metyl da cam: tỉ lệ dạng axit/bazơ theo pKin; quỳ tím: bảng màu định tính.', source: 'Harris, Quantitative Chemical Analysis', limits: 'Màu quỳ là định tính.', demo: null, tests: ['litmus: dipped part turns red', 'indicator colour spreads'] },
++  { id: 'redissolve', status: 'SUPPORTED', title: 'Kết tủa hiđroxit tan trong axit', group: 'Phản ứng tạo kết tủa', inputs: 'Cu(OH)₂ + HCl', conditions: '25 °C', products: 'Cu²⁺', observe: 'Kết tủa xanh tan, dung dịch xanh trong.', model: 'Ksp + cân bằng điện tích: Q < Ksp thì kết tủa tan.', source: 'Ksp (CRC)', limits: '—', demo: null, tests: ['Cu(OH)2 forms with base and redissolves in acid'] }
+ ]
+ 
+ const noReaction = [
+@@ -93,11 +95,29 @@ const noReaction = [
+   { id: 'norx-e0-fe-mg', status: 'NO_REACTION', title: 'Kim loại yếu + ion kim loại mạnh hơn (tự phân loại theo E°)', group: 'Không phản ứng', inputs: 'VD: Fe + MgCl₂', conditions: '25 °C', products: '—', observe: 'Báo "Không có phản ứng" kèm so sánh E°.', model: 'So sánh E° ion/kim loại', source: 'E° (CRC)', limits: 'Chỉ cho các cặp kim loại – ion có trong bảng E°.', demo: { vessel: 'beaker100', fill: [['mgcl2', 30]], solid: ['fe', 1], run: 5, expect: { note: 'norx-fe-Mg2+' } } }
+ ]
+ 
++// Real reagents that bring each unsupported combination together (inside its pH window), so the registry test
++// checks that the engine really reports it, not only that the hint exists in the table.
++const SOLID_HINT_DEMO = { 'NO3-+cu': 'hno3', 'Fe3++cu': 'fecl3', 'Fe3++fe': 'fecl3', 'Fe3++zn': 'fecl3', 'Fe3++mg': 'fecl3', 'SO4+caco3': 'h2so4', zn: 'naoh' }
++const ION_HINT_DEMO = {
++  'Ag+': [['agno3', 10], ['naoh', 3]], 'Ag++NH3': [['agno3', 10], ['nh3', 10]], 'Zn2++NH3': [['znso4', 10], ['nh3', 30]],
++  'NO3-+I-': [['hno3', 10], ['ki', 10]], 'NO3-+Fe2+': [['hno3', 10], ['feso4', 10]], 'Ag++Fe2+': [['agno3', 10], ['feso4', 10]],
++  'Cu2++CO3': [['cuso4', 5], ['na2co3', 30]], I2: [['fecl3', 5], ['ki', 10], ['naoh', 20]], 'Fe3++I-': [['ki', 20], ['naoh', 5], ['fecl3', 2]],
++  'Zn2+': [['znso4', 5], ['naoh', 30]], 'Cu2++NH3': [['cuso4', 10], ['nh3', 30]]
++}
+ const unsupported = [
+-  ...UNSUPPORTED_HINTS.map((r, i) => ({ id: `unsup-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: r.all.join(' + '), conditions: [r.maxPH != null && `pH < ${r.maxPH}`, r.minPH != null && `pH > ${r.minPH}`].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ", không tạo sản phẩm', source: '—', limits: r.reason, demo: null })),
+-  ...ION_HINTS.map((r, i) => ({ id: `ionhint-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: r.all.join(' + '), conditions: r.minPH != null ? `pH > ${r.minPH}` : '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason, demo: null })),
+-  ...SOLVENT_HINTS.map(r => ({ id: `solvent-${r.solid}-${r.liquid}`, status: 'UNSUPPORTED', title: `${SOLID_NAME[r.solid]} + ${r.liquid}`, group: 'Chưa hỗ trợ', inputs: `${SOLID_NAME[r.solid]} + etanol khan`, conditions: '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason, demo: null })),
+-  ...ELECTRO.electrolysisCuCl2.interferes.map(x => ({ id: `electro-unsup-${x.ion}`, status: 'UNSUPPORTED', title: `Điện phân dung dịch có ${x.ion}`, group: 'Chưa hỗ trợ', inputs: `Dung dịch chứa ${x.ion}`, conditions: '—', products: '—', observe: x.why, model: 'Điện phân bị từ chối, không tạo Cu/Cl₂', source: 'E° (CRC)', limits: x.why, demo: null })),
++  ...UNSUPPORTED_HINTS.map((r, i) => {
++    const solid = r.all.find(k => SOLID_NAME[k])
++    const liquid = SOLID_HINT_DEMO[r.all.join('+')]
++    return { id: `unsup-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: r.all.join(' + '), conditions: [r.maxPH != null && `pH < ${r.maxPH}`, r.minPH != null && `pH > ${r.minPH}`].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ", không tạo sản phẩm', source: '—', limits: r.reason,
++      demo: solid && liquid ? { vessel: 'beaker100', fill: [[liquid, 30]], solid: [solid, solid === 'fe' ? 1 : 0.2], run: 3, expect: { unsupported: true } } : null }
++  }),
++  ...ION_HINTS.map((r, i) => {
++    const fill = ION_HINT_DEMO[r.all.join('+')]
++    return { id: `ionhint-${i}-${r.all.join('-')}`, status: 'UNSUPPORTED', title: r.all.join(' + '), group: 'Chưa hỗ trợ', inputs: fill ? fill.map(([x]) => x.toUpperCase()).join(' + ') : r.all.join(' + '), conditions: [r.minPH != null && `pH > ${r.minPH}`, r.maxPH != null && `pH < ${r.maxPH}`, r.minFreeNH3 != null && `NH₃ tự do > ${r.minFreeNH3.toPrecision(2).replace('.', ',')} M`].filter(Boolean).join(', ') || '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason,
++      demo: fill ? { vessel: 'beaker100', fill, run: 1, expect: { hint: `ionhint-${r.all.join('+')}-` } } : null }
++  }),
++  ...SOLVENT_HINTS.map(r => ({ id: `solvent-${r.solid}-${r.liquid}`, status: 'UNSUPPORTED', title: `${SOLID_NAME[r.solid]} + ${r.liquid}`, group: 'Chưa hỗ trợ', inputs: `${SOLID_NAME[r.solid]} + etanol khan`, conditions: '—', products: '—', observe: r.reason, model: 'Nhận diện và báo "Chưa hỗ trợ"', source: '—', limits: r.reason, demo: null, tests: ['solvent: ethanol is not water'] })),
++  ...ELECTRO.electrolysisCuCl2.interferes.map(x => ({ id: `electro-unsup-${x.ion}`, status: 'UNSUPPORTED', title: `Điện phân dung dịch có ${x.ion}`, group: 'Chưa hỗ trợ', inputs: `Dung dịch chứa ${x.ion}`, conditions: '—', products: '—', observe: x.why, model: 'Điện phân bị từ chối, không tạo Cu/Cl₂', source: 'E° (CRC)', limits: x.why, demo: null, tests: ['electrolysis refuses every interference'] })),
+   { id: 'unsup-e0-mg-zn', status: 'UNSUPPORTED', title: 'Kim loại mạnh + ion kim loại yếu hơn chưa có quy tắc', group: 'Chưa hỗ trợ', inputs: 'VD: Mg + ZnSO₄', conditions: '25 °C', products: '—', observe: 'Báo "theo dãy hoạt động có phản ứng nhưng chưa được mô hình hóa định lượng".', model: 'So sánh E°', source: 'E° (CRC)', limits: 'Không tạo sản phẩm đoán.', demo: { vessel: 'beaker100', fill: [['znso4', 30]], solid: ['mg', 0.05], run: 3, expect: { unsupported: true } } },
+   { id: 'unsup-mixed-solvent', status: 'UNSUPPORTED', title: 'pH và cân bằng ion trong hỗn hợp nhiều etanol', group: 'Chưa hỗ trợ', inputs: 'Dung dịch ion + etanol > 10 %', conditions: '—', products: '—', observe: 'Không hiển thị pH; ghi rõ chỉ mang tính định tính.', model: 'pH chỉ áp dụng khi etanol ≤ 10 % thể tích', source: 'IUPAC: pH trong dung môi hỗn hợp cần thang riêng', limits: '—', demo: { vessel: 'beaker100', fill: [['hcl', 10]], pour: ['ethanol', 20], run: 1, expect: { noPH: true } } }
+ ]
+@@ -111,7 +131,7 @@ const invalid = [
+   ['Dùng thìa lấy mẩu kim loại / kẹp lấy bột', 'phải dùng kẹp'],
+   ['Lấy quá lượng an toàn của mô hình', 'vượt giới hạn an toàn'],
+   ['Đun dụng cụ đã nứt', 'đun nóng sẽ làm vỡ']
+-].map(([title, reason], i) => ({ id: `invalid-${i}`, status: 'INVALID', title, group: 'Bị chặn vì an toàn', inputs: title, conditions: '—', products: '—', observe: `Lệnh bị chặn: “…${reason}…”.`, model: 'Kiểm tra an toàn trước mỗi lệnh (safety.js)', source: 'Quy tắc an toàn phòng thí nghiệm trường học', limits: '—', demo: null }))
++].map(([title, reason], i) => ({ id: `invalid-${i}`, status: 'INVALID', title, group: 'Bị chặn vì an toàn', inputs: title, conditions: '—', products: '—', observe: `Lệnh bị chặn: “…${reason}…”.`, model: 'Kiểm tra an toàn trước mỗi lệnh (safety.js)', source: 'Quy tắc an toàn phòng thí nghiệm trường học', limits: '—', demo: null, tests: ['safety: every blocked condition'] }))
+ 
+ export const MANIFEST = [...processes, ...kinetic, ...precipitates, ...redox, ...noReaction, ...unsupported, ...invalid]
+ 
+diff --git a/src/dlab/data/reactions.js b/src/dlab/data/reactions.js
+index 00b85d2..71e20f7 100644
+--- a/src/dlab/data/reactions.js
++++ b/src/dlab/data/reactions.js
+@@ -35,8 +35,10 @@ export const ION_HINTS = [
+   // Ag₂O forms when free [Ag⁺]·[OH⁻] exceeds K = 2,0·10⁻⁸ (½Ag₂O + ½H₂O ⇌ Ag⁺ + OH⁻, CRC) — e.g. pH ≈ 7,6
+   // in 0,05 M Ag⁺, but not over Ag₂CO₃ in carbonate (free Ag⁺ is tiny there).
+   { all: ['Ag+'], kspOH: 2.0e-8, reason: 'Ag⁺ trong môi trường kiềm tạo Ag₂O nâu đen — chưa được mô hình hóa.' },
+-  { all: ['Ag+', 'NH3'], reason: 'Ag⁺/AgCl với NH₃ tạo phức [Ag(NH₃)₂]⁺ tan — chưa được mô hình hóa.' },
+-  { all: ['Zn2+', 'NH3'], minPH: 9, reason: 'Zn²⁺ với NH₃ dư tạo phức [Zn(NH₃)₄]²⁺ — chưa được mô hình hóa.' },
++  // Ammine complexes: reported once free NH₃ exceeds β^(−1/n), where complex and free ion are equal
++  // (lg β: [Ag(NH₃)₂]⁺ 7,23; [Zn(NH₃)₄]²⁺ 9,46; [Cu(NH₃)₄]²⁺ 13,1 — Lange's Handbook / Martell–Smith).
++  { all: ['Ag+', 'NH3'], minFreeNH3: 10 ** (-7.23 / 2), reason: 'Ag⁺/AgCl với NH₃ tạo phức [Ag(NH₃)₂]⁺ tan — chưa được mô hình hóa.' },
++  { all: ['Zn2+', 'NH3'], minFreeNH3: 10 ** (-9.46 / 4), reason: 'Zn²⁺ với NH₃ dư tạo phức [Zn(NH₃)₄]²⁺ — chưa được mô hình hóa.' },
+   { all: ['NO3-', 'I-'], maxPH: 3, reason: 'HNO₃ oxi hóa I⁻ thành I₂ (và tạo NO) — chưa được mô hình hóa.' },
+   { all: ['NO3-', 'Fe2+'], maxPH: 3, reason: 'HNO₃ oxi hóa Fe²⁺ thành Fe³⁺ (và tạo NO) — chưa được mô hình hóa.' },
+   { all: ['Ag+', 'Fe2+'], reason: 'Ag⁺ + Fe²⁺ → Ag↓ + Fe³⁺ (E° 0,80 > 0,77 V) — chưa được mô hình hóa.' },
+@@ -44,7 +46,7 @@ export const ION_HINTS = [
+   { all: ['I2'], minPH: 9, reason: 'I₂ trong kiềm chuyển thành I⁻/IO⁻ (mất màu) — chưa được mô hình hóa.' },
+   { all: ['Fe3+', 'I-'], minPH: 7.01, reason: 'Fe³⁺ + I⁻ trong môi trường kiềm: Fe(OH)₃ tạo trước, không sinh I₂ — mô hình không tính phản ứng oxi hóa – khử này.' },
+   { all: ['Zn2+'], minPH: 11.5, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
+-  { all: ['Cu2+', 'NH3'], minPH: 9, reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
++  { all: ['Cu2+', 'NH3'], minFreeNH3: 10 ** (-13.1 / 4), reason: 'Cu²⁺ với NH₃ dư tạo phức [Cu(NH₃)₄]²⁺ xanh thẫm — chưa được mô hình hóa.' }
+ ]
+ 
+ // Fast ionic redox in solution, run to completion (K ≫ 1). E° (CRC, 25 °C): Cu²⁺/CuI 0,86 V, Fe³⁺/Fe²⁺ 0,771 V,
+@@ -69,7 +71,7 @@ export const ELECTRO = {
+       { ion: 'Fe3+', why: 'Fe³⁺ bị khử ở catot trước Cu²⁺ (E° Fe³⁺/Fe²⁺ 0,77 V > 0,34 V)' },
+       { ion: 'Fe2+', why: 'Fe²⁺ bị oxi hóa ở anot trước Cl⁻ (E° Fe³⁺/Fe²⁺ 0,77 V < 1,36 V)' },
+       { ion: 'NO3-', maxPH: 3, why: 'HNO₃ hòa tan đồng bám ở catot và bị khử tạo NO' },
+-      { ion: 'NH3', why: 'NH₃ tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' }
++      { ion: 'NH3', minFreeNH3: 10 ** (-13.1 / 4), why: 'NH₃ dư tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' } // free NH₃ only: NH₄⁺ does not complex
+     ]
+   },
+   // E°(T) = E°(298) + ΔS°/(nF)·(T − 298,15); ΔS° from NBS S° (J/(mol·K)): Zn²⁺ −112,1, Cu 33,150, Zn 41,63,
+diff --git a/src/dlab/engine/chemistry.js b/src/dlab/engine/chemistry.js
+index 50ea810..2f20f07 100644
+--- a/src/dlab/engine/chemistry.js
++++ b/src/dlab/engine/chemistry.js
+@@ -156,6 +156,7 @@ export function freeConc(ion, contents, h, V) {
+     return C * w.Ka1 * w.Ka2 / (h * h + w.Ka1 * h + w.Ka1 * w.Ka2)
+   }
+   if (info.weak === 'acetate') return C * WEAK.acetate.Ka / (WEAK.acetate.Ka + h)
++  if (info.weak === 'ammonia') return C * WEAK.ammonia.Ka / (WEAK.ammonia.Ka + h) // unprotonated NH₃
+   return C
+ }
+ 
+diff --git a/src/dlab/engine/processes.js b/src/dlab/engine/processes.js
+index e39389f..ed16c9a 100644
+--- a/src/dlab/engine/processes.js
++++ b/src/dlab/engine/processes.js
+@@ -286,6 +286,10 @@ function ionHints(state, c) {
+       // Same supersaturation rule as every precipitate (Q > 10^NUCLEATION_LOG·K): a factor ~2 is inside the Ksp data spread.
+       if (!(freeConc(r.all[0], c.contents, h, V) * 1e-14 / h > r.kspOH * 10 ** NUCLEATION_LOG)) continue
+     }
++    if (r.minFreeNH3 != null) {
++      const V = aqueousLitres(c.contents)
++      if (V < 1e-6 || !(freeConc('NH3', c.contents, solveH(c.contents.ions, V), V) > r.minFreeNH3)) continue
++    }
+     if (r.minPH != null || r.maxPH != null) {
+       const V = aqueousLitres(c.contents)
+       if (V < 1e-6) continue
+@@ -568,13 +572,22 @@ export function stepElectro(state, h) {
+     const cu = c.contents.ions['Cu2+'] || 0
+     const cl = c.contents.ions['Cl-'] || 0
+     const e0 = ELECTRO.electrolysisCuCl2
++    // Excess free NH₃ binds copper as [Cu(NH₃)₄]²⁺ (or leaves Cu(OH)₂): not "copper used up". NH₄⁺ alone does not count.
++    const ammine = e0.interferes.find(x => x.minFreeNH3 != null)
++    const copperLeft = cu > 1e-7 || Object.entries(c.contents.precipitates).some(([k, mol]) => mol > 1e-7 && PRECIPITATES[k]?.cation === 'Cu2+')
++    if (ammine && copperLeft && V > 1e-6 && freeConc('NH3', c.contents, solveH(c.contents.ions, V), V) > ammine.minFreeNH3) {
++      p.status = `Chưa hỗ trợ mô phỏng điện phân dung dịch này: ${ammine.why}.`
++      c.unsupported = p.status
++      noteOnce(state, `electro-unsup-NH3-${c.id}`, p.status, 'warn')
++      continue
++    }
+     if (!(cu > 1e-7 && cl > 1e-7)) {
+       p.status = cu > 0 || cl > 0 ? 'Đã hết Cu²⁺ hoặc Cl⁻: giai đoạn điện phân nước chưa được mô hình hóa, dòng điện ngừng.' : 'Hệ điện phân này chưa được mô hình hóa (mô hình hỗ trợ dung dịch CuCl₂).'
+       continue
+     }
+     // A species that discharges first, in more than a trace (1 % of the Cu²⁺), makes the Cu + Cl₂ result wrong.
+     const amount = x => (c.contents.ions[x.ion] || 0) + (x.ion === 'I2' ? c.contents.precipitates.I2s || 0 : 0) // solid iodine counts too
+-    const first = e0.interferes.find(x => amount(x) > Math.max(1e-6, 0.01 * cu) && !(x.maxPH < (c.pH ?? 7)))
++    const first = e0.interferes.find(x => x.minFreeNH3 == null && amount(x) > Math.max(1e-6, 0.01 * cu) && !(x.maxPH < (c.pH ?? 7)))
+     const why = first ? first.why : !polarPhase(c.contents).pHApplies ? 'dung môi không phải nước' : V > 0 && cl / V < e0.minCl ? `Cl⁻ quá loãng (< ${e0.minCl} M): ở anot O₂ cạnh tranh với Cl₂` : null
+     if (why) {
+       p.status = `Chưa hỗ trợ mô phỏng điện phân dung dịch này: ${why}.`
+diff --git a/src/dlab/ui/dlabApp.js b/src/dlab/ui/dlabApp.js
+index 954822d..286b65d 100644
+--- a/src/dlab/ui/dlabApp.js
++++ b/src/dlab/ui/dlabApp.js
+@@ -147,8 +147,27 @@ export function initDynamicLab(host) {
+     sim.advance(dt)
+     draw()
+     if (three) three.update(sim.state, ui)
++    watchFrameRate(dt)
+     frame = requestAnimationFrame(loop)
+   }
++  // A slow machine (no GPU, busy CPU): if frames stay under 25 fps for 4 s at "Cao" and the student never picked
++  // a quality, switch once to "Tiết kiệm" and say so. Only the drawing changes; the chemistry is the same.
++  const pace = { n: 0, sum: 0 }
++  function watchFrameRate(dt) {
++    if (ui.qualityChosen || ui.quality !== 'high' || dt > 2) return // a longer gap is a stall (dialog, debugger), not a frame
++    pace.n += 1
++    pace.sum += dt
++    if (pace.sum < 4) return
++    const fps = pace.n / pace.sum
++    pace.n = pace.sum = 0
++    if (fps >= 25) return
++    ui.quality = 'low'
++    ui.autoLow = true
++    const qb = $('[data-hd="quality"]')
++    if (qb) qb.textContent = 'Đồ họa: Tiết kiệm'
++    three?.setQuality('low')
++    toast(`Máy đang chạy chậm (khoảng ${Math.round(fps)} khung hình/giây) nên đã chuyển sang “Đồ họa: Tiết kiệm”. Kết quả thí nghiệm không đổi; đổi lại ở menu ⋯.`)
++  }
+   function start() {
+     if (frame == null && visible()) { last = performance.now(); frame = requestAnimationFrame(loop) }
+   }
+diff --git a/src/dlab/ui/render2d.js b/src/dlab/ui/render2d.js
+index 0c2ad51..fb85e58 100644
+--- a/src/dlab/ui/render2d.js
++++ b/src/dlab/ui/render2d.js
+@@ -22,6 +22,7 @@ export function toWorld(view, sx, sy) {
+ const rgba = (c, a = c[3] ?? 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
+ 
+ export function render(ctx, state, view, ui) {
++  pickFieldTurn()
+   const { w, h } = view
+   const dark = ui.theme === 'dark'
+   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0)
+@@ -535,16 +536,35 @@ function drawLooseSolid(ctx, view, s) {
+   ctx.restore()
+ }
+ 
+-let field = null
+-function fieldImage() {
+-  if (!field) {
++// One small canvas per vessel, refreshed only when its colours change: in WebKit each refresh costs ~1.4 ms
++// whatever the size (putImageData, or the upload on the next drawImage); 8 vessels every frame took 8.5 ms.
++// Tracer mixing takes seconds, so a refresh at most every 66 ms is not visible; drawing still runs every frame.
++const fields = new WeakMap()
++const FIELD_MS = 66
++const dirtyFields = new Set()
++let fieldTurn = null
++let renderCount = 0
++// One refresh per frame, the field that has waited longest (no vessel starves); fields of vessels no longer drawn drop out.
++function pickFieldTurn() {
++  renderCount += 1
++  const now = performance.now()
++  fieldTurn = null
++  for (const f of dirtyFields) {
++    if (!f.dirty || renderCount - f.seen > 2) { dirtyFields.delete(f); continue }
++    if (now - f.last >= FIELD_MS && (!fieldTurn || f.last < fieldTurn.last)) fieldTurn = f
++  }
++}
++function fieldImage(c) {
++  let f = fields.get(c)
++  if (!f) {
+     const canvas = document.createElement('canvas')
+     canvas.width = GW
+     canvas.height = GH
+     const ctx = canvas.getContext('2d')
+-    field = { canvas, ctx, data: ctx.createImageData(GW, GH) }
++    f = { canvas, ctx, data: ctx.createImageData(GW, GH), fresh: true, dirty: false, seen: renderCount, last: 0 }
++    fields.set(c, f)
+   }
+-  return field
++  return f
+ }
+ 
+ function drawContainer(ctx, state, view, c, ui, ink, dark) {
+@@ -587,16 +607,28 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
+         // GW·GH rects, and the colour front reads as a gradient rather than blocks.
+         const hw = halfWidthAt(def, 0) + 4
+         const mean = fieldMean(c)
+-        const img = fieldImage()
++        const img = fieldImage(c)
++        const px = img.data.data
+         for (let j = 0; j < GH; j += 1) {
+           for (let i = 0; i < GW; i += 1) {
+             const col = cellColor(c, j * GW + i, mean) || [220, 235, 250, 0.2]
+             const k = ((GH - 1 - j) * GW + i) * 4
+-            img.data.data[k] = col[0]; img.data.data[k + 1] = col[1]; img.data.data[k + 2] = col[2]
+-            img.data.data[k + 3] = Math.round(255 * Math.min(0.92, col[3] + 0.05))
++            const a = Math.round(255 * Math.min(0.92, col[3] + 0.05))
++            // Compare as stored (clamped bytes), so an unchanged field is never re-uploaded.
++            if (px[k] !== Math.round(col[0]) || px[k + 1] !== Math.round(col[1]) || px[k + 2] !== Math.round(col[2]) || px[k + 3] !== a) {
++              px[k] = col[0]; px[k + 1] = col[1]; px[k + 2] = col[2]; px[k + 3] = a
++              img.dirty = true
++              dirtyFields.add(img)
++            }
+           }
+         }
+-        img.ctx.putImageData(img.data, 0, 0)
++        img.seen = renderCount
++        if (img.fresh || img === fieldTurn) {
++          img.ctx.putImageData(img.data, 0, 0)
++          img.fresh = img.dirty = false
++          img.last = performance.now()
++          if (img === fieldTurn) fieldTurn = null
++        }
+         ctx.imageSmoothingEnabled = true
+         ctx.drawImage(img.canvas, -hw, -2 - aqTop, 2 * hw, Math.max(0.5, aqH))
+         if (oil > 0.01) {
+diff --git a/src/dlab/ui/render3d.js b/src/dlab/ui/render3d.js
+index b93a7ca..6e1c3ab 100644
+--- a/src/dlab/ui/render3d.js
++++ b/src/dlab/ui/render3d.js
+@@ -42,7 +42,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+   const shared = new Set()
+   const mat = (m) => { m.userData.shared = true; shared.add(m); return m }
+   const benchTex = speckleTexture()
+-  const benchMat = mat(new THREE.MeshStandardMaterial({ color: 0x46536a, map: benchTex, roughness: 0.52, metalness: 0.05 })) // slate epoxy resin top (dark enough for glass, light enough for shadows)
++  const benchMat = mat(new THREE.MeshStandardMaterial({ color: 0x7a879b, map: benchTex, roughness: 0.55, metalness: 0.05 })) // grey epoxy resin top: glass edges still read, and contact shadows are visible (they were lost on the darker top)
+   const bench = new THREE.Mesh(new THREE.BoxGeometry(30, 0.12, 3.2), benchMat)
+   bench.position.set(5, -0.06, 0.2)
+   const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 30, 16), benchMat)
+@@ -64,6 +64,8 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+ #include <opaque_fragment>`)
+   }
+   glassMat.customProgramCacheKey = () => 'dlab-fresnel-glass'
++  // Thin glass (rod, dropper, pipette) is a few mm across: at the vessel opacity it vanished and the tool seemed to float.
++  const thinGlassMat = mat(new THREE.MeshStandardMaterial({ color: 0xdbe8f5, metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.42, envMapIntensity: 1.8, depthWrite: false }))
+   const rimMat = mat(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }))
+   const tickMat = mat(new THREE.MeshBasicMaterial({ color: 0x5b6b80, transparent: true, opacity: 0.7, depthWrite: false }))
+   const steel = mat(new THREE.MeshStandardMaterial(high ? { color: 0xb9c0c8, metalness: 0.85, roughness: 0.28 } : { color: 0xc9d3df, metalness: 0.35, roughness: 0.32 }))
+@@ -74,8 +76,21 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+   const porcelain = mat(new THREE.MeshStandardMaterial({ color: 0xf7f7f4, roughness: 0.35 }))
+   const shadowTex = radialTexture()
+   const shadowMat = mat(new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, color: 0x0b1220, opacity: 0.5 }))
+-  const ringGeo = new THREE.RingGeometry(0.93, 1, 64)
++  const ringGeo = new THREE.RingGeometry(0.88, 1, 64)
+   ringGeo.rotateX(-Math.PI / 2)
++  // Holder for hand tools standing on the bench: a 24 × 10 × 18 mm block with a slot.
++  const HELD_UPRIGHT = new Set(['rod', 'spatula', 'tongs', 'dropper', 'pipette', 'thermometer'])
++  // Retort stand (unit parts, scaled per tool): base plate, pole of unit height from its foot, clamp arm.
++  const noPick = () => {}
++  const STAND_Z = 48 * S // behind the tool, clear of a 250 mL beaker's wall
++  const standBaseGeo = new THREE.BoxGeometry(46 * S, 4 * S, 30 * S).translate(0, 2 * S, 0)
++  const standPoleGeo = new THREE.CylinderGeometry(2.4 * S, 2.4 * S, 1, 12).translate(0, 0.5, 0)
++  const standArmGeo = new THREE.BoxGeometry(4 * S, 4 * S, 48 * S)
++  for (const geo of [standBaseGeo, standPoleGeo, standArmGeo]) geo.userData.shared = true
++  const holderGeo = new THREE.BoxGeometry(24 * S, 10 * S, 18 * S)
++  holderGeo.userData.shared = true
++  const holeGeo = new THREE.PlaneGeometry(9 * S, 5 * S).rotateX(-Math.PI / 2)
++  holeGeo.userData.shared = true
+   const planeGeo = new THREE.PlaneGeometry(1, 1)
+   planeGeo.rotateX(-Math.PI / 2)
+ 
+@@ -232,7 +247,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     const meniscus = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, seg), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide }))
+     meniscus.position.z = 0.0003
+     surface.add(meniscus)
+-    const settled = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, seg), new THREE.MeshStandardMaterial({ roughness: 0.9 }))
++    const settled = new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 1), new THREE.Vector2(0.55, 0.92), new THREE.Vector2(0.88, 0.62), new THREE.Vector2(1, 0)], seg), new THREE.MeshStandardMaterial({ roughness: 0.95 }))
+     settled.visible = false
+     g.add(liquid, settled)
+     scene.add(surface)
+@@ -277,25 +292,25 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     const add = (geo, m, y = 0, x = 0, z = 0) => { const mesh = new THREE.Mesh(geo, m); mesh.position.set(x, y, z); g.add(mesh); return mesh }
+     switch (o.type) {
+       case 'dropper': {
+-        add(new THREE.CylinderGeometry(3 * S, 3 * S, h * 0.68, 16), glassMat, h * 0.34 + 6 * S)
+-        add(new THREE.ConeGeometry(3 * S, 8 * S, 16).rotateX(Math.PI), glassMat, 4 * S)
++        add(new THREE.CylinderGeometry(3 * S, 3 * S, h * 0.68, 16), thinGlassMat, h * 0.34 + 6 * S)
++        add(new THREE.ConeGeometry(3 * S, 8 * S, 16).rotateX(Math.PI), thinGlassMat, 4 * S)
+         const bulb = add(new THREE.SphereGeometry(5.2 * S, 18, 14), rubber, h * 0.82)
+         bulb.scale.y = 1.6
+         g.userData.fill = add(new THREE.CylinderGeometry(2.2 * S, 2.2 * S, 1, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85 }), 0)
+         break
+       }
+       case 'pipette': {
+-        add(new THREE.CylinderGeometry(2.2 * S, 2.2 * S, h * 0.9, 14), glassMat, h * 0.5)
+-        add(new THREE.SphereGeometry(5 * S, 16, 12).scale(1, 2.2, 1), glassMat, h * 0.45)
+-        add(new THREE.ConeGeometry(2.2 * S, 10 * S, 14).rotateX(Math.PI), glassMat, 5 * S)
++        add(new THREE.CylinderGeometry(2.2 * S, 2.2 * S, h * 0.9, 14), thinGlassMat, h * 0.5)
++        add(new THREE.SphereGeometry(5 * S, 16, 12).scale(1, 2.2, 1), thinGlassMat, h * 0.45)
++        add(new THREE.ConeGeometry(2.2 * S, 10 * S, 14).rotateX(Math.PI), thinGlassMat, 5 * S)
+         add(new THREE.CylinderGeometry(4 * S, 4 * S, 12 * S, 14), rubber, h * 0.96)
+         g.userData.fill = add(new THREE.CylinderGeometry(1.6 * S, 1.6 * S, 1, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85 }), 0)
+         break
+       }
+       case 'rod':
+-        add(new THREE.CylinderGeometry(2.6 * S, 2.6 * S, h, 16), glassMat, h / 2)
+-        add(new THREE.SphereGeometry(2.6 * S, 12, 8), glassMat, 0)
+-        add(new THREE.SphereGeometry(2.6 * S, 12, 8), glassMat, h)
++        add(new THREE.CylinderGeometry(2.6 * S, 2.6 * S, h, 16), thinGlassMat, h / 2)
++        add(new THREE.SphereGeometry(2.6 * S, 12, 8), thinGlassMat, 0)
++        add(new THREE.SphereGeometry(2.6 * S, 12, 8), thinGlassMat, h)
+         break
+       case 'spatula':
+         add(new THREE.BoxGeometry(4 * S, h - 4 * S, 1.2 * S), steel, (h + 4 * S) / 2)
+@@ -378,6 +393,33 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+       default:
+         add(new THREE.CylinderGeometry(def.w * S / 3, def.w * S / 3, h, 12), lightPlastic, h / 2)
+     }
++    if (HELD_UPRIGHT.has(o.type) || o.type === 'electrodes' || o.type === 'bridge') {
++      // A tool parked above the bench (the labs keep tongs, droppers and electrodes ready over the vessels)
++      // hangs in a retort-stand clamp; the stand reaches down to the bench, so nothing floats.
++      const stand = new THREE.Group()
++      const base = new THREE.Mesh(standBaseGeo, darkPlastic)
++      const pole = new THREE.Mesh(standPoleGeo, steel)
++      const arm = new THREE.Mesh(standArmGeo, steel)
++      const gy = h * 0.72
++      arm.position.set(0, gy, -STAND_Z / 2)
++      pole.position.z = base.position.z = -STAND_Z
++      stand.add(base, pole, arm)
++      for (const m of [base, pole, arm]) m.raycast = noPick // scenery: never takes a click (hidden meshes are still ray-tested)
++      stand.userData = { base, pole, gy }
++      g.add(stand)
++      g.userData.stand = stand
++    }
++    if (HELD_UPRIGHT.has(o.type)) {
++      const holder = new THREE.Group()
++      const block = new THREE.Mesh(holderGeo, lightPlastic)
++      block.position.y = 5 * S
++      const hole = new THREE.Mesh(holeGeo, darkPlastic)
++      hole.position.y = 10.05 * S
++      holder.add(block, hole)
++      block.raycast = hole.raycast = noPick
++      g.add(holder)
++      g.userData.holder = holder
++    }
+     return g
+   }
+ 
+@@ -463,7 +505,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+       shadow.scale.set(foot * 1.25, 1, foot * (isContainer(o) ? 1.25 : 0.7))
+       const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x2f7cf6, transparent: true, depthWrite: false }))
+       ring.visible = false
+-      ring.scale.setScalar(Math.max(foot * 0.62, 0.12))
++      ring.scale.setScalar(Math.max((def.w / 2 + 7) * S, 0.08)) // just outside the foot: marks the object without covering the bench around it
+       scene.add(shadow, ring)
+       node.userData.shadow = shadow
+       node.userData.ring = ring
+@@ -503,7 +545,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     const spanX = (x1 - x0) + 0.35
+     const spanY = top + 0.9 // head-room above the tallest object: a vessel lifted to pour must stay in view (0.55 was tried: T02 lifted out of view)
+     const dist = Math.max(1.6, (spanX / 2) / (Math.tan(vfov / 2) * aspect * freeW) * 1.08, (spanY / 2) / (Math.tan(vfov / 2) * freeH) * 1.15)
+-    const target = new THREE.Vector3((x0 + x1) / 2, Math.min(spanY * 0.42, 1.4), 0)
++    const target = new THREE.Vector3((x0 + x1) / 2, Math.min(spanY * 0.34, 1.2), 0)
+     const dir = new THREE.Vector3(Math.sin(0.1), 0.48, Math.cos(0.1)).normalize() // from the front, a little above and to the side: depth without vessels hiding each other
+     return { pos: target.clone().addScaledVector(dir, dist), target }
+   }
+@@ -617,6 +659,17 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+           u.paper.map.needsUpdate = true
+         }
+       }
++      const parked = !held && !o.inside && !(Math.abs(o.angle || 0) > 0.02)
++      if (u.holder) u.holder.visible = parked && !(o.y > 1)
++      if (u.stand) {
++        u.stand.visible = parked && o.y > 1
++        if (u.stand.visible) {
++          const sd = u.stand.userData
++          sd.base.position.y = -o.y * S // the bench, in the tool's own frame
++          sd.pole.position.y = -o.y * S
++          sd.pole.scale.y = o.y * S + sd.gy + 6 * S
++        }
++      }
+       if (u.hot) u.hot.material.emissive.setHex(o.on ? 0xb33a00 : 0x000000)
+       if (u.cathode) { const d = Math.min(1, (o.cuDeposit || 0) / 3e-4); u.cathode.material.color.setRGB((50 + 150 * d) / 255, (50 + 60 * d) / 255, (50 + 10 * d) / 255, SRGB) }
+       if (u.column) { const len = Math.max(2, Math.min(def.h * 0.85, (o.reading ?? 25) / 110 * def.h * 0.85)) * S; u.column.scale.y = len; u.column.position.y = 6 * S + len / 2 }
+@@ -653,7 +706,8 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+         const r = hw(def, y) - 2
+         const z = hashZ(p + 17) * Math.sqrt(Math.max(0, 1 - part.u * part.u)) * r
+         q.setFromAxisAngle(v3.set(0.3, 1, 0.2).normalize(), p * 1.7)
+-        m4.compose(v3.set((o.x + part.u * r) * S, (o.y + y) * S, z * S), q, sc.setScalar(part.s * 1.2 * S))
++        const g = (0.9 + part.s * 1.6) * S // visualization size, not a particle-size measurement
++        m4.compose(v3.set((o.x + part.u * r) * S, (o.y + y) * S, z * S), q, sc.set(g * 1.2, g * 0.55, g * 0.9))
+         partMesh.setMatrixAt(p, m4)
+         const c = PRECIPITATES[part.key].color
+         partMesh.setColorAt(p++, color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB))
+@@ -683,10 +737,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+       remove(node)
+       nodes.delete(id)
+     }
+-    // Keep a newly selected object in view (pan only; the user's zoom/angle are kept).
++    // Keep a newly selected object in view (pan only; the user's zoom/angle are kept). Not when it was selected by
++    // grabbing it: it is already under the pointer, and panning would slide the bench under the hand mid-drag.
+     if (ui.selected !== lastSel) {
+       lastSel = ui.selected
+-      const n = nodes.get(ui.selected)
++      const n = dragging == null && nodes.get(ui.selected)
+       if (n) {
+         v3.setFromMatrixPosition(n.matrixWorld).project(camera)
+         if (Math.abs(v3.x) > 0.8 || Math.abs(v3.y) > 0.85) {
+@@ -721,15 +776,32 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     const aqFrac = oil > 0.01 && level > 0 && !sinks ? levelForVolume(o.type, Math.max(0, vol - oil)) / level : 1
+     const oilFrac = sinks && level > 0 ? levelForVolume(o.type, oil) / level : 0
+     const x = liq.tex.getContext('2d')
+-    const img = x.createImageData(GW, GH)
++    const img = liq.img || (liq.img = x.createImageData(GW, GH))
+     let sum = [0, 0, 0, 0]
++    // Suspension haze, same rule as 2D: proportional to the suspended amount per litre (mol × share not settled).
++    let haze = null
++    const parts = o.vis.parts
++    if (parts.length && !tilted) {
++      const free = parts.filter(pt => !pt.settled).length / parts.length
++      const L = Math.max(1e-3, (vol - oil) / 1000)
++      for (const [k, mol] of Object.entries(o.contents.precipitates)) {
++        const pp = PRECIPITATES[k]
++        const hz = pp && mol > 1e-7 ? Math.min(0.6, (mol * free / L) * 6) : 0
++        if (hz > 0.02 && (!haze || hz > haze.a)) haze = { c: pp.color, a: hz }
++      }
++    }
+     for (let j = 0; j < GH; j += 1) {
+       for (let i = 0; i < GW; i += 1) {
+-        const c = (j + 0.5) / GH > aqFrac || (j + 0.5) / GH < oilFrac ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
++        const isOil = (j + 0.5) / GH > aqFrac || (j + 0.5) / GH < oilFrac
++        let c = isOil ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
++        // A colourless solution is nearly clear (it read as grey milk over the bench); coloured ones keep their alpha.
++        let a = (c[3] ?? 0.3) * 1.1
++        if (!isOil && Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) < 45) a *= 0.45
++        if (!isOil && haze) { c = c.map((v, n) => n < 3 ? v + (haze.c[n] - v) * haze.a : v); a = Math.max(a, 0.25 + haze.a) }
+         const k = ((GH - 1 - j) * GW + i) * 4
+         img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]
+-        img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.14, (c[3] ?? 0.3) * 1.1)))
+-        for (let n = 0; n < 4; n += 1) sum[n] += n < 3 ? c[n] : (c[3] ?? 0.3)
++        img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.06, a)))
++        for (let n = 0; n < 4; n += 1) sum[n] += n < 3 ? c[n] : a
+       }
+     }
+     // Upload only when the colours actually changed (a texture upload every frame is costly on weak GPUs).
+@@ -750,7 +822,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+     const n = GW * GH
+     if (aqFrac < 1) liq.surface.material.color.setRGB(240 / 255, 200 / 255, 60 / 255, SRGB) // seen from above: the oil on top
+     else liq.surface.material.color.setRGB(sum[0] / n / 255, sum[1] / n / 255, sum[2] / n / 255, SRGB)
+-    liq.surface.material.opacity = Math.min(0.92, Math.max(0.42, sum[3] / n + 0.25))
++    liq.surface.material.opacity = Math.min(0.92, Math.max(0.22, sum[3] / n + 0.18))
+     // Settled precipitate layer (same rule as 2D: a layer once enough grains have settled).
+     const settled = o.vis.parts.filter(pt => pt.settled)
+     liq.settled.visible = settled.length > 4 && !tilted
+@@ -758,7 +830,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+       const layer = Math.min(innerHeight(def) * 0.2, 1 + settled.length * 0.05)
+       const rr = (hw(def, layer / 2) - 0.8) * S
+       liq.settled.scale.set(rr, layer * S, rr)
+-      liq.settled.position.y = (2 + layer / 2) * S
++      liq.settled.position.y = 2 * S
+       const c = PRECIPITATES[settled[0].key].color
+       liq.settled.material.color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB)
+     }
+@@ -777,7 +849,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+   }
+   function disposeTree(root) {
+     root.traverse(n => {
+-      if (n.geometry && n.geometry !== planeGeo && n.geometry !== ringGeo) n.geometry.dispose()
++      if (n.geometry && n.geometry !== planeGeo && n.geometry !== ringGeo && !n.geometry.userData.shared) n.geometry.dispose()
+       for (const m of Array.isArray(n.material) ? n.material : [n.material]) {
+         if (!m || m.userData?.shared) continue
+         m.map?.dispose()
+@@ -969,6 +1041,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
+       streamMeshes.forEach(m => m.material.dispose())
+       planeGeo.dispose()
+       ringGeo.dispose()
++      holderGeo.dispose()
++      holeGeo.dispose()
++      standBaseGeo.dispose()
++      standPoleGeo.dispose()
++      standArmGeo.dispose()
+       for (const m of shared) { m.map?.dispose(); m.dispose() }
+       envTex?.dispose()
+       host.dispose() // disposes remaining scene geometry/materials, renderer and controls

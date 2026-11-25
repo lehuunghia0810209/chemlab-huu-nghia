@@ -22,6 +22,7 @@ export function toWorld(view, sx, sy) {
 const rgba = (c, a = c[3] ?? 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
 
 export function render(ctx, state, view, ui) {
+  pickFieldTurn()
   const { w, h } = view
   const dark = ui.theme === 'dark'
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0)
@@ -535,16 +536,35 @@ function drawLooseSolid(ctx, view, s) {
   ctx.restore()
 }
 
-let field = null
-function fieldImage() {
-  if (!field) {
+// One small canvas per vessel, refreshed only when its colours change: in WebKit each refresh costs ~1.4 ms
+// whatever the size (putImageData, or the upload on the next drawImage); 8 vessels every frame took 8.5 ms.
+// Tracer mixing takes seconds, so a refresh at most every 66 ms is not visible; drawing still runs every frame.
+const fields = new WeakMap()
+const FIELD_MS = 66
+const dirtyFields = new Set()
+let fieldTurn = null
+let renderCount = 0
+// One refresh per frame, the field that has waited longest (no vessel starves); fields of vessels no longer drawn drop out.
+function pickFieldTurn() {
+  renderCount += 1
+  const now = performance.now()
+  fieldTurn = null
+  for (const f of dirtyFields) {
+    if (!f.dirty || renderCount - f.seen > 2) { dirtyFields.delete(f); continue }
+    if (now - f.last >= FIELD_MS && (!fieldTurn || f.last < fieldTurn.last)) fieldTurn = f
+  }
+}
+function fieldImage(c) {
+  let f = fields.get(c)
+  if (!f) {
     const canvas = document.createElement('canvas')
     canvas.width = GW
     canvas.height = GH
     const ctx = canvas.getContext('2d')
-    field = { canvas, ctx, data: ctx.createImageData(GW, GH) }
+    f = { canvas, ctx, data: ctx.createImageData(GW, GH), fresh: true, dirty: false, seen: renderCount, last: 0 }
+    fields.set(c, f)
   }
-  return field
+  return f
 }
 
 function drawContainer(ctx, state, view, c, ui, ink, dark) {
@@ -587,16 +607,27 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
         // GW·GH rects, and the colour front reads as a gradient rather than blocks.
         const hw = halfWidthAt(def, 0) + 4
         const mean = fieldMean(c)
-        const img = fieldImage()
+        const img = fieldImage(c)
+        const px = img.data.data
         for (let j = 0; j < GH; j += 1) {
           for (let i = 0; i < GW; i += 1) {
             const col = cellColor(c, j * GW + i, mean) || [220, 235, 250, 0.2]
             const k = ((GH - 1 - j) * GW + i) * 4
-            img.data.data[k] = col[0]; img.data.data[k + 1] = col[1]; img.data.data[k + 2] = col[2]
-            img.data.data[k + 3] = Math.round(255 * Math.min(0.92, col[3] + 0.05))
+            const a = Math.round(255 * Math.min(0.92, col[3] + 0.05))
+            // Store, then compare the stored bytes (the clamped array rounds half to even), so a steady field stays clean.
+            const o0 = px[k]; const o1 = px[k + 1]; const o2 = px[k + 2]; const o3 = px[k + 3]
+            px[k] = col[0]; px[k + 1] = col[1]; px[k + 2] = col[2]; px[k + 3] = a
+            if (px[k] !== o0 || px[k + 1] !== o1 || px[k + 2] !== o2 || px[k + 3] !== o3) img.dirty = true
           }
         }
-        img.ctx.putImageData(img.data, 0, 0)
+        img.seen = renderCount
+        if (img.dirty) dirtyFields.add(img) // back in the queue after a tilt or low-quality spell dropped it
+        if (img.fresh || img === fieldTurn) {
+          img.ctx.putImageData(img.data, 0, 0)
+          img.fresh = img.dirty = false
+          img.last = performance.now()
+          if (img === fieldTurn) fieldTurn = null
+        }
         ctx.imageSmoothingEnabled = true
         ctx.drawImage(img.canvas, -hw, -2 - aqTop, 2 * hw, Math.max(0.5, aqH))
         if (oil > 0.01) {

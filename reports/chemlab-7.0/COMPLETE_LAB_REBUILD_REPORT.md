@@ -1,24 +1,204 @@
-# ChemLab 7.0 — Complete Lab Rebuild Report (bản 2)
+# ChemLab 7.0 — Complete Lab Rebuild Report (bản 3)
 
-Cập nhật 24/11/2026. Báo cáo này viết cho chủ sở hữu để nghiệm thu.
+Cập nhật 25/11/2026. Báo cáo này viết cho chủ sở hữu để nghiệm thu. **§0 là phần mới của bản 3**; từ §1 trở đi là nội dung bản 2, giữ lại làm lịch sử.
 
 | Mục | Giá trị |
 |---|---|
 | Repo | `D:\EduLab\ChemLab` |
 | Nhánh | `feature/chemlab-7.0-dynamic-laboratory` |
 | Bản 1 | `a14ab46` → `ea7ee23` (đã commit cục bộ) |
-| Bản 2 | Tiếp từ `ea7ee23`; **chưa commit**, xem §19 |
+| Bản 2 | Tiếp từ `ea7ee23`; commit cục bộ `51ea6f7` |
+| Bản 3 | Tiếp từ `51ea6f7`; commit cục bộ, xem §19 |
 
 **Phạm vi:**
 - Chỉ sửa Dynamic Lab.
 - Không động tới ChemAI, Groq, Cloudflare, Production 6.7.0 hay các Lab khác.
 - Không push, không merge, không deploy, không đổi version.
 
-**Trạng thái: PARTIAL.** Các lý do chưa đạt nghiệm thu kỹ thuật toàn phần nằm ở §20; trong đó quan trọng nhất là:
-1. **WebKit chế độ "Cao"** dưới 30 fps trong điều kiện máy lúc đo. Bản cũ cho số đo y hệt khi đo xen kẽ (§15).
-2. **3D đã nâng cấp nhưng chưa ở mức "sản phẩm"** như directive mô tả (§10).
-3. **Các giới hạn khoa học còn lại** (§18).
-4. **Toàn bộ thay đổi bản 2 chưa commit**, vì lệnh `git commit` bị bộ phân loại quyền chặn.
+**Trạng thái: PARTIAL.** Xem bảng nghiệm thu §0.9. Hai lý do chính:
+1. **Phức amin chưa được mô hình hóa.** Lab báo trung thực "Chưa hỗ trợ", nhưng hình vẫn hiện kết tủa.
+2. **3D đã nâng cấp rõ rệt nhưng chưa ở mức sản phẩm hoàn chỉnh.**
+
+## 0. Bản 3 — đợt hoàn thiện sau checkpoint `51ea6f7` (25/11/2026)
+
+Bản 2 đã được commit cục bộ thành `51ea6f7` (67 file; danh sách ở §19). Bản 3 tiếp tục từ đó, tập trung vào 5 phần chủ sở hữu yêu cầu: 3D, Sandbox, kiểm chứng khoa học, hiệu năng, và kiểm thử độc lập.
+
+### 0.1 Hiệu năng WebKit — nguyên nhân đã đo được
+
+**Đính chính bản 2.** P01/P01b đo **canvas 2D** (8 cốc, 480 hạt), không phải 3D. Bản 2 ghi "WebKit chế độ Cao 3D" là quy sai.
+
+Phân tích từng phần của một khung hình bằng đo đạc tạm trong vòng lặp (đã gỡ sau khi đo), cảnh P01, WebKit:
+
+| Phần | Bản 2 | Bản 3 |
+|---|---|---|
+| `putImageData` (ảnh lưới màu 10×14 của 8 cốc) | 8,2–9,4 ms/khung (8 lần) | 1 lần/khung, cốc chờ lâu nhất trước, mỗi cốc tối đa 15 Hz |
+| Toàn bộ vẽ 2D (`render`) | 11–14 ms | 6–8 ms |
+| Engine (`advance`) | 0,6–1 ms | không đổi |
+| Panel DOM | 0,1–0,2 ms | không đổi |
+
+Kiểm tra loại trừ (WebKit, bàn trống):
+
+| Tình huống | fps |
+|---|---|
+| Vòng lặp không vẽ gì | 62 |
+| Chỉ 1 lệnh `fillRect` lên canvas mỗi khung | 38–40 |
+| Tắt `backdrop-filter`, `filter`, bóng đổ, animation, nền trang, `sticky`, bo góc, `overflow`; canvas khớp lưới pixel | 38–41 (không đổi) |
+| Trang HTML trống chỉ có canvas 1440×900 | 120+ |
+
+**Kết luận:**
+- Khoảng 25 ms mỗi khung là chi phí WebKit (bản Playwright trên Windows) tổ hợp canvas trong trang ChemLab.
+- Chi phí này **không phụ thuộc nội dung vẽ**. Tôi chưa tìm ra yếu tố nào của trang gây ra nó.
+- Phần tôi kiểm soát được là chi phí JS, đã giảm khoảng một nửa.
+
+**A/B 5 lượt xen kẽ trên cùng máy** (bản cũ `ea7ee23`, bản mới là bản 3; P01 WebKit):
+
+| | Cao: fps (p95) | Tiết kiệm: fps |
+|---|---|---|
+| Bản cũ | 30,0 (43) · 29,9 (42) · 29,3 (43) · 31,9 (37) · 30,7 (40) — **trung bình 30,4** | 36,6–39,9 — trung bình 37,5 |
+| Bản 3 | 32,6 (38) · 32,8 (39) · 31,5 (42) · 32,0 (42) · 32,4 (40) — **trung bình 32,3** | 36,4–38,4 — trung bình 37,2 |
+
+Chế độ Tiết kiệm không dùng ảnh lưới màu nên không đổi, đúng như dự kiến.
+
+**WebKit trong lượt kiểm thử đầy đủ cuối:** Cao 33,5 fps (p95 39 ms), Tiết kiệm 37,1 fps. Đây là 1 lượt đo; kết luận dựa trên trung bình 5 lượt A/B ở trên.
+
+**Máy chậm thì tự chuyển chế độ, có báo:**
+- Nếu khung hình dưới 25 fps liên tục trong 4 s ở chế độ "Cao", và học sinh chưa tự chọn chế độ, lab chuyển **một lần** sang "Tiết kiệm".
+- Thông báo hiện ra: "Máy đang chạy chậm (khoảng N khung hình/giây) nên đã chuyển sang Đồ họa: Tiết kiệm. Kết quả thí nghiệm không đổi; đổi lại ở menu ⋯."
+- Lựa chọn của học sinh không bao giờ bị ghi đè.
+- Sau review: không tính các lúc tua nhanh hay khựng (khung dài hơn 0,5 s, ví dụ lúc mở 3D hoặc cửa sổ bị che). Không đổi thiết lập 3D đã lưu. Không hiện nhầm thông báo "máy không có GPU".
+- Test P03 (Chromium, giả lập CPU chậm 10× qua CDP) kiểm tra cả hai ý trên.
+- P01 "Cao" chọn chế độ qua menu và kiểm tra nút vẫn ghi "Cao" sau khi đo. Như vậy phép đo luôn đúng là chế độ Cao; **ngưỡng 30 fps giữ nguyên**.
+
+### 0.2 T02 chập chờn — nguyên nhân đã xác nhận qua mã nguồn
+
+- **Nguyên nhân:** `update()` trong `render3d.js` tự lia camera (`flyTo` 420 ms) khi vật **vừa được chọn** nằm gần mép khung nhìn. Nhấn để cầm cũng là chọn, nên khi cái kẹp nằm sát mép, camera lia trong lúc học sinh đang kéo và cảnh trượt dưới con trỏ.
+- **Vì sao chập chờn:** vị trí chiếu của kẹp phụ thuộc bố cục, mà bố cục phụ thuộc font của từng trình duyệt.
+- **Sửa:** không tự lia khi lựa chọn đến từ thao tác cầm vật.
+- Bản cũ cũng hỏng test này vì đúng lỗi đó; trước đây tôi đã kết luận sai rằng nguyên nhân là môi trường.
+- **Sửa test liên quan:** sau khi đổi khung hình, điểm "vùng trống" (470, 230 mm) của T02 rơi dưới thanh thao tác. Test giờ dùng (470, 150 mm) và kiểm tra trước rằng điểm đó đúng là canvas.
+
+### 0.3 Kiểm chứng khoa học
+
+**Manifest 72 mục, theo mức kiểm chứng** (sinh tự động, `final/REACTION_SUPPORT_MANIFEST.md`):
+
+| Trạng thái | Số mục | Kịch bản chạy trên engine | Unit test riêng | Chưa kiểm chứng |
+|---|---|---|---|---|
+| Được mô hình hóa | 30 | 26 | 4 | 0 |
+| Xấp xỉ giáo dục | 1 | 0 | 1 | 0 |
+| Không phản ứng | 5 | 5 | 0 | 0 |
+| Chưa hỗ trợ | 28 | 20 | 6 | **2** |
+| Bị chặn vì an toàn | 8 | 0 | 8 | 0 |
+
+**Lỗi khoa học tìm thấy nhờ viết test cho các mục "Chưa hỗ trợ":**
+1. **Phức amin.**
+   - Lỗi: CuSO₄ cộng NH₃ dư hiện Cu(OH)₂↓ mà không báo gì, vì điều kiện cũ là "pH > 9", trong khi dung dịch đệm NH₃/NH₄⁺ chỉ có pH 8,95.
+   - Thực tế: NH₃ tự do còn khoảng 0,125 M, nên [Cu(NH₃)₄]²⁺ chiếm ưu thế (β₄·[NH₃]⁴ ≈ 10⁹).
+   - Sửa: điều kiện mới dựa trên NH₃ tự do (tính từ Ka của NH₄⁺), vượt β^(−1/n); áp dụng cho Ag⁺, Zn²⁺, Cu²⁺.
+   - Sau review: điều kiện được làm đúng hơn nữa, dùng **tỉ lệ kim loại nằm trong phức > 5 %**. Tỉ lệ này tính từ ion tan và từ kết tủa tan theo Ksp·β·[NH₃]ⁿ/[anion]^q, có cân bằng khối lượng anion. Nhờ vậy AgI không bị báo tan trong NH₃, AgCl thì có; và vết NH₃ trên Cu(OH)₂ trong kiềm mạnh không còn bị báo nhầm.
+2. **Điện phân.**
+   - NH₄⁺ (NH₃ trong dung dịch axit) không còn bị coi là chất gây nhiễu.
+   - Khi NH₃ dư giữ hết Cu, lab báo "Chưa hỗ trợ: phức amin", thay vì báo sai "đã hết Cu²⁺ … giai đoạn điện phân nước".
+
+**Test mới:**
+- `safety: every blocked condition…` kiểm tra đủ 8 điều kiện bị chặn.
+- `electrolysis refuses every interference…` kiểm tra **đúng lý do được báo** cho từng chất gây nhiễu, cộng 2 trường hợp **không** phải nhiễu: Ag⁺ đã thành AgCl, và NH₄⁺.
+  - Hai quy tắc I⁻ và Ag⁺ không thể xảy ra trong dung dịch CuCl₂: I⁻ bị Cu²⁺ oxi hóa ngay khi trộn, Ag⁺ kết tủa thành AgCl. Chúng được giữ làm chốt chặn và manifest ghi là **chưa kiểm chứng**; đây là 2 mục "chưa kiểm chứng" duy nhất.
+- `ammine complexes…`: AgI không tan, AgCl tan, không ra hint Ag₂O khi NH₃ dư, không báo nhầm khi có Cu(OH)₂ trong kiềm mạnh, và điện phân CuSO₄ + NH₃ (không có Cl⁻) không bị gọi là "phức".
+- 20 kịch bản "Chưa hỗ trợ" chạy bằng hóa chất thật.
+
+Sau review của Antigravity (§0.6), unit test tăng từ 95 lên **116**.
+
+### 0.4 Sandbox
+
+- Journey X06 làm **toàn bộ 26 thẻ "Khám phá" bằng thao tác giao diện thật**:
+  - Bấm "Bày dụng cụ", chọn tốc độ 4×.
+  - Rót bằng thanh thao tác, hoặc dùng kẹp/thìa để "Lấy" rồi "Thả", xác nhận hộp cảnh báo an toàn khi có.
+  - Chờ kết quả, kiểm tra đúng kỳ vọng của manifest và bảo toàn chất.
+- Kết quả: **26/26 đạt trên Chromium, Firefox và WebKit** (§0.8).
+
+### 0.5 3D
+
+Ảnh "trước" và "sau" cùng script, cùng cảnh. Mỗi lượt chụp ở một thư mục riêng: `final/round3/before` và `final/round3/after-final`. Các lượt trung gian `after-a`, `after-b`, `after-c` giữ lại trên máy nhưng không commit.
+
+| Vấn đề thấy trên ảnh "trước" | Sửa |
+|---|---|
+| Dụng cụ (kẹp, đũa, thìa, ống nhỏ giọt, điện cực, cầu muối, giấy quỳ) lơ lửng giữa không trung: các bài đặt chúng ở y = 60–150 mm | Khi dụng cụ ở trên cao và không ai cầm, vẽ giá đỡ thí nghiệm (đế, cột, tay kẹp) chạm mặt bàn. Khi đặt trên bàn, vẽ khối giá nhỏ. Giá đỡ không nhận click |
+| Đũa, ống nhỏ giọt gần như vô hình | Vật liệu thủy tinh mảnh, độ đục 0,42 |
+| Dung dịch không màu trông như sữa xám | Gần trong suốt (độ đục × 0,45 khi màu không bão hòa) |
+| Kết tủa gần như không thấy | Hạt dạng vảy, lớn hơn (ghi rõ là kích thước minh họa); lớp lắng hình mô thoải sát thành cốc, ẩn khi cốc rỗng. Lớp đục huyền phù thêm trong 3D đã bị **gỡ** sau review, vì engine đã pha màu kết tủa vào dung dịch và áp hai lần làm mất màu nâu của I₂ |
+| Ống nghiệm đứng một mình trên bàn | Giá dây mảnh (không che đáy ống) khi ống không nằm trên giá ống nghiệm |
+| Vòng chọn to gấp 1,6 lần đế cốc | Ôm sát đế |
+| Không thấy bóng tiếp xúc trên bàn xanh than | Bàn epoxy xám |
+| Thẻ "Khám phá" bị nút × đè | Thanh thẻ cuộn ngang trong ngăn hẹp |
+| Vật nằm ở 1/3 dưới khung, phía trên là tường trống | Hạ điểm nhìn (0,42 → 0,34 chiều cao) |
+| Camera lia khi vừa cầm vật | Xem §0.2 |
+
+Đánh giá trung thực: rõ hơn nhiều ở mặt "vật đứng ở đâu" và "nhìn thấy hiện tượng". Tuy vậy vẫn là hình procedural, không có mô hình .glb, khúc xạ thật hay bóng đổ thật (shadow map), nên **chưa thể gọi là mức sản phẩm hoàn chỉnh**.
+
+### 0.6 Review độc lập của Antigravity (AI phụ, chỉ đọc)
+
+Lệnh: `agy -p … --mode plan --model gemini-4-neon-high`. Antigravity chỉ đọc mã, diff và ảnh chụp, không chạy lệnh; nó **không thao tác trình duyệt**. Prompt, diff và kết quả nằm ở `final/round3/agy/`.
+
+| Phát hiện (mức Antigravity đánh giá) | Kiểm chứng | Xử lý |
+|---|---|---|
+| AgI + NH₃ bị báo tan thành phức (P1) | Tái hiện: tỉ lệ phức 12,8 % (sai) | Tính độ tan phức có cân bằng khối lượng anion → 0,02 %; có test |
+| Vết NH₃ trên Cu(OH)₂ trong kiềm mạnh báo nhầm phức (P1) | Đúng theo phân tích mã | Điều kiện theo tỉ lệ phức; có test |
+| Cu(OH)₂ vẫn hiện khi NH₃ dư lẽ ra đã hòa tan thành phức (P1) | Đúng | **Chưa sửa**: phức amin chưa được mô hình hóa. Lab chỉ báo "Chưa hỗ trợ" trong bảng quan sát; xem §0.7 |
+| Hint Ag₂O và hint phức hiện cùng lúc (P2) | Đúng | Ag⁺ nằm trong phức không còn tính là Ag⁺ tự do; có test |
+| Điện phân kiểm tra phức trước khi kiểm tra Cl⁻ và dung môi (P2) | Đúng | Chỉ kiểm tra khi có Cl⁻ và dung dịch là nước; có test |
+| Hằng số β là giá trị ở lực ion cao (P3) | Không tra được nguồn gốc độc lập | Ghi chú trong mã: hint chỉ mang tính định tính |
+| Bộ nhớ đệm lưới màu: lỗi làm tròn nửa số, bị kẹt ảnh cũ (P1) | Đúng theo phân tích mã | So byte đã lưu; lưới "bẩn" được đưa lại vào hàng chờ |
+| Bộ tự chuyển chế độ kích hoạt nhầm khi tua nhanh/khựng, ghi đè thiết lập 3D, cờ cũ còn sót (P1) | Đúng | Sửa cả ba |
+| Lớp đục kết tủa 3D bị áp hai lần, màu I₂ mất (P2) | Đúng: ảnh `after-c` cho thấy màu xám | Gỡ lớp đục; độ đục chuyển mượt theo độ bão hòa màu; ẩn lớp lắng khi cốc rỗng |
+| Giá đỡ xuyên qua bình, giấy quỳ vẫn lơ lửng, tay kẹp không chạm vật (P1) | Đúng một phần | Ẩn giá khi dụng cụ nhúng/đứng trong bình; thêm giấy quỳ; kẹp ở thanh ngang của điện cực và vòm cầu muối |
+| Test điện phân không kiểm tra lý do; quy tắc I⁻/Ag⁺ không thể xảy ra nhưng ghi "đã kiểm chứng" (P1) | Đúng | Kiểm tra đúng lý do; manifest ghi 2 mục chưa kiểm chứng |
+| Test an toàn chỉ kiểm tra mức "chặn" (P2) | Đúng | Kiểm tra cả lý do chặn |
+| P03 có thể đạt mà không chứng minh máy đã chậm (P2) | Đúng | Đo fps lúc throttle: phải dưới 25 |
+| Đổi toạ độ T02 có thể che một hồi quy khung hình (P1) | Đã xem xét | Không đổi: thanh thao tác vốn phủ mép trên canvas, và khung hình đã tính phần này (`ins.t`). Test "nhấc cốc lên" T02 đầu vẫn đạt trên cả 3 trình duyệt |
+| Thẻ "Khám phá" bị nút × đè; cảnh bằng chứng có cốc chồng lên nhau | Đúng | Thanh thẻ cuộn ngang; script chụp dọn bàn trước khi dựng cảnh |
+
+### 0.7 Giới hạn còn lại sau bản 3
+
+- **Phức amin** ([Cu(NH₃)₄]²⁺, [Zn(NH₃)₄]²⁺, [Ag(NH₃)₂]⁺) chưa được mô hình hóa. Khi NH₃ dư, bình vẫn hiện kết tủa hiđroxit, kèm cảnh báo "Chưa hỗ trợ". Ngoài thực tế, dung dịch lẽ ra trong và có màu xanh thẫm.
+- **3D** vẫn là hình procedural: không có mô hình .glb, khúc xạ thật hay bóng đổ thật. Cột giá đỡ phía sau cốc có thể rối mắt khi nhìn cận cảnh.
+- **WebKit:** sàn khoảng 25 ms/khung khi canvas được cập nhật, chưa tìm ra nguyên nhân. Chế độ Cao đạt quanh 30–33 fps, rất sát ngưỡng; máy tải nặng sẽ không đạt.
+- **Chưa kiểm thử** trên GPU thật, điện thoại thật, hay bằng một lượt QA tương tác độc lập trên trình duyệt (Antigravity không có công cụ trình duyệt).
+- 2 quy tắc chốt chặn điện phân (I⁻, Ag⁺) không kiểm chứng được bằng thí nghiệm, vì không thể tạo ra trong dung dịch CuCl₂.
+- X06 kiểm tra trạng thái engine sau thao tác UI, chưa kiểm tra chữ trong bảng quan sát của từng thẻ.
+
+### 0.8 Kiểm thử bản 3 (lượt đầy đủ cuối, cùng một bản build)
+
+| Lệnh | Kết quả |
+|---|---|
+| `node scripts/test-dlab.mjs` | **116/116 PASS** |
+| `npm run check` | PASS (exit 0) |
+| `npm run check:browser` | **448/448 PASS** |
+| `node scripts/dlab-e2e.mjs` Chromium | **93/93 PASS**; P01 60/60 fps |
+| Firefox | **89/89 PASS**; P01 41,4 / 39,3 fps. P03 và TC320–768 chỉ chạy trên Chromium (CDP) |
+| WebKit | **89/89 PASS**; P01 33,5 / 37,1 fps; T02 PASS |
+| `node scripts/dlab-guided-walk.mjs` | **5/5 bài hoàn thành** bằng thao tác giao diện; 0 lỗi console; 0 yêu cầu ChemAI |
+| X06 (26 thẻ Khám phá qua UI) | 26/26 trên cả 3 trình duyệt (nằm trong các con số trên) |
+
+Bằng chứng: `final/round3/e2e-{chromium,firefox,webkit}/`, `final/round3/walk/`, `final/round3/before/`, `final/round3/after-final/`.
+
+### 0.9 Bảng nghiệm thu bản 3
+
+| # | Tiêu chí (Acceptance gate của chủ sở hữu) | Trạng thái |
+|---|---|---|
+| 1 | Không còn lỗi P0/P1 đã xác nhận trong phạm vi hỗ trợ | **PARTIAL**: các P1 của review đã sửa và có test, trừ phức amin. Phức amin nằm ngoài phạm vi hỗ trợ và được báo "Chưa hỗ trợ", nhưng hình vẫn hiện kết tủa |
+| 2 | Hiện tượng chủ chốt đúng với mô hình đã công bố | PASS: manifest 72 mục, 70 mục có kiểm chứng |
+| 3 | 5/5 Guided Lab bằng tương tác thật | PASS |
+| 4 | Sandbox ổn định | PASS: 26/26 thẻ qua UI trên 3 trình duyệt; X01–X05 |
+| 5 | 3D nâng cấp rõ rệt về hình ảnh và khả năng dùng | PARTIAL: rõ rệt hơn (§0.5) nhưng chưa phải mức sản phẩm hoàn chỉnh |
+| 6 | Không còn lỗi chọn nhầm, thả nhầm, sai trạng thái nghiêm trọng | PASS trong phạm vi test (T01–T02, G10, X02); đã sửa lỗi camera lia khi đang cầm |
+| 7 | Hoàn tác, Đặt lại, Lưu, Mở đáng tin cậy | PASS (S18–S20, X02, X04, G10) |
+| 8 | Build và hồi quy đạt | PASS (§0.8) |
+| 9 | FPS và cross-browser báo cáo đầy đủ | PASS: báo cả kết quả sát ngưỡng và nguyên nhân WebKit |
+| 10 | Ảnh 2D/3D thực tế | PASS (`final/round3/`) |
+| 11 | Giới hạn ghi rõ | PASS (§0.7) |
+
+**Đề xuất: PARTIAL.** Chưa đề xuất nghiệm thu Full Product, vì mục 1 (phức amin) và mục 5 (3D) chưa đạt trọn.
+
 
 ## 1. Executive summary
 
@@ -356,12 +536,10 @@ Antigravity không sửa dòng code nào.
 | `a306197` | Bản 1: 3D dầu, catot, dây |
 | `15e6d45` | Bản 1: review 2 |
 | `ea7ee23` | Bản 1: báo cáo |
+| `51ea6f7` | Bản 2 (67 file), commit cục bộ sau khi chủ sở hữu cho phép |
+| (commit bản 3) | Bản 3: phức amin, test manifest, hiệu năng 2D WebKit, sửa T02, 3D, X06/P03, báo cáo và bằng chứng `final/round3/` |
 
-**Bản 2: chưa commit.** Lệnh `git commit -- <đường dẫn cụ thể>` bị bộ phân loại quyền của Claude Code chặn ("Destructive or Unwanted Actions"), dù directive cho phép commit cục bộ. Tôi không tìm cách lách. Thay đổi nằm trong working tree:
-- Sửa: `src/dlab/{data/materials.js,data/reactions.js,engine/chemistry.js,engine/processes.js,ui/dlabApp.js,ui/dlab.css,ui/labels.js,ui/render2d.js,ui/render3d.js}`, `scripts/test-dlab.mjs`, `scripts/lib/dlab-journeys.mjs`, `scripts/dlab-guided-walk.mjs`, `reports/chemlab-7.0/{COMPLETE_LAB_REBUILD_REPORT.md,PROGRESS.md}`.
-- Mới: `src/dlab/data/manifest.js`, `scripts/dlab-manifest.mjs`, `scripts/dlab-final-evidence.mjs`, `reports/chemlab-7.0/final/`.
-
-Các file `.claude/` của chủ sở hữu, `QA_CODEX_FULL_AUDIT.md` và `qa-codex/` không được đụng tới.
+Mỗi commit chỉ stage đúng file theo pathspec. Không đụng tới các file `.claude/` của chủ sở hữu (11 file đang staged, cùng `.claude/settings.json`), `QA_CODEX_FULL_AUDIT.md` và `qa-codex/`. Các thư mục ảnh trung gian `final/round3/after-{a,b,c}` không commit. Không push, không merge, không deploy.
 
 ## 20. Acceptance checklist (mục XI của directive)
 

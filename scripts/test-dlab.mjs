@@ -1,6 +1,8 @@
 // ChemLab 7.0 Dynamic Lab — unit and integration tests.
 // Expected values are computed independently here (closed-form), not read back from the engine.
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { ELECTRO } from '../src/dlab/data/reactions.js'
 import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
 import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
@@ -1103,6 +1105,88 @@ test('review 3: salts before redox, no redox in base, indicator drops keep pH, o
   assert.match(a.s().log.map(x => x.text).join('|'), /Ag₂O/)
 })
 
+// Every INVALID manifest entry: the command is refused by safety.js (blocked, not just warned).
+test('safety: every blocked condition in the manifest is refused', () => {
+  const block = (r, why) => { assert.equal(r.verdict?.level, 'block', JSON.stringify(r.verdict)); if (why) assert.match(r.verdict.reasons.join(' | '), why) }
+  const naInto = (vessel, reagent, mL) => {
+    const l = lab(61); const v = l.put(vessel, 300); if (reagent) l.fill(v, reagent, mL)
+    const k = l.put('tongs', 300, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
+    return l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true })
+  }
+  block(naInto('beaker250', 'hcl', 120), /axit/) // Na + acid
+  block(naInto('testTube', 'water', 15), /miệng hẹp/); block(naInto('cylinder', 'water', 50), /miệng hẹp/) // narrow mouth
+  block(naInto('beaker250', 'water', 30), /50 mL/) // < 50 mL water
+  for (const type of ['cylinder', 'dish']) { // not heat-resistant
+    const l = lab(62); const b = l.put('burner', 200); const v = l.put(type, 450)
+    l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { record: false })
+    block(l.sim.dispatch({ type: 'move', id: v.id, x: 200, y: 0 }), /không chịu nhiệt/)
+  }
+  { const l = lab(63); const p = l.put('power', 300); block(l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 15 }, { confirmed: true }), /12 V/) } // > 12 V
+  { // wrong tool both ways
+    const l = lab(64); const sp = l.put('spatula', 300, { y: 160 }); const k = l.put('tongs', 400, { y: 160 })
+    block(l.sim.dispatch({ type: 'pick', tool: sp.id, reagent: 'na', massG: 0.1 }, { confirmed: true }), /dùng kẹp/)
+    block(l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'nacl-s', massG: 1 }, { confirmed: true }), /dùng thìa/)
+    block(l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'na', massG: 0.5 }, { confirmed: true }), /giới hạn an toàn/) // over the model's safe amount
+  }
+  { // a cracked vessel is not heated
+    const l = lab(65); const b = l.put('burner', 200); const v = l.put('beaker100', 450); l.fill(v, 'water', 20)
+    l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { record: false })
+    v.condition = 'CRACKED' // set up the precondition directly (cracking itself is covered by the damage test)
+    block(l.sim.dispatch({ type: 'move', id: v.id, x: 200, y: 0 }, { confirmed: true }), /nứt/)
+  }
+})
+
+// Every electrolysis interference in the manifest: the cell refuses, and no Cu or Cl₂ is invented.
+test('electrolysis refuses every interference: no Cu, no Cl₂, the reason is named', () => {
+  // Amounts above the 1 % trace threshold (KI is 0,1 M). In I⁻'s case the redox on mixing leaves I₂, also refused.
+  // Ag⁺ cannot stay free next to CuCl₂'s chloride (AgCl, Ksp 1,8·10⁻¹⁰), so it is checked as "no refusal" below.
+  const ADD = { 'I-': [['ki', 20]], I2: [['ki', 20]], 'Fe3+': [['fecl3', 5]], 'Fe2+': [['feso4', 5]], 'NO3-': [['hno3', 10]], NH3: [['nh3', 60]] }
+  for (const x of ELECTRO.electrolysisCuCl2.interferes) {
+    if (!ADD[x.ion]) continue
+    const l = lab(70); const B = l.put('beaker250', 300); l.fill(B, 'cucl2', x.ion === 'NH3' ? 10 : 40) // NH₃ must be in excess over 2·Cu²⁺
+    for (const [r, mL] of ADD[x.ion]) l.fill(B, r, mL)
+    const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
+    l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(5)
+    assert.ok(!(l.s().gas.Cl2 > 0) && !(byId(l.s(), el.id).cuDeposit > 0), `${x.ion}: nothing invented`)
+    const status = byId(l.s(), p.id).status
+    // I⁻ never stays in CuCl₂ (the redox on mixing turns it into CuI + I₂), so its case refuses with the I₂ reason.
+    const expected = x.ion === 'I-' ? ELECTRO.electrolysisCuCl2.interferes.find(y => y.ion === 'I2').why : x.why
+    assert.ok(status.includes(expected), `${x.ion}: ${status}`)
+    assert.equal(checkInvariants(l.s()), null)
+  }
+  // Not interferences: Ag⁺ taken out as AgCl, and NH₄⁺ (a little NH₃ in the acidic CuCl₂ is all protonated).
+  for (const [r, mL] of [['agno3', 20], ['nh3', 3]]) {
+    const l = lab(71); const B = l.put('beaker250', 300); l.fill(B, 'cucl2', 40); l.fill(B, r, mL)
+    const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
+    l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(5)
+    assert.match(byId(l.s(), p.id).status, /Đang điện phân/, `${r}: ${byId(l.s(), p.id).status}`)
+  }
+})
+
+// Independent review round 3: the ammine hints follow the complex share, not the mere presence of NH₃.
+test('ammine complexes: AgI stays, AgCl dissolves, no Ag₂O with excess NH₃, no false hint over Cu(OH)₂ in strong base', () => {
+  const notes = l => Object.keys(l.s().notes)
+  const mixT = (fills, run = 1) => { const l = lab(80); const B = l.put('beaker250', 300); for (const [r, mL] of fills) l.fill(B, r, mL); l.sim.runFor(run); return { l, B } }
+  // AgI does not dissolve in ammonia (Ksp·β₂ ≈ 10⁻⁹); AgCl does.
+  { const { l } = mixT([['agno3', 10], ['ki', 10], ['nh3', 10]]); assert.ok(!notes(l).some(k => k.startsWith('ionhint-Ag++NH3')), 'AgI + NH₃: no complex hint') }
+  { const { l } = mixT([['agno3', 10], ['nacl', 10], ['nh3', 20]]); assert.ok(notes(l).some(k => k.startsWith('ionhint-Ag++NH3')), 'AgCl + excess NH₃: complex hint') }
+  // AgNO₃ + excess NH₃: the complex, not Ag₂O as well.
+  { const { l } = mixT([['agno3', 10], ['nh3', 10]]); const n = notes(l); assert.ok(n.some(k => k.startsWith('ionhint-Ag++NH3'))); assert.ok(!n.some(k => k === `ionhint-Ag+-${l.s().objects[0].id}` || /^ionhint-Ag\+-o/.test(k)), `no Ag₂O hint: ${n}`) }
+  // Cu(OH)₂ in strong base with a trace of NH₃: negligible complex, no hint.
+  { const { l } = mixT([['cucl2', 10], ['naoh', 30], ['nh3', 0.2]]); assert.ok(!notes(l).some(k => k.startsWith('ionhint-Cu2++NH3')), 'trace NH₃ over Cu(OH)₂ in NaOH') }
+  // Excess NH₃ over CuSO₄: the deep-blue complex is reported.
+  { const { l } = mixT([['cuso4', 5], ['nh3', 50]]); assert.ok(notes(l).some(k => k.startsWith('ionhint-Cu2++NH3'))) }
+  // Electrolysis: CuSO₄ + NH₃ (no chloride) and the trace-NH₃-in-base case are not called an ammine interference.
+  for (const fills of [[['cuso4', 10], ['nh3', 30]], [['cucl2', 10], ['naoh', 30], ['nh3', 0.2]]]) {
+    const { l, B } = mixT(fills, 0.1)
+    const el = l.put('electrodes', 300, { y: 10 }); const p = l.put('power', 450)
+    l.sim.dispatch({ type: 'wire', from: p.id, to: el.id }); l.sim.dispatch({ type: 'power', id: p.id, on: true, volts: 6 }, { confirmed: true }); l.sim.runFor(1)
+    assert.doesNotMatch(byId(l.s(), p.id).status, /phức/, `${JSON.stringify(fills)}: ${byId(l.s(), p.id).status}`)
+    assert.ok(!(byId(l.s(), B.id).contents.precipitates.CuI > 0))
+  }
+})
+
 // Registry: every manifest entry with a demo is run on the real engine and must give what it claims.
 function runDemo(d) {
   const l = lab(77)
@@ -1131,6 +1215,7 @@ for (const e of MANIFEST.filter(x => x.demo)) {
     if (x.oilBelow) assert.ok(oilBelow(c.contents), 'oil below')
     if (x.unsupported) assert.ok(c.unsupported, 'reported as unsupported')
     if (x.noPH) assert.equal(c.pH, null)
+    if (x.hint) assert.ok(Object.keys(s.notes).some(k => k.startsWith(x.hint)), `hint ${x.hint} reported`)
     if (e.status === 'NO_REACTION' || e.status === 'UNSUPPORTED') {
       assert.ok(!Object.values(c.gasOut || {}).some(v => v > 0), 'no gas invented')
       assert.ok(!Object.values(solid?.coat || {}).some(v => v > 0), 'no deposit invented')
@@ -1142,6 +1227,9 @@ test('manifest: every entry is complete and every Sandbox suggestion has a demo'
   for (const e of MANIFEST) for (const k of ['id', 'status', 'title', 'inputs', 'conditions', 'products', 'observe', 'model', 'source', 'limits']) assert.ok(e[k] != null && e[k] !== '', `${e.id}.${k}`)
   assert.equal(new Set(MANIFEST.map(e => e.id)).size, MANIFEST.length, 'unique ids')
   assert.ok(DISCOVER.length >= 20 && DISCOVER.every(e => e.demo))
+  // An entry without a demo must name unit tests that exist; the report counts the rest as not verified.
+  const titles = [...readFileSync(new URL(import.meta.url), 'utf8').matchAll(/^test\('([^']+)'/gm)].map(m => m[1])
+  for (const e of MANIFEST) for (const t of e.tests || []) assert.ok(titles.some(x => x.startsWith(t)), `${e.id}: no test titled "${t}…"`)
 })
 
 const failed = results.filter(r => !r.pass)

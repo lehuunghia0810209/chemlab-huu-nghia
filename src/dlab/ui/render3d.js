@@ -42,7 +42,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   const shared = new Set()
   const mat = (m) => { m.userData.shared = true; shared.add(m); return m }
   const benchTex = speckleTexture()
-  const benchMat = mat(new THREE.MeshStandardMaterial({ color: 0x46536a, map: benchTex, roughness: 0.52, metalness: 0.05 })) // slate epoxy resin top (dark enough for glass, light enough for shadows)
+  const benchMat = mat(new THREE.MeshStandardMaterial({ color: 0x7a879b, map: benchTex, roughness: 0.55, metalness: 0.05 })) // grey epoxy resin top: glass edges still read, and contact shadows are visible (they were lost on the darker top)
   const bench = new THREE.Mesh(new THREE.BoxGeometry(30, 0.12, 3.2), benchMat)
   bench.position.set(5, -0.06, 0.2)
   const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 30, 16), benchMat)
@@ -64,6 +64,8 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
 #include <opaque_fragment>`)
   }
   glassMat.customProgramCacheKey = () => 'dlab-fresnel-glass'
+  // Thin glass (rod, dropper, pipette) is a few mm across: at the vessel opacity it vanished and the tool seemed to float.
+  const thinGlassMat = mat(new THREE.MeshStandardMaterial({ color: 0xdbe8f5, metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.42, envMapIntensity: 1.8, depthWrite: false }))
   const rimMat = mat(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }))
   const tickMat = mat(new THREE.MeshBasicMaterial({ color: 0x5b6b80, transparent: true, opacity: 0.7, depthWrite: false }))
   const steel = mat(new THREE.MeshStandardMaterial(high ? { color: 0xb9c0c8, metalness: 0.85, roughness: 0.28 } : { color: 0xc9d3df, metalness: 0.35, roughness: 0.32 }))
@@ -74,8 +76,21 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   const porcelain = mat(new THREE.MeshStandardMaterial({ color: 0xf7f7f4, roughness: 0.35 }))
   const shadowTex = radialTexture()
   const shadowMat = mat(new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, color: 0x0b1220, opacity: 0.5 }))
-  const ringGeo = new THREE.RingGeometry(0.93, 1, 64)
+  const ringGeo = new THREE.RingGeometry(0.88, 1, 64)
   ringGeo.rotateX(-Math.PI / 2)
+  // Holder for hand tools standing on the bench: a 24 × 10 × 18 mm block with a slot.
+  const HELD_UPRIGHT = new Set(['rod', 'spatula', 'tongs', 'dropper', 'pipette', 'thermometer'])
+  // Retort stand (unit parts, scaled per tool): base plate, pole of unit height from its foot, clamp arm.
+  const noPick = () => {}
+  const STAND_Z = 48 * S // behind the tool, clear of a 250 mL beaker's wall
+  const standBaseGeo = new THREE.BoxGeometry(46 * S, 4 * S, 30 * S).translate(0, 2 * S, 0)
+  const standPoleGeo = new THREE.CylinderGeometry(2.4 * S, 2.4 * S, 1, 12).translate(0, 0.5, 0)
+  const standArmGeo = new THREE.BoxGeometry(4 * S, 4 * S, 48 * S)
+  for (const geo of [standBaseGeo, standPoleGeo, standArmGeo]) geo.userData.shared = true
+  const holderGeo = new THREE.BoxGeometry(24 * S, 10 * S, 18 * S)
+  holderGeo.userData.shared = true
+  const holeGeo = new THREE.PlaneGeometry(9 * S, 5 * S).rotateX(-Math.PI / 2)
+  holeGeo.userData.shared = true
   const planeGeo = new THREE.PlaneGeometry(1, 1)
   planeGeo.rotateX(-Math.PI / 2)
 
@@ -195,6 +210,31 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     rimRing.position.y = (H + 2.2) * S
     g.add(shell)
     if (!porcelainBowl) g.add(rimRing)
+    else rimRing.geometry.dispose()
+    // Test tubes standing on the bench sit in a wire stand (thin: the liquid at the bottom stays visible).
+    if (def.shape === 'tube' && !o.stock) {
+      const st = new THREE.Group()
+      const r = (hw(def, 20) + 1.2) * S
+      const ringA = new THREE.Mesh(new THREE.TorusGeometry(r, 0.7 * S, 6, 24), steel)
+      ringA.rotation.x = Math.PI / 2
+      ringA.position.y = def.h * 0.45 * S
+      const ringB = new THREE.Mesh(new THREE.TorusGeometry(r * 1.6, 0.8 * S, 6, 24), steel)
+      ringB.rotation.x = Math.PI / 2
+      ringB.position.y = 0.8 * S
+      st.add(ringA, ringB)
+      for (let i = 0; i < 3; i += 1) {
+        const t = i * Math.PI * 2 / 3
+        const top = new THREE.Vector3(Math.cos(t) * r, def.h * 0.45 * S, Math.sin(t) * r)
+        const bot = new THREE.Vector3(Math.cos(t) * r * 1.6, 0.8 * S, Math.sin(t) * r * 1.6)
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.6 * S, 0.6 * S, top.distanceTo(bot), 6), steel)
+        leg.position.copy(top).add(bot).multiplyScalar(0.5)
+        leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), top.clone().sub(bot).normalize())
+        st.add(leg)
+      }
+      st.traverse(m => { if (m.isMesh) m.raycast = noPick })
+      g.add(st)
+      g.userData.tubeStand = st
+    }
     // Graduations printed at real volume marks. The flask's sloped wall keeps simple ticks
     // (a straight strip would not follow its cone).
     if (['beaker', 'cylinder'].includes(def.shape) && !o.stock) g.add(graduations(o, def))
@@ -229,10 +269,10 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     surface.rotation.x = -Math.PI / 2
     surface.renderOrder = 1
     // Bright meniscus line where the liquid meets the glass: makes the level readable from any angle.
-    const meniscus = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, seg), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide }))
+    const meniscus = new THREE.Mesh(new THREE.RingGeometry(0.96, 1, seg), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false, side: THREE.DoubleSide }))
     meniscus.position.z = 0.0003
     surface.add(meniscus)
-    const settled = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, seg), new THREE.MeshStandardMaterial({ roughness: 0.9 }))
+    const settled = new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 1), new THREE.Vector2(0.55, 0.92), new THREE.Vector2(0.88, 0.62), new THREE.Vector2(1, 0)], seg), new THREE.MeshStandardMaterial({ roughness: 0.95 }))
     settled.visible = false
     g.add(liquid, settled)
     scene.add(surface)
@@ -277,25 +317,25 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const add = (geo, m, y = 0, x = 0, z = 0) => { const mesh = new THREE.Mesh(geo, m); mesh.position.set(x, y, z); g.add(mesh); return mesh }
     switch (o.type) {
       case 'dropper': {
-        add(new THREE.CylinderGeometry(3 * S, 3 * S, h * 0.68, 16), glassMat, h * 0.34 + 6 * S)
-        add(new THREE.ConeGeometry(3 * S, 8 * S, 16).rotateX(Math.PI), glassMat, 4 * S)
+        add(new THREE.CylinderGeometry(3 * S, 3 * S, h * 0.68, 16), thinGlassMat, h * 0.34 + 6 * S)
+        add(new THREE.ConeGeometry(3 * S, 8 * S, 16).rotateX(Math.PI), thinGlassMat, 4 * S)
         const bulb = add(new THREE.SphereGeometry(5.2 * S, 18, 14), rubber, h * 0.82)
         bulb.scale.y = 1.6
         g.userData.fill = add(new THREE.CylinderGeometry(2.2 * S, 2.2 * S, 1, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85 }), 0)
         break
       }
       case 'pipette': {
-        add(new THREE.CylinderGeometry(2.2 * S, 2.2 * S, h * 0.9, 14), glassMat, h * 0.5)
-        add(new THREE.SphereGeometry(5 * S, 16, 12).scale(1, 2.2, 1), glassMat, h * 0.45)
-        add(new THREE.ConeGeometry(2.2 * S, 10 * S, 14).rotateX(Math.PI), glassMat, 5 * S)
+        add(new THREE.CylinderGeometry(2.2 * S, 2.2 * S, h * 0.9, 14), thinGlassMat, h * 0.5)
+        add(new THREE.SphereGeometry(5 * S, 16, 12).scale(1, 2.2, 1), thinGlassMat, h * 0.45)
+        add(new THREE.ConeGeometry(2.2 * S, 10 * S, 14).rotateX(Math.PI), thinGlassMat, 5 * S)
         add(new THREE.CylinderGeometry(4 * S, 4 * S, 12 * S, 14), rubber, h * 0.96)
         g.userData.fill = add(new THREE.CylinderGeometry(1.6 * S, 1.6 * S, 1, 12), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85 }), 0)
         break
       }
       case 'rod':
-        add(new THREE.CylinderGeometry(2.6 * S, 2.6 * S, h, 16), glassMat, h / 2)
-        add(new THREE.SphereGeometry(2.6 * S, 12, 8), glassMat, 0)
-        add(new THREE.SphereGeometry(2.6 * S, 12, 8), glassMat, h)
+        add(new THREE.CylinderGeometry(2.6 * S, 2.6 * S, h, 16), thinGlassMat, h / 2)
+        add(new THREE.SphereGeometry(2.6 * S, 12, 8), thinGlassMat, 0)
+        add(new THREE.SphereGeometry(2.6 * S, 12, 8), thinGlassMat, h)
         break
       case 'spatula':
         add(new THREE.BoxGeometry(4 * S, h - 4 * S, 1.2 * S), steel, (h + 4 * S) / 2)
@@ -377,6 +417,33 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         break
       default:
         add(new THREE.CylinderGeometry(def.w * S / 3, def.w * S / 3, h, 12), lightPlastic, h / 2)
+    }
+    if (HELD_UPRIGHT.has(o.type) || ['electrodes', 'bridge', 'litmusPaper'].includes(o.type)) {
+      // A tool parked above the bench (the labs keep tongs, droppers and electrodes ready over the vessels)
+      // hangs in a retort-stand clamp; the stand reaches down to the bench, so nothing floats.
+      const stand = new THREE.Group()
+      const base = new THREE.Mesh(standBaseGeo, darkPlastic)
+      const pole = new THREE.Mesh(standPoleGeo, steel)
+      const arm = new THREE.Mesh(standArmGeo, steel)
+      const gy = o.type === 'electrodes' || o.type === 'bridge' ? h * 0.95 : h * 0.72 // electrodes: the top bar; bridge: the arch
+      arm.position.set(0, gy, -STAND_Z / 2)
+      pole.position.z = base.position.z = -STAND_Z
+      stand.add(base, pole, arm)
+      for (const m of [base, pole, arm]) m.raycast = noPick // scenery: never takes a click (hidden meshes are still ray-tested)
+      stand.userData = { base, pole, gy }
+      g.add(stand)
+      g.userData.stand = stand
+    }
+    if (HELD_UPRIGHT.has(o.type)) {
+      const holder = new THREE.Group()
+      const block = new THREE.Mesh(holderGeo, lightPlastic)
+      block.position.y = 5 * S
+      const hole = new THREE.Mesh(holeGeo, darkPlastic)
+      hole.position.y = 10.05 * S
+      holder.add(block, hole)
+      block.raycast = hole.raycast = noPick
+      g.add(holder)
+      g.userData.holder = holder
     }
     return g
   }
@@ -463,7 +530,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       shadow.scale.set(foot * 1.25, 1, foot * (isContainer(o) ? 1.25 : 0.7))
       const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x2f7cf6, transparent: true, depthWrite: false }))
       ring.visible = false
-      ring.scale.setScalar(Math.max(foot * 0.62, 0.12))
+      ring.scale.setScalar(Math.max((def.w / 2 + 7) * S, 0.08)) // just outside the foot: marks the object without covering the bench around it
       scene.add(shadow, ring)
       node.userData.shadow = shadow
       node.userData.ring = ring
@@ -503,7 +570,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const spanX = (x1 - x0) + 0.35
     const spanY = top + 0.9 // head-room above the tallest object: a vessel lifted to pour must stay in view (0.55 was tried: T02 lifted out of view)
     const dist = Math.max(1.6, (spanX / 2) / (Math.tan(vfov / 2) * aspect * freeW) * 1.08, (spanY / 2) / (Math.tan(vfov / 2) * freeH) * 1.15)
-    const target = new THREE.Vector3((x0 + x1) / 2, Math.min(spanY * 0.42, 1.4), 0)
+    const target = new THREE.Vector3((x0 + x1) / 2, Math.min(spanY * 0.34, 1.2), 0)
     const dir = new THREE.Vector3(Math.sin(0.1), 0.48, Math.cos(0.1)).normalize() // from the front, a little above and to the side: depth without vessels hiding each other
     return { pos: target.clone().addScaledVector(dir, dist), target }
   }
@@ -617,6 +684,19 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
           u.paper.map.needsUpdate = true
         }
       }
+      const overVessel = state.objects.some(c => c.id !== o.id && isContainer(c) && Math.abs(c.x - o.x) < EQUIPMENT[c.type].w / 2 + 6 && o.y < c.y + EQUIPMENT[c.type].h + 4)
+      const parked = !held && !o.inside && !overVessel && !(Math.abs(o.angle || 0) > 0.02)
+      if (u.holder) u.holder.visible = parked && !(o.y > 1)
+      if (u.tubeStand) u.tubeStand.visible = !held && !(o.y > 1) && !(Math.abs(o.angle || 0) > 0.02) && !state.objects.some(r => r.type === 'rack' && Math.abs(r.x - o.x) < EQUIPMENT.rack.w / 2)
+      if (u.stand) {
+        u.stand.visible = parked && o.y > 1
+        if (u.stand.visible) {
+          const sd = u.stand.userData
+          sd.base.position.y = -o.y * S // the bench, in the tool's own frame
+          sd.pole.position.y = -o.y * S
+          sd.pole.scale.y = o.y * S + sd.gy + 6 * S
+        }
+      }
       if (u.hot) u.hot.material.emissive.setHex(o.on ? 0xb33a00 : 0x000000)
       if (u.cathode) { const d = Math.min(1, (o.cuDeposit || 0) / 3e-4); u.cathode.material.color.setRGB((50 + 150 * d) / 255, (50 + 60 * d) / 255, (50 + 10 * d) / 255, SRGB) }
       if (u.column) { const len = Math.max(2, Math.min(def.h * 0.85, (o.reading ?? 25) / 110 * def.h * 0.85)) * S; u.column.scale.y = len; u.column.position.y = 6 * S + len / 2 }
@@ -653,7 +733,8 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
         const r = hw(def, y) - 2
         const z = hashZ(p + 17) * Math.sqrt(Math.max(0, 1 - part.u * part.u)) * r
         q.setFromAxisAngle(v3.set(0.3, 1, 0.2).normalize(), p * 1.7)
-        m4.compose(v3.set((o.x + part.u * r) * S, (o.y + y) * S, z * S), q, sc.setScalar(part.s * 1.2 * S))
+        const g = (0.9 + part.s * 1.6) * S // visualization size, not a particle-size measurement
+        m4.compose(v3.set((o.x + part.u * r) * S, (o.y + y) * S, z * S), q, sc.set(g * 1.2, g * 0.55, g * 0.9))
         partMesh.setMatrixAt(p, m4)
         const c = PRECIPITATES[part.key].color
         partMesh.setColorAt(p++, color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB))
@@ -683,10 +764,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       remove(node)
       nodes.delete(id)
     }
-    // Keep a newly selected object in view (pan only; the user's zoom/angle are kept).
+    // Keep a newly selected object in view (pan only; the user's zoom/angle are kept). Not when it was selected by
+    // grabbing it: it is already under the pointer, and panning would slide the bench under the hand mid-drag.
     if (ui.selected !== lastSel) {
       lastSel = ui.selected
-      const n = nodes.get(ui.selected)
+      const n = dragging == null && nodes.get(ui.selected)
       if (n) {
         v3.setFromMatrixPosition(n.matrixWorld).project(camera)
         if (Math.abs(v3.x) > 0.8 || Math.abs(v3.y) > 0.85) {
@@ -704,7 +786,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const on = vol > 0.02 && node.visible
     liq.liquid.visible = on
     liq.surface.visible = on
-    if (!on) return
+    if (!on) { liq.settled.visible = false; return }
     // UVs map the 2D tracer grid onto the side view: u across the width, v from bottom to surface.
     if (Math.abs(level - liq.level) > 0.25) {
       liq.level = level
@@ -721,15 +803,20 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const aqFrac = oil > 0.01 && level > 0 && !sinks ? levelForVolume(o.type, Math.max(0, vol - oil)) / level : 1
     const oilFrac = sinks && level > 0 ? levelForVolume(o.type, oil) / level : 0
     const x = liq.tex.getContext('2d')
-    const img = x.createImageData(GW, GH)
+    const img = liq.img || (liq.img = x.createImageData(GW, GH))
     let sum = [0, 0, 0, 0]
     for (let j = 0; j < GH; j += 1) {
       for (let i = 0; i < GW; i += 1) {
-        const c = (j + 0.5) / GH > aqFrac || (j + 0.5) / GH < oilFrac ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
+        const isOil = (j + 0.5) / GH > aqFrac || (j + 0.5) / GH < oilFrac
+        const c = isOil ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
+        // A colourless solution is nearly clear (it read as grey milk over the bench): alpha eases from ×0,45 at the
+        // water tint (chroma 40) to ×1 for a clearly coloured one (chroma ≥ 70), with no step in between.
+        let a = (c[3] ?? 0.3) * 1.1
+        if (!isOil) a *= 0.45 + 0.55 * Math.min(1, Math.max(0, (Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) - 40) / 30))
         const k = ((GH - 1 - j) * GW + i) * 4
         img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]
-        img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.14, (c[3] ?? 0.3) * 1.1)))
-        for (let n = 0; n < 4; n += 1) sum[n] += n < 3 ? c[n] : (c[3] ?? 0.3)
+        img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.06, a)))
+        for (let n = 0; n < 4; n += 1) sum[n] += n < 3 ? c[n] : a
       }
     }
     // Upload only when the colours actually changed (a texture upload every frame is costly on weak GPUs).
@@ -750,7 +837,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     const n = GW * GH
     if (aqFrac < 1) liq.surface.material.color.setRGB(240 / 255, 200 / 255, 60 / 255, SRGB) // seen from above: the oil on top
     else liq.surface.material.color.setRGB(sum[0] / n / 255, sum[1] / n / 255, sum[2] / n / 255, SRGB)
-    liq.surface.material.opacity = Math.min(0.92, Math.max(0.42, sum[3] / n + 0.25))
+    liq.surface.material.opacity = Math.min(0.92, Math.max(0.22, sum[3] / n + 0.18))
     // Settled precipitate layer (same rule as 2D: a layer once enough grains have settled).
     const settled = o.vis.parts.filter(pt => pt.settled)
     liq.settled.visible = settled.length > 4 && !tilted
@@ -758,7 +845,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       const layer = Math.min(innerHeight(def) * 0.2, 1 + settled.length * 0.05)
       const rr = (hw(def, layer / 2) - 0.8) * S
       liq.settled.scale.set(rr, layer * S, rr)
-      liq.settled.position.y = (2 + layer / 2) * S
+      liq.settled.position.y = 2 * S
       const c = PRECIPITATES[settled[0].key].color
       liq.settled.material.color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, SRGB)
     }
@@ -777,7 +864,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
   }
   function disposeTree(root) {
     root.traverse(n => {
-      if (n.geometry && n.geometry !== planeGeo && n.geometry !== ringGeo) n.geometry.dispose()
+      if (n.geometry && n.geometry !== planeGeo && n.geometry !== ringGeo && !n.geometry.userData.shared) n.geometry.dispose()
       for (const m of Array.isArray(n.material) ? n.material : [n.material]) {
         if (!m || m.userData?.shared) continue
         m.map?.dispose()
@@ -969,6 +1056,11 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
       streamMeshes.forEach(m => m.material.dispose())
       planeGeo.dispose()
       ringGeo.dispose()
+      holderGeo.dispose()
+      holeGeo.dispose()
+      standBaseGeo.dispose()
+      standPoleGeo.dispose()
+      standArmGeo.dispose()
       for (const m of shared) { m.map?.dispose(); m.dispose() }
       envTex?.dispose()
       host.dispose() // disposes remaining scene geometry/materials, renderer and controls

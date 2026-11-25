@@ -9,7 +9,7 @@ import { chromium } from 'playwright-core'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const label = process.argv[2] || 'after'
 const base = process.argv[3] || 'http://localhost:5173/'
-const out = path.join(root, 'reports', 'chemlab-7.0', 'final', 'shots')
+const out = process.env.SHOTS_DIR ? path.resolve(root, process.env.SHOTS_DIR) : path.join(root, 'reports', 'chemlab-7.0', 'final', 'shots') // one folder per run: evidence is never overwritten
 await fs.mkdir(out, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const errors = []
@@ -50,10 +50,33 @@ for (const quality of ['high', 'low']) {
   }
 }
 
+// Close-ups: the "look at the selected object" camera on a vessel where something happens (sandbox scenes).
+for (const [name, setup] of [
+  ['precipitate', L => { const v = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 300, y: 0 }).id; L.dispatch({ type: 'addReagentTo', id: v, reagent: 'cuso4', mL: 40 }); L.dispatch({ type: 'addReagentTo', id: v, reagent: 'naoh', mL: 8 }); return v }],
+  ['metals', L => {
+    const v = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 300, y: 0 }).id; L.dispatch({ type: 'addReagentTo', id: v, reagent: 'cuso4', mL: 40 })
+    const k = L.dispatch({ type: 'add', equipmentType: 'tongs', x: 300, y: 160 }).id
+    L.dispatch({ type: 'pick', tool: k, reagent: 'fe', massG: 2 }, { confirmed: true }); L.dispatch({ type: 'release', tool: k }, { confirmed: true }); return v
+  }],
+  ['gas', L => { const v = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 300, y: 0 }).id; L.dispatch({ type: 'addReagentTo', id: v, reagent: 'na2co3', mL: 30 }); L.dispatch({ type: 'addReagentTo', id: v, reagent: 'hcl', mL: 30 }); return v }]
+]) {
+  const p = await page()
+  await p.click('[data-speed="4"]').catch(() => {})
+  const id = await p.L((L, f) => { for (const o of [...L.state.objects]) L.dispatch({ type: 'remove', id: o.id }, { record: false }); const v = new Function('return ' + f)()(L); L.fit(); return v }, setup.toString())
+  await p.waitForTimeout(name === 'metals' ? 9000 : 2500)
+  await to3d(p, 'high')
+  await p.L((L, i) => L.select(i), id)
+  await p.locator('[data-tb="focus3d"]').click()
+  await p.waitForTimeout(1300)
+  await shot(p, `3d-high-closeup-${name}`)
+  await p.context().close()
+}
+
 // Sandbox scenes from the new models: oil in ethanol vs water, CuCl₂ + KI.
 {
   const p = await page()
   const ids = await p.L(L => {
+    for (const o of [...L.state.objects]) L.dispatch({ type: 'remove', id: o.id }, { record: false }) // a clean bench: nothing standing inside the new beakers
     const add = (t, x, e = {}) => L.dispatch({ type: 'add', equipmentType: t, x, y: 0, ...e }).id
     const a = add('beaker100', 220); const b = add('beaker100', 330); const c = add('beaker100', 440)
     L.dispatch({ type: 'addReagentTo', id: a, reagent: 'water', mL: 40 }); L.dispatch({ type: 'addReagentTo', id: a, reagent: 'oil', mL: 15 })

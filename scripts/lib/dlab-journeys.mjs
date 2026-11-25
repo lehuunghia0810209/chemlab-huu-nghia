@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { DISCOVER } from '../../src/dlab/data/manifest.js'
+import { oilBelow } from '../../src/dlab/engine/chemistry.js'
+import { checkInvariants } from '../../src/dlab/engine/sim.js'
 const axeSource = await fs.readFile(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8')
 
 export default async function ({ test, bench, st, wait, pixel, screen, dragWorld, outDir, browserName, aiRequests }) {
@@ -477,7 +480,9 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   })
 
   for (const mode of ['high', 'low']) await test(`P01${mode === 'low' ? 'b' : ''} hiệu năng khung hình với cảnh bận (${mode === 'low' ? 'đồ họa tiết kiệm' : 'đồ họa cao'})`, async page => {
-    if (mode === 'low') await menu(page, 'Đồ họa: Cao')
+    // Both modes are picked in the menu, so the automatic slow-machine fallback never swaps the mode being measured.
+    await menu(page, 'Đồ họa: Cao')
+    if (mode === 'high') await menu(page, 'Đồ họa: Tiết kiệm')
     await bench(page, Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`B${i}`, { type: 'beaker100', x: 140 + i * 70, fill: [['cuso4', 40]] }])))
     await page.evaluate(() => {
       const L = window.ChemLabDynamicLab
@@ -501,7 +506,30 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     }))
     await fs.writeFile(`${outDir}/${browserName}-p01-${mode}-perf.json`, JSON.stringify(r, null, 2))
     console.log(`      perf ${browserName} ${mode}: ${r.fps.toFixed(1)} fps, p95 ${r.p95.toFixed(1)} ms, long tasks ${r.longTasks}, particles ${r.particles}`)
+    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), mode === 'high' ? 'Đồ họa: Cao' : 'Đồ họa: Tiết kiệm', 'measured in the mode named')
     assert.ok(r.fps > 30, `fps ${r.fps}`)
+  })
+
+  // Slow machine (emulated by CPU throttling, Chromium/CDP only): "Cao" not picked by the student → falls back once
+  // to "Tiết kiệm" and says so; a quality the student picked is never overridden.
+  if (browserName === 'chromium') await test('P03 máy chậm: tự chuyển Đồ họa Tiết kiệm và báo rõ, không ghi đè lựa chọn', async page => {
+    await bench(page, Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`B${i}`, { type: 'beaker100', x: 140 + i * 70, fill: [['cuso4', 40]] }])))
+    const cdp = await page.context().newCDPSession(page)
+    const fps = () => page.evaluate(() => new Promise(r => { let n = 0; const t0 = performance.now(); const f = () => { if (++n < 20) requestAnimationFrame(f); else r(20000 / (performance.now() - t0)) }; requestAnimationFrame(f) }))
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
+    const slow = await fps()
+    assert.ok(slow < 25 && slow > 2, `throttled frame rate is in the fallback window: ${slow}`) // proves the condition really occurred
+    await page.locator('.dlab-toast', { hasText: 'Máy đang chạy chậm' }).waitFor({ timeout: 30000 })
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
+    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Tiết kiệm')
+    // The student picks "Cao" again: kept even when slow.
+    await menu(page, 'Đồ họa: Tiết kiệm')
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
+    const slow2 = await fps()
+    await page.waitForTimeout(6000)
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
+    assert.ok(slow2 < 25, `still slow while the choice is tested: ${slow2}`)
+    assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Cao', 'student choice kept')
   })
 
   await test('P02 mở/đóng 3D nhiều lần không rò rỉ', async page => {
@@ -1136,7 +1164,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     // Orbit on empty space: camera moves, objects stay.
     const before = JSON.stringify(await st(page, L => L.state.objects.map(o => [o.id, o.x, o.y])))
     const c0 = await cam()
-    const e = await at3(470, 230) // empty space above the dish (the library drawer covers the left edge)
+    const e = await at3(470, 150) // empty space above the dish (the library drawer covers the left edge)
+    assert.equal(await page.evaluate(p => document.elementFromPoint(p.x, p.y)?.tagName, e), 'CANVAS', 'the "empty space" point is on the 3D canvas, not under a panel')
     await page.mouse.move(e.x, e.y); await page.mouse.down(); await page.mouse.move(e.x + 120, e.y + 10, { steps: 8 }); await page.mouse.up()
     await page.waitForTimeout(300)
     assert.notDeepEqual((await cam()).pos, c0.pos, 'dragging empty space orbits the camera')
@@ -1307,6 +1336,45 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     const p = await obj(page, ids.P)
     assert.match(p.status, /Chưa hỗ trợ/)
     assert.ok(!(await st(page, L => L.state.gas.Cl2 > 0)), 'no Cl₂ invented')
+  })
+
+  // Every Sandbox "Khám phá" card, done by hand: lay out, then the student's own action through the action bar
+  // (pour from the bottle, or take the solid with the tool and drop it in), at 4× speed. The result must be what
+  // the manifest claims and what the engine registry test gets for the same demo.
+  for (const e of DISCOVER) await test(`X06 Khám phá qua giao diện — ${e.id}: ${e.title}`, async page => {
+    await btn(page, 'Tự do').click()
+    const before = await st(page, L => L.state.objects.map(o => o.id))
+    await sideTab(page, 'Khám phá')
+    await page.locator('.dlab-disc li', { hasText: e.title }).first().getByRole('button', { name: 'Bày dụng cụ' }).click()
+    const d = e.demo
+    const ids = await st(page, (L, a) => {
+      const fresh = L.state.objects.filter(o => !a.before.includes(o.id))
+      return { v: fresh.find(o => o.type === a.vessel)?.id, helper: L.selected() }
+    }, { before, vessel: d.vessel })
+    assert.ok(ids.v && ids.helper, 'vessel and bottle/tool laid out, the helper selected')
+    await page.locator('[data-speed="4"]').first().click()
+    const confirm = async () => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }
+    if (d.pour) await pourBar(page, ids.helper, ids.v, d.pour[1])
+    else {
+      await page.locator('[data-qa-in="solid"]').selectOption(d.solid[0])
+      await page.locator('[data-qa-in="mass"]').fill(String(d.solid[1]))
+      await page.locator('.dlab-actionbar [data-qa="pick"]').click()
+      await confirm()
+      await page.locator('[data-qa-in="to"]').selectOption(ids.v)
+      await page.locator('.dlab-actionbar [data-qa="drop-solid"]').click()
+      await confirm()
+    }
+    const x = d.expect
+    await wait(page, (L, a) => {
+      const s = L.state
+      const c = s.objects.find(o => o.id === a.v)
+      const solid = s.objects.find(o => o.type === 'solid' && o.in === c.id)
+      return (!a.x.gas || (c.gasOut?.[a.x.gas] || 0) > 0) && (!a.x.ion || (c.contents.ions[a.x.ion] || 0) > 1e-7) &&
+        (!a.x.deposit || (solid?.coat?.[a.x.deposit] || 0) > 0) && (!a.x.ppt || (c.contents.precipitates[a.x.ppt] || 0) > 1e-9) &&
+        (!a.x.note || Object.keys(s.notes).some(k => k.startsWith(a.x.note))) && (!a.x.noPH || c.pH == null)
+    }, { v: ids.v, x }, d.run / 4 * 1000 + 25000)
+    if (x.oilBelow) assert.ok(oilBelow((await obj(page, ids.v)).contents), 'oil below the ethanol')
+    assert.equal(checkInvariants(await st(page, L => JSON.parse(JSON.stringify(L.state)))), null, 'invariants')
   })
 
   await test('X04 đổi bài giữa chừng: bài mới sạch, không mang trạng thái/tiến độ của bài cũ, không Hoàn tác về bài cũ', async page => {
