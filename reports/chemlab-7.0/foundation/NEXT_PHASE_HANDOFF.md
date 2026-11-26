@@ -4,12 +4,31 @@ Viết cho: phiên phát triển tiếp theo, dù là AI hay người. Đọc fi
 
 ## 0. Trạng thái
 
-- Nhánh: `feature/chemlab-7.0-dynamic-laboratory`. Commit cục bộ của đợt này nằm sau `e5e3af7`, xem `git log`. Chưa push, merge hay deploy. Production vẫn là 6.7.0.
-- Tài liệu của đợt này:
-  - `SCIENTIFIC_VALIDATION_MATRIX.md`: 75 mục, mỗi mục có trạng thái và bằng chứng.
-  - `SCIENTIFIC_CORRECTIONS.md`: 25 lỗi đã sửa, kèm các phát hiện không sửa và lý do.
-  - `agy/`: rà soát độc lập của Antigravity, chỉ đọc.
-- **Chưa có "Foundation Master Prompt"** trong repo hay trong phiên này. Các yêu cầu Open-Ended Sandbox Foundation chưa được triển khai. Phiên sau cần lấy bản prompt đó từ chủ sở hữu.
+- Nhánh `feature/chemlab-7.0-dynamic-laboratory`. Commit mới nhất là commit Foundation ngay sau `91ac642` (xem `git log -1`). Chưa push, merge hay deploy. Production vẫn là 6.7.0.
+- Đợt Foundation đã xong: `FOUNDATION_ARCHITECTURE.md` mô tả kiến trúc, `FOUNDATION_VALIDATION.md` ghi những gì đã chạy. Đợt khoa học trước đó: `SCIENTIFIC_VALIDATION_MATRIX.md` (75 mục, 25/9/5/28/8) và `SCIENTIFIC_CORRECTIONS.md`.
+- Trạng thái: **FOUNDATION PARTIAL.**
+  - Đã có: state chuẩn, lệnh thống nhất, bộ giải theo state, Sandbox mở chứng minh qua UI, luồng sự kiện.
+  - Còn thiếu: E2E Firefox/WebKit cho F01–F03; kiểm pixel canvas; kịch bản B và D qua UI.
+  - Gate khoa học vẫn PARTIAL, và FPS Firefox/WebKit chưa đạt.
+
+## 0.1 API đã sẵn sàng (Foundation)
+
+| API | Dùng để |
+|---|---|
+| `sim.dispatch(cmd, { confirmed })` → `{ ok, outcome }` | Mọi thao tác. `outcome` ∈ APPLIED, INVALID_INPUT, SAFETY_BLOCKED, NEEDS_CONFIRMATION |
+| `COMMAND_CONTRACT`, `contractProblems` (`engine/contract.js`) | Hợp đồng lệnh: id tham chiếu và chức năng, đại lượng và đơn vị |
+| `describe(state, id)` (`engine/domain.js`), `window.ChemLabDynamicLab.describe(id)` | Trạng thái khoa học của một vật chứa (mol, mL, °C, pH, phức, kết tủa, chất rắn, khí, cặn) |
+| `state.events`, `window.ChemLabDynamicLab.events(since)` | Sự kiện quan sát: `{ t, key, container, outcome, process, validation, state }` |
+| `SPECIES` | Registry chất (id ≠ công thức ≠ tên) |
+| `experimentTemplate(entry)` | Thẻ hoặc thí nghiệm dưới dạng dữ liệu |
+| `VALIDATION`, `validationOf` (`data/validation.js`) | Trạng thái kiểm chứng; dùng chung cho engine và ma trận |
+
+## 0.2 Bất biến không được phá
+
+- Một engine, một state. Không gắn cứng sản phẩm theo id thẻ hoặc id bài.
+- Mọi thao tác đi qua `dispatch`. Lệnh bị từ chối không thay đổi state khoa học, undo hay nhật ký (lần bị chặn an toàn chỉ được ghi vào nhật ký và `events`). Undo chỉ ghi khi lệnh thành công.
+- Sự kiện chỉ sinh từ engine (`noteOnce`). Renderer không tạo sản phẩm. Một quá trình UNVERIFIED hoặc không có trong manifest **không bao giờ** được báo là APPLIED/VALIDATED.
+- Bảo toàn nguyên tố (`gate 1`); phương trình cân bằng (`dlab-sci-validate`); ma trận chỉ nâng lên VALIDATED khi có lời giải tay độc lập.
 
 ## 1. Tiêu chí khoa học không được vi phạm
 
@@ -49,7 +68,7 @@ Viết cho: phiên phát triển tiếp theo, dù là AI hay người. Đọc fi
 ## 4. Lệnh kiểm tra (chạy tuần tự)
 
 ```
-node scripts/test-dlab.mjs                 # unit + validation + gate 1 (123 test)
+node scripts/test-dlab.mjs                 # unit + validation + gate 1 + foundation (128 test)
 node scripts/dlab-sci-validate.mjs         # phương trình, tỉ lượng, khối lượng mol (độc lập)
 node scripts/dlab-sci-matrix.mjs           # tạo lại ma trận
 node scripts/dlab-manifest.mjs             # tạo lại REACTION_SUPPORT_MANIFEST.md
@@ -69,3 +88,14 @@ Antigravity (chỉ đọc): `agy -p "$(cat prompt)" --mode plan --model gemini-4
 | 3. Simulation & visualization | PARTIAL | Màu và hiện tượng lấy từ state (round 4). Chưa rà soát lại toàn bộ hình 3D. |
 | 4. Guided & Sandbox | PARTIAL | Đã sửa các điều kiện có thể vượt qua mà Antigravity chỉ ra. Chưa có chuyên gia giáo dục duyệt nội dung. |
 | 5. Final validation | **PARTIAL** | Đã có ma trận và báo cáo sửa lỗi. Còn UNVERIFIED và P2. FPS Firefox/WebKit chưa đạt (round 4). |
+
+## 6. Kế hoạch đợt sau (theo thứ tự)
+
+1. **Experiment Catalog:** UI chọn template theo `experimentTemplate`, lọc theo nhóm và `validationStatus`. Hiện chỉ có tab "Khám phá" với 29 thẻ.
+2. **Thí nghiệm mới:** mỗi thí nghiệm là một mục manifest có demo, có lời giải tay và trạng thái kiểm chứng đúng, theo quy trình ở `FOUNDATION_ARCHITECTURE.md` §6–7. Ưu tiên kiểm chứng 5 mục kết tủa UNVERIFIED trước khi mở rộng.
+3. **3D:** chỉ đọc `describe()` và `events()`. Không tự tạo hiệu ứng ngoài engine (bóng đổ, mô hình .glb là việc tùy chọn).
+4. Thêm F01–F03 cho Firefox/WebKit, kiểm pixel canvas, và B/D qua UI.
+
+## 7. Prompt tiếp tục (dùng độc lập)
+
+> Tiếp tục ChemLab 7.0 Dynamic Lab trong `D:\EduLab\ChemLab`, nhánh `feature/chemlab-7.0-dynamic-laboratory`, từ commit mới nhất. Đọc `reports/chemlab-7.0/foundation/NEXT_PHASE_HANDOFF.md`, `FOUNDATION_ARCHITECTURE.md`, `FOUNDATION_VALIDATION.md`, `SCIENTIFIC_CORRECTIONS.md`. Giữ một engine, một state; mọi thao tác qua `sim.dispatch`; không tạo phản ứng hay sản phẩm khi chưa có nguồn và lời giải tay; không đổi trạng thái ma trận nếu thiếu bằng chứng; không chỉnh hằng số để test đạt; không hạ ngưỡng FPS. Việc của đợt này: [điền: Experiment Catalog / thí nghiệm mới / 3D]. Chạy `node scripts/test-dlab.mjs`, `node scripts/dlab-sci-validate.mjs`, `npx vite build`, `CHEMLAB_BROWSER=chromium node scripts/dlab-e2e.mjs`, Guided walk. Chỉ commit cục bộ bằng pathspec; không động vào 11 file `.claude/skills` đang staged; không push, merge hay deploy; báo PARTIAL trung thực.

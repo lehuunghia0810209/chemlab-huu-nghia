@@ -1,5 +1,6 @@
 // Per-step processes: transfer, kinetics, thermal, electrochemistry, physics and the visual fields.
 // Everything here runs inside the fixed timestep, so results do not depend on the render frame rate.
+import { classifyNote, containerOfNote } from './domain.js'
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
 import { WEAK, IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass, PH_MAX_ETHANOL_FRACTION } from '../data/materials.js'
 import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME, SOLVENT_HINTS, ION_REDOX } from '../data/reactions.js'
@@ -33,6 +34,12 @@ export function noteOnce(state, key, text, kind = 'observe') {
   if (state.notes[key]) return
   state.notes[key] = state.t
   log(state, text, kind)
+  // Structured observation event (Foundation): container, process, standard outcome, validation status, and the
+  // container's state at that moment. Renderers, Guided and Sandbox read these instead of parsing journal text.
+  const container = containerOfNote(state, key)
+  const c = container && byId(state, container)
+  ;(state.events ||= []).push({ t: state.t, key, kind, text, container, ...classifyNote(key), state: c?.contents ? { pH: c.pH ?? null, T: c.T, volumeML: volumeOf(c) } : null })
+  if (state.events.length > 200) state.events.shift()
 }
 
 export const isContainer = o => Boolean(o && EQUIPMENT[o.type]?.caps.includes('contain'))

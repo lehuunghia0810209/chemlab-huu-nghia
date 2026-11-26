@@ -413,6 +413,69 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     assert.ok(Math.abs(b.pH - 0.301) < 0.01, `pH ${b.pH}`)
   })
 
+  // ── Foundation: open-ended Sandbox from an EMPTY bench, through the visible controls only (library + action bar) ──
+  const fromLibrary = async (page, shelf, group, name, sub) => {
+    await libGroup(page, shelf, group)
+    let item = page.locator('.dlab-lib-item', { hasText: name })
+    if (sub) item = item.filter({ hasText: sub })
+    const before = await st(page, L => L.state.objects.map(o => o.id))
+    await item.first().click()
+    return st(page, (L, b) => L.state.objects.filter(o => !b.includes(o.id)).map(o => o.id).at(-1), before)
+  }
+  const pourUI = async (page, bottle, to, mL) => {
+    await select(page, bottle)
+    await page.locator('[data-qa-in="to"]').selectOption(to)
+    await page.locator('[data-qa-in="ml"]').fill(String(mL))
+    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
+  }
+  const emptyBench = async page => { await btn(page, 'Tự do').click(); await bench(page, {}) }
+
+  await test('F01 Sandbox mở từ bàn trống: axit – bazơ, thay đổi lượng NaOH, pH theo lời giải tay', async page => {
+    await emptyBench(page)
+    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
+    const hcl = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Axit clohiđric')
+    const naoh = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Natri hiđroxit')
+    await pourUI(page, hcl, beaker, 20)
+    await pourUI(page, naoh, beaker, 10)
+    let d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(Math.abs(d.pH - -Math.log10(0.005 / 0.03)) < 0.03, `under-neutralised pH ${d.pH}`)
+    await pourUI(page, naoh, beaker, 20)
+    d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(Math.abs(d.pH - (14 + Math.log10(0.005 / 0.05))) < 0.03, `excess base pH ${d.pH}`)
+    const ev = await st(page, (L, id) => L.events().filter(e => e.container === id).map(e => `${e.key}:${e.outcome}`), beaker)
+    assert.ok(ev.some(e => e.startsWith('neutral-') && e.endsWith(':APPLIED')), ev.join(' '))
+  })
+
+  await test('F02 Sandbox mở từ bàn trống: CuSO₄ + NH₃ 2 M từng phần — kết tủa rồi phức, không qua thẻ', async page => {
+    await emptyBench(page)
+    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
+    const cu = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Đồng(II) sunfat')
+    const nh3 = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Dung dịch amoniac', '2 M')
+    assert.equal(await st(page, (L, id) => L.state.objects.find(o => o.id === id).reagent, nh3), 'nh3-2m')
+    await pourUI(page, cu, beaker, 5)
+    await pourUI(page, nh3, beaker, 2)
+    let d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(d.precipitates['Cu(OH)2'] > 3e-4, `pale-blue Cu(OH)₂ first: ${JSON.stringify(d.precipitates)}`)
+    for (let i = 0; i < 4; i += 1) await pourUI(page, nh3, beaker, 7)
+    d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(!(d.precipitates['Cu(OH)2'] > 1e-9), `dissolved: ${JSON.stringify(d.precipitates)}`)
+    assert.ok(Math.abs(d.complexes['Cu2+'] - 2.5e-3) < 3e-5, `complex ${d.complexes['Cu2+']}`)
+    const label = await st(page, (L, id) => L.state.objects.find(o => o.id === id).label || null, beaker)
+    const ev = await st(page, (L, id) => L.events().filter(e => e.container === id).map(e => e.key.replace(/-o\d+$/, '')), beaker)
+    assert.ok(ev.indexOf('ppt-Cu(OH)2') >= 0 && ev.indexOf('ppt-Cu(OH)2') < ev.indexOf('ammine-dis-Cu(OH)2'), `${label}: ${ev.join(',')}`)
+  })
+
+  await test('F03 Sandbox mở: lệnh sai (qua API của trang) bị từ chối, bàn không đổi', async page => {
+    await emptyBench(page)
+    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
+    // Paused, and without the per-frame display fields (vis), so only a real change of the bench can differ.
+    const bench = () => st(page, L => { L.state.paused = true; return JSON.stringify(L.state.objects.map(({ vis, ...o }) => o)) })
+    const before = await bench()
+    const r = await st(page, (L, id) => L.dispatch({ type: 'addReagentTo', id, reagent: 'hcl', mL: -5 }), beaker)
+    assert.equal(r.outcome, 'INVALID_INPUT')
+    assert.equal(await bench(), before)
+  })
+
   await test('S24 phản ứng chưa hỗ trợ không tạo kết quả giả', async page => {
     const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['hcl', 30]] }, B: { type: 'beaker100', x: 450, fill: [['hno3', 30]] }, K: { type: 'tongs', x: 600, y: 150 } })
     await st(page, (L, ids) => {

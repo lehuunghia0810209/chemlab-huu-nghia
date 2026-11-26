@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs'
 import { ELECTRO } from '../src/dlab/data/reactions.js'
 import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
 import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw, ammineComplexes } from '../src/dlab/engine/chemistry.js'
-import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
+import { createSim, benchInventory, checkInvariants, snapshot, restore, H, SCHEMA } from '../src/dlab/engine/sim.js'
+import { describe, SPECIES, experimentTemplate } from '../src/dlab/engine/domain.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
@@ -40,7 +41,7 @@ test('a failing command leaves state and undo history untouched', () => {
   const l = lab()
   const before = JSON.stringify(l.s().objects)
   const hist = l.sim.history.length
-  assert.throws(() => l.sim.dispatch({ type: 'add', equipmentType: 'nope', x: 100 }))
+  assert.equal(l.sim.dispatch({ type: 'add', equipmentType: 'nope', x: 100 }).outcome, 'INVALID_INPUT') // contract: rejected, not thrown
   assert.equal(JSON.stringify(l.sim.state.objects), before)
   assert.equal(l.sim.history.length, hist)
 })
@@ -1291,6 +1292,180 @@ test('audit: Ca(OH)₂ / CaSO₄ / carbonate hints fire only when real; AgCl is 
   { const l = lab(93); const B2 = l.put('beaker250', 300); l.fill(B2, 'cuso4', 10); l.fill(B2, 'naoh', 40); const k = l.put('tongs', 300, { y: 160 }); l.sim.dispatch({ type: 'pick', tool: k.id, reagent: 'fe', massG: 2 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: k.id }, { confirmed: true }); l.sim.runFor(5); assert.ok(!notes(l).some(n => n.startsWith('rx-fe-cu-')), 'no Fe + Cu²⁺ over Cu(OH)₂ in base') }
   // Boiling HCl dry leaves no "crystals".
   { const l = lab(94); const B2 = l.put('beaker100', 300); l.fill(B2, 'hcl', 1); const b = l.put('burner', 300); byId(l.s(), B2.id).y = 0; l.sim.dispatch({ type: 'move', id: B2.id, x: 300, y: EQUIPMENT.burner.h }, { confirmed: true }); l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { confirmed: true }); l.sim.runFor(240); const t = l.s().log.map(e => e.text).join('|'); if (/đã cạn|bay hơi hết/.test(t)) assert.doesNotMatch(t, /chất rắn kết tinh/, 'HCl leaves no crystals') }
+})
+
+// ── Foundation: universal command contract, canonical state, metamorphic properties, open-ended scenarios ──
+test('foundation: command contract rejects invalid input atomically (no state, undo or journal change)', () => {
+  const l = lab(100)
+  const B = l.put('beaker100', 300); l.fill(B, 'hcl', 10)
+  const D = l.put('dropper', 400, { y: 10 })
+  const gone = l.put('beaker100', 500); l.sim.dispatch({ type: 'remove', id: gone.id })
+  const frozen = () => JSON.stringify({ o: l.s().objects, log: l.s().log, ev: l.s().events, h: l.sim.history.length })
+  const before = frozen()
+  for (const cmd of [
+    { type: 'addReagentTo', id: gone.id, reagent: 'hcl', mL: 5 }, // removed vessel
+    { type: 'addReagentTo', id: D.id, reagent: 'hcl', mL: 1 }, // a dropper is not a vessel
+    { type: 'aspirate', tool: B.id, from: B.id, mL: 1 }, // a beaker cannot aspirate
+    { type: 'addReagentTo', id: B.id, reagent: 'hcl', mL: -3 }, { type: 'addReagentTo', id: B.id, reagent: 'hcl', mL: NaN },
+    { type: 'addReagentTo', id: B.id, reagent: 'unobtainium', mL: 1 }, { type: 'addReagentTo', id: B.id, reagent: 'na', mL: 1 }, // a solid is not poured
+    { type: 'dispense', tool: D.id, drops: 1.5 }, { type: 'pourExact', from: B.id, to: B.id + 'x', mL: 1 }, { type: 'warp', id: B.id }
+  ]) {
+    const r = l.sim.dispatch(cmd)
+    assert.equal(r.outcome, 'INVALID_INPUT', `${JSON.stringify(cmd)} → ${r.outcome}`)
+    assert.ok(r.verdict.reasons.length > 0)
+  }
+  assert.equal(frozen(), before, 'nothing changed')
+  // Safety block: the scientific state is unchanged (only the journal records the attempt).
+  const T = l.put('tongs', 300, { y: 160 })
+  l.sim.dispatch({ type: 'pick', tool: T.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
+  const sci = () => JSON.stringify({ o: l.s().objects, spill: l.s().spill, drops: l.s().drops, h: l.sim.history.length })
+  const sciBefore = sci()
+  const r = l.sim.dispatch({ type: 'release', tool: T.id }, { confirmed: true })
+  assert.equal(r.outcome, 'SAFETY_BLOCKED')
+  assert.equal(sci(), sciBefore, 'objects (solid still held), spill, drops and undo unchanged')
+  // Review fixes: picking with a loaded tool would drop the held sodium past the block; other contract gaps.
+  for (const cmd of [
+    { type: 'pick', tool: T.id, reagent: 'fe', massG: 1 }, { type: 'replace', id: byId(l.s(), T.id).load.id },
+    { type: 'move', id: B.id, x: NaN, y: 0 }, { type: 'tilt', id: B.id, angle: NaN }, { type: 'stir', id: B.id, amount: NaN },
+    { type: 'add', equipmentType: 'bottle', reagent: 'na', x: 100 }, { type: 'add', equipmentType: 'beaker100', x: NaN },
+    { type: 'pourExact', from: B.id, to: B.id, mL: 1 }, { type: 'wire', from: B.id, to: B.id }, { type: 'link', id: B.id, a: B.id, b: B.id },
+    { type: 'release', tool: B.id }, { type: 'grab', tool: T.id, id: B.id }, { type: 'co2', id: D.id, on: true }, { type: 'toString' }
+  ]) assert.equal(l.sim.dispatch(cmd, { confirmed: true }).outcome, 'INVALID_INPUT', JSON.stringify(cmd))
+  assert.equal(sci(), sciBefore, 'still unchanged after the rejected commands')
+  assert.equal(l.s().events.at(-1).outcome, 'SAFETY_BLOCKED')
+  // Over-asking is clamped to what exists (no creation): aspirate 50 mL from 10 mL.
+  const D2 = l.put('pipette', 300, { y: 10 })
+  const r2 = l.sim.dispatch({ type: 'aspirate', tool: D2.id, from: B.id, mL: 50 })
+  assert.equal(r2.outcome, 'APPLIED')
+  near(volumeOf(byId(l.s(), D2.id)), 10, 1e-9, 'the pipette took all 10 mL'); near(volumeOf(byId(l.s(), B.id)), 0, 1e-9, 'the beaker is empty')
+})
+
+test('foundation: canonical describe() — units, phases, complexes; SPECIES registry ids', () => {
+  const l = lab(101)
+  const B = l.put('beaker100', 300); l.fill(B, 'cuso4', 5); l.fill(B, 'nh3-2m', 30)
+  const d = describe(l.s(), B.id)
+  assert.equal(d.units.amount, 'mol'); assert.equal(d.units.liquid, 'mL'); assert.equal(d.units.T, '°C'); assert.equal(d.units.ionicStrength, 'mol/L')
+  near(d.volumeML, 35, 1e-9, 'volume')
+  rel(d.dissolved['Cu2+'], 2.5e-3, 1e-9, 'Cu analytical total')
+  rel(d.complexes['Cu2+'], 2.5e-3, 0.01, 'held as ammine complex')
+  assert.ok(!(d.precipitates['Cu(OH)2'] > 0))
+  assert.ok(d.pH > 10 && d.pH < 12.5)
+  assert.equal(describe(l.s(), 'nope'), null)
+  for (const k of ['Cu2+', 'NH3', 'Cu(OH)2', 'AgCl', 'water', 'H2']) assert.ok(SPECIES[k]?.id === k && SPECIES[k].phase, k)
+  assert.equal(SPECIES['Cu(OH)2'].charge, 0); assert.equal(SPECIES['Cu2+'].charge, 2); assert.equal(SPECIES.NH3.charge, null) // weak system: charge from pH
+  // Every Sandbox card maps to the experiment template schema.
+  for (const e of DISCOVER) { const t = experimentTemplate(e); assert.ok(t.id && t.category && t.initialEquipment.length && t.initialChemicals.length && t.studentAction && t.validationStatus, e.id) }
+})
+
+test('foundation: metamorphic — split additions, vessel position/order, save/load, reset give the same chemistry', () => {
+  const final = (steps, x = 300, extra = false) => {
+    const l = lab(102); if (extra) l.put('beaker250', 120)
+    const B = l.put('beaker250', x)
+    for (const [r, mL, n = 1] of steps) for (let i = 0; i < n; i += 1) l.fill(B, r, mL / n)
+    l.sim.runFor(0.5)
+    const d = describe(l.s(), B.id); return { d, l, B }
+  }
+  const same = (a, b, what) => {
+    for (const g of ['dissolved', 'precipitates', 'complexes']) for (const k of new Set([...Object.keys(a[g]), ...Object.keys(b[g])])) {
+      const x = a[g][k] || 0; const y = b[g][k] || 0
+      assert.ok(Math.abs(x - y) <= 1e-9 + 1e-4 * Math.max(x, y), `${what}: ${g}.${k} ${x} vs ${y}`)
+    }
+    assert.ok(Math.abs((a.pH ?? 0) - (b.pH ?? 0)) < 1e-3, `${what}: pH ${a.pH} vs ${b.pH}`)
+  }
+  const naoh1 = final([['cuso4', 20], ['naoh', 30]]).d
+  assert.ok(naoh1.precipitates['Cu(OH)2'] > 7e-3, 'non-trivial: Cu(OH)₂ formed')
+  same(naoh1, final([['cuso4', 20], ['naoh', 30, 15]]).d, 'NaOH in one pour vs 15 portions')
+  const nh1 = final([['cuso4', 5], ['nh3-2m', 30]]).d
+  assert.ok(nh1.complexes['Cu2+'] > 2e-3, 'non-trivial: complex formed')
+  same(nh1, final([['cuso4', 5], ['nh3-2m', 30, 30]]).d, 'NH₃ 2 M in one pour vs 30 portions')
+  same(final([['agno3', 20], ['nacl', 2]]).d, final([['agno3', 20], ['nacl', 2]], 640, true).d, 'other position, another vessel created first')
+  // Save/load and reset.
+  const { l, B } = final([['cuso4', 20], ['naoh', 6]])
+  const saved = snapshot(l.s())
+  const d0 = describe(l.s(), B.id)
+  const back = restore(saved)
+  same(d0, describe(back, B.id), 'snapshot → restore')
+  const events0 = l.s().events.length
+  assert.ok(events0 > 0, 'events were recorded')
+  const save = migrate({ schema: SCHEMA, state: JSON.parse(JSON.stringify(l.s())) })
+  assert.equal(validateSave(save), null)
+  const l2 = lab(103); l2.sim.load(save.state)
+  same(d0, describe(l2.s(), B.id), 'migrate → validateSave → load')
+  assert.equal(l2.s().events.length, events0, 'events kept through save/load')
+  const old = JSON.parse(JSON.stringify(l.s())); delete old.state; delete old.events
+  const oldSave = migrate({ schema: SCHEMA, state: old })
+  assert.equal(validateSave(oldSave), null); assert.deepEqual(oldSave.state.events, [], 'pre-Foundation save gets an empty event list')
+  assert.match(validateSave({ schema: SCHEMA, state: { ...old, events: 'bad' } }) || '', /Sự kiện/, 'malformed events are refused')
+  l.sim.markInitial(); l.fill(B, 'hcl', 20); l.sim.runFor(0.5); l.sim.reset()
+  same(d0, describe(l.s(), B.id), 'reset returns to the marked bench')
+})
+
+test('foundation: Guided and Sandbox use one engine — same vessel, same actions, same result', () => {
+  const guided = createSim(7)
+  const refs = GUIDED.find(x => x.id === 'precipitate').setup(guided)
+  assert.equal(guided.dispatch({ type: 'addReagentTo', id: refs.beaker, reagent: 'naoh', mL: 6 }, { record: false }).outcome, 'APPLIED'); guided.runFor(0.5)
+  const sand = lab(8); const B = sand.put('beaker100', 300); sand.fill(B, 'cuso4', 20); sand.fill(B, 'naoh', 6); sand.sim.runFor(0.5)
+  const a = describe(guided.state, refs.beaker); const b = describe(sand.s(), B.id)
+  assert.ok(a.precipitates['Cu(OH)2'] > 1e-3, 'non-trivial: precipitate in both')
+  for (const g2 of ['dissolved', 'precipitates']) for (const k of new Set([...Object.keys(a[g2]), ...Object.keys(b[g2])])) rel(a[g2][k] || 1e-30, b[g2][k] || 1e-30, 1e-6, `${g2}.${k}`)
+})
+
+test('foundation: open-ended scenarios from an empty bench (A acid–base, B precipitation, C complex, D sequential, E unsupported/safety)', () => {
+  // A. HCl 20 mL 0,5 M + NaOH 0,5 M: below, at and above equivalence (closed form, strong acid/base, Kw = 1e-14).
+  for (const [naoh, pH] of [[10, -Math.log10(0.005 / 0.03)], [20, 7], [30, 14 + Math.log10(0.005 / 0.05)]]) {
+    const l = lab(110); const B = l.put('beaker100', 300); l.fill(B, 'hcl', 20); l.fill(B, 'naoh', naoh)
+    near(describe(l.s(), B.id).pH, pH, 0.02, `HCl + ${naoh} mL NaOH`)
+  }
+  // B. AgNO₃ 0,1 M 20 mL (2 mmol) + NaCl 0,5 M: the limiting reagent switches; AgCl ≤ min(n), Ag⁺ in excess stays dissolved.
+  for (const nacl of [2, 4, 8]) {
+    const l = lab(111); const B = l.put('beaker100', 300); l.fill(B, 'agno3', 20); l.fill(B, 'nacl', nacl)
+    const nCl = 0.5 * nacl / 1000; const lim = Math.min(2e-3, nCl)
+    const d = describe(l.s(), B.id)
+    assert.ok(d.precipitates.AgCl <= lim && d.precipitates.AgCl > lim - 1e-5, `NaCl ${nacl} mL: AgCl ${d.precipitates.AgCl} vs ≤ ${lim}`)
+    if (nCl < 2e-3) rel(d.dissolved['Ag+'], 2e-3 - d.precipitates.AgCl, 1e-6, 'Ag⁺ in excess stays dissolved') // describe() rounds to 9 significant digits
+  }
+  // C. CuSO₄ + NH₃ 2 M added portion by portion: Cu(OH)₂ appears, then dissolves into the complex; events in that order.
+  {
+    const l = lab(112); const B = l.put('beaker100', 300); l.fill(B, 'cuso4', 5)
+    const ppt = []
+    for (let i = 0; i < 30; i += 1) { l.fill(B, 'nh3-2m', 1); l.sim.runFor(0.05); ppt.push(describe(l.s(), B.id).precipitates['Cu(OH)2'] || 0) }
+    const peak = ppt.indexOf(Math.max(...ppt))
+    assert.ok(ppt[peak] > 5e-4 && peak < 10, `Cu(OH)₂ forms first (peak ${ppt[peak]} at ${peak + 1} mL)`)
+    assert.ok(ppt.at(-1) < 1e-9, 'then dissolves completely')
+    const ev = l.s().events.filter(e => e.container === B.id).map(e => e.key.replace(/-o\d+$/, ''))
+    assert.ok(ev.indexOf('ppt-Cu(OH)2') >= 0 && ev.indexOf('ppt-Cu(OH)2') < ev.indexOf('ammine-dis-Cu(OH)2'), ev.join(','))
+    assert.equal(l.s().events.find(e => e.key.startsWith('ammine-Cu2+')).validation, 'EDUCATIONAL APPROXIMATION')
+  }
+  // D. Sequential: Cu(OH)₂, dissolved by HCl, then an iron nail plates out copper from the solution just made.
+  {
+    const l = lab(113); const B = l.put('beaker250', 300); l.fill(B, 'cuso4', 20); l.fill(B, 'naoh', 30)
+    assert.ok(describe(l.s(), B.id).precipitates['Cu(OH)2'] > 7e-3)
+    l.fill(B, 'hcl', 60); l.sim.runFor(0.5)
+    const d = describe(l.s(), B.id)
+    assert.ok(!(d.precipitates['Cu(OH)2'] > 0) && d.pH < 2, 'dissolved in acid')
+    const T = l.put('tongs', 300, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: T.id, reagent: 'fe', massG: 2 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: T.id }, { confirmed: true })
+    l.sim.runFor(20)
+    const nail = describe(l.s(), B.id).solids.find(s => s.reagent === 'fe')
+    assert.ok(nail.coat.Cu > 0, 'copper deposited from the re-dissolved Cu²⁺')
+    assert.ok(l.s().events.some(e => e.key.startsWith('rx-fe-cu-') && e.outcome === 'APPLIED' && e.validation === 'VALIDATED'))
+  }
+  // E. Unsupported: Mg + ZnSO₄ (E° says it reacts, not modelled) → UNSUPPORTED, nothing invented. Safety: Na + HCl blocked.
+  {
+    const l = lab(114); const B = l.put('beaker100', 300); l.fill(B, 'znso4', 30)
+    const T = l.put('tongs', 300, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: T.id, reagent: 'mg', massG: 0.05 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: T.id }, { confirmed: true })
+    l.sim.runFor(5)
+    const d = describe(l.s(), B.id)
+    assert.ok(l.s().events.some(e => e.container === B.id && e.outcome === 'UNSUPPORTED'))
+    assert.ok(!Object.keys(d.gasReleased).length && !d.solids.some(s => Object.keys(s.coat).length), 'no gas, no deposit invented')
+    near(d.solids.find(x => x.reagent === 'mg').massG, 0.05, 1e-9, 'magnesium untouched'); assert.ok(!(d.dissolved['Mg2+'] > 0), 'no Mg²⁺ invented')
+    assert.ok(l.s().events.some(e => e.key.startsWith('unsup-mg-Zn2+-')), 'the E° rule named the pair')
+    const A = l.put('dish', 500); l.fill(A, 'hcl', 150)
+    const T2 = l.put('tongs', 500, { y: 160 })
+    l.sim.dispatch({ type: 'pick', tool: T2.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
+    assert.equal(l.sim.dispatch({ type: 'release', tool: T2.id }, { confirmed: true }).outcome, 'SAFETY_BLOCKED')
+  }
 })
 
 // Gate 5: quantitative checks against hand-solved equilibria (constants written here from the cited tables, not read

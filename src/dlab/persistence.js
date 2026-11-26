@@ -14,6 +14,7 @@ export function validateSave(save) {
   const st = save.state
   if (!st || !Array.isArray(st.objects) || !Number.isFinite(st.t) || st.t < 0) return 'Thiếu trạng thái mô phỏng.'
   if (st.objects.length > 200) return 'Quá nhiều vật thể.'
+  if (st.events !== undefined && (!Array.isArray(st.events) || st.events.length > 1000 || st.events.some(e => !e || typeof e !== 'object'))) return 'Sự kiện quan sát không hợp lệ.'
   for (const o of st.objects) {
     if (typeof o.id !== 'string' || !(o.type === 'solid' || EQUIPMENT[o.type])) return `Vật thể không hợp lệ: ${o.type}`
     if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) return 'Tọa độ không hợp lệ.'
@@ -31,7 +32,9 @@ export function validateSave(save) {
 
 // Schema migrations run here; v1 is current, so this only normalises.
 export function migrate(save) {
-  return { ...save, schema: SCHEMA }
+  // Saves from before the Foundation have no state.events: start an empty event list (old notes stay in the journal).
+  const state = save.state && !Array.isArray(save.state.events) ? { ...save.state, events: [] } : save.state
+  return { ...save, schema: SCHEMA, state }
 }
 
 function open() {

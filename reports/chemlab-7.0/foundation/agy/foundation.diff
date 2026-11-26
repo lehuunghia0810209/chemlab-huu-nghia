@@ -1,0 +1,407 @@
+diff --git a/scripts/dlab-sci-matrix.mjs b/scripts/dlab-sci-matrix.mjs
+index b71bb4d..c3569b6 100644
+--- a/scripts/dlab-sci-matrix.mjs
++++ b/scripts/dlab-sci-matrix.mjs
+@@ -5,58 +5,13 @@ import fs from 'node:fs'
+ import path from 'node:path'
+ import { fileURLToPath } from 'node:url'
+ import { MANIFEST } from '../src/dlab/data/manifest.js'
+-
+-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+-const T = 'scripts/test-dlab.mjs'
++import { validationOf } from '../src/dlab/data/validation.js'
+ const SV = 'scripts/dlab-sci-validate.mjs'
+-const G1 = `${T} "gate 1: every manifest scenario conserves elements"`
++const G1 = 'scripts/test-dlab.mjs "gate 1: every manifest scenario conserves elements"'
+ 
+-// status, quantitative evidence (independent of the engine), conservation evidence, extra limits
+-const V = {
+-  neutralisation: ['VALIDATED', `${T} "pH strong acid / base", "pH weak acid / base (quadratic)" (closed form)`, G1],
+-  'co2-carbonate': ['EDUCATIONAL APPROXIMATION', `${T} "pH weak acid / base"; "CO2 into limewater" (qualitative)`, G1, 'Tốc độ thoát khí là minh họa.'],
+-  'dissolve-salts': ['EDUCATIONAL APPROXIMATION', `${T} "KNO3 solubility table interpolation" (vs the table in code; table values: see data audit)`, G1, 'Tốc độ tan là minh họa; bảng độ tan nội suy tuyến tính.'],
+-  boiling: ['EDUCATIONAL APPROXIMATION', `${T} "solvent: ethanol is not water" (CRC table points)`, '—', 'Nội suy tuyến tính bảng điểm sôi; 1 atm. Bảng (CRC cũ) có thể lệch 1,5–2,5 °C ở 5–50 % khối lượng etanol so với số liệu VLE 101,325 kPa (Carey & Lewis 1932, theo Antigravity — mới ở mức snippet, cần đối chiếu nguồn gốc rồi thay bảng).'],
+-  layers: ['EDUCATIONAL APPROXIMATION', `${T} "solvent: ethanol is not water" (density table)`, G1, 'Bỏ qua co thể tích khi trộn nước–etanol.'],
+-  'electrolysis-cucl2': ['EDUCATIONAL APPROXIMATION', `${T} "electrolysis CuCl2 follows Faraday" (n(Cu) = I·t/2F, closed form)`, `${T} "electrolysis CuCl2 follows Faraday"`, 'Khối lượng theo Faraday là định lượng; cường độ dòng (điện trở, quá thế) là minh họa.'],
+-  daniell: ['VALIDATED', `${T} "Daniell cell: Nernst voltage", "E follows E°(T)" (closed form)`, '—', 'Bỏ qua thế tiếp xúc lỏng; chưa tính phức amin nếu thêm NH₃.'],
+-  indicators: ['EDUCATIONAL APPROXIMATION', `${T} "litmus…", "indicator colour spreads…"`, '—'],
+-  'ammine-cu': ['EDUCATIONAL APPROXIMATION', `${T} "ammine complexes: model" (trend, conservation); constants spread ≈ 1,5 lg units between sources`, `${T} "ammine complexes: model" (Cu conserved)`],
+-  'ammine-ag': ['VALIDATED', `${T} "validation: AgCl partly dissolved in NH₃ matches the hand solution" (±3 %)`, G1],
+-  'ammine-zn': ['EDUCATIONAL APPROXIMATION', `${T} "ammine complexes: model" (trend)`, G1],
+-  redissolve: ['VALIDATED', `${T} "Cu(OH)2 forms with base and redissolves in acid" (n = n(OH⁻)/2)`, '—'],
+-  'mg-acid': ['VALIDATED', `${T} "Mg + HCl: H2 = n(Mg)…"; ${SV} (equation = engine stoichiometry)`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'zn-acid': ['VALIDATED', `${T} "every metal/solid rule conserves stoichiometry"; ${SV}`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'fe-acid': ['VALIDATED', `${T} "every metal/solid rule conserves stoichiometry"; ${SV}`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'fe-cu': ['VALIDATED', `${T} "Fe + CuSO4: copper coats the nail mole-for-mole"; ${SV}`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'zn-cu': ['VALIDATED', `${T} "every metal/solid rule conserves stoichiometry"; ${SV}`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'cu-ag': ['VALIDATED', `${T} "every metal/solid rule conserves stoichiometry"; ${SV}`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'na-water': ['VALIDATED', `${T} "Na + water: … NaOH pH and heat"; ${SV}`, G1, 'Chuyển động của mẩu natri là minh họa.'],
+-  'caco3-acid': ['VALIDATED', `${T} "every metal/solid rule conserves stoichiometry"; ${SV}`, G1, 'Tốc độ phản ứng là minh họa.'],
+-  'ppt-AgCl': ['VALIDATED', `${T} "validation: equimolar AgCl, AgI, BaSO₄ leave √Ksp dissolved"; "AgCl: limiting reagent and Ksp residual"`, G1],
+-  'ppt-AgI': ['VALIDATED', `${T} "validation: equimolar AgCl, AgI, BaSO₄ leave √Ksp dissolved"`, G1],
+-  'ppt-BaSO4': ['VALIDATED', `${T} "validation: equimolar AgCl, AgI, BaSO₄ leave √Ksp dissolved"`, G1],
+-  'ppt-Cu(OH)2': ['VALIDATED', `${T} "Cu(OH)2 forms with base and redissolves in acid" (n = n(OH⁻)/2)`, G1, 'Ksp của Cu(OH)₂ đã "già" (CRC); kết tủa mới tan hơn ≈ 10 lần (Hidmi & Edwards 1999).'],
+-  'ppt-Fe(OH)3': ['VALIDATED', `${T} "hydroxide precipitates: Fe(OH)3, Fe(OH)2, Mg(OH)2 take the limiting reagent"`, G1],
+-  'ppt-Fe(OH)2': ['VALIDATED', `${T} "hydroxide precipitates: …"`, G1, 'Không mô hình Fe(OH)₂ bị oxi hóa trong không khí thành Fe(OH)₃.'],
+-  'ppt-Mg(OH)2': ['VALIDATED', `${T} "hydroxide precipitates: …"`, G1],
+-  'ppt-CaCO3': ['UNVERIFIED', `${T} "CO2 into limewater" (qualitative only)`, G1],
+-  'ppt-BaCO3': ['UNVERIFIED', 'demo only (forms)', G1],
+-  'ppt-ZnCO3': ['UNVERIFIED', 'demo only (forms)', G1, 'Thực tế có thể tạo kẽm cacbonat bazơ.'],
+-  'ppt-Ag2CO3': ['UNVERIFIED', 'demo only (forms)', G1],
+-  'ppt-Zn(OH)2': ['UNVERIFIED', 'demo only (forms)', G1],
+-  'redox-cu-i': ['VALIDATED', `${T} "CuCl₂ + KI: 2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂ … atoms and charge conserved"; ${SV}`, G1, 'Cổng pH ≤ 7 là chặn thô (nhiệt động: ngừng ở pH ≈ 5,6 khi có Cu(OH)₂); kết quả do Ksp chi phối vì chỉ ion tan phản ứng — đã thử trên engine.'],
+-  'redox-fe-i': ['EDUCATIONAL APPROXIMATION', `${SV} (equation = engine stoichiometry); conversion run to completion`, G1, 'Chạy hết theo chất hạn chế; ở < 1 mM thực tế còn vài % chưa phản ứng.'],
+-}
+-const def = e => {
+-  if (V[e.id]) return V[e.id]
+-  if (e.status === 'NO_REACTION') return ['VALIDATED', `${T} "reaction coverage: unmodelled metal/ion pairs are NO_REACTION or UNSUPPORTED by E°"; demo`, G1, 'So sánh E° chuẩn; không xét động học hay lớp thụ động.']
+-  if (e.status === 'UNSUPPORTED') return ['UNSUPPORTED', `${T} "unsupported and non-reactions do not invent results"; demo / "${(e.tests || [])[0] || '—'}"`, e.demo ? G1 : '—']
+-  if (e.status === 'INVALID') return ['UNSUPPORTED (chặn an toàn)', `${T} "safety: every blocked condition in the manifest is refused"`, '— (lệnh bị từ chối, không có tác dụng phụ)']
+-  return ['UNVERIFIED', '—', '—']
+-}
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+ const esc = s => String(s ?? '—').replace(/\|/g, '\\|').replace(/\n/g, ' ')
+-const rows = MANIFEST.map(e => { const [st, ev, cons, lim] = def(e); return { e, st, ev, cons, lim } })
++const rows = MANIFEST.map(e => { const [st, ev, cons, lim] = validationOf(e); return { e, st, ev, cons, lim } })
+ const count = {}
+ for (const r of rows) count[r.st] = (count[r.st] || 0) + 1
+ let md = `# ChemLab 7.0 — Scientific Validation Matrix
+diff --git a/scripts/lib/dlab-journeys.mjs b/scripts/lib/dlab-journeys.mjs
+index 37ab0f1..67b0d9f 100644
+--- a/scripts/lib/dlab-journeys.mjs
++++ b/scripts/lib/dlab-journeys.mjs
+@@ -413,6 +413,67 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
+     assert.ok(Math.abs(b.pH - 0.301) < 0.01, `pH ${b.pH}`)
+   })
+ 
++  // ── Foundation: open-ended Sandbox from an EMPTY bench, through the visible controls only (library + action bar) ──
++  const fromLibrary = async (page, shelf, group, name, sub) => {
++    await libGroup(page, shelf, group)
++    let item = page.locator('.dlab-lib-item', { hasText: name })
++    if (sub) item = item.filter({ hasText: sub })
++    const before = await st(page, L => L.state.objects.map(o => o.id))
++    await item.first().click()
++    return st(page, (L, b) => L.state.objects.filter(o => !b.includes(o.id)).map(o => o.id).at(-1), before)
++  }
++  const pourUI = async (page, bottle, to, mL) => {
++    await select(page, bottle)
++    await page.locator('[data-qa-in="to"]').selectOption(to)
++    await page.locator('[data-qa-in="ml"]').fill(String(mL))
++    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
++  }
++  const emptyBench = async page => { await btn(page, 'Tự do').click(); await bench(page, {}) }
++
++  await test('F01 Sandbox mở từ bàn trống: axit – bazơ, thay đổi lượng NaOH, pH theo lời giải tay', async page => {
++    await emptyBench(page)
++    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
++    const hcl = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Axit clohiđric')
++    const naoh = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Natri hiđroxit')
++    await pourUI(page, hcl, beaker, 20)
++    await pourUI(page, naoh, beaker, 10)
++    let d = await st(page, (L, id) => L.describe(id), beaker)
++    assert.ok(Math.abs(d.pH - -Math.log10(0.005 / 0.03)) < 0.03, `under-neutralised pH ${d.pH}`)
++    await pourUI(page, naoh, beaker, 20)
++    d = await st(page, (L, id) => L.describe(id), beaker)
++    assert.ok(Math.abs(d.pH - (14 + Math.log10(0.005 / 0.05))) < 0.03, `excess base pH ${d.pH}`)
++    const ev = await st(page, (L, id) => L.events().filter(e => e.container === id).map(e => `${e.key}:${e.outcome}`), beaker)
++    assert.ok(ev.some(e => e.startsWith('neutral-') && e.endsWith(':APPLIED')), ev.join(' '))
++  })
++
++  await test('F02 Sandbox mở từ bàn trống: CuSO₄ + NH₃ 2 M từng phần — kết tủa rồi phức, không qua thẻ', async page => {
++    await emptyBench(page)
++    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
++    const cu = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Đồng(II) sunfat')
++    const nh3 = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Dung dịch amoniac', '2 M')
++    assert.equal(await st(page, (L, id) => L.state.objects.find(o => o.id === id).reagent, nh3), 'nh3-2m')
++    await pourUI(page, cu, beaker, 5)
++    await pourUI(page, nh3, beaker, 2)
++    let d = await st(page, (L, id) => L.describe(id), beaker)
++    assert.ok(d.precipitates['Cu(OH)2'] > 3e-4, `pale-blue Cu(OH)₂ first: ${JSON.stringify(d.precipitates)}`)
++    for (let i = 0; i < 4; i += 1) await pourUI(page, nh3, beaker, 7)
++    d = await st(page, (L, id) => L.describe(id), beaker)
++    assert.ok(!(d.precipitates['Cu(OH)2'] > 1e-9), `dissolved: ${JSON.stringify(d.precipitates)}`)
++    assert.ok(Math.abs(d.complexes['Cu2+'] - 2.5e-3) < 3e-5, `complex ${d.complexes['Cu2+']}`)
++    const label = await st(page, (L, id) => L.state.objects.find(o => o.id === id).label || null, beaker)
++    const ev = await st(page, (L, id) => L.events().filter(e => e.container === id).map(e => e.key.replace(/-o\d+$/, '')), beaker)
++    assert.ok(ev.indexOf('ppt-Cu(OH)2') >= 0 && ev.indexOf('ppt-Cu(OH)2') < ev.indexOf('ammine-dis-Cu(OH)2'), `${label}: ${ev.join(',')}`)
++  })
++
++  await test('F03 Sandbox mở: lệnh sai (qua API của trang) bị từ chối, bàn không đổi', async page => {
++    await emptyBench(page)
++    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
++    const before = await st(page, L => JSON.stringify(L.state.objects))
++    const r = await st(page, (L, id) => L.dispatch({ type: 'addReagentTo', id, reagent: 'hcl', mL: -5 }), beaker)
++    assert.equal(r.outcome, 'INVALID_INPUT')
++    assert.equal(await st(page, L => JSON.stringify(L.state.objects)), before)
++  })
++
+   await test('S24 phản ứng chưa hỗ trợ không tạo kết quả giả', async page => {
+     const ids = await bench(page, { A: { type: 'beaker100', x: 300, fill: [['hcl', 30]] }, B: { type: 'beaker100', x: 450, fill: [['hno3', 30]] }, K: { type: 'tongs', x: 600, y: 150 } })
+     await st(page, (L, ids) => {
+diff --git a/scripts/test-dlab.mjs b/scripts/test-dlab.mjs
+index 60a0d43..3bfed22 100644
+--- a/scripts/test-dlab.mjs
++++ b/scripts/test-dlab.mjs
+@@ -6,6 +6,7 @@ import { ELECTRO } from '../src/dlab/data/reactions.js'
+ import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materials.js'
+ import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw, ammineComplexes } from '../src/dlab/engine/chemistry.js'
+ import { createSim, benchInventory, checkInvariants, snapshot, restore, H } from '../src/dlab/engine/sim.js'
++import { describe, SPECIES, experimentTemplate } from '../src/dlab/engine/domain.js'
+ import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
+ import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
+ import { migrate, validateSave } from '../src/dlab/persistence.js'
+@@ -40,7 +41,7 @@ test('a failing command leaves state and undo history untouched', () => {
+   const l = lab()
+   const before = JSON.stringify(l.s().objects)
+   const hist = l.sim.history.length
+-  assert.throws(() => l.sim.dispatch({ type: 'add', equipmentType: 'nope', x: 100 }))
++  assert.equal(l.sim.dispatch({ type: 'add', equipmentType: 'nope', x: 100 }).outcome, 'INVALID_INPUT') // contract: rejected, not thrown
+   assert.equal(JSON.stringify(l.sim.state.objects), before)
+   assert.equal(l.sim.history.length, hist)
+ })
+@@ -1293,6 +1294,153 @@ test('audit: Ca(OH)₂ / CaSO₄ / carbonate hints fire only when real; AgCl is
+   { const l = lab(94); const B2 = l.put('beaker100', 300); l.fill(B2, 'hcl', 1); const b = l.put('burner', 300); byId(l.s(), B2.id).y = 0; l.sim.dispatch({ type: 'move', id: B2.id, x: 300, y: EQUIPMENT.burner.h }, { confirmed: true }); l.sim.dispatch({ type: 'burner', id: b.id, on: true }, { confirmed: true }); l.sim.runFor(240); const t = l.s().log.map(e => e.text).join('|'); if (/đã cạn|bay hơi hết/.test(t)) assert.doesNotMatch(t, /chất rắn kết tinh/, 'HCl leaves no crystals') }
+ })
+ 
++// ── Foundation: universal command contract, canonical state, metamorphic properties, open-ended scenarios ──
++test('foundation: command contract rejects invalid input atomically (no state, undo or journal change)', () => {
++  const l = lab(100)
++  const B = l.put('beaker100', 300); l.fill(B, 'hcl', 10)
++  const D = l.put('dropper', 400, { y: 10 })
++  const gone = l.put('beaker100', 500); l.sim.dispatch({ type: 'remove', id: gone.id })
++  const frozen = () => JSON.stringify({ o: l.s().objects, log: l.s().log, ev: l.s().events, h: l.sim.history.length })
++  const before = frozen()
++  for (const cmd of [
++    { type: 'addReagentTo', id: gone.id, reagent: 'hcl', mL: 5 }, // removed vessel
++    { type: 'addReagentTo', id: D.id, reagent: 'hcl', mL: 1 }, // a dropper is not a vessel
++    { type: 'aspirate', tool: B.id, from: B.id, mL: 1 }, // a beaker cannot aspirate
++    { type: 'addReagentTo', id: B.id, reagent: 'hcl', mL: -3 }, { type: 'addReagentTo', id: B.id, reagent: 'hcl', mL: NaN },
++    { type: 'addReagentTo', id: B.id, reagent: 'unobtainium', mL: 1 }, { type: 'addReagentTo', id: B.id, reagent: 'na', mL: 1 }, // a solid is not poured
++    { type: 'dispense', tool: D.id, drops: 1.5 }, { type: 'pourExact', from: B.id, to: B.id + 'x', mL: 1 }, { type: 'warp', id: B.id }
++  ]) {
++    const r = l.sim.dispatch(cmd)
++    assert.equal(r.outcome, 'INVALID_INPUT', `${JSON.stringify(cmd)} → ${r.outcome}`)
++    assert.ok(r.verdict.reasons.length > 0)
++  }
++  assert.equal(frozen(), before, 'nothing changed')
++  // Safety block: the scientific state is unchanged (only the journal records the attempt).
++  const T = l.put('tongs', 300, { y: 160 })
++  l.sim.dispatch({ type: 'pick', tool: T.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
++  const sci = () => JSON.stringify(l.s().objects.filter(o => o.type !== 'solid').map(o => o.contents || null))
++  const sciBefore = sci()
++  const r = l.sim.dispatch({ type: 'release', tool: T.id }, { confirmed: true })
++  assert.equal(r.outcome, 'SAFETY_BLOCKED')
++  assert.equal(sci(), sciBefore)
++  assert.equal(l.s().events.at(-1).outcome, 'SAFETY_BLOCKED')
++  // Over-asking is clamped to what exists (no creation): aspirate 50 mL from 10 mL.
++  const D2 = l.put('pipette', 300, { y: 10 })
++  const r2 = l.sim.dispatch({ type: 'aspirate', tool: D2.id, from: B.id, mL: 50 })
++  assert.equal(r2.outcome, 'APPLIED')
++  near(volumeOf(byId(l.s(), D2.id)) + volumeOf(byId(l.s(), B.id)), 10, 1e-9, 'volume conserved')
++})
++
++test('foundation: canonical describe() — units, phases, complexes; SPECIES registry ids', () => {
++  const l = lab(101)
++  const B = l.put('beaker100', 300); l.fill(B, 'cuso4', 5); l.fill(B, 'nh3-2m', 30)
++  const d = describe(l.s(), B.id)
++  assert.deepEqual(d.units, { amount: 'mol', liquid: 'mL', T: '°C' })
++  near(d.volumeML, 35, 1e-9, 'volume')
++  rel(d.dissolved['Cu2+'], 2.5e-3, 1e-9, 'Cu analytical total')
++  rel(d.complexes['Cu2+'], 2.5e-3, 0.01, 'held as ammine complex')
++  assert.ok(!(d.precipitates['Cu(OH)2'] > 0))
++  assert.ok(d.pH > 10 && d.pH < 12.5)
++  assert.equal(describe(l.s(), 'nope'), null)
++  for (const k of ['Cu2+', 'NH3', 'Cu(OH)2', 'AgCl', 'water', 'H2']) assert.ok(SPECIES[k]?.id === k && SPECIES[k].phase, k)
++  assert.equal(SPECIES['Cu(OH)2'].charge, 0); assert.equal(SPECIES['Cu2+'].charge, 2); assert.equal(SPECIES.NH3.charge, null) // weak system: charge from pH
++  // Every Sandbox card maps to the experiment template schema.
++  for (const e of DISCOVER) { const t = experimentTemplate(e); assert.ok(t.id && t.category && t.initialEquipment.length && t.initialChemicals.length && t.studentAction && t.validationStatus, e.id) }
++})
++
++test('foundation: metamorphic — split additions, vessel position/order, save/load, reset give the same chemistry', () => {
++  const final = (steps, x = 300, extra = false) => {
++    const l = lab(102); if (extra) l.put('beaker250', 120)
++    const B = l.put('beaker250', x)
++    for (const [r, mL, n = 1] of steps) for (let i = 0; i < n; i += 1) l.fill(B, r, mL / n)
++    l.sim.runFor(0.5)
++    const d = describe(l.s(), B.id); return { d, l, B }
++  }
++  const same = (a, b, what) => {
++    for (const g of ['dissolved', 'precipitates', 'complexes']) for (const k of new Set([...Object.keys(a[g]), ...Object.keys(b[g])])) {
++      const x = a[g][k] || 0; const y = b[g][k] || 0
++      assert.ok(Math.abs(x - y) <= 1e-9 + 1e-4 * Math.max(x, y), `${what}: ${g}.${k} ${x} vs ${y}`)
++    }
++    assert.ok(Math.abs((a.pH ?? 0) - (b.pH ?? 0)) < 1e-3, `${what}: pH ${a.pH} vs ${b.pH}`)
++  }
++  same(final([['cuso4', 20], ['naoh', 30]]).d, final([['cuso4', 20], ['naoh', 30, 15]]).d, 'NaOH in one pour vs 15 portions')
++  same(final([['cuso4', 5], ['nh3-2m', 30]]).d, final([['cuso4', 5], ['nh3-2m', 30, 30]]).d, 'NH₃ 2 M in one pour vs 30 portions')
++  same(final([['agno3', 20], ['nacl', 2]]).d, final([['agno3', 20], ['nacl', 2]], 640, true).d, 'other position, another vessel created first')
++  // Save/load and reset.
++  const { l, B } = final([['cuso4', 20], ['naoh', 6]])
++  const saved = snapshot(l.s())
++  const d0 = describe(l.s(), B.id)
++  const back = restore(saved)
++  same(d0, describe(back, B.id), 'snapshot → restore')
++  l.sim.markInitial(); l.fill(B, 'hcl', 20); l.sim.runFor(0.5); l.sim.reset()
++  same(d0, describe(l.s(), B.id), 'reset returns to the marked bench')
++})
++
++test('foundation: Guided and Sandbox use one engine — same vessel, same actions, same result', () => {
++  const guided = createSim(7)
++  const refs = GUIDED.find(x => x.id === 'precipitate').setup(guided)
++  guided.dispatch({ type: 'addReagentTo', id: refs.beaker, reagent: 'naoh', mL: 6 }, { record: false }); guided.runFor(0.5)
++  const sand = lab(8); const B = sand.put('beaker100', 300); sand.fill(B, 'cuso4', 20); sand.fill(B, 'naoh', 6); sand.sim.runFor(0.5)
++  const a = describe(guided.state, refs.beaker); const b = describe(sand.s(), B.id)
++  for (const g2 of ['dissolved', 'precipitates']) for (const k of new Set([...Object.keys(a[g2]), ...Object.keys(b[g2])])) rel(a[g2][k] || 1e-30, b[g2][k] || 1e-30, 1e-6, `${g2}.${k}`)
++})
++
++test('foundation: open-ended scenarios from an empty bench (A acid–base, B precipitation, C complex, D sequential, E unsupported/safety)', () => {
++  // A. HCl 20 mL 0,5 M + NaOH 0,5 M: below, at and above equivalence (closed form, strong acid/base, Kw = 1e-14).
++  for (const [naoh, pH] of [[10, -Math.log10(0.005 / 0.03)], [20, 7], [30, 14 + Math.log10(0.005 / 0.05)]]) {
++    const l = lab(110); const B = l.put('beaker100', 300); l.fill(B, 'hcl', 20); l.fill(B, 'naoh', naoh)
++    near(describe(l.s(), B.id).pH, pH, 0.02, `HCl + ${naoh} mL NaOH`)
++  }
++  // B. AgNO₃ 0,1 M 20 mL (2 mmol) + NaCl 0,5 M: the limiting reagent switches; AgCl ≤ min(n), Ag⁺ in excess stays dissolved.
++  for (const nacl of [2, 4, 8]) {
++    const l = lab(111); const B = l.put('beaker100', 300); l.fill(B, 'agno3', 20); l.fill(B, 'nacl', nacl)
++    const nCl = 0.5 * nacl / 1000; const lim = Math.min(2e-3, nCl)
++    const d = describe(l.s(), B.id)
++    assert.ok(d.precipitates.AgCl <= lim && d.precipitates.AgCl > lim - 1e-5, `NaCl ${nacl} mL: AgCl ${d.precipitates.AgCl} vs ≤ ${lim}`)
++    if (nCl < 2e-3) rel(d.dissolved['Ag+'], 2e-3 - d.precipitates.AgCl, 1e-6, 'Ag⁺ in excess stays dissolved') // describe() rounds to 9 significant digits
++  }
++  // C. CuSO₄ + NH₃ 2 M added portion by portion: Cu(OH)₂ appears, then dissolves into the complex; events in that order.
++  {
++    const l = lab(112); const B = l.put('beaker100', 300); l.fill(B, 'cuso4', 5)
++    const ppt = []
++    for (let i = 0; i < 30; i += 1) { l.fill(B, 'nh3-2m', 1); l.sim.runFor(0.05); ppt.push(describe(l.s(), B.id).precipitates['Cu(OH)2'] || 0) }
++    const peak = ppt.indexOf(Math.max(...ppt))
++    assert.ok(ppt[peak] > 5e-4 && peak < 10, `Cu(OH)₂ forms first (peak ${ppt[peak]} at ${peak + 1} mL)`)
++    assert.ok(ppt.at(-1) < 1e-9, 'then dissolves completely')
++    const ev = l.s().events.filter(e => e.container === B.id).map(e => e.key.replace(/-o\d+$/, ''))
++    assert.ok(ev.indexOf('ppt-Cu(OH)2') >= 0 && ev.indexOf('ppt-Cu(OH)2') < ev.indexOf('ammine-dis-Cu(OH)2'), ev.join(','))
++    assert.equal(l.s().events.find(e => e.key.startsWith('ammine-Cu2+')).validation, 'EDUCATIONAL APPROXIMATION')
++  }
++  // D. Sequential: Cu(OH)₂, dissolved by HCl, then an iron nail plates out copper from the solution just made.
++  {
++    const l = lab(113); const B = l.put('beaker250', 300); l.fill(B, 'cuso4', 20); l.fill(B, 'naoh', 30)
++    assert.ok(describe(l.s(), B.id).precipitates['Cu(OH)2'] > 7e-3)
++    l.fill(B, 'hcl', 60); l.sim.runFor(0.5)
++    const d = describe(l.s(), B.id)
++    assert.ok(!(d.precipitates['Cu(OH)2'] > 0) && d.pH < 2, 'dissolved in acid')
++    const T = l.put('tongs', 300, { y: 160 })
++    l.sim.dispatch({ type: 'pick', tool: T.id, reagent: 'fe', massG: 2 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: T.id }, { confirmed: true })
++    l.sim.runFor(20)
++    const nail = describe(l.s(), B.id).solids.find(s => s.reagent === 'fe')
++    assert.ok(nail.coat.Cu > 0, 'copper deposited from the re-dissolved Cu²⁺')
++    assert.ok(l.s().events.some(e => e.key.startsWith('rx-fe-cu-') && e.outcome === 'APPLIED' && e.validation === 'VALIDATED'))
++  }
++  // E. Unsupported: Mg + ZnSO₄ (E° says it reacts, not modelled) → UNSUPPORTED, nothing invented. Safety: Na + HCl blocked.
++  {
++    const l = lab(114); const B = l.put('beaker100', 300); l.fill(B, 'znso4', 30)
++    const T = l.put('tongs', 300, { y: 160 })
++    l.sim.dispatch({ type: 'pick', tool: T.id, reagent: 'mg', massG: 0.05 }, { confirmed: true }); l.sim.dispatch({ type: 'release', tool: T.id }, { confirmed: true })
++    l.sim.runFor(5)
++    const d = describe(l.s(), B.id)
++    assert.ok(l.s().events.some(e => e.container === B.id && e.outcome === 'UNSUPPORTED'))
++    assert.ok(!Object.keys(d.gasReleased).length && !d.solids.some(s => Object.keys(s.coat).length), 'no gas, no deposit invented')
++    const A = l.put('dish', 500); l.fill(A, 'hcl', 150)
++    const T2 = l.put('tongs', 500, { y: 160 })
++    l.sim.dispatch({ type: 'pick', tool: T2.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
++    assert.equal(l.sim.dispatch({ type: 'release', tool: T2.id }, { confirmed: true }).outcome, 'SAFETY_BLOCKED')
++  }
++})
++
+ // Gate 5: quantitative checks against hand-solved equilibria (constants written here from the cited tables, not read
+ // from the engine). Equimolar mixing leaves [M] = [X] = √Ksp (no hydrolysis or protonation at pH ≈ 7 for these ions).
+ test('validation: equimolar AgCl, AgI, BaSO₄ leave √Ksp dissolved (CRC Ksp, 25 °C)', () => {
+diff --git a/src/dlab/engine/processes.js b/src/dlab/engine/processes.js
+index 15c802e..c2145b2 100644
+--- a/src/dlab/engine/processes.js
++++ b/src/dlab/engine/processes.js
+@@ -1,5 +1,6 @@
+ // Per-step processes: transfer, kinetics, thermal, electrochemistry, physics and the visual fields.
+ // Everything here runs inside the fixed timestep, so results do not depend on the render frame rate.
++import { classifyNote, containerOfNote } from './domain.js'
+ import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
+ import { WEAK, IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass, PH_MAX_ETHANOL_FRACTION } from '../data/materials.js'
+ import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME, SOLVENT_HINTS, ION_REDOX } from '../data/reactions.js'
+@@ -33,6 +34,12 @@ export function noteOnce(state, key, text, kind = 'observe') {
+   if (state.notes[key]) return
+   state.notes[key] = state.t
+   log(state, text, kind)
++  // Structured observation event (Foundation): container, process, standard outcome, validation status, and the
++  // container's state at that moment. Renderers, Guided and Sandbox read these instead of parsing journal text.
++  const container = containerOfNote(state, key)
++  const c = container && byId(state, container)
++  ;(state.events ||= []).push({ t: state.t, key, kind, text, container, ...classifyNote(key), state: c?.contents ? { pH: c.pH ?? null, T: c.T, volumeML: volumeOf(c) } : null })
++  if (state.events.length > 200) state.events.shift()
+ }
+ 
+ export const isContainer = o => Boolean(o && EQUIPMENT[o.type]?.caps.includes('contain'))
+diff --git a/src/dlab/engine/sim.js b/src/dlab/engine/sim.js
+index 46ca167..dbf7149 100644
+--- a/src/dlab/engine/sim.js
++++ b/src/dlab/engine/sim.js
+@@ -1,4 +1,5 @@
+ // Simulation core: the single source of truth. Renderers only read `state`.
++import { contractProblems } from './contract.js'
+ import { EQUIPMENT, halfWidthAt, innerHeight } from '../data/equipment.js'
+ import { REAGENT_BY_ID } from '../data/materials.js'
+ import { emptyContents, reagentParcel, totalVolumeML, elementInventory } from './chemistry.js'
+@@ -24,6 +25,7 @@ export function createState(seed = 20261122) {
+     paused: false,
+     nextId: 1,
+     objects: [],
++    events: [], // structured observation events (domain.js classifyNote)
+     wires: [],
+     drops: [],
+     streams: [],
+@@ -295,14 +297,19 @@ export function createSim(seed) {
+     check(cmd) {
+       return assess(sim.state, cmd)
+     },
++    // outcome: APPLIED | INVALID_INPUT (contract.js: nothing changes) | SAFETY_BLOCKED (only the journal records the
++    // attempt) | NEEDS_CONFIRMATION (warning not yet confirmed: nothing changes).
+     dispatch(cmd, { confirmed = false, record = true } = {}) {
++      const problems = contractProblems(sim.state, cmd)
++      if (problems) return { ok: false, outcome: 'INVALID_INPUT', verdict: { level: 'block', reasons: problems } }
+       const verdict = assess(sim.state, cmd)
+       if (verdict.level === 'block') {
+         log(sim.state, `Đã chặn: ${verdict.reasons.join(' ')}`, 'danger')
++        ;(sim.state.events ||= []).push({ t: sim.state.t, key: `blocked-${cmd.type}`, kind: 'danger', text: verdict.reasons.join(' '), container: cmd.id || cmd.to || null, outcome: 'SAFETY_BLOCKED', process: null, validation: null, state: null })
+         sim.emit()
+-        return { ok: false, verdict }
++        return { ok: false, outcome: 'SAFETY_BLOCKED', verdict }
+       }
+-      if (verdict.level === 'warn' && !confirmed) return { ok: false, needsConfirm: true, verdict }
++      if (verdict.level === 'warn' && !confirmed) return { ok: false, outcome: 'NEEDS_CONFIRMATION', needsConfirm: true, verdict }
+       const fn = COMMANDS[cmd.type]
+       if (!fn) throw new Error(`Lệnh không hợp lệ: ${cmd.type}`)
+       const before = snapshot(sim.state)
+@@ -322,7 +329,7 @@ export function createSim(seed) {
+         throw error
+       }
+       sim.emit()
+-      return { ok: true, verdict, ...result }
++      return { ok: true, outcome: 'APPLIED', verdict, ...result }
+     },
+     record() {
+       sim.history.push(snapshot(sim.state))
+diff --git a/src/dlab/ui/dlabApp.js b/src/dlab/ui/dlabApp.js
+index f20e6c1..f403701 100644
+--- a/src/dlab/ui/dlabApp.js
++++ b/src/dlab/ui/dlabApp.js
+@@ -1,4 +1,5 @@
+ // ChemLab 7.0 Dynamic Laboratory — workspace UI and interaction controller.
++import { describe } from '../engine/domain.js'
+ import './dlab.css'
+ import { createSim, SPEEDS, snapshot, restore, carry } from '../engine/sim.js'
+ import { EQUIPMENT, CAPABILITIES } from '../data/equipment.js'
+@@ -1729,6 +1730,9 @@ export function initDynamicLab(host) {
+   // Test/automation hook (read-only access + commands through the same safety path).
+   window.ChemLabDynamicLab = Object.freeze({
+     get state() { return sim.state },
++    // Foundation read API: canonical scientific state of a container and the structured observation events.
++    describe: id => describe(sim.state, id),
++    events: (since = 0) => (sim.state.events || []).filter(e => e.t >= since),
+     get ready() { return Boolean(ui.booted) },
+     dispatch: (cmd, opts) => sim.dispatch(cmd, opts),
+     undo: () => sim.undo(),

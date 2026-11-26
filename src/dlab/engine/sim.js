@@ -1,4 +1,5 @@
 // Simulation core: the single source of truth. Renderers only read `state`.
+import { contractProblems } from './contract.js'
 import { EQUIPMENT, halfWidthAt, innerHeight } from '../data/equipment.js'
 import { REAGENT_BY_ID } from '../data/materials.js'
 import { emptyContents, reagentParcel, totalVolumeML, elementInventory } from './chemistry.js'
@@ -24,6 +25,7 @@ export function createState(seed = 20261122) {
     paused: false,
     nextId: 1,
     objects: [],
+    events: [], // structured observation events (domain.js classifyNote)
     wires: [],
     drops: [],
     streams: [],
@@ -295,18 +297,23 @@ export function createSim(seed) {
     check(cmd) {
       return assess(sim.state, cmd)
     },
+    // outcome: APPLIED | INVALID_INPUT (contract.js: nothing changes) | SAFETY_BLOCKED (only the journal records the
+    // attempt) | NEEDS_CONFIRMATION (warning not yet confirmed: nothing changes).
     dispatch(cmd, { confirmed = false, record = true } = {}) {
+      const problems = contractProblems(sim.state, cmd)
+      if (problems) return { ok: false, outcome: 'INVALID_INPUT', verdict: { level: 'block', reasons: problems } }
       const verdict = assess(sim.state, cmd)
       if (verdict.level === 'block') {
         log(sim.state, `Đã chặn: ${verdict.reasons.join(' ')}`, 'danger')
+        ;(sim.state.events ||= []).push({ t: sim.state.t, key: `blocked-${cmd.type}`, kind: 'danger', text: verdict.reasons.join(' '), container: cmd.id || cmd.to || null, outcome: 'SAFETY_BLOCKED', process: null, validation: null, state: null })
+        if (sim.state.events.length > 200) sim.state.events.shift()
         sim.emit()
-        return { ok: false, verdict }
+        return { ok: false, outcome: 'SAFETY_BLOCKED', verdict }
       }
-      if (verdict.level === 'warn' && !confirmed) return { ok: false, needsConfirm: true, verdict }
+      if (verdict.level === 'warn' && !confirmed) return { ok: false, outcome: 'NEEDS_CONFIRMATION', needsConfirm: true, verdict }
       const fn = COMMANDS[cmd.type]
       if (!fn) throw new Error(`Lệnh không hợp lệ: ${cmd.type}`)
       const before = snapshot(sim.state)
-      if (record) sim.record()
       if (verdict.level === 'warn') log(sim.state, `Cảnh báo an toàn: ${verdict.reasons.join(' ')}`, 'warn')
       let result
       try {
@@ -318,11 +325,12 @@ export function createSim(seed) {
       catch (error) {
         // A failed command leaves no trace: state and undo history return to before it ran.
         sim.state = restore(before)
-        if (record) sim.history.pop()
         throw error
       }
+      // Undo is recorded only once the command has succeeded (a failure must not drop history or clear redo).
+      if (record) { sim.history.push(before); if (sim.history.length > HISTORY_LIMIT) sim.history.shift(); sim.future = [] }
       sim.emit()
-      return { ok: true, verdict, ...result }
+      return { ok: true, outcome: 'APPLIED', verdict, ...result }
     },
     record() {
       sim.history.push(snapshot(sim.state))
@@ -350,6 +358,7 @@ export function createSim(seed) {
     },
     load(data) {
       sim.state = data
+      if (!Array.isArray(sim.state.events)) sim.state.events = [] // saves from before the Foundation
       sim.history = []
       sim.future = []
       sim.emit()
@@ -428,6 +437,7 @@ export function checkInvariants(state) {
       if (msg) return msg
     }
     if (o.T != null && !(o.T > -50 && o.T < 2000)) return `${o.id}.T = ${o.T}`
+    if (!Number.isFinite(o.x) || !Number.isFinite(o.y)) return `${o.id} position = ${o.x}, ${o.y}`
   }
   return null
 }

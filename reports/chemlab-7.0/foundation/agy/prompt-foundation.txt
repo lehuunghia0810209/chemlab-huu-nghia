@@ -1,0 +1,15 @@
+You are an independent architecture and test reviewer for ChemLab Dynamic Lab (D:\EduLab\ChemLab). READ-ONLY: never
+write files or run commands. Answer in English, concise, ranked P0/P1/P2 with file:line, scenario and fix.
+
+Read reports/chemlab-7.0/foundation/agy/foundation.diff (uncommitted Foundation work) and the files it touches:
+src/dlab/engine/contract.js (universal command contract checked in sim.dispatch before safety), src/dlab/engine/domain.js
+(SPECIES registry, describe(), classifyNote(), experimentTemplate()), src/dlab/data/validation.js (validation statuses),
+src/dlab/engine/sim.js (dispatch outcomes), src/dlab/engine/processes.js (noteOnce → state.events), scripts/test-dlab.mjs
+(tests named "foundation: …"), scripts/lib/dlab-journeys.mjs (F01–F03).
+
+Find real defects: (1) commands that can still change state partially when rejected, or a rejected command that the
+contract lets through (refs, capabilities, quantities, reagent kinds) — check every handler in sim.js COMMANDS against
+COMMAND_CONTRACT; (2) wrong standard outcome classification in classifyNote (a note that reports UNSUPPORTED/APPLIED/
+UNVERIFIED wrongly, or a process mapped to the wrong manifest id); (3) describe() reporting wrong units or quantities;
+(4) tests that would pass even if the feature were broken (expected values derived from the engine itself); (5) Save/Load
+compatibility of the new state.events field. Do not propose new features. Do not claim you ran anything.

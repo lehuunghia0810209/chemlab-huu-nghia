@@ -1,4 +1,5 @@
 // ChemLab 7.0 Dynamic Laboratory — workspace UI and interaction controller.
+import { describe } from '../engine/domain.js'
 import './dlab.css'
 import { createSim, SPEEDS, snapshot, restore, carry } from '../engine/sim.js'
 import { EQUIPMENT, CAPABILITIES } from '../data/equipment.js'
@@ -1729,6 +1730,9 @@ export function initDynamicLab(host) {
   // Test/automation hook (read-only access + commands through the same safety path).
   window.ChemLabDynamicLab = Object.freeze({
     get state() { return sim.state },
+    // Foundation read API: canonical scientific state of a container and the structured observation events.
+    describe: id => describe(sim.state, id),
+    events: (since = 0) => (sim.state.events || []).filter(e => e.t >= since),
     get ready() { return Boolean(ui.booted) },
     dispatch: (cmd, opts) => sim.dispatch(cmd, opts),
     undo: () => sim.undo(),
