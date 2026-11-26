@@ -7,11 +7,11 @@ Sinh tự động từ `src/dlab/data/manifest.js` bằng `node scripts/dlab-man
 - "Unit test riêng": mục được kiểm bởi test có tên ghi trong cột "Kiểm chứng". Test manifest đối chiếu để chắc các test đó tồn tại.
 - "Chưa kiểm chứng": mục chỉ có trong bảng, chưa có test chạy thật.
 
-Thẻ "Khám phá" trong Sandbox lấy đúng 29 mục mô hình hóa có kịch bản.
+Thẻ "Khám phá" trong Sandbox lấy đúng 31 mục mô hình hóa có kịch bản.
 
 | Trạng thái | Số mục | Kịch bản trên engine | Unit test riêng | Chưa kiểm chứng |
 |---|---|---|---|---|
-| Được mô hình hóa (`SUPPORTED`) | 32 | 28 | 4 | 0 |
+| Được mô hình hóa (`SUPPORTED`) | 34 | 30 | 4 | 0 |
 | Xấp xỉ giáo dục (`APPROX`) | 2 | 1 | 1 | 0 |
 | Không phản ứng (trong điều kiện mô hình) (`NO_REACTION`) | 5 | 5 | 0 | 0 |
 | Chưa hỗ trợ — báo rõ, không tạo sản phẩm (`UNSUPPORTED`) | 28 | 20 | 6 | 2 |
@@ -21,6 +21,8 @@ Thẻ "Khám phá" trong Sandbox lấy đúng 29 mục mô hình hóa có kịch
 
 | ID | Phản ứng / quá trình | Đầu vào | Điều kiện | Sản phẩm | Quan sát | Mô hình | Nguồn | Kiểm chứng | Giới hạn |
 |---|---|---|---|---|---|---|---|---|---|
+| `acid-base-ph` | pH của axit, bazơ mạnh và yếu; pha loãng | HCl, NaOH (mạnh); CH₃COOH, NH₃ (yếu); nước | 25 °C, dung dịch loãng; hoạt độ = nồng độ (sai số vài phần mười đơn vị pH khi lực ion > 0,1 M) | — | Axit/bazơ mạnh: pH theo nồng độ, pha loãng 10 lần thay đổi 1 đơn vị pH. Axit/bazơ yếu: pH xa 7 ít hơn ở cùng nồng độ và thay đổi ít hơn khi pha loãng (phân li tăng). | Cân bằng điện tích với Kw, Ka(CH₃COOH) = 1,75·10⁻⁵, Ka(NH₄⁺) = 5,6·10⁻¹⁰. | Kw, Ka: CRC Handbook (25 °C) | kịch bản trên engine | Lý tưởng (hoạt độ = nồng độ); không có hệ số hoạt độ. |
+| `weak-acid-titration` | CH₃COOH + OH⁻ → CH₃COO⁻ + H₂O (chuẩn độ axit yếu) | CH₃COOH 1 M + NaOH 0,5 M | 25 °C | CH₃COO⁻, H₂O | Nửa tương đương: pH = pKa ≈ 4,76 (dung dịch đệm). Tương đương: pH ≈ 9,1 (> 7, do CH₃COO⁻ thủy phân). | Cân bằng điện tích với Ka(CH₃COOH). | Ka CH₃COOH 1,75·10⁻⁵ (CRC, 25 °C) | kịch bản trên engine | Lý tưởng; nhiệt trung hòa tính như axit mạnh (sai số nhỏ). |
 | `neutralisation` | H⁺ + OH⁻ → H₂O (trung hòa) | HCl + NaOH (+ phenolphtalein) | 25 °C | NaCl, H₂O, nhiệt | Màu chỉ thị đổi theo pH; dung dịch ấm lên. | pH từ cân bằng điện tích; nhiệt trung hòa −55,84 kJ/mol. | Kw 1,0·10⁻¹⁴; ΔH từ NBS | kịch bản trên engine | Nhiệt dùng tổng H⁺/OH⁻ mất đi (có thể dư 1–2 °C khi kết tủa hiđroxit). |
 | `co2-carbonate` | CO₃²⁻ + 2H⁺ → CO₂↑ + H₂O; HCO₃⁻ + H⁺ → CO₂↑ + H₂O | NaHCO₃ + CH₃COOH (hoặc Na₂CO₃ + HCl) | 25 °C, 1 atm | CO₂↑, H₂O | Sủi bọt khí không màu. | Phân bố H₂CO₃/HCO₃⁻/CO₃²⁻ theo pH; khí thoát khi [H₂CO₃*] vượt độ tan Henry. | Ka1, Ka2 (CRC); Henry 3,4·10⁻² mol/(L·atm) | kịch bản trên engine | Tốc độ thoát khí là xấp xỉ. |
 | `dissolve-salts` | Hòa tan NaCl, KNO₃, NaHCO₃; kết tinh NaCl, KNO₃ | Tinh thể + nước | 0–100 °C (NaCl, KNO₃); ≤ 60 °C cho NaHCO₃ | Ion trong dung dịch; tinh thể khi quá bão hòa | Tinh thể nhỏ dần; KNO₃ kết tinh lại khi làm nguội. | Độ tan theo bảng nhiệt độ (nội suy tuyến tính). | CRC Handbook (độ tan g/100 g nước) | kịch bản trên engine | Tốc độ tan là xấp xỉ. Không kết tinh lại NaHCO₃ và không mô hình phản ứng nhiệt phân 2NaHCO₃ → Na₂CO₃ + CO₂↑ + H₂O khi đun trên khoảng 50–60 °C. |

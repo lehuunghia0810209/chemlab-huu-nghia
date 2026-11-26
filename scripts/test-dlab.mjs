@@ -96,6 +96,22 @@ test('pH weak acid / base (quadratic)', () => {
   const y = (-Kb + Math.sqrt(Kb * Kb + 4 * Kb * 0.5)) / 2
   near(pHOf(parcel('nh3', 10)), 14 + Math.log10(y), 0.01, 'NH3 0.5 M')
 })
+// Hand solutions (Kw 1e-14, Ka CH₃COOH 1,75e-5, Ka NH₄⁺ 5,6e-10, ideal solution): dilution of strong and weak acids/bases,
+// and the acetic acid titration (half-equivalence: charge balance of the buffer; equivalence: acetate hydrolysis).
+test('acid–base: dilution and weak-acid titration match hand solutions', () => {
+  const Ka = 1.75e-5; const Kb = 1e-14 / 5.6e-10; const KbAc = 1e-14 / Ka
+  const weak = (K, C) => (-K + Math.sqrt(K * K + 4 * K * C)) / 2
+  const at = (steps) => { const c = emptyContents(); for (const [r, mL] of steps) mix(c, reagentParcel(REAGENT_BY_ID[r], mL)); return pHOf(c) }
+  near(at([['hcl', 10], ['water', 90]]), -Math.log10(0.05), 0.005, 'HCl diluted 10×: one pH unit')
+  near(at([['naoh', 20], ['water', 20]]), 14 + Math.log10(0.25), 0.005, 'NaOH diluted 2×')
+  near(at([['ch3cooh', 20], ['water', 20]]), -Math.log10(weak(Ka, 0.5)), 0.01, 'CH₃COOH 1 → 0,5 M')
+  near(at([['nh3', 20], ['water', 20]]), 14 + Math.log10(weak(Kb, 0.25)), 0.01, 'NH₃ 0,5 → 0,25 M')
+  // Half-equivalence: 10 mmol HA + 5 mmol OH⁻ in 20 mL → h + [Na⁺] = C·Ka/(Ka + h) (OH⁻ negligible): h² + (Na + Ka)h − (C − Na)Ka = 0.
+  { const C = 0.5; const Na = 0.25; const h = (-(Na + Ka) + Math.sqrt((Na + Ka) ** 2 + 4 * (C - Na) * Ka)) / 2
+    near(at([['ch3cooh', 10], ['naoh', 10]]), -Math.log10(h), 0.01, 'half-equivalence ≈ pKa'); near(-Math.log10(h), -Math.log10(Ka), 0.01, 'buffer: pH = pKa') }
+  // Equivalence: 10 mmol CH₃COO⁻ in 30 mL; pH from its hydrolysis, above 7.
+  { const pH = 14 + Math.log10(weak(KbAc, 10 / 30)); near(at([['ch3cooh', 10], ['naoh', 20]]), pH, 0.01, 'equivalence'); assert.ok(pH > 9 && pH < 9.3) }
+})
 test('neutralisation: equivalence, excess and heat', () => {
   const a = parcel('hcl', 10)
   const r = mix(a, parcel('naoh', 10))
@@ -1469,6 +1485,26 @@ test('foundation: open-ended scenarios from an empty bench (A acid–base, B pre
   }
 })
 
+// Runs an experiment definition the way a student does: lay out, then each step (pour, or tongs → drop a solid), with time.
+function runExperiment(e, seed) {
+  const l = lab(seed)
+  const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 140); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id })
+  const tool = (e.setup.tools || []).length ? l.put(e.setup.tools[0], 100, { y: 160 }) : null
+  for (const s of e.steps) {
+    let r
+    if (s.act.pour) r = l.sim.dispatch({ type: 'addReagentTo', id: ids[s.act.to], reagent: s.act.pour, mL: s.act.mL }, { record: false })
+    else if (s.act.drops) r = l.sim.dispatch({ type: 'addReagentTo', id: ids[s.act.to], reagent: s.act.drops, mL: 3 * EQUIPMENT.dropper.dropML }, { record: false }) // the bottle's "Nhỏ 3 giọt"
+    else {
+      const v = byId(l.s(), ids[s.act.to])
+      l.sim.dispatch({ type: 'move', id: tool.id, x: v.x, y: 160 }, { record: false })
+      assert.equal(l.sim.dispatch({ type: 'pick', tool: tool.id, reagent: s.act.solid, massG: s.act.massG }, { confirmed: true, record: false }).outcome, 'APPLIED', `${e.id}: pick`)
+      r = l.sim.dispatch({ type: 'release', tool: tool.id }, { confirmed: true, record: false })
+    }
+    assert.equal(r.outcome, 'APPLIED', `${e.id}: ${s.text}`)
+    l.sim.runFor(s.act.solid ? 30 : 0.3)
+  }
+  return { l, ids }
+}
 // Experiment Library: every experiment runs on the engine from its own definition (setup + student steps) and gives
 // the phenomena it promises; its validation status is derived from the matrix, never better than its processes.
 test('experiment library: every experiment runs on the engine', () => {
@@ -1477,18 +1513,21 @@ test('experiment library: every experiment runs on the engine', () => {
     for (const f of ['objective', 'equipment', 'chemicals', 'conditions', 'steps', 'phenomena', 'equation', 'explanation', 'safety', 'processRefs', 'references', 'tests']) assert.ok(e[f] && (e[f].length ?? 1) > 0, `${e.id}: ${f}`)
     for (const id of e.processRefs) assert.ok(MANIFEST.some(m => m.id === id), `${e.id}: process ${id} in the manifest`)
     for (const t of e.tests) assert.ok(readFileSync(new URL(import.meta.url), 'utf8').includes(`test('${t}`), `${e.id}: test "${t}" exists`)
-    const l = lab(120)
-    const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 120); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id })
-    for (const s of e.steps) {
-      const r = l.sim.dispatch({ type: 'addReagentTo', id: ids[s.act.to], reagent: s.act.pour, mL: s.act.mL }, { record: false })
-      assert.equal(r.outcome, 'APPLIED', `${e.id}: ${s.text}`)
-      l.sim.runFor(0.3)
-    }
+    const { l, ids } = runExperiment(e, 120)
     for (const x of e.expect) assert.ok(l.s().events.some(ev => ev.container === ids[x.vessel] && ev.key.startsWith(x.key)), `${e.id}: ${x.key} in vessel ${x.vessel}`)
     assert.ok(!l.s().events.some(ev => ids.includes(ev.container) && ev.outcome === 'UNSUPPORTED'), `${e.id}: nothing unsupported`)
+    for (const x of e.expectState || []) {
+      const d = describe(l.s(), ids[x.vessel])
+      if (x.pH) assert.ok(d.pH >= x.pH[0] && d.pH <= x.pH[1], `${e.id}: pH ${d.pH} in ${x.pH}`)
+      if (x.indicator) assert.match(indicatorReading(x.indicator[0], d.pH), new RegExp(x.indicator[1]), `${e.id}: ${x.indicator}`)
+      if (x.coat) assert.ok(d.solids.some(s => (s.coat[x.coat] || 0) > 0), `${e.id}: ${x.coat} deposited`)
+      if (x.gas) assert.ok((d.gasReleased[x.gas] || 0) > 0, `${e.id}: ${x.gas} released`)
+      if (x.noGas) assert.ok(!Object.keys(d.gasReleased).length, `${e.id}: no gas`)
+      if (x.noCoat) assert.ok(!d.solids.some(s => Object.keys(s.coat).length), `${e.id}: no deposit`)
+    }
   }
   // Results the definitions state, from the engine.
-  const run = id => { const e = EXPERIMENTS.find(x => x.id === id); const l = lab(121); const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 120); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id }); for (const s of e.steps) { l.fill({ id: ids[s.act.to] }, s.act.pour, s.act.mL); l.sim.runFor(0.3) } return ids.map(i => describe(l.s(), i)) }
+  const run = id => { const { l, ids } = runExperiment(EXPERIMENTS.find(x => x.id === id), 121); return ids.map(i => describe(l.s(), i)) }
   assert.ok(!(run('exp-copper-hydroxide')[0].precipitates['Cu(OH)2'] > 0), 'Cu(OH)₂ dissolved by the acid')
   const [agcl, agi] = run('exp-silver-halide-ammonia')
   assert.ok(!(agcl.precipitates.AgCl > 1e-5) && agi.precipitates.AgI > 0.99e-3, 'AgCl dissolved, AgI stays')
@@ -1582,6 +1621,7 @@ for (const e of MANIFEST.filter(x => x.demo)) {
     if (x.oilBelow) assert.ok(oilBelow(c.contents), 'oil below')
     if (x.unsupported) assert.ok(c.unsupported, 'reported as unsupported')
     if (x.noPH) assert.equal(c.pH, null)
+    if (x.pH) assert.ok(c.pH >= x.pH[0] && c.pH <= x.pH[1], `pH ${c.pH} in ${x.pH}`)
     if (x.hint) assert.ok(Object.keys(s.notes).some(k => k.startsWith(x.hint)), `hint ${x.hint} reported`)
     if (e.status === 'NO_REACTION' || e.status === 'UNSUPPORTED') {
       assert.ok(!Object.values(c.gasOut || {}).some(v => v > 0), 'no gas invented')

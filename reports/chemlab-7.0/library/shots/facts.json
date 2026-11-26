@@ -1,0 +1,65 @@
+{
+ "exp-phenolphthalein-endpoint": [
+  {
+   "pH": 1.626,
+   "coat": [],
+   "gas": {}
+  }
+ ],
+ "exp-weak-acid-titration": [
+  {
+   "pH": 9.139,
+   "coat": [],
+   "gas": {}
+  }
+ ],
+ "exp-iron-copper-sulfate": [
+  {
+   "pH": 4.147,
+   "coat": [
+    {
+     "Cu": 0.000214845391
+    }
+   ],
+   "gas": {}
+  }
+ ],
+ "exp-metals-in-acid": [
+  {
+   "pH": 0.3185,
+   "coat": [
+    {}
+   ],
+   "gas": {
+    "H2": 0.000294940925
+   }
+  },
+  {
+   "pH": 0.3036,
+   "coat": [
+    {}
+   ],
+   "gas": {
+    "H2": 0.0000440743392
+   }
+  },
+  {
+   "pH": 0.301,
+   "coat": [
+    {}
+   ],
+   "gas": {}
+  }
+ ],
+ "exp-copper-silver-nitrate": [
+  {
+   "pH": 5.504,
+   "coat": [
+    {
+     "Ag": 0.0000361751798
+    }
+   ],
+   "gas": {}
+  }
+ ]
+}

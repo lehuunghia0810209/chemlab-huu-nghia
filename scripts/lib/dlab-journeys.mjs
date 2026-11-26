@@ -1499,14 +1499,15 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
       const solid = s.objects.find(o => o.type === 'solid' && o.in === c.id)
       return (!a.x.gas || (c.gasOut?.[a.x.gas] || 0) > 0) && (!a.x.ion || (c.contents.ions[a.x.ion] || 0) > 1e-7) &&
         (!a.x.deposit || (solid?.coat?.[a.x.deposit] || 0) > 0) && (!a.x.ppt || (c.contents.precipitates[a.x.ppt] || 0) > 1e-9) &&
-        (!a.x.note || Object.keys(s.notes).some(k => k.startsWith(a.x.note))) && (!a.x.noPH || c.pH == null)
+        (!a.x.note || Object.keys(s.notes).some(k => k.startsWith(a.x.note))) && (!a.x.noPH || c.pH == null) && (!a.x.pH || (c.pH >= a.x.pH[0] && c.pH <= a.x.pH[1]))
     }, { v: ids.v, x }, d.run / 4 * 1000 + 25000)
     if (x.oilBelow) assert.ok(oilBelow((await obj(page, ids.v)).contents), 'oil below the ethanol')
     assert.equal(checkInvariants(await st(page, L => JSON.parse(JSON.stringify(L.state)))), null, 'invariants')
   })
 
-  // Experiment Library: every experiment done by hand from its card (lay out, read the guide, pour step by step).
+  // Experiment Library: every experiment done by hand from its card (lay out, read the guide, pour or use the tongs).
   const BADGE_WORD = { VALIDATED: 'Đã kiểm chứng định lượng', 'EDUCATIONAL APPROXIMATION': 'Xấp xỉ giáo dục', UNVERIFIED: 'Chưa kiểm chứng' }
+  const W = t => ({ beaker100: 52, beaker250: 72, bottle: 40, tongs: 14 })[t] ?? 40 // fallback only; real widths come from the page
   for (const e of EXPERIMENTS) await test(`EXP Thư viện thí nghiệm qua giao diện — ${e.id}: ${e.title}`, async page => {
     await btn(page, 'Tự do').click()
     await bench(page, {})
@@ -1514,17 +1515,79 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     const card = page.locator(`[data-exp-card="${e.id}"]`)
     assert.equal((await card.locator('.dlab-exp-badge').textContent()).trim(), BADGE_WORD[experimentValidation(e)], 'badge = derived validation')
     await card.locator('summary').click()
-    await card.locator('.dlab-exp-eq', { hasText: e.equation.split(';')[0].trim() }).waitFor()
+    if (e.equation !== '—') await card.locator('.dlab-exp-eq', { hasText: e.equation.split(';')[0].trim() }).waitFor()
     await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
-    const laid = await st(page, L => L.state.objects.map(o => ({ id: o.id, type: o.type, reagent: o.reagent || null })))
-    const vessels = laid.filter(o => o.type !== 'bottle').map(o => o.id)
+    const laid = await st(page, L => L.state.objects.map(o => ({ id: o.id, type: o.type, reagent: o.reagent || null, x: o.x, w: L.equipmentWidth?.(o.type) ?? null })))
+    const vessels = laid.filter(o => !['bottle', 'tongs', 'spatula'].includes(o.type)).map(o => o.id)
     const bottle = Object.fromEntries(laid.filter(o => o.type === 'bottle').map(o => [o.reagent, o.id]))
     assert.equal(vessels.length, e.setup.vessels.length, 'vessels laid out')
     for (const r of e.setup.bottles) assert.ok(bottle[r], `bottle ${r}`)
-    for (const s of e.steps) await pourUI(page, bottle[s.act.pour], vessels[s.act.to], s.act.mL)
-    await wait(page, (L, a) => a.expect.every(x => L.events().some(ev => ev.container === a.vessels[x.vessel] && ev.key.startsWith(x.key))), { expect: e.expect, vessels })
-    const bad = await st(page, (L, v) => L.events().filter(ev => v.includes(ev.container) && ev.outcome === 'UNSUPPORTED').length, vessels)
-    assert.equal(bad, 0, 'nothing unsupported')
+    // Nothing laid out covers anything else (the bottle used to sit over the beaker).
+    for (let i = 0; i < laid.length; i += 1) for (let j = i + 1; j < laid.length; j += 1) {
+      const a = laid[i]; const b = laid[j]
+      assert.ok(Math.abs(a.x - b.x) >= ((a.w ?? W(a.type)) + (b.w ?? W(b.type))) / 2, `${a.type} ${a.x} overlaps ${b.type} ${b.x}`)
+    }
+    const confirm = async () => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }
+    const tongs = laid.find(o => o.type === 'tongs')?.id
+    if (tongs) await page.locator('[data-speed="4"]').first().click()
+    for (const s of e.steps) {
+      if (s.act.pour) { await pourUI(page, bottle[s.act.pour], vessels[s.act.to], s.act.mL); continue }
+      if (s.act.drops) { await select(page, bottle[s.act.drops]); await page.locator('[data-qa-in="to"]').selectOption(vessels[s.act.to]); await page.locator('.dlab-actionbar [data-qa="drops"]').click(); continue }
+      await select(page, tongs)
+      await page.locator('[data-qa-in="solid"]').selectOption(s.act.solid)
+      await page.locator('[data-qa-in="mass"]').fill(String(s.act.massG))
+      await page.locator('.dlab-actionbar [data-qa="pick"]').click()
+      await confirm()
+      await page.locator('[data-qa-in="to"]').selectOption(vessels[s.act.to])
+      await page.locator('.dlab-actionbar [data-qa="drop-solid"]').click()
+      await confirm()
+    }
+    await wait(page, (L, a) => a.expect.every(x => L.events().some(ev => ev.container === a.vessels[x.vessel] && ev.key.startsWith(x.key))) &&
+      a.state.every(x => { const d = L.describe(a.vessels[x.vessel]); return (!x.pH || (d.pH >= x.pH[0] && d.pH <= x.pH[1])) && (!x.coat || d.solids.some(s => (s.coat[x.coat] || 0) > 0)) && (!x.gas || (d.gasReleased[x.gas] || 0) > 0) }),
+    { expect: e.expect, state: e.expectState || [], vessels }, 90000)
+    const after = await st(page, (L, v) => ({ bad: L.events().filter(ev => v.includes(ev.container) && ev.outcome === 'UNSUPPORTED').length, d: v.map(id => L.describe(id)) }), vessels)
+    assert.equal(after.bad, 0, 'nothing unsupported')
+    for (const x of e.expectState || []) {
+      const d = after.d[x.vessel]
+      if (x.noGas) assert.ok(!Object.keys(d.gasReleased).length, 'no gas')
+      if (x.noCoat) assert.ok(!d.solids.some(s => Object.keys(s.coat).length), 'no deposit')
+      if (x.indicator?.[0] === 'phenolphthalein') assert.equal(d.pH >= 8.2, x.indicator[1] === 'chuyển hồng', `phenolphthalein at pH ${d.pH}`)
+    }
+  })
+
+  await test('EXP Thư viện: tìm kiếm, lọc mức độ, bày lại, axe trên thẻ thí nghiệm (sáng/tối)', async page => {
+    await btn(page, 'Tự do').click()
+    await bench(page, {})
+    await sideTab(page, 'Khám phá')
+    const visible = () => page.locator('[data-exp-card]:visible').count()
+    assert.equal(await visible(), EXPERIMENTS.length)
+    await page.locator('[data-exp-search]').fill('axit yeu') // accents optional
+    const n1 = await visible()
+    assert.ok(n1 >= 2 && n1 < EXPERIMENTS.length, `search: ${n1}`)
+    await page.locator('[data-exp-search]').fill('')
+    await page.locator('[data-exp-difficulty]').selectOption('Nâng cao')
+    assert.equal(await visible(), EXPERIMENTS.filter(e => e.difficulty === 'Nâng cao').length)
+    await page.locator('[data-exp-search]').fill('khong co thi nghiem nao nhu the')
+    await page.locator('[data-exp-empty]').waitFor()
+    await page.locator('[data-exp-search]').fill('')
+    await page.locator('[data-exp-difficulty]').selectOption('')
+    // Lay out twice: the second lay-out replaces the first (no duplicate vessels left on the bench).
+    const card = page.locator('[data-exp-card="exp-neutralisation-excess"]')
+    await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
+    const n0 = await st(page, L => L.state.objects.length)
+    await card.getByRole('button', { name: 'Bày lại' }).click()
+    assert.equal(await st(page, L => L.state.objects.length), n0, 'bày lại: same number of objects')
+    await card.locator('summary').click()
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate(t => { document.documentElement.dataset.theme = t }, theme)
+      await page.waitForTimeout(300)
+      await page.addScriptTag({ content: axeSource })
+      const r = await page.evaluate(async () => {
+        const res = await window.axe.run(document.querySelector('.dlab-discover-pane'), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] } })
+        return res.violations.map(v => `${v.id} (${v.impact}): ${v.nodes.length} — ${v.nodes.slice(0, 2).map(n => n.target.join(' ')).join(' | ')}`)
+      })
+      assert.deepEqual(r, [], `${theme}: ${r.join(' || ')}`)
+    }
   })
 
   await test('X04 đổi bài giữa chừng: bài mới sạch, không mang trạng thái/tiến độ của bài cũ, không Hoàn tác về bài cũ', async page => {

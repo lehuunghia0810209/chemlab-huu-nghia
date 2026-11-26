@@ -12,7 +12,7 @@ import { observe } from './observations.js'
 import { objectTitle, solidName } from './labels.js'
 import { GUIDED } from '../guided.js'
 import { DISCOVER } from '../data/manifest.js'
-import { EXPERIMENTS, EXPERIMENT_GROUPS, experimentValidation } from '../data/experiments.js'
+import { EXPERIMENTS, EXPERIMENT_GROUPS, DIFFICULTY, experimentValidation } from '../data/experiments.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
 import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
 import { assess } from '../engine/safety.js'
@@ -284,14 +284,16 @@ export function initDynamicLab(host) {
   paintLibrary()
 
   // A free spot on the visible part of the bench, nearest the centre first.
-  function freeX() {
-    const xs = sim.state.objects.filter(o => o.y < 5).map(o => o.x)
+  function freeX(type) {
+    const w = EQUIPMENT[type]?.w ?? 60
+    const onBench = sim.state.objects.filter(o => o.y < 5 && o.type !== 'solid')
     const [x0] = toWorld(view, 30, 0)
     const [x1] = toWorld(view, view.w - 30, 0)
     const spots = []
     for (let x = x0 + 30; x <= x1 - 30; x += 15) spots.push(x)
     spots.sort((a, b) => Math.abs(a - view.x) - Math.abs(b - view.x))
-    return Math.round(spots.find(x => !xs.some(v => Math.abs(v - x) < 50)) ?? view.x)
+    // Free when the new item's footprint clears every item on the bench by 12 mm.
+    return Math.round(spots.find(x => !onBench.some(o => Math.abs(o.x - x) < (EQUIPMENT[o.type]?.w ?? 40) / 2 + w / 2 + 12)) ?? view.x)
   }
 
   function takeFromLibrary(key, at = null) {
@@ -301,12 +303,12 @@ export function initDynamicLab(host) {
       // New equipment rests on the bench (no floating tools) unless it was dropped over a vessel.
       const over = at && containerBelow(sim.state, at.x, at.y + 40)
       if (it.type === 'litmusPaper') {
-        const r = sim.dispatch({ type: 'newLitmus', x: at?.x ?? freeX() })
+        const r = sim.dispatch({ type: 'newLitmus', x: at?.x ?? freeX('litmusPaper') })
         byId(sim.state, r.id).y = over ? Math.max(0, at.y) : 0
         return select(r.id)
       }
       const tool = TOOLS.includes(it.type)
-      const r = sim.dispatch({ type: 'add', equipmentType: it.type, x: at?.x ?? freeX(), y: tool && over ? Math.max(0, at.y) : 0 })
+      const r = sim.dispatch({ type: 'add', equipmentType: it.type, x: at?.x ?? freeX(it.type), y: tool && over ? Math.max(0, at.y) : 0 })
       if (!tool) sim.dispatch({ type: 'move', id: r.id, x: byId(sim.state, r.id).x, y: 0 }, { record: false })
       return select(r.id)
     }
@@ -323,7 +325,7 @@ export function initDynamicLab(host) {
       }
       return addSolidWithTool(reagent, target)
     }
-    const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', reagent: reagent.id, x: at?.x ?? freeX() })
+    const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', reagent: reagent.id, x: at?.x ?? freeX('bottle') })
     select(r.id)
   }
 
@@ -1318,7 +1320,8 @@ export function initDynamicLab(host) {
     const BADGE = { VALIDATED: ['ok', 'Đã kiểm chứng định lượng'], 'EDUCATIONAL APPROXIMATION': ['approx', 'Xấp xỉ giáo dục'], UNVERIFIED: ['unverified', 'Chưa kiểm chứng'] }
     const expCard = e => {
       const [cls, word] = BADGE[experimentValidation(e)]
-      return `<li class="dlab-exp" data-exp-card="${esc(e.id)}"><b>${esc(e.title)}</b><span class="dlab-exp-badge dlab-exp-badge--${cls}">${esc(word)}</span>` +
+      const search = [e.title, e.grade, e.difficulty, ...e.keywords, ...e.chemicals].join(' ')
+      return `<li class="dlab-exp" data-exp-card="${esc(e.id)}" data-difficulty="${esc(e.difficulty)}" data-search="${esc(foldText(search))}"><b>${esc(e.title)}</b><span class="dlab-exp-meta"><span class="dlab-exp-badge dlab-exp-badge--${cls}">${esc(word)}</span> ${esc(e.grade)} · ${esc(e.difficulty)}</span>` +
         `<button type="button" class="dlab-btn dlab-btn--sm" data-experiment="${esc(e.id)}">Bày dụng cụ</button>` +
         `<details><summary>Hướng dẫn</summary><dl>` +
         `<dt>Mục tiêu</dt><dd>${esc(e.objective)}</dd><dt>Dụng cụ, hóa chất</dt><dd>${esc([...e.equipment, ...e.chemicals].join('; '))}</dd>` +
@@ -1327,10 +1330,27 @@ export function initDynamicLab(host) {
         `<dt>Giải thích</dt><dd>${esc(e.explanation)}</dd><dt>An toàn</dt><dd>${esc(e.safety)}</dd><dt>Nguồn</dt><dd>${esc(e.references.join('; '))}</dd></dl></details></li>`
     }
     pane.innerHTML = `<p class="dlab-hint">Thí nghiệm có hướng dẫn: bấm “Bày dụng cụ” rồi làm theo các bước. Mọi kết quả do mô hình hóa học tính, không phải hoạt cảnh; nhãn cho biết mức kiểm chứng khoa học.</p>` +
-      EXPERIMENT_GROUPS.map(g => `<h3 class="dlab-disc-group">${esc(g.title)} · ${esc(g.grade)}</h3><ul class="dlab-disc dlab-exps">${EXPERIMENTS.filter(e => e.group === g.id).map(expCard).join('')}</ul>`).join('') +
+      `<div class="dlab-exp-filter"><input type="search" class="dlab-in" data-exp-search placeholder="Tìm thí nghiệm: tên, hóa chất, từ khóa" aria-label="Tìm thí nghiệm"><select class="dlab-in" data-exp-difficulty aria-label="Mức độ"><option value="">Mọi mức độ</option>${DIFFICULTY.map(d => `<option>${esc(d)}</option>`).join('')}</select></div>` +
+      `<p class="dlab-hint" data-exp-empty hidden>Không có thí nghiệm phù hợp. Vẫn có thể tự làm trên bàn trống với hóa chất trong Tủ hóa chất.</p>` +
+      EXPERIMENT_GROUPS.map(g => `<section data-exp-group="${esc(g.id)}"><h3 class="dlab-disc-group">${esc(g.title)} · ${esc(g.grade)}</h3><ul class="dlab-disc dlab-exps">${EXPERIMENTS.filter(e => e.group === g.id).map(expCard).join('')}</ul></section>`).join('') +
       `<p class="dlab-hint">Các hiện tượng dưới đây được mô phỏng từ mô hình hóa học (không phải hoạt cảnh). Bấm “Bày dụng cụ”, rồi tự làm thí nghiệm. Tổ hợp khác vẫn thử được: mô phỏng sẽ nói rõ khi không phản ứng hoặc chưa hỗ trợ.</p>` +
       groups.map(g => `<h3 class="dlab-disc-group">${esc(g)}</h3><ul class="dlab-disc">${DISCOVER.filter(e => e.group === g).map(e => `<li><b>${esc(e.title)}</b><span>${esc(e.inputs)}</span><button type="button" class="dlab-btn dlab-btn--sm" data-discover="${esc(e.id)}">Bày dụng cụ</button></li>`).join('')}</ul>`).join('')
   }
+  const foldText = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 0x2080))
+  function filterExperiments() {
+    const pane = $('.dlab-discover-pane')
+    const q = foldText(pane.querySelector('[data-exp-search]')?.value || '').trim()
+    const d = pane.querySelector('[data-exp-difficulty]')?.value || ''
+    let shown = 0
+    for (const li of pane.querySelectorAll('[data-exp-card]')) {
+      const ok = (!q || li.dataset.search.includes(q)) && (!d || li.dataset.difficulty === d)
+      li.hidden = !ok
+      if (ok) shown += 1
+    }
+    for (const g of pane.querySelectorAll('[data-exp-group]')) g.hidden = !g.querySelector('[data-exp-card]:not([hidden])')
+    pane.querySelector('[data-exp-empty]').hidden = shown > 0
+  }
+  $('.dlab-discover-pane').addEventListener('input', e => { if (e.target.closest('[data-exp-search], [data-exp-difficulty]')) filterExperiments() })
   $('.dlab-discover-pane').addEventListener('click', e => {
     const b = e.target.closest('[data-discover]')
     const entry = b && DISCOVER.find(x => x.id === b.dataset.discover)
@@ -1342,18 +1362,27 @@ export function initDynamicLab(host) {
   // An Experiment Library entry: vessels with their starting solutions, then the bottles the steps use. Same commands
   // as the student's own (dispatch); the student then performs the steps.
   function layOutExperiment(exp) {
+    // "Bày lại": the previous lay-out of this experiment (vessels, bottles, tools and what is in them) is put away first.
+    for (const id of ui.laidOut?.[exp.id] || []) if (byId(sim.state, id)) sim.dispatch({ type: 'remove', id })
     const made = []
     for (const v of exp.setup.vessels) {
-      const r = sim.dispatch({ type: 'add', equipmentType: v.type, x: freeX(), y: 0 })
+      const r = sim.dispatch({ type: 'add', equipmentType: v.type, x: freeX(v.type), y: 0 })
       if (!r.ok) return
       for (const [reagent, mL] of v.fill) sim.dispatch({ type: 'addReagentTo', id: r.id, reagent, mL }, { confirmed: true })
       made.push(r.id)
     }
     let first = null
     for (const reagent of exp.setup.bottles) {
-      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX(), y: 0, reagent })
-      if (r.ok && !first) first = r.id
+      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX('bottle'), y: 0, reagent })
+      if (r.ok) { made.push(r.id); first ||= r.id }
     }
+    for (const type of exp.setup.tools || []) {
+      const r = sim.dispatch({ type: 'add', equipmentType: type, x: freeX(type), y: 0 })
+      if (r.ok) { made.push(r.id); first ||= r.id }
+    }
+    ;(ui.laidOut ||= {})[exp.id] = made
+    const btn = $(`.dlab-discover-pane [data-experiment="${exp.id}"]`)
+    if (btn) btn.textContent = 'Bày lại'
     ui.userView = false
     fitView()
     if (first) select(first)
@@ -1362,7 +1391,7 @@ export function initDynamicLab(host) {
   }
   function layOut(entry) {
     const d = entry.demo
-    const x = freeX()
+    const x = freeX(d.vessel)
     const v = sim.dispatch({ type: 'add', equipmentType: d.vessel, x, y: 0 })
     if (!v.ok) return
     for (const [reagent, mL] of d.fill) sim.dispatch({ type: 'addReagentTo', id: v.id, reagent, mL }, { confirmed: true })
@@ -1370,7 +1399,7 @@ export function initDynamicLab(host) {
     let task
     const vName = objLabel(byId(sim.state, v.id))
     if (d.pour) {
-      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: x + 75, y: 0, reagent: d.pour[0] })
+      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX('bottle'), y: 0, reagent: d.pour[0] })
       next = r.id
       task = `Rót khoảng ${d.pour[1]} mL ${REAGENT_BY_ID[d.pour[0]].name} vào ${vName}.`
     }
@@ -1770,6 +1799,7 @@ export function initDynamicLab(host) {
     get state() { return sim.state },
     // Foundation read API: canonical scientific state of a container and the structured observation events.
     describe: id => describe(sim.state, id),
+    equipmentWidth: type => EQUIPMENT[type]?.w ?? null, // mm, for layout checks
     events: (since = 0) => (sim.state.events || []).filter(e => e.t >= since),
     get ready() { return Boolean(ui.booted) },
     dispatch: (cmd, opts) => sim.dispatch(cmd, opts),

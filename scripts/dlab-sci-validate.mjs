@@ -37,7 +37,7 @@ export function formulaAtoms(f) {
 }
 function side(str) { return str.split(/\s\+\s/).map(x => x.trim()).filter(Boolean).map(species) }
 function balance(eq) {
-  const [l, r] = eq.split(',')[0].split('→').map(side)
+  const [l, r] = eq.split(',')[0].split(/→|⇌/).map(side) // ⇌ for equilibria (weak acids/bases)
   const tally = list => { const a = {}; let q = 0; for (const s of list) { for (const [e, n] of Object.entries(s.atoms)) a[e] = (a[e] || 0) + n * s.coef; q += s.charge * s.coef } return { a, q } }
   const L = tally(l); const R = tally(r)
   const els = new Set([...Object.keys(L.a), ...Object.keys(R.a)])
@@ -91,7 +91,7 @@ for (const r of ION_REDOX) {
   for (const [k, n] of Object.entries(r.precipitate || {})) check(r.id, coef(right, k) === n, `precipitate ${k} ${n} vs equation ${coef(right, k)}`)
 }
 // Experiment Library: every equation a student reads balances.
-for (const e of EXPERIMENTS) for (const eq of e.equation.split(';').map(x => x.trim()).filter(Boolean)) {
+for (const e of EXPERIMENTS) for (const eq of e.equation.split(';').map(x => x.trim()).filter(x => /→|⇌/.test(x))) { // '—' = no reaction
   const { bad } = balance(eq)
   check(e.id, !bad.length, `balance ${eq}${bad.length ? ' — ' + bad.join(', ') : ''}`)
 }

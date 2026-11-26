@@ -7,6 +7,8 @@ const G1 = `${T} "gate 1: every manifest scenario conserves elements"`
 
 // status, quantitative evidence (independent of the engine), conservation evidence, extra limits
 export const VALIDATION = {
+  'acid-base-ph': ['VALIDATED', `${T} "pH strong acid / base", "pH weak acid / base (quadratic)", "acid–base: dilution and weak-acid titration match hand solutions" (closed form)`, G1, 'Lý tưởng: không có hệ số hoạt độ.'],
+  'weak-acid-titration': ['VALIDATED', `${T} "acid–base: dilution and weak-acid titration match hand solutions" (half-equivalence pH = pKa; equivalence from acetate hydrolysis)`, G1],
   neutralisation: ['VALIDATED', `${T} "pH strong acid / base", "pH weak acid / base (quadratic)" (closed form)`, G1],
   'co2-carbonate': ['EDUCATIONAL APPROXIMATION', `${T} "pH weak acid / base"; "CO2 into limewater" (qualitative)`, G1, 'Tốc độ thoát khí là minh họa.'],
   'dissolve-salts': ['EDUCATIONAL APPROXIMATION', `${T} "KNO3 solubility table interpolation" (vs the table in code; table values: see data audit)`, G1, 'Tốc độ tan là minh họa; bảng độ tan nội suy tuyến tính.'],

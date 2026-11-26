@@ -1,6 +1,6 @@
 # ChemLab 7.0 — Scientific Validation Matrix
 
-Sinh bởi `node scripts/dlab-sci-matrix.mjs` từ `src/dlab/data/manifest.js` (75 mục). Trạng thái là đánh giá đã rà soát, ghi trong script, **mặc định UNVERIFIED**; một mục chỉ là VALIDATED khi có nguồn và kiểm tra định lượng độc lập với engine (lời giải tay hoặc bảng tham chiếu) cho phạm vi đã công bố. Demo chỉ chứng minh hiện tượng xảy ra, không phải định lượng.
+Sinh bởi `node scripts/dlab-sci-matrix.mjs` từ `src/dlab/data/manifest.js` (77 mục). Trạng thái là đánh giá đã rà soát, ghi trong script, **mặc định UNVERIFIED**; một mục chỉ là VALIDATED khi có nguồn và kiểm tra định lượng độc lập với engine (lời giải tay hoặc bảng tham chiếu) cho phạm vi đã công bố. Demo chỉ chứng minh hiện tượng xảy ra, không phải định lượng.
 
 Kiểm tra chung cho mọi mục:
 - **Cân bằng nguyên tố và điện tích** của mọi phương trình hiển thị, và khớp với tỉ lượng engine dùng: `scripts/dlab-sci-validate.mjs` (104 kiểm tra, có tự kiểm tra bằng phương trình sai cố ý).
@@ -9,7 +9,7 @@ Kiểm tra chung cho mọi mục:
 
 | Trạng thái | Số mục |
 |---|---|
-| VALIDATED | 25 |
+| VALIDATED | 27 |
 | EDUCATIONAL APPROXIMATION | 9 |
 | UNVERIFIED | 5 |
 | UNSUPPORTED | 28 |
@@ -17,6 +17,8 @@ Kiểm tra chung cho mọi mục:
 
 | ID | Phản ứng / quá trình | Nhóm | Điều kiện hỗ trợ | Kết quả kỳ vọng | Dữ liệu / mô hình | Nguồn | Bảo toàn | Kiểm chứng định lượng / test | Trạng thái | Giới hạn |
 |---|---|---|---|---|---|---|---|---|---|---|
+| `acid-base-ph` | pH của axit, bazơ mạnh và yếu; pha loãng | Axit – bazơ | 25 °C, dung dịch loãng; hoạt độ = nồng độ (sai số vài phần mười đơn vị pH khi lực ion > 0,1 M) | —; Axit/bazơ mạnh: pH theo nồng độ, pha loãng 10 lần thay đổi 1 đơn vị pH. Axit/bazơ yếu: pH xa 7 ít hơn ở cùng nồng độ và thay đổi ít hơn khi pha loãng (phân li tăng). | Cân bằng điện tích với Kw, Ka(CH₃COOH) = 1,75·10⁻⁵, Ka(NH₄⁺) = 5,6·10⁻¹⁰. | Kw, Ka: CRC Handbook (25 °C) | scripts/test-dlab.mjs "gate 1: every manifest scenario conserves elements" | scripts/test-dlab.mjs "pH strong acid / base", "pH weak acid / base (quadratic)", "acid–base: dilution and weak-acid titration match hand solutions" (closed form) | **VALIDATED** | Lý tưởng (hoạt độ = nồng độ); không có hệ số hoạt độ. Lý tưởng: không có hệ số hoạt độ. |
+| `weak-acid-titration` | CH₃COOH + OH⁻ → CH₃COO⁻ + H₂O (chuẩn độ axit yếu) | Axit – bazơ | 25 °C | CH₃COO⁻, H₂O; Nửa tương đương: pH = pKa ≈ 4,76 (dung dịch đệm). Tương đương: pH ≈ 9,1 (> 7, do CH₃COO⁻ thủy phân). | Cân bằng điện tích với Ka(CH₃COOH). | Ka CH₃COOH 1,75·10⁻⁵ (CRC, 25 °C) | scripts/test-dlab.mjs "gate 1: every manifest scenario conserves elements" | scripts/test-dlab.mjs "acid–base: dilution and weak-acid titration match hand solutions" (half-equivalence pH = pKa; equivalence from acetate hydrolysis) | **VALIDATED** | Lý tưởng; nhiệt trung hòa tính như axit mạnh (sai số nhỏ). |
 | `neutralisation` | H⁺ + OH⁻ → H₂O (trung hòa) | Axit – bazơ | 25 °C | NaCl, H₂O, nhiệt; Màu chỉ thị đổi theo pH; dung dịch ấm lên. | pH từ cân bằng điện tích; nhiệt trung hòa −55,84 kJ/mol. | Kw 1,0·10⁻¹⁴; ΔH từ NBS | scripts/test-dlab.mjs "gate 1: every manifest scenario conserves elements" | scripts/test-dlab.mjs "pH strong acid / base", "pH weak acid / base (quadratic)" (closed form) | **VALIDATED** | Nhiệt dùng tổng H⁺/OH⁻ mất đi (có thể dư 1–2 °C khi kết tủa hiđroxit). |
 | `co2-carbonate` | CO₃²⁻ + 2H⁺ → CO₂↑ + H₂O; HCO₃⁻ + H⁺ → CO₂↑ + H₂O | Axit – bazơ | 25 °C, 1 atm | CO₂↑, H₂O; Sủi bọt khí không màu. | Phân bố H₂CO₃/HCO₃⁻/CO₃²⁻ theo pH; khí thoát khi [H₂CO₃*] vượt độ tan Henry. | Ka1, Ka2 (CRC); Henry 3,4·10⁻² mol/(L·atm) | scripts/test-dlab.mjs "gate 1: every manifest scenario conserves elements" | scripts/test-dlab.mjs "pH weak acid / base"; "CO2 into limewater" (qualitative) | **EDUCATIONAL APPROXIMATION** | Tốc độ thoát khí là xấp xỉ. Tốc độ thoát khí là minh họa. |
 | `dissolve-salts` | Hòa tan NaCl, KNO₃, NaHCO₃; kết tinh NaCl, KNO₃ | Hòa tan – kết tinh | 0–100 °C (NaCl, KNO₃); ≤ 60 °C cho NaHCO₃ | Ion trong dung dịch; tinh thể khi quá bão hòa; Tinh thể nhỏ dần; KNO₃ kết tinh lại khi làm nguội. | Độ tan theo bảng nhiệt độ (nội suy tuyến tính). | CRC Handbook (độ tan g/100 g nước) | scripts/test-dlab.mjs "gate 1: every manifest scenario conserves elements" | scripts/test-dlab.mjs "KNO3 solubility table interpolation" (vs the table in code; table values: see data audit) | **EDUCATIONAL APPROXIMATION** | Tốc độ tan là xấp xỉ. Không kết tinh lại NaHCO₃ và không mô hình phản ứng nhiệt phân 2NaHCO₃ → Na₂CO₃ + CO₂↑ + H₂O khi đun trên khoảng 50–60 °C. Tốc độ tan là minh họa; bảng độ tan nội suy tuyến tính. |

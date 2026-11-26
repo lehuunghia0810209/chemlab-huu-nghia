@@ -2,20 +2,23 @@
 
 Viết cho: chủ sở hữu và phiên phát triển kế tiếp.
 
-## 1. Chuẩn một thí nghiệm (đã áp dụng cho nhóm 1)
+## 1. Chuẩn một thí nghiệm (áp dụng cho cả 3 nhóm đã có)
 
 Mỗi thí nghiệm là **dữ liệu** trong `src/dlab/data/experiments.js`. Engine tự tính mọi kết quả; không có hoạt cảnh dựng sẵn.
 
 | Trường | Ý nghĩa |
 |---|---|
+| `id`, `group`, `grade`, `difficulty`, `safetyLevel`, `keywords` | Định danh, nhóm, lớp, mức độ (`DIFFICULTY`: Cơ bản / Trung bình / Nâng cao), mức an toàn, từ khóa tìm kiếm (không dấu cũng tìm được) |
 | `objective`, `equipment`, `chemicals`, `conditions` | Mục tiêu học tập; dụng cụ; hóa chất có nồng độ; điều kiện áp dụng |
 | `setup` | Bình, dung dịch ban đầu, các chai cần dùng (bày bằng chính lệnh `dispatch` mà học sinh dùng) |
-| `steps` | Thao tác dạng dữ liệu `{ text, act }`. Học sinh, unit test và E2E cùng thực hiện đúng các thao tác này |
+| `setup.tools` | Dụng cụ cần bày thêm (vd. kẹp hóa chất cho kim loại) |
+| `steps` | Thao tác dạng dữ liệu `{ text, act }`: `{ pour, to, mL }` (thanh rót), `{ drops, to }` (nút "Nhỏ 3 giọt" của chai chỉ thị, 0,15 mL), `{ solid, massG, to }` (kẹp: lấy rồi thả). Học sinh, unit test và E2E cùng thực hiện đúng các thao tác này |
 | `phenomena`, `equation`, `explanation` | Hiện tượng; phương trình (phải qua `dlab-sci-validate`); giải thích khoa học |
 | `safety` | Cảnh báo an toàn ngoài đời |
 | `processRefs` | Các mục manifest mà thí nghiệm dùng |
 | Trạng thái kiểm chứng | **Không nhập tay**: `experimentValidation()` lấy mức *yếu nhất* trong các `processRefs` từ ma trận. Quá trình không có trong manifest thì là UNVERIFIED |
 | `expect`, `references`, `tests` | Sự kiện engine phải sinh ra; nguồn; tên test (test kiểm tra rằng các tên này tồn tại) |
+| `expectState` | Kiểm tra trên state cuối: khoảng pH (từ lời giải tay), màu chất chỉ thị, lớp kim loại bám (`coat`), khí (`gas`), không có khí / không bám (`noGas`, `noCoat`) |
 
 Chuỗi hoàn thiện cho mỗi thí nghiệm:
 
@@ -24,7 +27,7 @@ Chuỗi hoàn thiện cho mỗi thí nghiệm:
 Một thí nghiệm chỉ được thêm khi đáp ứng đủ:
 - Phương trình cân bằng (`dlab-sci-validate`).
 - Unit test `experiment library` chạy đúng các bước trên engine và thấy đủ `expect`, không có sự kiện UNSUPPORTED.
-- Journey E2E `L01` làm thí nghiệm qua UI.
+- Journey E2E `EXP` làm thí nghiệm qua UI (thanh rót, nút nhỏ giọt, kẹp) trên Chromium, Firefox, WebKit, kiểm `expectState` và kiểm các vật bày ra không che nhau.
 - Nhãn hiển thị đúng với ma trận.
 
 ## 2. Các nhóm (theo khả năng hiện có của engine)
@@ -32,19 +35,43 @@ Một thí nghiệm chỉ được thêm khi đáp ứng đủ:
 | # | Nhóm | Lớp | Quá trình sẵn có (trạng thái ma trận) | Trạng thái |
 |---|---|---|---|---|
 | 1 | **Kết tủa, hòa tan và tạo phức** | 11–12 | AgCl, BaSO₄, Cu(OH)₂, Fe(OH)₃, hòa tan trong axit (VALIDATED); phức Ag–NH₃ (VALIDATED); phức Cu–NH₃ (APPROX) | **Đã triển khai: 6 thí nghiệm** |
-| 2 | Axit – bazơ, pH và chất chỉ thị | 10–11 | Trung hòa (VALIDATED); chất chỉ thị (APPROX); CO₂ từ cacbonat (APPROX) | Sẵn sàng (chỉ cần dữ liệu) |
-| 3 | Kim loại: dãy hoạt động | 12 | Mg/Zn/Fe + axit, Fe/Zn + Cu²⁺, Cu + Ag⁺, Na + nước (VALIDATED: tỉ lượng; tốc độ là minh họa); không phản ứng theo E° (VALIDATED) | Sẵn sàng |
+| 2 | **Axit – bazơ và chất chỉ thị** | 11 | pH axit/bazơ mạnh, yếu, pha loãng (`acid-base-ph`, VALIDATED, mới); chuẩn độ axit yếu (`weak-acid-titration`, VALIDATED, mới); trung hòa (VALIDATED); chất chỉ thị (APPROX) | **Đã triển khai: 6 thí nghiệm** |
+| 3 | **Kim loại và dãy hoạt động hóa học** | 12 | Mg/Zn + HCl, Fe/Zn + Cu²⁺, Cu + Ag⁺ (VALIDATED: tỉ lượng; tốc độ là minh họa); Cu + HCl, Cu/Fe + Zn²⁺ không phản ứng theo E° (VALIDATED) | **Đã triển khai: 5 thí nghiệm** |
 | 4 | Điện hóa | 12 | Pin Daniell (VALIDATED); điện phân CuCl₂ (APPROX: khối lượng theo Faraday, cường độ dòng là minh họa) | Sẵn sàng |
 | 5 | Oxi hóa – khử với iotua | 10 | CuCl₂ + KI (VALIDATED); Fe³⁺ + I⁻ (APPROX) | Sẵn sàng |
 | 6 | Hòa tan, kết tinh, sôi, dung môi | 10–11 | Hòa tan/kết tinh, sôi, phân lớp nước–etanol–dầu (APPROX) | Sẵn sàng, ghi rõ giới hạn của bảng điểm sôi |
 | 7 | Kết tủa cacbonat (CaCO₃, BaCO₃, ZnCO₃, Ag₂CO₃), Zn(OH)₂ | 11 | **UNVERIFIED** | Chỉ làm sau khi có test định lượng có lời giải tay |
 | — | Chưa hỗ trợ (không làm cho đến khi có mô hình và nguồn) | | Kim loại + HNO₃ (NOx); Fe(OH)₂ bị oxi hóa trong không khí; Zn(OH)₂/Al(OH)₃ lưỡng tính; dịch chuyển cân bằng màu (Fe³⁺/SCN⁻); tốc độ phản ứng định lượng; phản ứng hữu cơ (este hóa…); nhiệt lượng kế chính xác | Giữ nhãn UNSUPPORTED; không dùng hoạt cảnh để giả lập |
 
+## 2a. Phase 2 (2026-11-26): 11 thí nghiệm mới
+
+Thư viện có **17 thí nghiệm**, không trùng nhau (6 cũ + 11 mới). Không có thí nghiệm nào trùng với 29 thẻ cũ: thí nghiệm là chuỗi thao tác nhiều bước, thẻ là một quá trình. Có thêm **2 mục manifest mới** (`acid-base-ph`, `weak-acid-titration`), nên tab Khám phá có **31 thẻ**. Hai mục này không có code engine mới: engine đã tính pH bằng cân bằng điện tích với Ka/Kb. Việc mới là khai báo chúng thành tuyên bố có lời giải tay.
+
+| id | Nhóm | Mức độ | Trạng thái (suy ra) | Kết quả kiểm trên state |
+|---|---|---|---|---|
+| exp-strong-acid-dilution | Axit – bazơ | Cơ bản | VALIDATED | HCl 0,5 M pha 10 lần: pH 1,30 |
+| exp-strong-vs-weak-acid | Axit – bazơ | Cơ bản | VALIDATED | HCl 0,5 M pH 0,60; CH₃COOH 0,5 M pH 2,53 |
+| exp-strong-vs-weak-base | Axit – bazơ | Cơ bản | VALIDATED | NaOH 0,25 M pH 13,40; NH₃ 0,25 M pH ≈ 11,3 |
+| exp-neutralisation-excess | Axit – bazơ | Trung bình | VALIDATED | Dư NaOH: pH ≈ 13,0, không dừng ở 7 |
+| exp-phenolphthalein-endpoint | Axit – bazơ | Trung bình | APPROX (vì chất chỉ thị) | Dư HCl: pH ≈ 1,6, phenolphtalein không màu |
+| exp-weak-acid-titration | Axit – bazơ | Nâng cao | APPROX (vì chất chỉ thị) | Điểm tương đương: pH 9,14, phenolphtalein hồng |
+| exp-iron-copper-sulfate | Kim loại | Cơ bản | VALIDATED | Cu bám trên đinh sắt |
+| exp-zinc-copper-sulfate | Kim loại | Cơ bản | VALIDATED | Cu bám trên kẽm |
+| exp-copper-silver-nitrate | Kim loại | Trung bình | VALIDATED | Ag bám trên đồng |
+| exp-metals-in-acid | Kim loại | Trung bình | VALIDATED | Mg, Zn giải phóng H₂; Cu không phản ứng |
+| exp-no-displacement | Kim loại | Cơ bản | VALIDATED | Cu, Fe trong ZnSO₄: không phản ứng, không bám |
+
+Lời giải tay (unit `acid–base: dilution and weak-acid titration match hand solutions`): pha loãng HCl; bậc hai cho CH₃COOH và NH₃; nửa tương đương h² + (Na+Ka)h − (C−Na)Ka = 0 cho pH ≈ pKa; tương đương từ thủy phân CH₃COO⁻.
+
+Giới hạn khoa học giữ nguyên: hoạt độ = nồng độ (sai số vài phần mười đơn vị pH khi lực ion > 0,1 M); tốc độ phản ứng kim loại là minh họa, không phải động học thật; không dùng HNO₃; không có kim loại kiềm trong thư viện; quỳ và chỉ thị vạn năng chỉ định tính. Độ đậm màu chất chỉ thị trong 2D/3D phụ thuộc số giọt trên thể tích (`processes.js`), nên phenolphtalein 3 giọt trong 30 mL ở pH 9,1 chỉ hồng rất nhạt trên hình. Phần chữ ghi "chuyển hồng" đúng theo pH, nhưng mô hình độ đậm màu chưa được đối chiếu với thực tế.
+
+Giao diện: ô tìm kiếm (không dấu vẫn tìm được), lọc mức độ, thông báo khi không có kết quả, nhóm dạng `<section>`. Nhãn kiểm chứng ghi kèm lớp và mức độ. "Bày lại" cất bộ đã bày trước đó. Vị trí bày được tính theo bề rộng thật của dụng cụ, nên chai không còn đè lên cốc.
+
 ## 3. Thứ tự cho các đợt sau
 
-1. **Nhóm 2 và 3** (nhiều bài thường gặp; quá trình đã VALIDATED): 4–6 thí nghiệm mỗi nhóm theo đúng chuẩn §1.
-2. **Nhóm 4 và 5.**
+1. ~~Nhóm 2 và 3~~ (xong ở Phase 2).
+2. **Nhóm 4 và 5.** Có thể bổ sung cho nhóm 2: metyl da cam (pKin 3,46, đã có trong dữ liệu) và CO₂ từ cacbonat (APPROX).
 3. **Nhóm 7:** viết test định lượng trước, sau đó mới đưa vào thư viện.
-4. **UI Experiment Catalog:** hiện thư viện nằm trong tab "Khám phá". Khi có trên 3 nhóm, tách thành màn hình riêng, có lọc theo lớp, nhóm và mức kiểm chứng.
+4. **UI Experiment Catalog:** thư viện vẫn nằm trong tab "Khám phá", đã có tìm kiếm và lọc mức độ. Khi có trên 3 nhóm, nên tách thành màn hình riêng có lọc theo lớp và mức kiểm chứng.
 
 Không đặt chỉ tiêu số lượng. Thí nghiệm nào chưa qua đủ các bước ở §1 thì không đưa vào.

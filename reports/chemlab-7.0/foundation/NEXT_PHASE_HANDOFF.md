@@ -32,7 +32,7 @@ Chỉ sửa khi có lỗi hoặc nhu cầu tích hợp đã được chứng min
 - Luồng sự kiện (`state.events`)
 - Ma trận kiểm chứng (`data/validation.js`)
 - Schema lưu/mở (`persistence.js`)
-- 29 template (manifest `DISCOVER`)
+- Các template trong manifest `DISCOVER` (29 ở Foundation Exit; Phase 2 thêm `acid-base-ph`, `weak-acid-titration`, thành 31)
 
 Các sửa lỗi khoa học và an toàn của `91ac642` phải được giữ nguyên.
 
@@ -42,6 +42,14 @@ Các sửa lỗi khoa học và an toàn của `91ac642` phải được giữ n
 - **Giao diện:** tab "Khám phá", mục đầu tiên, với nhãn kiểm chứng, nút "Bày dụng cụ" và phần "Hướng dẫn".
 - **Test:** unit `experiment library: every experiment runs on the engine`; phương trình trong `dlab-sci-validate`; E2E `EXP` trên 3 trình duyệt.
 - **Kế hoạch các nhóm tiếp theo:** `EXPERIMENT_LIBRARY_PLAN.md`.
+
+## 0.17 Experiment Library Phase 2 (2026-11-26)
+
+- Thêm 2 nhóm: "Axit – bazơ và chất chỉ thị" (6 thí nghiệm) và "Kim loại và dãy hoạt động hóa học" (5 thí nghiệm). Thư viện có 17 thí nghiệm không trùng nhau. Danh sách và trạng thái ở `EXPERIMENT_LIBRARY_PLAN.md` §2a.
+- Schema thí nghiệm có thêm `grade`, `difficulty`, `safetyLevel`, `keywords`, `setup.tools`, các act `drops` và `solid`, và `expectState`. Không có engine riêng cho từng thí nghiệm.
+- Hai mục manifest mới, `acid-base-ph` và `weak-acid-titration`, đều VALIDATED nhờ lời giải tay. Ma trận có 77 mục (27/9/5/28/8).
+- UI: tìm kiếm, lọc mức độ, "Bày lại"; vị trí bày theo bề rộng thật (sửa lỗi chai đè cốc).
+- Bằng chứng: `reports/chemlab-7.0/library/RESULTS.md`, ảnh ở `library/shots/`.
 
 
 
@@ -88,7 +96,7 @@ Các sửa lỗi khoa học và an toàn của `91ac642` phải được giữ n
 ## 4. Lệnh kiểm tra (chạy tuần tự)
 
 ```
-node scripts/test-dlab.mjs                 # unit + validation + gate 1 + foundation (128 test)
+node scripts/test-dlab.mjs                 # unit + validation + gate 1 + foundation + library (132 test)
 node scripts/dlab-sci-validate.mjs         # phương trình, tỉ lượng, khối lượng mol (độc lập)
 node scripts/dlab-sci-matrix.mjs           # tạo lại ma trận
 node scripts/dlab-manifest.mjs             # tạo lại REACTION_SUPPORT_MANIFEST.md
