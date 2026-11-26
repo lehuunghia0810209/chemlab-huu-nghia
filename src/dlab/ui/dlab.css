@@ -477,3 +477,17 @@
 .dlab-disc b { grid-column: 1; font-size: 0.9rem; line-height: 1.3; }
 .dlab-disc span { grid-column: 1; font-size: 0.8rem; color: var(--dlab-muted, #5b6474); }
 .dlab-disc button { grid-column: 2; grid-row: 1 / span 2; min-height: 36px; }
+/* Experiment Library cards: validation badge and the expandable guide */
+.dlab-exp details { grid-column: 1 / -1; font-size: 0.82rem; }
+.dlab-exp summary { cursor: pointer; padding: 4px 0; min-height: 24px; text-decoration: underline; }
+.dlab-exp dl { margin: 4px 0 0; display: grid; gap: 2px; }
+.dlab-exp dt { font-weight: 600; margin-top: 6px; }
+.dlab-exp dd { margin: 0; }
+.dlab-exp ol { margin: 2px 0 0; padding-left: 18px; }
+.dlab-exp ol li { display: list-item; border: 0; padding: 0; border-radius: 0; } /* not the boxed .dlab-disc card style */
+.dlab-exp-eq { font-variant-numeric: tabular-nums; }
+.dlab-exp-badge { grid-column: 1; justify-self: start; font-size: 0.75rem; padding: 1px 8px; border-radius: 999px; border: 1px solid; }
+/* text keeps the panel ink (contrast in both themes); the status colour is on the border and a tinted fill */
+.dlab-exp-badge--ok { border-color: var(--dlab-ok); background: color-mix(in srgb, var(--dlab-ok) 12%, transparent); }
+.dlab-exp-badge--approx { border-color: var(--dlab-warn); background: color-mix(in srgb, var(--dlab-warn) 12%, transparent); }
+.dlab-exp-badge--unverified { border-color: var(--dlab-danger); background: color-mix(in srgb, var(--dlab-danger) 12%, transparent); }

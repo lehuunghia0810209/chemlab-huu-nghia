@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { DISCOVER } from '../../src/dlab/data/manifest.js'
+import { EXPERIMENTS, experimentValidation } from '../../src/dlab/data/experiments.js'
 import { oilBelow } from '../../src/dlab/engine/chemistry.js'
 import { checkInvariants } from '../../src/dlab/engine/sim.js'
 const axeSource = await fs.readFile(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8')
@@ -460,6 +461,12 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     d = await st(page, (L, id) => L.describe(id), beaker)
     assert.ok(!(d.precipitates['Cu(OH)2'] > 1e-9), `dissolved: ${JSON.stringify(d.precipitates)}`)
     assert.ok(Math.abs(d.complexes['Cu2+'] - 2.5e-3) < 3e-5, `complex ${d.complexes['Cu2+']}`)
+    // 2D canvas agrees with the state: stirred, the deep-blue complex fills the liquid (pixel inside the beaker).
+    for (let i = 0; i < 4; i += 1) await st(page, (L, id) => L.dispatch({ type: 'stir', id, amount: 1 }), beaker)
+    await page.waitForTimeout(2500)
+    const bx = await st(page, (L, id) => L.state.objects.find(o => o.id === id).x, beaker)
+    const px = await pixel(page, bx, 12)
+    assert.ok(px[2] > px[0] + 60 && px[0] < 170, `liquid pixel deep blue: ${px}`)
     const label = await st(page, (L, id) => L.state.objects.find(o => o.id === id).label || null, beaker)
     const ev = await st(page, (L, id) => L.events().filter(e => e.container === id).map(e => e.key.replace(/-o\d+$/, '')), beaker)
     assert.ok(ev.indexOf('ppt-Cu(OH)2') >= 0 && ev.indexOf('ppt-Cu(OH)2') < ev.indexOf('ammine-dis-Cu(OH)2'), `${label}: ${ev.join(',')}`)
@@ -474,6 +481,54 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     const r = await st(page, (L, id) => L.dispatch({ type: 'addReagentTo', id, reagent: 'hcl', mL: -5 }), beaker)
     assert.equal(r.outcome, 'INVALID_INPUT')
     assert.equal(await bench(), before)
+  })
+
+  await test('F04 Sandbox mở từ bàn trống: kết tủa AgCl, đổi lượng NaCl — chất hết trước đổi theo lượng', async page => {
+    await emptyBench(page)
+    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 100 mL')
+    const ag = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Bạc nitrat')
+    const cl = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Natri clorua')
+    await pourUI(page, ag, beaker, 20) // 2 mmol Ag⁺
+    await pourUI(page, cl, beaker, 2) // 1 mmol Cl⁻: Cl⁻ is limiting
+    let d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(d.precipitates.AgCl <= 1e-3 && d.precipitates.AgCl > 1e-3 - 1e-5, `Cl⁻ limiting: AgCl ${d.precipitates.AgCl}`)
+    assert.ok(Math.abs(d.dissolved['Ag+'] - (2e-3 - d.precipitates.AgCl)) < 1e-8, 'Ag⁺ in excess stays dissolved')
+    await pourUI(page, cl, beaker, 6) // 4 mmol Cl⁻ in total: Ag⁺ is now limiting
+    d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(d.precipitates.AgCl <= 2e-3 && d.precipitates.AgCl > 2e-3 - 1e-5, `Ag⁺ limiting: AgCl ${d.precipitates.AgCl}`)
+    const ev = await st(page, (L, id) => L.events().filter(e => e.container === id && e.key.startsWith('ppt-AgCl')).map(e => `${e.outcome}/${e.validation}`), beaker)
+    assert.deepEqual(ev, ['APPLIED/VALIDATED'])
+  })
+
+  await test('F05 Sandbox mở từ bàn trống: chuỗi Cu(OH)₂ → HCl hòa tan → đinh sắt (kẹp qua giao diện) đẩy Cu', async page => {
+    await emptyBench(page)
+    await page.locator('[data-speed="4"]').first().click()
+    const beaker = await fromLibrary(page, 'Kệ dụng cụ', 'Cốc, bình, ống', 'Cốc thủy tinh 250 mL')
+    const cu = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Đồng(II) sunfat')
+    const naoh = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Natri hiđroxit')
+    const hcl = await fromLibrary(page, 'Tủ hóa chất', 'Dung dịch', 'Axit clohiđric')
+    await pourUI(page, cu, beaker, 20)
+    await pourUI(page, naoh, beaker, 30)
+    let d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(d.precipitates['Cu(OH)2'] > 7e-3, `Cu(OH)₂ ${d.precipitates['Cu(OH)2']}`)
+    for (let i = 0; i < 3; i += 1) await pourUI(page, hcl, beaker, 20)
+    d = await st(page, (L, id) => L.describe(id), beaker)
+    assert.ok(!(d.precipitates['Cu(OH)2'] > 0) && d.pH < 2, `dissolved in acid: pH ${d.pH}`)
+    const tongs = await fromLibrary(page, 'Kệ dụng cụ', 'Lấy, chuyển, khuấy', 'Kẹp hóa chất')
+    await select(page, tongs)
+    const confirm = async () => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }
+    await page.locator('[data-qa-in="solid"]').selectOption('fe')
+    await page.locator('[data-qa-in="mass"]').fill('2')
+    await page.locator('.dlab-actionbar [data-qa="pick"]').click()
+    await confirm()
+    await page.locator('[data-qa-in="to"]').selectOption(beaker)
+    await page.locator('.dlab-actionbar [data-qa="drop-solid"]').click()
+    await confirm()
+    await wait(page, (L, id) => (L.describe(id).solids.find(s => s.reagent === 'fe')?.coat?.Cu || 0) > 1e-5, beaker, 60000)
+    const ev = await st(page, (L, id) => L.events().filter(e => e.container === id).map(e => e.key.replace(/-o\d+$/, '')), beaker)
+    // Cu(OH)₂ + 2H⁺ dissolves the solid (no free OH⁻ left: not a neutralisation note); in the excess acid the nail
+    // both plates out copper and gives H₂ (Fe + 2H⁺), as a real nail does.
+    for (const k of ['ppt-Cu(OH)2', 'rx-fe-cu', 'rx-fe-acid']) assert.ok(ev.includes(k), `${k} in ${ev.join(',')}`)
   })
 
   await test('S24 phản ứng chưa hỗ trợ không tạo kết quả giả', async page => {
@@ -1448,6 +1503,28 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     }, { v: ids.v, x }, d.run / 4 * 1000 + 25000)
     if (x.oilBelow) assert.ok(oilBelow((await obj(page, ids.v)).contents), 'oil below the ethanol')
     assert.equal(checkInvariants(await st(page, L => JSON.parse(JSON.stringify(L.state)))), null, 'invariants')
+  })
+
+  // Experiment Library: every experiment done by hand from its card (lay out, read the guide, pour step by step).
+  const BADGE_WORD = { VALIDATED: 'Đã kiểm chứng định lượng', 'EDUCATIONAL APPROXIMATION': 'Xấp xỉ giáo dục', UNVERIFIED: 'Chưa kiểm chứng' }
+  for (const e of EXPERIMENTS) await test(`EXP Thư viện thí nghiệm qua giao diện — ${e.id}: ${e.title}`, async page => {
+    await btn(page, 'Tự do').click()
+    await bench(page, {})
+    await sideTab(page, 'Khám phá')
+    const card = page.locator(`[data-exp-card="${e.id}"]`)
+    assert.equal((await card.locator('.dlab-exp-badge').textContent()).trim(), BADGE_WORD[experimentValidation(e)], 'badge = derived validation')
+    await card.locator('summary').click()
+    await card.locator('.dlab-exp-eq', { hasText: e.equation.split(';')[0].trim() }).waitFor()
+    await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
+    const laid = await st(page, L => L.state.objects.map(o => ({ id: o.id, type: o.type, reagent: o.reagent || null })))
+    const vessels = laid.filter(o => o.type !== 'bottle').map(o => o.id)
+    const bottle = Object.fromEntries(laid.filter(o => o.type === 'bottle').map(o => [o.reagent, o.id]))
+    assert.equal(vessels.length, e.setup.vessels.length, 'vessels laid out')
+    for (const r of e.setup.bottles) assert.ok(bottle[r], `bottle ${r}`)
+    for (const s of e.steps) await pourUI(page, bottle[s.act.pour], vessels[s.act.to], s.act.mL)
+    await wait(page, (L, a) => a.expect.every(x => L.events().some(ev => ev.container === a.vessels[x.vessel] && ev.key.startsWith(x.key))), { expect: e.expect, vessels })
+    const bad = await st(page, (L, v) => L.events().filter(ev => v.includes(ev.container) && ev.outcome === 'UNSUPPORTED').length, vessels)
+    assert.equal(bad, 0, 'nothing unsupported')
   })
 
   await test('X04 đổi bài giữa chừng: bài mới sạch, không mang trạng thái/tiến độ của bài cũ, không Hoàn tác về bài cũ', async page => {

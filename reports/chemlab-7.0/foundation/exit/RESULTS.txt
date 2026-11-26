@@ -1,0 +1,41 @@
+Foundation Exit + Experiment Library — result lines from the run logs (*.log is git-ignored)
+== steps (CPU load at start)
+chromium start cpu 45%
+firefox start cpu 54%
+webkit start cpu 0%
+== e2e-chromium
+Dynamic Lab E2E (chromium): 101/101 passed
+== e2e-firefox
+Dynamic Lab E2E (firefox): 7/7 passed
+== e2e-webkit
+Dynamic Lab E2E (webkit): 7/7 passed
+== exp-chromium
+Dynamic Lab E2E (chromium): 7/7 passed
+== exp-firefox
+Dynamic Lab E2E (firefox): 7/7 passed
+== exp-webkit
+Dynamic Lab E2E (webkit): 7/7 passed
+== final/unit
+Dynamic Lab: 129/129 passed
+exit 0
+== final/sci
+exit 0
+== final/check
+Dynamic Lab: 129/129 passed
+PASS — ChemAI Gemini API mock tests passed.
+exit 0
+== final/e2e-chromium
+Dynamic Lab E2E (chromium): 107/107 passed
+exit 0
+== final/walk
+DONE acid-base 5/5  ["1:giấy quỳ: Nhúng","2:giấy quỳ: Nhúng","3:giấy quỳ: Nhúng","4:ống nhỏ giọt: Hút → 5 giọt","5:chai HCl: Rót 9 mL"]
+DONE precipitate 5/5  ["1:ống nhỏ giọt: 8 thao tác","2:chờ lắng+tua","3:đũa: Khuấy","4:chai HCl: Rót 15 mL","5:thìa: Lấy muối (gợi ý đúng) → Thả+tua"]
+DONE metals 5/5  ["1:kẹp: Lấy đinh (gợi ý đúng) → Thả","2:chờ lớp Cu+tua","2b:kẹp: bấm đinh → Đặt lên bàn","3:kẹp: Lấy kẽm (gợi ý đúng) → Thả+tua","4:kẹp: Lấy natri → xác nhận → Thả","5:chờ natri tan+tua"]
+DONE electrolysis 5/5  ["1:kéo điện cực vào cốc","2:nguồn: Nối dây → 6 V → Bật","3:chờ Cu bám catot+tua","4:kẹp: Zn → Cốc B, Cu → Cốc C","5:cầu muối + vôn kế (bảng Chi tiết)"]
+DONE organic 4/4  ["1:giấy quỳ: Nhúng","2:thìa: NaHCO₃ (gợi ý đúng) → Thả+tua","3:chai oil: Rót 3 mL","4:chai ethanol: Rót 3 mL"]
+console errors 0 ChemAI requests 0
+exit 0
+== final/check-browser
+PASS — 448/448 checks passed.
+exit 0
+== after the step-list CSS fix: EXP + A01 + X01 (chromium): 8/8 passed (stdout, no log file)

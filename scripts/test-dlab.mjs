@@ -7,6 +7,7 @@ import { molarMass, REAGENT_BY_ID, solubilityAt } from '../src/dlab/data/materia
 import { reagentParcel, mix, pHOf, emptyContents, equilibrate, ionicStrength, solveH, aqueousLitres, totalVolumeML, polarPhase, boilingOf, oilBelow, withdraw, ammineComplexes } from '../src/dlab/engine/chemistry.js'
 import { createSim, benchInventory, checkInvariants, snapshot, restore, H, SCHEMA } from '../src/dlab/engine/sim.js'
 import { describe, SPECIES, experimentTemplate } from '../src/dlab/engine/domain.js'
+import { EXPERIMENTS, experimentValidation } from '../src/dlab/data/experiments.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
 import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
@@ -1466,6 +1467,37 @@ test('foundation: open-ended scenarios from an empty bench (A acid–base, B pre
     l.sim.dispatch({ type: 'pick', tool: T2.id, reagent: 'na', massG: 0.1 }, { confirmed: true })
     assert.equal(l.sim.dispatch({ type: 'release', tool: T2.id }, { confirmed: true }).outcome, 'SAFETY_BLOCKED')
   }
+})
+
+// Experiment Library: every experiment runs on the engine from its own definition (setup + student steps) and gives
+// the phenomena it promises; its validation status is derived from the matrix, never better than its processes.
+test('experiment library: every experiment runs on the engine', () => {
+  assert.ok(EXPERIMENTS.length >= 6)
+  for (const e of EXPERIMENTS) {
+    for (const f of ['objective', 'equipment', 'chemicals', 'conditions', 'steps', 'phenomena', 'equation', 'explanation', 'safety', 'processRefs', 'references', 'tests']) assert.ok(e[f] && (e[f].length ?? 1) > 0, `${e.id}: ${f}`)
+    for (const id of e.processRefs) assert.ok(MANIFEST.some(m => m.id === id), `${e.id}: process ${id} in the manifest`)
+    for (const t of e.tests) assert.ok(readFileSync(new URL(import.meta.url), 'utf8').includes(`test('${t}`), `${e.id}: test "${t}" exists`)
+    const l = lab(120)
+    const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 120); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id })
+    for (const s of e.steps) {
+      const r = l.sim.dispatch({ type: 'addReagentTo', id: ids[s.act.to], reagent: s.act.pour, mL: s.act.mL }, { record: false })
+      assert.equal(r.outcome, 'APPLIED', `${e.id}: ${s.text}`)
+      l.sim.runFor(0.3)
+    }
+    for (const x of e.expect) assert.ok(l.s().events.some(ev => ev.container === ids[x.vessel] && ev.key.startsWith(x.key)), `${e.id}: ${x.key} in vessel ${x.vessel}`)
+    assert.ok(!l.s().events.some(ev => ids.includes(ev.container) && ev.outcome === 'UNSUPPORTED'), `${e.id}: nothing unsupported`)
+  }
+  // Results the definitions state, from the engine.
+  const run = id => { const e = EXPERIMENTS.find(x => x.id === id); const l = lab(121); const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 120); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id }); for (const s of e.steps) { l.fill({ id: ids[s.act.to] }, s.act.pour, s.act.mL); l.sim.runFor(0.3) } return ids.map(i => describe(l.s(), i)) }
+  assert.ok(!(run('exp-copper-hydroxide')[0].precipitates['Cu(OH)2'] > 0), 'Cu(OH)₂ dissolved by the acid')
+  const [agcl, agi] = run('exp-silver-halide-ammonia')
+  assert.ok(!(agcl.precipitates.AgCl > 1e-5) && agi.precipitates.AgI > 0.99e-3, 'AgCl dissolved, AgI stays')
+  assert.ok(!(run('exp-copper-ammine')[0].precipitates['Cu(OH)2'] > 1e-9), 'Cu(OH)₂ dissolved in excess NH₃ 2 M')
+  // Validation: derived, the weakest of its processes.
+  assert.equal(experimentValidation(EXPERIMENTS.find(x => x.id === 'exp-chloride-test')), 'VALIDATED')
+  assert.equal(experimentValidation(EXPERIMENTS.find(x => x.id === 'exp-copper-ammine')), 'EDUCATIONAL APPROXIMATION')
+  assert.equal(experimentValidation({ processRefs: ['ppt-AgCl', 'ppt-CaCO3'] }), 'UNVERIFIED')
+  assert.equal(experimentValidation({ processRefs: ['no-such-process'] }), 'UNVERIFIED')
 })
 
 // Gate 5: quantitative checks against hand-solved equilibria (constants written here from the cited tables, not read

@@ -73,3 +73,16 @@ Lệnh và log: `regression/final/` (trích dòng kết quả trong `regression/
 - Chưa đối chiếu pixel canvas của F01–F03 (mới kiểm state và sự kiện qua UI thật).
 - Kịch bản B và D chưa có bản qua UI (mới có ở unit).
 - Năm mục kết tủa UNVERIFIED và các hằng số cần đối chiếu nguồn: không đổi so với `SCIENTIFIC_CORRECTIONS.md`.
+
+## 7. Foundation Exit (27/11/2026)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Toàn bộ E2E Chromium sau khi sửa F03 (96 test cũ + F01–F05) | **101/101 PASS** (`exit/e2e-chromium.log`; CPU 45 % lúc bắt đầu) |
+| F03: sửa race condition có đúng không | Test tạm dừng mô phỏng rồi so toàn bộ objects, chỉ bỏ trường hiển thị `vis`. Mọi dữ liệu khoa học (contents, vị trí, chất rắn, nhiệt độ) vẫn được so; kỳ vọng `INVALID_INPUT` giữ nguyên |
+| Kịch bản B qua UI (**F04**) | PASS: AgNO₃ + NaCl; đổi lượng NaCl thì chất hết trước đổi theo (Cl⁻ rồi Ag⁺), sự kiện `ppt-AgCl` là APPLIED/VALIDATED |
+| Kịch bản D qua UI (**F05**) | PASS: Cu(OH)₂ → HCl hòa tan → kẹp (UI) thả đinh Fe → Cu bám. Engine ghi đúng cả Fe + 2H⁺ (axit dư) và **không** ghi "trung hòa" khi axit hòa tan Cu(OH)₂ |
+| Đối chiếu state với canvas 2D | F02: sau khi khuấy, pixel chất lỏng là màu xanh thẫm (B > R + 60), khớp với phức 100 % trong `describe()` |
+| Đối chiếu với 3D | Chưa tự động hóa. Bằng chứng là ảnh round 4 (`final/round4/shots/r4-ammine-*`), cùng đường đọc state |
+| Firefox / WebKit: các kịch bản Sandbox (F01–F05, S23, S24) | **7/7 PASS / 7/7 PASS** (CPU 54 % / 0 % lúc bắt đầu). P01/P01b (FPS) không chạy lại: vẫn ở mức "FAIL UNDER CURRENT ENVIRONMENT" của round 4 |
+| Thư viện thí nghiệm, 6 journey EXP + L01 | Chromium 7/7, Firefox 7/7, WebKit 7/7 |

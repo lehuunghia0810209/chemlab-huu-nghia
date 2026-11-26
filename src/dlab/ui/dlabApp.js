@@ -12,6 +12,7 @@ import { observe } from './observations.js'
 import { objectTitle, solidName } from './labels.js'
 import { GUIDED } from '../guided.js'
 import { DISCOVER } from '../data/manifest.js'
+import { EXPERIMENTS, EXPERIMENT_GROUPS, experimentValidation } from '../data/experiments.js'
 import { saveExperiment, listExperiments, loadExperiment, deleteExperiment, AUTOSAVE_ID } from '../persistence.js'
 import { IDEAL_I_LIMIT } from '../engine/chemistry.js'
 import { assess } from '../engine/safety.js'
@@ -1314,14 +1315,51 @@ export function initDynamicLab(host) {
     if (pane.dataset.done) return
     pane.dataset.done = '1'
     const groups = [...new Set(DISCOVER.map(e => e.group))]
-    pane.innerHTML = `<p class="dlab-hint">Các hiện tượng dưới đây được mô phỏng từ mô hình hóa học (không phải hoạt cảnh). Bấm “Bày dụng cụ”, rồi tự làm thí nghiệm. Tổ hợp khác vẫn thử được: mô phỏng sẽ nói rõ khi không phản ứng hoặc chưa hỗ trợ.</p>` +
+    const BADGE = { VALIDATED: ['ok', 'Đã kiểm chứng định lượng'], 'EDUCATIONAL APPROXIMATION': ['approx', 'Xấp xỉ giáo dục'], UNVERIFIED: ['unverified', 'Chưa kiểm chứng'] }
+    const expCard = e => {
+      const [cls, word] = BADGE[experimentValidation(e)]
+      return `<li class="dlab-exp" data-exp-card="${esc(e.id)}"><b>${esc(e.title)}</b><span class="dlab-exp-badge dlab-exp-badge--${cls}">${esc(word)}</span>` +
+        `<button type="button" class="dlab-btn dlab-btn--sm" data-experiment="${esc(e.id)}">Bày dụng cụ</button>` +
+        `<details><summary>Hướng dẫn</summary><dl>` +
+        `<dt>Mục tiêu</dt><dd>${esc(e.objective)}</dd><dt>Dụng cụ, hóa chất</dt><dd>${esc([...e.equipment, ...e.chemicals].join('; '))}</dd>` +
+        `<dt>Điều kiện</dt><dd>${esc(e.conditions)}</dd><dt>Các bước</dt><dd><ol>${e.steps.map(st => `<li>${esc(st.text)}</li>`).join('')}</ol></dd>` +
+        `<dt>Hiện tượng</dt><dd>${esc(e.phenomena)}</dd><dt>Phương trình</dt><dd class="dlab-exp-eq">${esc(e.equation)}</dd>` +
+        `<dt>Giải thích</dt><dd>${esc(e.explanation)}</dd><dt>An toàn</dt><dd>${esc(e.safety)}</dd><dt>Nguồn</dt><dd>${esc(e.references.join('; '))}</dd></dl></details></li>`
+    }
+    pane.innerHTML = `<p class="dlab-hint">Thí nghiệm có hướng dẫn: bấm “Bày dụng cụ” rồi làm theo các bước. Mọi kết quả do mô hình hóa học tính, không phải hoạt cảnh; nhãn cho biết mức kiểm chứng khoa học.</p>` +
+      EXPERIMENT_GROUPS.map(g => `<h3 class="dlab-disc-group">${esc(g.title)} · ${esc(g.grade)}</h3><ul class="dlab-disc dlab-exps">${EXPERIMENTS.filter(e => e.group === g.id).map(expCard).join('')}</ul>`).join('') +
+      `<p class="dlab-hint">Các hiện tượng dưới đây được mô phỏng từ mô hình hóa học (không phải hoạt cảnh). Bấm “Bày dụng cụ”, rồi tự làm thí nghiệm. Tổ hợp khác vẫn thử được: mô phỏng sẽ nói rõ khi không phản ứng hoặc chưa hỗ trợ.</p>` +
       groups.map(g => `<h3 class="dlab-disc-group">${esc(g)}</h3><ul class="dlab-disc">${DISCOVER.filter(e => e.group === g).map(e => `<li><b>${esc(e.title)}</b><span>${esc(e.inputs)}</span><button type="button" class="dlab-btn dlab-btn--sm" data-discover="${esc(e.id)}">Bày dụng cụ</button></li>`).join('')}</ul>`).join('')
   }
   $('.dlab-discover-pane').addEventListener('click', e => {
     const b = e.target.closest('[data-discover]')
     const entry = b && DISCOVER.find(x => x.id === b.dataset.discover)
     if (entry) layOut(entry)
+    const x = e.target.closest('[data-experiment]')
+    const exp = x && EXPERIMENTS.find(y => y.id === x.dataset.experiment)
+    if (exp) layOutExperiment(exp)
   })
+  // An Experiment Library entry: vessels with their starting solutions, then the bottles the steps use. Same commands
+  // as the student's own (dispatch); the student then performs the steps.
+  function layOutExperiment(exp) {
+    const made = []
+    for (const v of exp.setup.vessels) {
+      const r = sim.dispatch({ type: 'add', equipmentType: v.type, x: freeX(), y: 0 })
+      if (!r.ok) return
+      for (const [reagent, mL] of v.fill) sim.dispatch({ type: 'addReagentTo', id: r.id, reagent, mL }, { confirmed: true })
+      made.push(r.id)
+    }
+    let first = null
+    for (const reagent of exp.setup.bottles) {
+      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX(), y: 0, reagent })
+      if (r.ok && !first) first = r.id
+    }
+    ui.userView = false
+    fitView()
+    if (first) select(first)
+    toast(`${exp.title} — đã bày dụng cụ. Bước 1: ${exp.steps[0].text}`)
+    announce(`Đã bày dụng cụ cho thí nghiệm ${exp.title}. Bước 1: ${exp.steps[0].text}`)
+  }
   function layOut(entry) {
     const d = entry.demo
     const x = freeX()

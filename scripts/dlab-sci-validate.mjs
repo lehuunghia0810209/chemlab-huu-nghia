@@ -5,6 +5,7 @@
 // Usage: node scripts/dlab-sci-validate.mjs → exits 1 on any failure.
 import { KINETIC, ION_REDOX, ELECTRO } from '../src/dlab/data/reactions.js'
 import { REAGENTS, PRECIPITATES, molarMass } from '../src/dlab/data/materials.js'
+import { EXPERIMENTS } from '../src/dlab/data/experiments.js'
 
 // IUPAC 2021 standard atomic weights (abridged/conventional values, CIAAW): independent of src/data/elements.js.
 const AW = { H: 1.008, C: 12.011, N: 14.007, O: 15.999, Na: 22.990, Mg: 24.305, S: 32.06, Cl: 35.45, K: 39.098, Ca: 40.078, Fe: 55.845, Cu: 63.546, Zn: 65.38, Ag: 107.868, I: 126.904, Ba: 137.327 }
@@ -88,6 +89,11 @@ for (const r of ION_REDOX) {
   for (const [ion, n] of Object.entries(r.reactants)) check(r.id, coef(l, ion) === n, `reactant ${ion} ${n} vs equation ${coef(l, ion)}`)
   for (const [ion, n] of Object.entries(r.products || {})) check(r.id, coef(right, ion) === n, `product ${ion} ${n} vs equation ${coef(right, ion)}`)
   for (const [k, n] of Object.entries(r.precipitate || {})) check(r.id, coef(right, k) === n, `precipitate ${k} ${n} vs equation ${coef(right, k)}`)
+}
+// Experiment Library: every equation a student reads balances.
+for (const e of EXPERIMENTS) for (const eq of e.equation.split(';').map(x => x.trim()).filter(Boolean)) {
+  const { bad } = balance(eq)
+  check(e.id, !bad.length, `balance ${eq}${bad.length ? ' — ' + bad.join(', ') : ''}`)
 }
 check('electrolysis', !balance(ELECTRO.electrolysisCuCl2.equation).bad.length, `balance ${ELECTRO.electrolysisCuCl2.equation}`)
 check('daniell', !balance(ELECTRO.daniell.equation).bad.length, `balance ${ELECTRO.daniell.equation}`)

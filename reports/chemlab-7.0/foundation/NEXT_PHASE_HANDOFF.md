@@ -23,7 +23,27 @@ Viết cho: phiên phát triển tiếp theo, dù là AI hay người. Đọc fi
 | `experimentTemplate(entry)` | Thẻ hoặc thí nghiệm dưới dạng dữ liệu |
 | `VALIDATION`, `validationOf` (`data/validation.js`) | Trạng thái kiểm chứng; dùng chung cho engine và ma trận |
 
-## 0.2 Bất biến không được phá
+## 0.15 Hợp đồng được giữ cố định (từ Foundation Exit)
+
+Chỉ sửa khi có lỗi hoặc nhu cầu tích hợp đã được chứng minh; không refactor lớn:
+- `engine/contract.js`
+- `engine/domain.js`
+- Bộ giải quá trình (`chemistry.js`, `processes.js`)
+- Luồng sự kiện (`state.events`)
+- Ma trận kiểm chứng (`data/validation.js`)
+- Schema lưu/mở (`persistence.js`)
+- 29 template (manifest `DISCOVER`)
+
+Các sửa lỗi khoa học và an toàn của `91ac642` phải được giữ nguyên.
+
+## 0.16 Experiment Library (phase sản phẩm 1)
+
+- **Dữ liệu:** `src/dlab/data/experiments.js`. Nhóm 1, "Kết tủa, hòa tan và tạo phức", có 6 thí nghiệm. Trạng thái kiểm chứng được **suy ra** bằng `experimentValidation`.
+- **Giao diện:** tab "Khám phá", mục đầu tiên, với nhãn kiểm chứng, nút "Bày dụng cụ" và phần "Hướng dẫn".
+- **Test:** unit `experiment library: every experiment runs on the engine`; phương trình trong `dlab-sci-validate`; E2E `EXP` trên 3 trình duyệt.
+- **Kế hoạch các nhóm tiếp theo:** `EXPERIMENT_LIBRARY_PLAN.md`.
+
+
 
 - Một engine, một state. Không gắn cứng sản phẩm theo id thẻ hoặc id bài.
 - Mọi thao tác đi qua `dispatch`. Lệnh bị từ chối không thay đổi state khoa học, undo hay nhật ký (lần bị chặn an toàn chỉ được ghi vào nhật ký và `events`). Undo chỉ ghi khi lệnh thành công.

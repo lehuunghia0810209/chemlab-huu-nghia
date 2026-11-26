@@ -1,0 +1,3 @@
+chromium start cpu 45%
+firefox start cpu 54%
+webkit start cpu 0%
