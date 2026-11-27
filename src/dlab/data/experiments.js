@@ -15,6 +15,7 @@
 // or { object: equipment type, reading: [lo, hi], deposit }] checked on the final state.
 import { MANIFEST } from './manifest.js'
 import { validationOf } from './validation.js'
+import { LIBRARY_71, GROUPS_71 } from './experiments71.js'
 
 const RANK = ['VALIDATED', 'EDUCATIONAL APPROXIMATION', 'UNVERIFIED']
 export function experimentValidation(exp) {
@@ -27,7 +28,8 @@ export const EXPERIMENT_GROUPS = [
   { id: 'metals', title: 'Kim loại và dãy hoạt động hóa học', grade: 'Hóa học 12' },
   { id: 'precipitation', title: 'Kết tủa, hòa tan và tạo phức', grade: 'Hóa học 11–12' },
   { id: 'electrochem', title: 'Điện hóa: pin và điện phân', grade: 'Hóa học 12' },
-  { id: 'redox', title: 'Oxi hóa – khử', grade: 'Hóa học 10' }
+  { id: 'redox', title: 'Oxi hóa – khử', grade: 'Hóa học 10' },
+  ...GROUPS_71
 ]
 export const DIFFICULTY = ['Cơ bản', 'Trung bình', 'Nâng cao']
 
@@ -424,4 +426,6 @@ export const EXPERIMENTS = [
     processRefs: ['redox-fe-i'], expect: [{ vessel: 0, key: 'redox-fe-i' }], expectState: [{ vessel: 0, left: 'Fe2+', gone: 'Fe3+', noPrecipitate: 'I2s' }, { vessel: 0, left: 'I2' }],
     references: ['E°: CRC Handbook'], tests: ['experiment library: every experiment runs on the engine']
   }
+,
+  ...LIBRARY_71
 ]

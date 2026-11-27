@@ -29,7 +29,7 @@ const WORKSPACES = [
   { view: 'periodic', icon: 'table', title: 'Bảng tuần hoàn', copy: 'Tra cứu 118 nguyên tố, cấu hình electron, mô hình nguyên tử và orbital.', meta: '118 nguyên tố' },
   { view: 'tools', icon: 'tools', title: 'Công cụ', copy: 'Cân bằng phương trình, tính mol – nồng độ, tra ion và độ tan.', meta: '7 công cụ' },
   { view: 'learning', icon: 'learn', title: 'Học tập', copy: 'Học từng bước theo chương trình lớp 10–12, có ví dụ giải mẫu và kiểm tra nhanh.', meta: '21 chương · 78 bài' },
-  { view: 'lab', icon: 'lab', title: 'Phòng thí nghiệm', copy: 'Trộn hóa chất, quan sát hiện tượng và làm thí nghiệm có hướng dẫn.', meta: '103 hóa chất · 96 phản ứng' }
+  { view: 'lab', icon: 'lab', title: 'Phòng thí nghiệm', copy: 'Bàn thí nghiệm mô phỏng, thư viện thí nghiệm THPT và bài có hướng dẫn.', meta: 'Tự do · thư viện thí nghiệm · có hướng dẫn' }
 ]
 
 const TOOLS = [
@@ -103,6 +103,7 @@ function continueTarget(activity) {
   if (activity.type === 'experiment') {
     return {
       view: 'lab',
+      hash: activity.experimentId ? `#lab/experiment/${encodeURIComponent(activity.experimentId)}` : '',
       kind: activity.completed ? 'Thí nghiệm gần nhất' : 'Tiếp tục thí nghiệm',
       title: `Thí nghiệm lớp ${activity.grade || ''}`.trim(),
       copy: 'Quay lại thí nghiệm có hướng dẫn và tiếp tục từ tiến độ đã lưu.'

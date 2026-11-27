@@ -44,10 +44,21 @@ export const IONS = {
   'Zn2+': { z: 2, label: 'Zn²⁺', hydrolysisKa: 10 ** -8.96, ammine: [10 ** 2.37, 10 ** 4.81, 10 ** 7.31, 10 ** 9.46], ammineLabel: '[Zn(NH₃)₄]²⁺', ammineColorWord: 'không màu' }, // Powell 2013
   'Cu2+': { z: 2, label: 'Cu²⁺', hydrolysisKa: 10 ** -7.95, dimerBeta: 10 ** -10.43, color: [70, 140, 230], colorPerM: 1.6, ammine: [10 ** 4.31, 10 ** 7.98, 10 ** 11.02, 10 ** 13.32], ammineLabel: '[Cu(NH₃)₄]²⁺', ammineColorWord: 'màu xanh thẫm', ammineColor: [22, 38, 150], ammineColorPerM: 30 }, // Powell 2007
   'Fe2+': { z: 2, label: 'Fe²⁺', hydrolysisKa: 10 ** -9.5, color: [150, 200, 140], colorPerM: 0.8 }, // Baes & Mesmer 1976
-  'Fe3+': { z: 3, label: 'Fe³⁺', hydrolysisKa: 10 ** -2.19, color: [205, 140, 40], colorPerM: 3 }, // Baes & Mesmer 1976
+  // scnK1: Fe³⁺ + SCN⁻ ⇌ FeSCN²⁺, K1 = 10^3,03 at I = 0, 25 °C (Martell & Smith / NIST SRD 46; G. S. Laurence, Trans. Faraday Soc.
+  // 1956: 1070). At I = 0,5 M the conditional value is ≈ 139 (Lister & Rivington 1955): the ideal (I = 0) value overstates
+  // complexation in concentrated mixtures. ε(FeSCN²⁺) ≈ 4700 L/(mol·cm) at 447–450 nm (Frank & Oswalt 1947): blood red.
+  // Fe(SCN)₂⁺ and higher (K2 ≈ 16–20) are not modelled: ≥ 10 % of the iron above ≈ 5 mM free SCN⁻ (a note says so).
+  'Fe3+': { z: 3, label: 'Fe³⁺', hydrolysisKa: 10 ** -2.19, color: [205, 140, 40], colorPerM: 3, scnK1: 10 ** 3.03, scnLabel: 'FeSCN²⁺', scnColor: [165, 22, 20], scnColorPerM: 3000 }, // Baes & Mesmer 1976
   'Cl-': { z: -1, label: 'Cl⁻' },
   'NO3-': { z: -1, label: 'NO₃⁻' },
   'I-': { z: -1, label: 'I⁻' },
+  // HSCN is a strong acid (pKa ≈ −1,3 to 0,9 between sources): SCN⁻ is never protonated at school pH.
+  'SCN-': { z: -1, label: 'SCN⁻' },
+  // MnO₄⁻: ε ≈ 2400 L/(mol·cm) at 525 nm (den Boef 1958; textbook value). colorPerM is a visual calibration like I₂:
+  // 0,1 mM is clearly pink-violet, 1 mM deep purple, ~10 µM (a titration end point) a faint pink.
+  'MnO4-': { z: -1, label: 'MnO₄⁻', color: [150, 30, 125], colorPerM: 2500 },
+  // Mn²⁺: ε ≈ 0,03 at 530 nm — colourless at school concentrations (very pale pink only when concentrated).
+  'Mn2+': { z: 2, label: 'Mn²⁺' },
   // Iodine from redox (with I⁻ present it is I₃⁻; the total is tracked). colorPerM is a visual calibration:
   // ~1 mM iodine already looks clearly yellow-brown, as in a real tube (I₃⁻ absorbs strongly).
   I2: { z: 0, label: 'I₂ (I₃⁻)', color: [150, 75, 15], colorPerM: 700 },
@@ -90,7 +101,8 @@ export const PRECIPITATES = {
   // Solid iodine above its solubility (see iodineSolubility in chemistry.js); not a Ksp salt.
   I2s: { name: 'Iot (rắn)', formula: 'I2', cation: 'I2', anion: null, p: 1, q: 0, Ksp: null, redox: true, color: [70, 50, 80], density: 4.93 },
   CuI: { name: 'Đồng(I) iotua', formula: 'CuI', cation: 'Cu+', anion: 'I-', p: 1, q: 1, Ksp: 1.27e-12, redox: true, color: [236, 226, 205], density: 5.62 },
-  'Zn(OH)2': { name: 'Kẽm hiđroxit', formula: 'Zn(OH)2', cation: 'Zn2+', anion: 'OH', p: 1, q: 2, Ksp: 3e-17, color: [250, 250, 250], density: 3.05 }
+  'Zn(OH)2': { name: 'Kẽm hiđroxit', formula: 'Zn(OH)2', cation: 'Zn2+', anion: 'OH', p: 1, q: 2, Ksp: 3e-17, color: [250, 250, 250], density: 3.05 },
+  AgSCN: { name: 'Bạc thioxianat', formula: 'AgSCN', cation: 'Ag+', anion: 'SCN-', p: 1, q: 1, Ksp: 1.03e-12, color: [248, 248, 244], density: 3.75 } // CRC 25 °C
 }
 
 // Pure liquids at 25 °C: density g/mL, heat capacity J/(g·K), boiling point °C at 1 atm, latent heat J/g at bp.
@@ -140,6 +152,10 @@ export const INDICATORS = {
   // specification); stock 1 % in 50 % ethanol (school preparation); 1 cm drawn path.
   phenolphthalein: { name: 'Phenolphtalein', ethanolFraction: 0.5, pKin: 9.4, acid: [255, 255, 255, 0], base: [230, 40, 150], validation: 'quantitative-range', range: 'không màu < 8,2 · hồng 8,2–10', absorbance1pct: 725, absorbancePH: 9.8, stockPct: 1 },
   methylOrange: { name: 'Metyl da cam', pKin: 3.46, acid: [220, 40, 40], base: [245, 190, 40], validation: 'quantitative-range', range: 'đỏ < 3,1 · vàng > 4,4' },
+  // Starch is not a pH indicator: amylose holds polyiodide chains (I₅⁻/I₃⁻) → blue-black, so it needs I₂ AND I⁻.
+  // Visible from ≈ 1–2·10⁻⁵ M I₂ (Kolthoff & Sandell); fades reversibly above ≈ 65–70 °C (helix opens). In base (pH > 9)
+  // I₂ disproportionates (flagged in ION_HINTS). Drawn by bulkColor from the iodine state, not from pH.
+  starch: { name: 'Hồ tinh bột', iodine: true, validation: 'qualitative', range: 'xanh tím khi có I₂ (cùng I⁻); mất màu khi nóng trên ≈ 65 °C', acid: [255, 255, 255, 0], base: [255, 255, 255, 0], pKin: 0, color: [35, 28, 100], minI2: 2e-5, minIodide: 1e-4 },
   universal: {
     name: 'Chất chỉ thị vạn năng',
     ethanolFraction: 0.5,
@@ -204,12 +220,17 @@ export const REAGENTS = [
   solution('na2co3', 'Natri cacbonat', 'Sodium carbonate', 'Na2CO3', 0.2, { 'Na+': 2, CO3: 1 }, { group: 'salt', hazards: ['irritant'], safety: 'Gây kích ứng mắt.' }),
   solution('nahco3', 'Natri hiđrocacbonat', 'Sodium bicarbonate', 'NaHCO3', 0.5, { 'Na+': 1, CO3: 1 }, { group: 'salt', hazards: [], safety: 'Ít nguy hiểm.' }),
   solution('ki', 'Kali iotua', 'Potassium iodide', 'KI', 0.1, { 'K+': 1, 'I-': 1 }, { group: 'salt', hazards: [], safety: 'Ít nguy hiểm.' }),
+  solution('kscn', 'Kali thioxianat', 'Potassium thiocyanate', 'KSCN', 0.1, { 'K+': 1, 'SCN-': 1 }, { group: 'salt', hazards: ['irritant'], safety: 'Độc khi nuốt; tiếp xúc với axit mạnh đặc có thể sinh khí độc. Rửa tay sau thí nghiệm.' }),
+  solution('kmno4', 'Kali pemanganat', 'Potassium permanganate', 'KMnO4', 0.02, { 'K+': 1, 'MnO4-': 1 }, { group: 'salt', hazards: ['oxidizer', 'irritant', 'env'], safety: 'Chất oxi hóa mạnh, làm ố da và quần áo, độc với sinh vật nước: đeo găng và kính, không trộn với chất dễ cháy, không đổ xuống cống.' }),
+  // Lugol-type solution: 0,01 M I₂ held as I₃⁻ by 0,05 M KI (I₂ alone dissolves only to 1,33 mM).
+  solution('iodine', 'Dung dịch iot (trong KI)', 'Iodine solution (Lugol type)', 'I2', 0.01, { I2: 1, 'K+': 5, 'I-': 5 }, { components: [['I2', 1], ['KI', 5]], group: 'salt', hazards: ['irritant', 'env'], safety: 'Gây vết bẩn và kích ứng da, mắt; độc với sinh vật nước.' }),
   { id: 'water', kind: 'liquid', liquid: 'water', name: 'Nước cất', nameEn: 'Distilled water', formula: 'H2O', molarMass: molarMass('H2O'), group: 'liquid', hazards: [], safety: 'An toàn.' },
   { id: 'ethanol', kind: 'liquid', liquid: 'ethanol', name: 'Etanol', nameEn: 'Ethanol', formula: 'C2H5OH', molarMass: molarMass('C2H5OH'), group: 'organic', hazards: ['flammable'], safety: 'Dễ cháy; tránh xa ngọn lửa.' },
   { id: 'oil', kind: 'liquid', liquid: 'oil', name: 'Dầu ăn', nameEn: 'Vegetable oil', formula: null, molarMass: null, group: 'organic', hazards: [], safety: 'Trơn trượt khi đổ ra bàn.' },
   { id: 'litmus', kind: 'indicator', indicator: 'litmus', name: 'Dung dịch quỳ tím', nameEn: 'Litmus solution', formula: null, molarMass: null, group: 'indicator', hazards: [], safety: 'An toàn.' },
   { id: 'phenolphthalein', kind: 'indicator', indicator: 'phenolphthalein', name: 'Phenolphtalein', nameEn: 'Phenolphthalein', formula: 'C20H14O4', molarMass: molarMass('C20H14O4'), group: 'indicator', hazards: ['flammable', 'toxic'], safety: 'Phenolphtalein bị xếp loại nghi gây ung thư (GHS H350): tránh dính da, không nuốt. Dung dịch pha trong cồn, dễ cháy.' },
   { id: 'methylOrange', kind: 'indicator', indicator: 'methylOrange', name: 'Metyl da cam', nameEn: 'Methyl orange', formula: 'C14H14N3NaO3S', molarMass: molarMass('C14H14N3NaO3S'), group: 'indicator', hazards: ['toxic'], safety: 'Độc khi nuốt.' },
+  { id: 'starch', kind: 'indicator', indicator: 'starch', short: 'Tinh bột', bottleNote: '1 %', name: 'Hồ tinh bột 1 %', nameEn: 'Starch solution', formula: null, molarMass: null, group: 'indicator', hazards: [], safety: 'An toàn; pha bằng nước sôi, để nguội trước khi dùng.' },
   { id: 'universal', kind: 'indicator', indicator: 'universal', name: 'Chỉ thị vạn năng', nameEn: 'Universal indicator', formula: null, molarMass: null, group: 'indicator', hazards: ['flammable'], safety: 'Pha trong cồn, dễ cháy.' },
   // Solids. shape: sphere | ribbon | cylinder | powder. density g/cm³ (CRC).
   { id: 'na', kind: 'solid', name: 'Natri (mẩu)', nameEn: 'Sodium', formula: 'Na', molarMass: molarMass('Na'), density: 0.968, shape: 'sphere', defaultMass: 0.1, maxMass: 0.2, tool: 'tongs', group: 'metal', color: [200, 205, 210], hazards: ['water', 'flammable', 'corrosive'], safety: 'Phản ứng mãnh liệt với nước, sinh H₂ dễ cháy và NaOH ăn mòn. Chỉ dùng mẩu nhỏ bằng hạt đậu xanh, dùng kẹp.' },

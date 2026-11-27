@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import { DISCOVER } from '../../src/dlab/data/manifest.js'
 import { EXPERIMENTS, experimentValidation } from '../../src/dlab/data/experiments.js'
 import { oilBelow } from '../../src/dlab/engine/chemistry.js'
+import { REAGENT_BY_ID } from '../../src/dlab/data/materials.js'
 import { checkInvariants } from '../../src/dlab/engine/sim.js'
 const axeSource = await fs.readFile(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8')
 
@@ -18,7 +19,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     if (await page.locator('.dlab-detail-pane').isVisible()) return
     const fab = page.locator('.dlab-fab--side')
     if (await fab.isVisible()) await fab.click()
-    await page.getByRole('tab', { name: 'Chi tiết vật' }).click()
+    await page.getByRole('tab', { name: 'Chi tiết', exact: true }).click()
   }
   const panelBtn = (page, name) => ({ click: async () => { await showDetails(page); await page.locator('.dlab-inspector').getByRole('button', { name, exact: true }).click() } })
   // Library: choose the shelf, then the group chip (Tủ hóa chất / Kệ dụng cụ).
@@ -361,7 +362,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('S22 hoàn thành một Guided Lab', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Nhận biết dung dịch' }).click()
+    await page.locator('.ulab-card', { hasText: 'Nhận biết dung dịch' }).click()
     await page.locator('.dlab-guided', { hasText: 'Tiến độ: 0/5' }).waitFor()
     const roles = await st(page, L => {
       const find = label => L.state.objects.find(o => o.label === label).id
@@ -572,7 +573,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     }
     await page.setViewportSize({ width: 390, height: 844 })
     await bench(page, {})
-    await btn(page, 'Thư viện').click()
+    await btn(page, 'Tủ hóa chất').click()
     await page.locator('.dlab-lib-item', { hasText: 'Cốc thủy tinh 100 mL' }).first().click()
     const id = await st(page, L => L.state.objects.find(o => o.type === 'beaker100').id)
     const o = await obj(page, id)
@@ -600,7 +601,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
       await page.waitForTimeout(300)
       await page.addScriptTag({ content: axeSource })
       const r = await page.evaluate(async () => {
-        const res = await window.axe.run(document.querySelector('#view-dlab'), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] } })
+        const res = await window.axe.run(document.querySelector('#view-lab'), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] } })
         return res.violations.map(v => `${v.id} (${v.impact}): ${v.nodes.length} — ${v.nodes.slice(0, 2).map(n => n.target.join(' ')).join(' | ')}`)
       })
       assert.deepEqual(r, [], `${theme}: ${r.join(' || ')}`)
@@ -961,7 +962,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await bench(page, {})
     const lib = page.locator('.dlab-lib')
     assert.equal(await lib.isVisible(), false, 'bench first: library closed on phones')
-    await btn(page, 'Thư viện').click()
+    await btn(page, 'Tủ hóa chất').click()
     await lib.waitFor()
     await page.locator('.dlab-lib-item', { hasText: 'Cốc thủy tinh 100 mL' }).first().click()
     await lib.waitFor({ state: 'hidden' })
@@ -1086,7 +1087,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('G05 Guided Lab kim loại: thanh bước, kẹp gợi ý đúng chất, tốc độ 4× thật, tua đến hiện tượng', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Kim loại' }).click()
+    await page.locator('.ulab-card', { hasText: 'Kim loại' }).first().click()
     const strip = page.locator('.dlab-gstrip')
     await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
     await page.locator('[data-gs="help"]').click() // the completion sign is in the help, keeping the strip short
@@ -1157,7 +1158,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('G07 điện thoại 390 px: thanh bước gọn, gắp bằng nút, không cuộn ngang', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Kim loại' }).click()
+    await page.locator('.ulab-card', { hasText: 'Kim loại' }).first().click()
     await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
     const h = (await page.locator('.dlab-gstrip').boundingBox()).height
     assert.ok(h < 170, `strip height ${h}`)
@@ -1179,7 +1180,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   const approx = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, msg + ': ' + a + ' vs ' + b)
   await test('G08 kết tủa (CL7-QA-001): ống nhỏ giọt hút 2 mL, 10 giọt, tiến độ định lượng, Cu(OH)₂ sau ≤ 10 thao tác', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()
+    await page.locator('.ulab-card', { hasText: 'Tạo kết tủa' }).click()
     const strip = page.locator('.dlab-gstrip')
     await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
     assert.match(await strip.innerText(), /3 mL/, 'the task states the amount the model needs')
@@ -1348,7 +1349,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('G10 Guided: cất cốc của bài không làm treo, có hướng dẫn phục hồi; Hoàn tác lùi cả tiến độ', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Nhận biết' }).click()
+    await page.locator('.ulab-card', { hasText: 'Nhận biết' }).first().click()
     const strip = page.locator('.dlab-gstrip')
     await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
     const r = await st(page, L => ({ A: L.state.objects.find(o => o.label === 'Ống A').id, B: L.state.objects.find(o => o.label === 'Ống B').id, P: L.state.objects.find(o => o.type === 'litmusPaper').id }))
@@ -1375,7 +1376,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('G09 kết tủa bước 4–5 với đích MẶC ĐỊNH: HCl vào Cốc A, muối vào Cốc B; thả nhầm cốc thì có hướng dẫn phục hồi', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()
+    await page.locator('.ulab-card', { hasText: 'Tạo kết tủa' }).click()
     const strip = page.locator('.dlab-gstrip')
     await strip.locator('.dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
     const r = await st(page, L => { const o = L.state.objects; return { A: o.find(x => x.type === 'beaker100' && x.contents.ions['Cu2+']).id, B: o.find(x => x.type === 'beaker100' && !x.contents.ions['Cu2+']).id, naoh: o.find(x => x.reagent === 'naoh').id, hcl: o.find(x => x.reagent === 'hcl').id, sp: o.find(x => x.type === 'spatula').id, rod: o.find(x => x.type === 'rod').id } })
@@ -1433,7 +1434,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('X01 Sandbox "Khám phá": bày dụng cụ Cu(OH)₂, học sinh tự rót, kết tủa từ mô hình', async page => {
     await btn(page, 'Tự do').click()
-    await sideTab(page, 'Khám phá')
+    await sideTab(page, 'Thư viện')
     const card = page.locator('.dlab-disc li', { hasText: 'Cu(OH)2↓' })
     await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
     const r = await st(page, L => { const o = L.state.objects; return { v: o.find(x => x.contents?.ions?.['Cu2+'] > 0).id, b: o.find(x => x.type === 'bottle' && x.reagent === 'naoh').id, sel: L.selected() } })
@@ -1479,8 +1480,8 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   for (const e of DISCOVER) await test(`X06 Khám phá qua giao diện — ${e.id}: ${e.title}`, async page => {
     await btn(page, 'Tự do').click()
     const before = await st(page, L => L.state.objects.map(o => o.id))
-    await sideTab(page, 'Khám phá')
-    await page.locator('.dlab-disc li', { hasText: e.title }).first().getByRole('button', { name: 'Bày dụng cụ' }).click()
+    await sideTab(page, 'Thư viện')
+    await page.locator(`[data-discover="${e.id}"]`).click() // by id: a library experiment may share the equation text
     const d = e.demo
     const ids = await st(page, (L, a) => {
       const fresh = L.state.objects.filter(o => !a.before.includes(o.id))
@@ -1518,7 +1519,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   for (const e of EXPERIMENTS) await test(`EXP Thư viện thí nghiệm qua giao diện — ${e.id}: ${e.title}`, async page => {
     await btn(page, 'Tự do').click()
     await bench(page, {})
-    await sideTab(page, 'Khám phá')
+    await sideTab(page, 'Thư viện')
     const card = page.locator(`[data-exp-card="${e.id}"]`)
     assert.equal((await card.locator('.dlab-exp-badge').textContent()).trim(), BADGE_WORD[experimentValidation(e)], 'badge = derived validation')
     await card.locator('summary').click()
@@ -1540,7 +1541,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     }
     const confirm = async () => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }
     const insp = page.locator('.dlab-inspector')
-    if (tools.tongs || tools.power) await page.locator('[data-speed="4"]').first().click()
+    if (tools.tongs || tools.spatula || tools.power) await page.locator('[data-speed="4"]').first().click()
     for (const s of e.steps) {
       const a = s.act
       if (a.pour) { await pourUI(page, bottle[a.pour], vessels[a.to], a.mL); continue }
@@ -1568,7 +1569,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
         }
         continue
       }
-      await select(page, tools.tongs)
+      await select(page, tools[REAGENT_BY_ID[a.solid].tool]) // tongs for lumps, spatula for powders
       await page.locator('[data-qa-in="solid"]').selectOption(a.solid)
       await page.locator('[data-qa-in="mass"]').fill(String(a.massG))
       await page.locator('.dlab-actionbar [data-qa="pick"]').click()
@@ -1583,7 +1584,10 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
         if (x.object) { const o = L.state.objects.find(y => y.id === a.tools[x.object]); return (!x.reading || (o.reading >= x.reading[0] && o.reading <= x.reading[1])) && (!x.deposit || (o.cuDeposit || 0) > 0) }
         const d = L.describe(a.vessels[x.vessel])
         return (!x.pH || (d.pH >= x.pH[0] && d.pH <= x.pH[1])) && (!x.coat || d.solids.some(s => (s.coat[x.coat] || 0) > 0)) && (!x.gas || (d.gasReleased[x.gas] || 0) > 0) &&
-          (!x.precipitate || (d.precipitates[x.precipitate] || 0) > 0) && (!x.left || (d.dissolved[x.left] || 0) > 1e-6) && (!x.gone || !((d.dissolved[x.gone] || 0) > 1e-6)) && (!x.noPrecipitate || !((d.precipitates[x.noPrecipitate] || 0) > 0))
+          (!x.precipitate || (d.precipitates[x.precipitate] || 0) > 0) && (!x.left || (d.dissolved[x.left] || 0) > 1e-6) && (!x.gone || !((d.dissolved[x.gone] || 0) > 1e-6)) && (!x.noPrecipitate || !((d.precipitates[x.noPrecipitate] || 0) > 0)) &&
+          (!x.complex || ((d.complexes[x.complex[0]] || 0) >= x.complex[1] && (d.complexes[x.complex[0]] || 0) <= x.complex[2])) && (!x.noComplex || !((d.complexes[x.noComplex] || 0) > 1e-9)) &&
+          (x.starch == null || ((d.indicators.starch || 0) > 0 && (d.dissolved.I2 || 0) / (d.volumeML / 1000) >= 2e-5 && (d.dissolved['I-'] || 0) / (d.volumeML / 1000) >= 1e-4) === x.starch) &&
+          (!x.warm || (d.T - 25 >= x.warm[0] && d.T - 25 <= x.warm[1])) && (!x.solidLeft || (() => { const m = d.solids.reduce((s, y) => s + y.massG, 0); return m >= x.solidLeft[0] && m <= x.solidLeft[1] })())
       }),
     { expect: e.expect, state: e.expectState || [], vessels, tools }, 120000)
     // The experiment's vessels and bench-wide notes (a cell, a meter); a stock bottle's own note (phenolphthalein is made up
@@ -1602,7 +1606,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   await test('EXP Thư viện: tìm kiếm, lọc nhóm/lớp/mức độ/kiểm chứng, bày lại, về bàn trống, axe (sáng/tối)', async page => {
     await btn(page, 'Tự do').click()
     await bench(page, {})
-    await sideTab(page, 'Khám phá')
+    await sideTab(page, 'Thư viện')
     const visible = () => page.locator('[data-exp-card]:visible').count()
     assert.equal(await visible(), EXPERIMENTS.length)
     await page.locator('[data-exp-search]').fill('axit yeu') // accents optional
@@ -1653,13 +1657,13 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
 
   await test('X04 đổi bài giữa chừng: bài mới sạch, không mang trạng thái/tiến độ của bài cũ, không Hoàn tác về bài cũ', async page => {
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Tạo kết tủa' }).click()
+    await page.locator('.ulab-card', { hasText: 'Tạo kết tủa' }).click()
     await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/5' }).waitFor()
     const r = await st(page, L => { const o = L.state.objects; return { A: o.find(x => x.contents?.ions?.['Cu2+'] > 0).id, naoh: o.find(x => x.reagent === 'naoh').id } })
     await pourBar(page, r.naoh, r.A, 4)
     await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 2/5' }).waitFor()
     await btn(page, 'Có hướng dẫn').click()
-    await page.locator('.dlab-choice', { hasText: 'Axit' }).first().click()
+    await page.locator('.ulab-card', { hasText: 'Axit' }).first().click()
     await page.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/' }).waitFor()
     const g = await st(page, L => ({ guided: L.guided(), ppt: L.state.objects.some(o => Object.values(o.contents?.precipitates || {}).some(v => v > 0)), cu: L.state.objects.some(o => o.contents?.ions?.['Cu2+'] > 0) }))
     assert.equal(g.guided.done, 0); assert.ok(!g.ppt && !g.cu, 'nothing of the old lesson on the bench')

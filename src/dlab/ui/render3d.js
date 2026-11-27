@@ -316,7 +316,7 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     x.fillStyle = '#111827'
     x.textAlign = 'center'
     x.font = 'bold 44px system-ui, sans-serif'
-    x.fillText(subscript(r?.formula || ''), 128, 66, 236)
+    x.fillText(subscript(r?.formula || r?.short || ''), 128, 66, 236)
     x.font = '22px system-ui, sans-serif'
     x.fillText(r?.name || '', 128, 104, 236)
     const labelTex = new THREE.CanvasTexture(c)
@@ -837,11 +837,24 @@ export function create3dView(container, { quality = 'high', onPick, onHover, con
     for (let j = 0; j < GH; j += 1) {
       for (let i = 0; i < GW; i += 1) {
         const isOil = (j + 0.5) / GH > aqFrac || (j + 0.5) / GH < oilFrac
-        const c = isOil ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
+        let c = isOil ? [240, 200, 60, 0.75] : (!tilted && cellColor(o, j * GW + i, mean)) || o.vis.displayed || o.vis.target || [200, 220, 240, 0.25]
+        if (!isOil) {
+          // Lit 3D liquid washes pale tints out to white: spread the colour away from the water tint (×≈3 for a pale tint,
+          // ≈×1 for a strong one). Display only; the colour in the state and in 2D is unchanged.
+          const d = Math.hypot(c[0] - 222, c[1] - 238, c[2] - 250)
+          const k = 1 + 2.2 * Math.exp(-d / 60)
+          c = [0, 1, 2].map(n => Math.max(0, Math.min(255, [222, 238, 250][n] + (c[n] - [222, 238, 250][n]) * k))).concat(c[3])
+        }
         // A colourless solution is nearly clear (it read as grey milk over the bench): alpha eases from ×0,45 at the
         // water tint (chroma 40) to ×1 for a clearly coloured one (chroma ≥ 70), with no step in between.
         let a = (c[3] ?? 0.3) * 1.1
-        if (!isOil) a *= 0.45 + 0.55 * Math.min(1, Math.max(0, (Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) - 40) / 30))
+        if (!isOil) {
+          a *= 0.45 + 0.55 * Math.min(1, Math.max(0, (Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) - 40) / 30))
+          // A pale but real tint (≈ 0,2 M Cu²⁺, dilute Fe³⁺) needs body to read against the dark bench: the further the colour is
+          // from the water tint the model gives, the more opaque (water itself stays clear).
+          const tint = Math.hypot(c[0] - 222, c[1] - 238, c[2] - 250)
+          if (tint > 20) a = Math.max(a, Math.min(0.75, 0.3 + tint / 160))
+        }
         const k = ((GH - 1 - j) * GW + i) * 4
         img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]
         img.data[k + 3] = Math.round(255 * Math.min(0.9, Math.max(0.06, a)))

@@ -4,7 +4,7 @@ import { classifyNote, containerOfNote } from './domain.js'
 import { EQUIPMENT, halfWidthAt, innerHeight, levelForVolume, retainedVolumeAtTilt } from '../data/equipment.js'
 import { WEAK, IONS, INDICATORS, PRECIPITATES, REAGENT_BY_ID, LIQUIDS, SALT_IONS, SOLUBILITY, solubilityAt, indicatorColor, mixRgb, FARADAY, HENRY_CO2, molarMass, PH_MAX_ETHANOL_FRACTION } from '../data/materials.js'
 import { KINETIC, NO_REACTION, ELECTRO, UNSUPPORTED_HINTS, ION_HINTS, ION_E0, METAL_E0, ION_NAME, SOLVENT_HINTS, ION_REDOX } from '../data/reactions.js'
-import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents, polarPhase, boilingOf, oilBelow, freeConc, ammineComplexes, NUCLEATION_LOG } from './chemistry.js'
+import { reagentParcel, aqueousLitres, totalVolumeML, solveH, mix, withdraw, equilibrate, liquidHeatCapacity, carbonicAcid, ionicStrength, emptyContents, scaleContents, polarPhase, boilingOf, oilBelow, freeConc, ammineComplexes, thiocyanateComplex, NUCLEATION_LOG } from './chemistry.js'
 
 export const ROOM_T = 25
 const vn = (x, d) => x.toFixed(d).replace('.', ',') // Vietnamese decimal comma in messages
@@ -93,19 +93,36 @@ export function containerBelow(state, x, y, exclude) {
 }
 
 // ── Colour ────────────────────────────────────────────────────────────────
-export function bulkColor(contents, pH) {
+// Starch–iodine: blue-black when I₂ (as I₃⁻/I₅⁻) and I⁻ are both present; fades reversibly above ≈ 65 °C (materials.js).
+export function starchColorShare(contents, T = 25) {
+  const V = aqueousLitres(contents)
+  const ind = INDICATORS.starch
+  if (!((contents.indicators.starch || 0) > 0) || V < 1e-6) return 0
+  const i2 = (contents.ions.I2 || 0) / V
+  if (!(i2 >= ind.minI2) || !((contents.ions['I-'] || 0) / V >= ind.minIodide)) return 0
+  const cool = T <= 60 ? 1 : T >= 70 ? 0 : (70 - T) / 10
+  return cool * (1 - Math.exp(-i2 / 1e-4)) * Math.min(1, contents.indicators.starch / 2)
+}
+
+export function bulkColor(contents, pH, T = 25) {
   const V = aqueousLitres(contents)
   let rgb = [222, 238, 250]
   let alpha = 0.18
   if (V > 0) {
     const cx = ammineComplexes(contents)
+    const scn = thiocyanateComplex(contents)
     for (const [ion, total] of Object.entries(contents.ions)) {
       const info = IONS[ion]
       const held = cx[ion] || 0
-      const mol = total - held
+      const mol = total - held - (info?.scnColor ? scn : 0) // FeSCN²⁺ is drawn with its own colour below
       if (info?.color && mol > 0) {
         const a = 1 - Math.exp(-info.colorPerM * mol / V)
         rgb = mixRgb(rgb, info.color, a)
+        alpha = Math.max(alpha, 0.18 + 0.6 * a)
+      }
+      if (info?.scnColor && scn > 0) {
+        const a = 1 - Math.exp(-info.scnColorPerM * scn / V)
+        rgb = mixRgb(rgb, info.scnColor, a)
         alpha = Math.max(alpha, 0.18 + 0.6 * a)
       }
       if (info?.ammineColor && held > 0) {
@@ -114,8 +131,13 @@ export function bulkColor(contents, pH) {
         alpha = Math.max(alpha, 0.18 + 0.6 * a)
       }
     }
+    const starch = starchColorShare(contents, T)
+    if (starch > 0) {
+      rgb = mixRgb(rgb, INDICATORS.starch.color, starch)
+      alpha = Math.max(alpha, 0.18 + 0.75 * starch)
+    }
     for (const [key, drops] of Object.entries(contents.indicators)) {
-      if (!(drops > 0) || pH == null) continue
+      if (!(drops > 0) || pH == null || INDICATORS[key]?.iodine) continue
       const [r, g, b, a0] = indicatorColor(key, pH)
       const ind = INDICATORS[key]
       // With absorbance data: Beer–Lambert, A ∝ concentration × coloured fraction (a0 = that fraction for phenolphthalein).
@@ -148,7 +170,7 @@ export function refreshDerived(c) {
   const h = V > 1e-6 && polarPhase(c.contents).pHApplies ? solveH(c.contents.ions, V) : null
   c.pH = h ? -Math.log10(h) : null
   c.I = h ? ionicStrength(c.contents.ions, V, h) : 0
-  const color = bulkColor(c.contents, c.pH)
+  const color = bulkColor(c.contents, c.pH, c.T ?? 25)
   const vis = c.vis
   if (!vis.target) { vis.target = color; vis.prev = color }
   else vis.target = color
@@ -188,6 +210,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
   const def = EQUIPMENT[c.type]
   const addVol = totalVolumeML(parcel)
   if (c.condition === 'UNUSABLE') { spill(state, parcel); return { spilled: addVol } }
+  if (addVol > 0) c.lastSource = { u, v } // where it entered: particles start there, the 2D surface shows a ring
   const before = volumeOf(c)
   // Thermal shock: hot, almost dry glass meeting cold liquid (educational rule).
   if (def.breakable && addVol > 0 && before < 5) {
@@ -213,6 +236,7 @@ export function addParcel(state, c, parcel, { u = 0, v = 1, T = ROOM_T } = {}) {
     noteOnce(state, `ppt-${key}-${c.id}`, `Xuất hiện kết tủa ${PRECIPITATES[key].formula} (${PRECIPITATES[key].name}) trong ${label(c)}.`)
   }
   ammineNotes(state, c, pptBefore, cxBefore)
+  complexNotes(state, c)
   trimParticles(c) // a precipitate that redissolved (in NH₃ or acid) leaves no grains behind
   injectTracer(state, c, u, v, Math.max(0.2, addVol))
   refreshDerived(c)
@@ -332,6 +356,10 @@ function ionHints(state, c) {
       if (r.dissolved && !r.all.every(k => freeConc(k, c.contents, h, V) > 1e-5)) continue
       if (r.qMin && !(freeConc(r.all[0], c.contents, h, V) * freeConc(r.qMin.anion, c.contents, h, V) ** r.qMin.n > r.qMin.K)) continue
     }
+    if (r.minFree) {
+      const V = aqueousLitres(c.contents)
+      if (V < 1e-6 || !(freeConc(r.minFree.ion, c.contents, solveH(c.contents.ions, V), V) > r.minFree.c)) continue
+    }
     if (state.notes[`ionhint-${r.all.join('+')}-${c.id}`] != null) continue
     if (r.kspOH != null) {
       const V = aqueousLitres(c.contents)
@@ -368,7 +396,29 @@ function redoxNotes(state, c, formed) {
   for (const r of ION_REDOX) {
     if (!Object.keys(r.reactants).every(ion => (c.contents.ions[ion] || 0) > 1e-7)) continue
     pH ??= -Math.log10(solveH(c.contents.ions, V))
-    if (pH > r.maxPH) noteOnce(state, `redoxrange-${r.id}-${c.id}`, `${r.equation} chỉ được mô hình hóa trong môi trường axit hoặc trung tính (pH ≤ ${r.maxPH}). Ở pH ≈ ${vn(pH, 1)} kim loại ở dạng hiđroxit hoặc phức ammin (phức với NH₃): ngoài phạm vi mô hình, không hiển thị sản phẩm.`, 'info')
+    // An acid-using reaction stopped by lack of acid leaves both reactants at pH ≈ maxPH: same report.
+    const acidStop = formed?.redox?.[`${r.id}:acid`]
+    if (acidStop && pH <= r.maxPH) {
+      noteOnce(state, `redoxrange-${r.id}-${c.id}`, `${r.equation}: hết axit (cần ${r.acid} H⁺ cho mỗi MnO₄⁻) nên phần còn lại không phản ứng tiếp theo phương trình này. ${r.rangeNote}: ngoài phạm vi mô hình.`, 'info')
+      continue
+    }
+    if (pH > r.maxPH) {
+      noteOnce(state, `redoxrange-${r.id}-${c.id}`, r.rangeNote
+        ? `${r.equation} chỉ được mô hình hóa khi pH ≤ ${r.maxPH}. ${r.rangeNote}: ngoài phạm vi mô hình, không hiển thị sản phẩm (pH ≈ ${vn(pH, 1)}).`
+        : `${r.equation} chỉ được mô hình hóa trong môi trường axit hoặc trung tính (pH ≤ ${r.maxPH}). Ở pH ≈ ${vn(pH, 1)} kim loại ở dạng hiđroxit hoặc phức ammin (phức với NH₃): ngoài phạm vi mô hình, không hiển thị sản phẩm.`, 'info')
+    }
+  }
+}
+
+// Fe³⁺ + SCN⁻ ⇌ FeSCN²⁺ and the starch–iodine colour: observation notes from the state (a complex is not a precipitate).
+function complexNotes(state, c) {
+  const V = aqueousLitres(c.contents)
+  if (V < 1e-6 || !polarPhase(c.contents).pHApplies) return // constants are for water (solventNotes says so)
+  const scn = thiocyanateComplex(c.contents)
+  if (scn / V > 2e-6) { c.activeReactions.scn = state.t; noteOnce(state, `scn-${c.id}`, `Fe³⁺ + SCN⁻ ⇌ FeSCN²⁺: dung dịch trong ${label(c)} có màu đỏ máu (cân bằng tạo phức, K ≈ 10³).`) }
+  if ((c.contents.indicators.starch || 0) > 0) {
+    if (starchColorShare(c.contents, c.T ?? 25) > 0.02) noteOnce(state, `starch-${c.id}`, `Hồ tinh bột trong ${label(c)} chuyển xanh tím: có I₂ (cùng I⁻) trong dung dịch.`)
+    else if ((c.T ?? 25) > 65 && starchColorShare(c.contents, 25) > 0.02) noteOnce(state, `starch-hot-${c.id}`, `Ở ${vn(c.T, 0)} °C màu xanh tím của hồ tinh bột – iot mất (xoắn amylozơ duỗi ra); để nguội màu trở lại.`, 'info')
   }
 }
 
@@ -584,6 +634,7 @@ function stepKinetics(state, s, c, h, rad, level) {
     injectTracer(state, c, u, v, xi * 2000)
     c.dirty = true
     c.activeReactions[rule.id] = state.t
+    s.sideRx = { id: rule.id, t: state.t } // the voltmeter reads this: a metal that is reacting is not a Nernst electrode
     noteOnce(state, `rx-${rule.id}-${c.id}`, `${rule.equation} — ${rule.observe}`)
     if (s.massG < 1e-6) {
       s.massG = 0
@@ -705,6 +756,20 @@ export function stepElectro(state, h) {
       noteOnce(state, `daniell-complex-${m.id}`, 'Pin Zn–Cu có NH₃ tạo phức: nồng độ ion tự do thay đổi, mô hình không tính suất điện động trong trường hợp này.', 'info')
       continue
     }
+    // An electrode that is itself reacting (Zn in acid, Zn in a Cu²⁺ half-cell, Cu in Ag⁺) or that is coated by another
+    // metal gives a mixed potential, not the Nernst value of its couple: no voltage is invented.
+    // Unmodelled chemistry in a half-cell (HNO₃, Fe³⁺, Ag⁺ on Zn, strong base on Zn…) is flagged on the container.
+    const recent = x => x.s.sideRx && state.t - x.s.sideRx.t < 1.5
+    const busy = [zn, cu].find(x => recent(x) || x.c.unsupported || Object.values(x.s.coat || {}).some(v => v > 1e-7))
+    if (busy) {
+      const rule = recent(busy) && KINETIC.find(k => k.id === busy.s.sideRx.id)
+      const what = rule ? `có phản ứng phụ (${rule.equation})` : busy.c.unsupported ? 'nằm trong dung dịch có phản ứng chưa được mô hình hóa' : 'bị phủ kim loại khác'
+      const M = busy.s.reagent === 'zn' ? 'Zn' : 'Cu'
+      m.reading = null
+      m.status = `Ngoài phạm vi mô hình: điện cực ${M} đang ${what}, nên thế điện cực không còn theo Nernst.`
+      noteOnce(state, `daniell-side-${m.id}`, `Pin Zn–Cu: điện cực ${M} đang ${what}; vôn kế không hiển thị số vì mô hình chỉ tính pin khi mỗi điện cực chỉ trao đổi electron với ion của chính nó.`, 'info')
+      continue
+    }
     const d = ELECTRO.daniell
     const TK = 273.15 + (zn.c.T + cu.c.T) / 2
     const E0T = d.E0 + d.dS / (d.n * FARADAY) * (TK - 298.15)
@@ -798,6 +863,8 @@ export function stepContainer(state, c, h) {
     else if (Math.abs(polarPhase(c.contents).ethanolWt - 95.5) < 1) noteOnce(state, `boil-azeo-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} (≈ ${vn(polarPhase(c.contents).ethanolWt, 1)} % khối lượng etanol, gần điểm đẳng phí 95,5 %) sôi ở ${bp.T.toFixed(1)} °C như hỗn hợp đẳng phí: hơi có cùng thành phần với chất lỏng nên nhiệt độ sôi gần như không đổi. Hơi etanol dễ bắt lửa.`, 'warn')
     else noteOnce(state, `boil-mix-${c.id}`, `Hỗn hợp nước–etanol trong ${label(c)} bắt đầu sôi ở ${bp.T.toFixed(1)} °C; hơi giàu etanol hơn chất lỏng nên nhiệt độ sôi tăng dần. Hơi etanol dễ bắt lửa.`, 'warn')
   }
+  // Starch–iodine colour depends on temperature: re-derive it while the liquid passes through its fading range.
+  if ((c.contents.indicators.starch || 0) > 0 && Math.abs(c.T - (c.starchT ?? 25)) > 1) { c.starchT = c.T; c.dirty = true }
   if (volumeOf(c) < 0.05 && burner && def.breakable && c.T > 300) damage(state, c, 'WARNING', `${def.name} bị đun khô ở ${c.T.toFixed(0)} °C — nguy cơ nứt vỡ khi gặp chất lỏng lạnh.`)
   if (burner && c.condition === 'CRACKED') damage(state, c, 'UNUSABLE', `${def.name} đã nứt lại bị đun nóng nên vỡ — không còn sử dụng được.`)
   if (volumeOf(c) < 0.02 && water > 0) crystallizeDry(state, c)
@@ -810,6 +877,7 @@ export function stepContainer(state, c, h) {
     const formed = equilibrate(c.contents)
     redoxNotes(state, c, formed)
     ammineNotes(state, c, before, cxBefore)
+    complexNotes(state, c)
     for (const [key, mol] of Object.entries(formed)) {
       const src = c.lastSource || { u: 0, v: 0.5 }
       spawnParticles(state, c, key, mol, src.u, src.v)
@@ -931,6 +999,15 @@ export function mixRgba(a, b, t) {
 
 // Local colour: t = local tracer / mean. t ≤ 1 blends towards the mixed colour; t > 1 extrapolates the
 // colour change (low-absorbance Beer–Lambert is ~linear), so a concentrated drop looks stronger at its contact point.
+// A prepared (already mixed) solution put on the bench: no colour front from the pouring that made it. Visual only.
+export function homogenize(c) {
+  if (!c?.vis?.field) return
+  c.vis.field.fill(fieldMean(c))
+  c.vis.base = null
+  c.vis.prev = c.vis.target
+  c.vis.displayed = c.vis.target
+}
+
 export function fieldMean(c) {
   let sum = 0
   for (const x of c.vis.field) sum += x

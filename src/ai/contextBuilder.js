@@ -67,7 +67,7 @@ function visibleWorkspaceText(view) {
 
   const clone = section.cloneNode(true)
   clone.querySelectorAll(
-    'script, style, svg, [aria-hidden="true"], .chemai-root, .chemai-panel, .chemai-launcher'
+    'script, style, svg, [hidden], [aria-hidden="true"], .chemai-root, .chemai-panel, .chemai-launcher'
   ).forEach(node => node.remove())
 
   return cleanText(clone.innerText || clone.textContent, 3000)

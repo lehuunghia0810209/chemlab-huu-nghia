@@ -6,7 +6,7 @@
 import { IONS, PRECIPITATES, LIQUIDS, GASES, molarMass } from '../data/materials.js'
 import { MANIFEST } from '../data/manifest.js'
 import { validationOf } from '../data/validation.js'
-import { aqueousLitres, solveH, ammineComplexes, polarPhase, ionicStrength } from './chemistry.js'
+import { aqueousLitres, solveH, ammineComplexes, thiocyanateComplex, polarPhase, ionicStrength } from './chemistry.js'
 import { EQUIPMENT } from '../data/equipment.js'
 
 const plain = f => String(f || '').replace(/[₀-₉]/g, d => '₀₁₂₃₄₅₆₇₈₉'.indexOf(d))
@@ -42,7 +42,8 @@ export function describe(state, id) {
     ionicStrength: h ? round(ionicStrength(contents.ions, V, h), 4) : null,
     liquids: pick(contents.liquids),
     dissolved: pick(contents.ions),
-    complexes: h ? pick(ammineComplexes(contents)) : {}, // stability constants are for water: none outside the pH range
+    // Stability constants are for water: none outside the pH range. Ammine complexes by metal; FeSCN²⁺ by its own name.
+    complexes: h ? pick({ ...ammineComplexes(contents), 'FeSCN2+': thiocyanateComplex(contents) }) : {},
     precipitates: pick(contents.precipitates),
     indicators: pick(contents.indicators),
     solids: state.objects.filter(s => s.type === 'solid' && s.in === c.id && s.massG > 0).map(s => ({ id: s.id, reagent: s.reagent, massG: round(s.massG, 6), coat: pick(s.coat || {}) })),
@@ -65,6 +66,8 @@ function processOf(key) {
   if ((m = /^ammine-dis-(.+)-o\d+$/.exec(key))) return AMMINE[PRECIPITATES[m[1]]?.cation] || null
   if ((m = /^ammine-(.+)-o\d+$/.exec(key))) return AMMINE[m[1]] || null
   if (/^neutral-/.test(key)) return 'neutralisation'
+  if (/^scn-/.test(key)) return 'thiocyanate-complex'
+  if (/^starch-/.test(key)) return 'starch-iodine'
   if (/^co2-/.test(key)) return 'co2-carbonate'
   if (/^electro-o/.test(key)) return 'electrolysis-cucl2'
   if (/^daniell-o\d+$/.test(key)) return 'daniell'
@@ -77,7 +80,7 @@ export function classifyNote(key) {
   if (/^(norx)-/.test(key)) return { outcome: 'NO_REACTION_UNDER_MODELED_CONDITIONS', process: null, validation: null }
   if (/^(unsup|ionhint|electro-unsup|unsupported-hno3)-/.test(key)) return { outcome: 'UNSUPPORTED', process: null, validation: null }
   // Outside the model's range: pH/equilibria in ethanol-rich liquid; a temperature difference between Daniell half-cells.
-  if (/^(solvent-mix|solvent-eth|daniell-dT|daniell-complex|redoxrange)-/.test(key)) return { outcome: 'OUT_OF_MODEL_RANGE', process: null, validation: null }
+  if (/^(solvent-mix|solvent-eth|daniell-dT|daniell-complex|daniell-side|redoxrange)-/.test(key)) return { outcome: 'OUT_OF_MODEL_RANGE', process: null, validation: null }
   const process = processOf(key)
   if (!process) return { outcome: 'OBSERVATION', process: null, validation: null }
   const entry = MANIFEST_BY_ID[process]

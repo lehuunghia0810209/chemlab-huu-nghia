@@ -150,6 +150,20 @@ async function openView(page, baseURL, view) {
   await page.waitForTimeout(250)
 }
 
+// ChemLab 7.1: the old one-beaker mixer is no longer a free lab of its own; it is the illustration bench that curriculum
+// lessons without a dynamic twin still use (inside "Có hướng dẫn"). These suites keep testing that bench: open the
+// Laboratory, show the lesson page and the bench the way a running lesson does.
+async function openLessonBench(page, baseURL) {
+  await openView(page, baseURL, 'lab')
+  await page.waitForFunction(() => document.querySelector('.ulab-curriculum .vl-layout'), null, { timeout: 15000 })
+  await page.evaluate(() => {
+    document.querySelector('.ulab-bench').hidden = true
+    document.querySelector('.ulab-guided').hidden = false
+    document.querySelector('.guided-mode-btn[data-guided-mode="free"]').click() // the lesson player's own "show bench"
+  })
+  await page.waitForTimeout(250)
+}
+
 async function screenshotOnFail(page, name) {
   await fs.mkdir(outDir, { recursive: true })
   await page.screenshot({ path: path.join(outDir, `${name}.png`) })
@@ -312,7 +326,7 @@ async function interactionChecks(browser, baseURL) {
   await page.waitForFunction(() => document.querySelector('[data-oa-busy]')?.hidden === true, null, { timeout: 15000 })
   record('orbital atlas renders and switches family', Boolean(await page.$('#orbital-atlas [data-variant="dz2"][aria-pressed="true"]')))
 
-  await openView(page, baseURL, 'lab')
+  await openLessonBench(page, baseURL)
   for (const id of ['agno3', 'nacl']) {
     await page.click(`.reagent-card[data-reagent="${id}"]`)
     await page.click('#add-reagent')
@@ -331,9 +345,11 @@ async function interactionChecks(browser, baseURL) {
     detail: { grade: 10, lessonId: 'g10-l22', experimentId: 'g10-halide-chloride' }
   })))
   await page.waitForSelector('.guided-lab-shell.guided-running', { timeout: 10000 })
-  await page.click('[data-guided-mode="free"]')
-  record('guided experiment opens and returns to free mode',
-    await page.evaluate(() => !document.querySelector('.vl-layout').hidden))
+  await page.waitForSelector('[data-ulab-twin="exp-chloride-test"]', { timeout: 10000 })
+  // 7.1: a lesson runs inside the one Laboratory; "← Về bàn thí nghiệm" returns to the dynamic bench (free mode).
+  await page.click('[data-ulab="bench"]')
+  record('guided lesson opens inside the Laboratory (dynamic twin offered) and returns to the free bench',
+    await page.evaluate(() => !document.querySelector('.ulab-bench').hidden && document.querySelector('.ulab-guided').hidden))
 
   await page.goto(`${baseURL}/#learning/practice/topics`, { waitUntil: 'load' })
   await page.waitForSelector('#cl-start', { timeout: 15000 })
@@ -897,7 +913,7 @@ async function toolChecks(browser, baseURL) {
 
 async function labPHChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
-  await openView(page, baseURL, 'lab')
+  await openLessonBench(page, baseURL)
   const add = async (id, volume = 25) => {
     await page.click(`.reagent-card[data-reagent="${id}"]`)
     await page.click(`[data-volume="${volume}"]`)
@@ -1253,7 +1269,7 @@ async function learningReaderLayout(browser, baseURL) {
 
 async function labStoichChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 1440, height: 900, theme: 'dark' })
-  await openView(page, baseURL, 'lab')
+  await openLessonBench(page, baseURL)
   const add = async (id, volume = 25) => {
     await page.click(`.reagent-card[data-reagent="${id}"]`)
     await page.click(`[data-volume="${volume}"]`)
@@ -1416,7 +1432,7 @@ async function guidedPHChecks(browser, baseURL) {
 
 async function observationChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'dark' })
-  await openView(page, baseURL, 'lab')
+  await openLessonBench(page, baseURL)
   const add = async (id, volume = 25) => {
     await page.click(`.reagent-card[data-reagent="${id}"]`)
     await page.click(`[data-volume="${volume}"]`)
@@ -1484,7 +1500,7 @@ async function guidedSulfiteChecks(browser, baseURL) {
 
 async function labStateChecks(browser, baseURL) {
   const { context, page, errors } = await newPage(browser, { width: 390, height: 844, theme: 'light' })
-  await openView(page, baseURL, 'lab')
+  await openLessonBench(page, baseURL)
   await page.click('.reagent-card[data-reagent="agno3"]')
   await page.click('[data-volume="50"]')
   for (let i = 0; i < 4; i += 1) await page.click('#add-reagent', { delay: 0 })
@@ -1499,7 +1515,7 @@ async function labStateChecks(browser, baseURL) {
   record('rapid additions: beaker capped at 250 mL, amounts follow what actually went in',
     /Cốc đã đầy/.test(state.message) && /AgCl↓ 5,00 mmol/.test(state.panel) && /Còn dư AgNO₃ 15,00 mmol/.test(state.panel), JSON.stringify(state))
   await openView(page, baseURL, 'periodic')
-  await openView(page, baseURL, 'lab')
+  await openLessonBench(page, baseURL)
   const back = await page.evaluate(() => document.querySelector('#stoich-body').innerText.replace(/\s+/g, ' '))
   record('route switch: the lab keeps its chemistry state', back === state.panel, back)
   for (let i = 0; i < 5; i += 1) await page.click('#reset-lab')

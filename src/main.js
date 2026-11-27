@@ -32,9 +32,10 @@ const STORAGE_KEYS = {
 applySavedPreferences()
 
 
-// 'dlab' (ChemLab 7.0 Dynamic Lab) is in the sidebar; the phone bottom nav keeps five items and reaches it from 'lab'.
+// ChemLab 7.1: one Laboratory ('lab'). '#dlab' (7.0 links, saved last view) is an alias that opens it.
 const NAV_VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
-const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab', 'dlab']) // dlab: sidebar only, not in the bottom nav
+const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab'])
+const VIEW_ALIASES = { dlab: 'lab' }
 
 const VIEW_INFO = {
   home: {
@@ -65,13 +66,7 @@ const VIEW_INFO = {
     title: 'Phòng thí nghiệm',
     nav: 'Thí nghiệm',
     icon: 'lab',
-    subtitle: 'Mô phỏng phản ứng · thí nghiệm có hướng dẫn'
-  },
-  dlab: {
-    title: 'Phòng thí nghiệm động 7.0',
-    nav: 'Thí nghiệm',
-    icon: 'lab',
-    subtitle: 'Bàn trống · thư viện thí nghiệm · mô phỏng theo trạng thái'
+    subtitle: 'Thí nghiệm tự do · thư viện thí nghiệm · có hướng dẫn'
   }
 }
 
@@ -88,8 +83,7 @@ const COMMANDS = [
   { group: 'Điều hướng', name: 'Bảng tuần hoàn', description: 'Khám phá 118 nguyên tố', icon: 'table', view: 'periodic', keywords: 'bang tuan hoan periodic elements nguyen to' },
   { group: 'Điều hướng', name: 'Công cụ hóa học', description: 'Mở trung tâm công cụ', icon: 'tools', view: 'tools', keywords: 'cong cu tools chemistry' },
   { group: 'Điều hướng', name: 'Học tập', description: 'Bài học lớp 10–12 và luyện tập', icon: 'learn', view: 'learning', keywords: 'hoc learning quiz mastery bai hoc' },
-  { group: 'Điều hướng', name: 'Phòng thí nghiệm', description: 'Mô phỏng phản ứng hóa học', icon: 'lab', view: 'lab', keywords: 'lab thi nghiem laboratory phong' },
-  { group: 'Điều hướng', name: 'Phòng thí nghiệm động 7.0', description: 'Bàn thí nghiệm mở và thư viện thí nghiệm: kéo thả, rót, nhúng quỳ, điện hóa, mô phỏng định lượng', icon: 'lab', view: 'dlab', keywords: 'dynamic lab 7.0 phong thi nghiem dong sandbox guided quy tim' },
+  { group: 'Điều hướng', name: 'Phòng thí nghiệm', description: 'Thí nghiệm tự do, thư viện thí nghiệm và bài có hướng dẫn: kéo thả, rót, nhúng quỳ, điện hóa, mô phỏng định lượng', icon: 'lab', view: 'lab', keywords: 'lab thi nghiem laboratory phong dynamic dong sandbox guided thu vien quy tim' },
   { group: 'Trợ lý', name: 'ChemAI', description: 'Hỏi trợ lý Hóa học theo ngữ cảnh', icon: 'ai', ai: true, keywords: 'ai chemai tro ly hoa hoc hoi dap tutor' },
   { group: 'Công cụ', name: 'Cân bằng PTHH', description: 'Cân bằng phương trình hóa học', icon: 'scale', view: 'tools', tool: 'balancer', keywords: 'can bang pthh equation balancer phuong trinh' },
   { group: 'Công cụ', name: 'Máy tính hóa học', description: 'Mol, nồng độ và khối lượng', icon: 'calculator', view: 'tools', tool: 'calculator', keywords: 'may tinh mol nong do concentration calculator' },
@@ -169,8 +163,7 @@ app.innerHTML = `
         ${navButton('periodic', 'table', 'Bảng tuần hoàn')}
         ${navButton('tools', 'tools', 'Công cụ')}
         ${navButton('learning', 'learn', 'Học tập')}
-        ${navButton('lab', 'lab', 'Thí nghiệm')}
-        ${navButton('dlab', 'lab', 'Phòng thí nghiệm động')}
+        ${navButton('lab', 'lab', 'Phòng thí nghiệm')}
       </nav>
 
       <div class="app-sidebar__section" aria-labelledby="quick-tools-label">
@@ -272,9 +265,6 @@ app.innerHTML = `
           <div id="lab-host"></div>
         </section>
 
-        <section id="view-dlab" class="app-view" hidden>
-          <div id="dlab-host"></div>
-        </section>
       </main>
       <footer class="app-footer">
         <img src="/brand/edulab-logo-96.png" width="24" height="24" alt="EduLab" loading="lazy">
@@ -303,7 +293,6 @@ const periodicRoot = document.querySelector('#periodic-workspace-root')
 const toolsRoot = document.querySelector('#tools')
 const learningHost = document.querySelector('#learning-host')
 const labHost = document.querySelector('#lab-host')
-const dlabHost = document.querySelector('#dlab-host')
 const routeProgress = document.querySelector('#app-route-progress')
 const appStatus = document.querySelector('#app-status')
 
@@ -353,8 +342,7 @@ const routeModules = createRouteModuleLoader({
     periodic: periodicRoot,
     tools: toolsRoot,
     learning: learningHost,
-    lab: labHost,
-    dlab: dlabHost
+    lab: labHost
   },
   drawer,
   safeInit,
@@ -397,6 +385,7 @@ function switchView(viewName, {
   announce = true,
   resetScroll = true
 } = {}) {
+  viewName = VIEW_ALIASES[viewName] || viewName
   if (!VALID_VIEWS.has(viewName)) viewName = 'home'
 
   const changed = currentView !== viewName
@@ -635,10 +624,13 @@ window.addEventListener('hashchange', () => {
 function parseHashRoute() {
   const raw = window.location.hash.replace(/^#/, '').trim()
   if (!raw) return { view: null, tool: null }
+  // An alias (#dlab from 7.0) is rewritten to its canonical route without adding a history entry.
+  const head = raw.split('/')[0]
+  if (VIEW_ALIASES[head]) history.replaceState(null, '', `#${VIEW_ALIASES[head]}`)
 
   const [rawView, rawTool] = raw.split('/')
   return {
-    view: VALID_VIEWS.has(rawView) ? rawView : null,
+    view: VALID_VIEWS.has(VIEW_ALIASES[rawView] || rawView) ? VIEW_ALIASES[rawView] || rawView : null,
     tool: rawTool || null
   }
 }
@@ -671,7 +663,8 @@ function saveLastView(view) {
 function loadLastView() {
   try {
     const value = localStorage.getItem(STORAGE_KEYS.view)
-    return VALID_VIEWS.has(value) ? value : null
+    const view = VIEW_ALIASES[value] || value
+    return VALID_VIEWS.has(view) ? view : null
   }
   catch {
     return null

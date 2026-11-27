@@ -34,8 +34,8 @@ for (const [id, title, walk] of [
   const t0 = Date.now()
   const h = makeHelpers(p, L)
   try {
-    await p.getByRole('button', { name: 'Có hướng dẫn' }).click()
-    await p.locator('.dlab-choice', { hasText: title }).click()
+    await p.getByRole('button', { name: 'Có hướng dẫn', exact: true }).click()
+    await p.locator('.ulab-card', { hasText: title }).first().click() // 7.1: the guided chooser page
     await p.locator('.dlab-gstrip .dlab-gstep', { hasText: 'Bước 1/' }).waitFor()
     await walk(h, lab)
   }
@@ -80,7 +80,7 @@ function makeHelpers(p, L) {
     qa: name => { if (process.env.WALK_TRACE) console.log('  click', name); return bar.getByRole('button', { name, exact: true }) },
     async to(id) { const s = bar.locator('[data-qa-in="to"]'); await s.waitFor({ timeout: 3000 }); await s.selectOption(id) }, // the list appears once the bar repaints
     async confirm() { for (let i = 0; i < 3; i += 1) { await p.waitForTimeout(250); const b = p.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.count()) await b.click() } },
-    async details() { if (!(await p.locator('.dlab-detail-pane').isVisible())) { const fab = p.locator('.dlab-fab--side'); if (await fab.isVisible()) await fab.click(); await p.getByRole('tab', { name: 'Chi tiết vật' }).click() } },
+    async details() { if (!(await p.locator('.dlab-detail-pane').isVisible())) { const fab = p.locator('.dlab-fab--side'); if (await fab.isVisible()) await fab.click(); await p.getByRole('tab', { name: 'Chi tiết', exact: true }).click() } },
     // Wait for the step to complete; use the strip's fast-forward when the step offers it.
     async finish(lab, n, how, timeout = 20000) {
       const until = Date.now() + timeout

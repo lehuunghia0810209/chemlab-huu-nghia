@@ -2,12 +2,12 @@
 // follows the chemistry: pour HCl into "Cốc A — CuSO₄" and it becomes "Cốc A — CuSO₄ + HCl".
 import { REAGENT_BY_ID, IONS, LIQUIDS, INDICATORS, PRECIPITATES, WEAK } from '../data/materials.js'
 import { byId, isContainer, label, coatCoverage } from '../engine/processes.js'
-import { ammineComplexes } from '../engine/chemistry.js'
+import { ammineComplexes, thiocyanateComplex } from '../engine/chemistry.js'
 
 const sub = f => String(f).replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join(''))
-const METAL = { 'Na+': ['Na', 1], 'K+': ['K', 1], 'Ag+': ['Ag', 1], 'Ba2+': ['Ba', 2], 'Ca2+': ['Ca', 2], 'Mg2+': ['Mg', 2], 'Zn2+': ['Zn', 2], 'Cu2+': ['Cu', 2], 'Fe2+': ['Fe', 2], 'Fe3+': ['Fe', 3] }
+const METAL = { 'Na+': ['Na', 1], 'K+': ['K', 1], 'Ag+': ['Ag', 1], 'Ba2+': ['Ba', 2], 'Ca2+': ['Ca', 2], 'Mg2+': ['Mg', 2], 'Zn2+': ['Zn', 2], 'Cu2+': ['Cu', 2], 'Fe2+': ['Fe', 2], 'Fe3+': ['Fe', 3], 'Mn2+': ['Mn', 2] }
 // Anion groups: [formula, charge, polyatomic, acid name]
-const ANION = { 'Cl-': ['Cl', 1, false, 'HCl'], 'NO3-': ['NO3', 1, true, 'HNO3'], 'I-': ['I', 1, false, 'HI'], SO4: ['SO4', 2, true, 'H2SO4'], CO3: ['CO3', 2, true, 'H2CO3'], OAc: ['CH3COO', 1, true, 'CH3COOH'] }
+const ANION = { 'Cl-': ['Cl', 1, false, 'HCl'], 'NO3-': ['NO3', 1, true, 'HNO3'], 'I-': ['I', 1, false, 'HI'], SO4: ['SO4', 2, true, 'H2SO4'], CO3: ['CO3', 2, true, 'H2CO3'], OAc: ['CH3COO', 1, true, 'CH3COOH'], 'SCN-': ['SCN', 1, true, 'HSCN'], 'MnO4-': ['MnO4', 1, true, 'HMnO4'] }
 const BASE = { Na: 'NaOH', K: 'KOH', Ba: 'Ba(OH)2', Ca: 'Ca(OH)2' }
 const gcd = (a, b) => (b ? gcd(b, a % b) : a)
 
@@ -67,6 +67,8 @@ export function contentsName(c) {
   if (nh3 > 1e-6 && nh3 - nh4 > 0.05 * nh3) parts.push('NH3')
   if ((ions.I2 || 0) > 1e-6) parts.push('I2')
   const named = [...new Set(parts)].map(sub)
+  // A coloured complex the student is looking at is named first (the salts list hides it).
+  if (thiocyanateComplex(c.contents) > 1e-7) named.unshift('FeSCN²⁺')
   for (const [k] of big(precipitates, 1e-7)) named.push(`${sub(PRECIPITATES[k].formula)}↓`)
   // Liquids: water only when nothing else is named; trace solvents (e.g. ethanol in an indicator) are left out.
   const vol = Object.values(liquids).reduce((s, v) => s + v, 0)

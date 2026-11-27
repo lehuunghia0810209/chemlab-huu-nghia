@@ -39,12 +39,6 @@ export function createRouteModuleLoader({
       promise: null,
       host: hosts.lab,
       label: 'Phòng thí nghiệm'
-    },
-    dlab: {
-      status: 'idle',
-      promise: null,
-      host: hosts.dlab,
-      label: 'Phòng thí nghiệm động'
     }
   }
 
@@ -289,91 +283,42 @@ export function createRouteModuleLoader({
     )
   }
 
+  // One Laboratory page: the dynamic bench + library, and "Có hướng dẫn" (bench labs and curriculum lessons).
   async function loadLabRoute() {
-    const [
-      virtualLabResult,
-      guidedResult
-    ] = await Promise.allSettled([
+    const [shellMod, dlabMod, virtualLabResult, guidedResult] = await Promise.allSettled([
+      import('./labShell.js'),
+      import('./dlab/ui/dlabApp.js'),
       import('./virtualLab.js'),
       import('./lab/experiments/guidedExperiments.js')
     ])
-
-    if (virtualLabResult.status !== 'fulfilled') {
-      throw virtualLabResult.reason
-    }
-
-    const labReady = safeInit(
+    if (shellMod.status !== 'fulfilled') throw shellMod.reason
+    if (dlabMod.status !== 'fulfilled') throw dlabMod.reason
+    const shell = shellMod.value.createLabShell(hosts.lab)
+    const benchReady = safeInit(
       'Phòng thí nghiệm',
-      virtualLabResult.value.initVirtualLab,
-      hosts.lab
+      () => dlabMod.value.initDynamicLab(shell.bench, { onGuided: shell.showGuided }),
+      shell.bench
     )
+    if (benchReady) shell.attach(window.ChemLabDynamicLab)
 
-    if (!labReady) return
-
-    const lab =
-      document.querySelector('#lab')
-
-    if (
-      lab &&
-      hosts.lab &&
-      lab.parentElement !== hosts.lab
-    ) {
-      hosts.lab.appendChild(lab)
+    // Curriculum lessons (quizzes, saved progress). A failure here leaves the bench working.
+    if (virtualLabResult.status !== 'fulfilled' || guidedResult.status !== 'fulfilled') {
+      console.error(`[ChemLab ${version}] Không thể tải Bài học theo chương trình:`, virtualLabResult.reason || guidedResult.reason)
+      renderModuleError(shell.lessons, 'Bài học theo chương trình')
+      return
     }
-
-    const labLabel =
-      hosts.lab
-        ?.querySelector(
-          '.vl-head > div:first-child > span'
-        )
-
-    if (labLabel) {
-      labLabel.textContent =
-        'PHÒNG THÍ NGHIỆM ẢO'
-    }
-
-    if (hosts.lab && !hosts.lab.querySelector('.dlab-entry')) {
-      const entry = document.createElement('a')
-      entry.className = 'dlab-entry'
-      entry.href = '#dlab'
-      entry.innerHTML = '<strong>Phòng thí nghiệm động 7.0</strong><span>Bàn thí nghiệm mở và thư viện thí nghiệm có hướng dẫn: kéo thả dụng cụ, rót, nhúng giấy quỳ, pin điện hóa, phản ứng định lượng theo thời gian.</span>'
-      hosts.lab.prepend(entry)
-    }
-
-    if (guidedResult.status === 'fulfilled') {
-      safeInit(
-        'Guided Experiments',
-        guidedResult.value.initGuidedExperiments,
-        hosts.lab
-      )
-    } else {
-      console.error(
-        `[ChemLab ${version}] Không thể tải Guided Experiments:`,
-        guidedResult.reason
-      )
-
-      renderModuleError(
-        hosts.lab,
-        'Guided Experiments'
-      )
-    }
-  }
-
-  async function loadDynamicLabRoute() {
-    const { initDynamicLab } = await import('./dlab/ui/dlabApp.js')
-    safeInit(
-      'Phòng thí nghiệm động',
-      () => initDynamicLab(hosts.dlab),
-      hosts.dlab
-    )
+    if (!safeInit('Bàn minh họa bài học', virtualLabResult.value.initVirtualLab, shell.lessons)) return
+    safeInit('Bài học theo chương trình', guidedResult.value.initGuidedExperiments, shell.lessons)
+    shellMod.value.adoptCurriculum(shell.lessons)
+    shell.openFromHash()
+    window.addEventListener('hashchange', shell.openFromHash)
   }
 
   const loaders = {
     periodic: loadPeriodicRoute,
     tools: loadToolsRoute,
     learning: loadLearningRoute,
-    lab: loadLabRoute,
-    dlab: loadDynamicLabRoute
+    lab: loadLabRoute
   }
 
   function ensureViewReady(

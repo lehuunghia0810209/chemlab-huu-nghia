@@ -640,9 +640,7 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
           ctx.strokeStyle = 'rgba(170,130,20,0.7)'
           ctx.beginPath(); ctx.moveTo(-hw, sinks ? oilY : -2 - aqLevel); ctx.lineTo(hw, sinks ? oilY : -2 - aqLevel); ctx.stroke()
         }
-        ctx.strokeStyle = 'rgba(255,255,255,0.55)'
-        ctx.lineWidth = 1
-        ctx.beginPath(); ctx.moveTo(-hw, -2 - level); ctx.lineTo(hw, -2 - level); ctx.stroke()
+        drawSurface(ctx, state, def, c, level, ui)
         // Precipitate: a suspension looks cloudy. The haze is proportional to the suspended amount per litre
         // (engine mol × share of grains not yet settled); flocs are drawn larger than real grains so they are
         // visible at bench scale (visualization approximation, not a particle-size measurement).
@@ -788,9 +786,9 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
       ctx.font = '600 7px "Be Vietnam Pro", sans-serif'
       ctx.textAlign = 'center'
       const r = REAGENT_BY_ID[c.reagent]
-      ctx.fillText(formulaText(r.formula) || r.name.slice(0, 10), 0, -def.h * 0.55 + 10)
+      ctx.fillText(formulaText(r.formula) || r.short || r.name.slice(0, 10), 0, -def.h * 0.55 + 10)
       ctx.font = '6px sans-serif'
-      ctx.fillText(r.M ? `${String(r.M).replace('.', ',')} M` : r.kind === 'indicator' ? 'chỉ thị' : '', 0, -def.h * 0.55 + 18)
+      ctx.fillText(r.M ? `${String(r.M).replace('.', ',')} M` : r.bottleNote || (r.kind === 'indicator' ? 'chỉ thị' : ''), 0, -def.h * 0.55 + 18)
     }
   })
   // Gas/steam above an active vessel
@@ -812,6 +810,36 @@ function drawContainer(ctx, state, view, c, ui, ink, dark) {
     const room = EQUIPMENT[c.type].w * view.zoom + 10
     const text = ctx.measureText(c.label).width > room ? c.label.split(' ').pop() : c.label
     ctx.fillText(text, lx, ly + 14)
+  }
+}
+
+// Liquid surface: a concave meniscus where water wets the glass, a ripple while stirred or just after something was
+// added (decays in ≈ 1 s), and a ring where the last drop or stream entered. Visual only; off with reduced motion.
+function drawSurface(ctx, state, def, c, level, ui) {
+  const hwL = Math.max(1, halfWidthAt(def, level))
+  const since = state.t - (c.vis.lastInject ?? -99)
+  const still = ui.reducedMotion
+  const amp = still ? 0 : Math.min(1.2, c.vis.stir * 3 + (since >= 0 && since < 1.2 ? (1.2 - since) * 0.7 : 0))
+  const oily = (c.contents.liquids.oil || 0) > 0.01 && !(c.contents.liquids.water > 0.01) // oil–air surface: flat
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  const n = 28
+  for (let i = 0; i <= n; i += 1) {
+    const x = -hwL + 2 * hwL * i / n
+    const edge = Math.abs(x) / hwL
+    const men = oily ? 0 : edge > 0.82 ? ((edge - 0.82) / 0.18) ** 2 * 1.8 : 0
+    const y = -2 - level - men + amp * Math.sin(x * 0.4 + state.t * 7) * (1 - 0.6 * edge)
+    if (i) ctx.lineTo(x, y)
+    else ctx.moveTo(x, y)
+  }
+  ctx.stroke()
+  if (!still && since >= 0 && since < 0.8 && c.lastSource) {
+    const r = 1.5 + since * 12
+    ctx.strokeStyle = `rgba(255,255,255,${(0.55 * (1 - since / 0.8)).toFixed(3)})`
+    ctx.beginPath()
+    ctx.ellipse(Math.max(-0.8, Math.min(0.8, c.lastSource.u)) * hwL, -2 - level, r, r * 0.28, 0, 0, Math.PI * 2)
+    ctx.stroke()
   }
 }
 

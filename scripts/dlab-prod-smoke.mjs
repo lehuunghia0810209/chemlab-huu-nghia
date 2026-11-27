@@ -1,4 +1,5 @@
-// Production smoke test for ChemLab 7 (read-only: no ChemAI question is sent, nothing is saved server-side).
+// Production smoke test for ChemLab 7.x (read-only: no ChemAI question is sent, nothing is saved server-side; save/load
+// uses the browser's own IndexedDB in a throwaway context). 7.1: one Laboratory page (#lab); #dlab is an alias.
 // WebKit: Playwright's screenshot injects a <style> that the site's strict CSP blocks and logs ("Refused to apply a
 // stylesheet"). That one message is ignored only while a screenshot is being taken; every other error counts.
 // Usage: node scripts/dlab-prod-smoke.mjs <origin> <expectedVersion> <outDir> [chromium|firefox|webkit]
@@ -40,21 +41,21 @@ async function shot(page, file) {
   page.shooting = false
 }
 
-// 1. Home, version, sidebar entry → Dynamic Lab.
+// 1. Home, version, the one Laboratory entry.
 {
   const { ctx, page, errors, bad } = await open({ width: 1440, height: 900 })
   const r = await page.goto(`${origin}/`)
   check('home 200', r.status() === 200, String(r.status()))
   await page.waitForSelector('.app-nav')
   check(`version ${version} shown`, (await page.content()).includes(`ChemLab ${version}`))
-  await page.locator('.app-sidebar [data-view="dlab"]').click()
+  check('one Laboratory entry in the sidebar (no separate dynamic lab)', (await page.locator('.app-sidebar [data-view="dlab"]').count()) === 0)
+  await page.locator('.app-sidebar [data-view="lab"]').click()
   await page.waitForFunction(() => window.ChemLabDynamicLab?.ready, null, { timeout: 60000 })
-  check('sidebar "Phòng thí nghiệm động" opens #dlab', page.url().endsWith('#dlab'))
-  await shot(page, `${browserName}-dlab-1440.png`)
-  // Catalog.
-  await page.getByRole('button', { name: 'Tự do', exact: true }).click()
-  if (!(await page.locator('.dlab-sidetabs').isVisible())) await page.locator('.dlab-fab--side').click()
-  await page.getByRole('tab', { name: 'Khám phá' }).click()
+  check('sidebar "Phòng thí nghiệm" opens the bench at #lab', page.url().endsWith('#lab'))
+  await shot(page, `${browserName}-lab-1440.png`)
+  // Library mode.
+  await page.getByRole('button', { name: 'Thư viện thí nghiệm', exact: true }).click()
+  check('mode "Thư viện thí nghiệm" opens the library', (await page.evaluate(() => window.ChemLabDynamicLab.mode())) === 'library')
   const cards = await page.locator('[data-exp-card]').count()
   check(`catalog lists ${EXPERIMENTS.length} experiments`, cards === EXPERIMENTS.length, String(cards))
   await page.locator('[data-exp-f="group"]').selectOption('electrochem')
@@ -91,44 +92,67 @@ async function shot(page, file) {
   check('3D view initialises', await page.locator('.dlab-3d canvas').isVisible())
   await shot(page, `${browserName}-copper-iodide-3d.png`)
   await page.getByRole('button', { name: 'Xem 2D', exact: true }).click()
-  // Guided lab.
+  // A new 7.1 model through the UI: KMnO₄ decolourised by Fe²⁺ in acid, pink once Fe²⁺ is used up.
+  await page.evaluate(() => { const L = window.ChemLabDynamicLab; for (const o of [...L.state.objects]) L.dispatch({ type: 'remove', id: o.id }, { record: false }) })
+  await page.locator('[data-exp-card="exp-permanganate-iron2"]').getByRole('button', { name: 'Bày dụng cụ' }).click()
+  const mn = await page.evaluate(() => { const o = window.ChemLabDynamicLab.state.objects; return { v: o.find(x => x.type === 'beaker100').id, b: o.find(x => x.reagent === 'kmno4').id } })
+  for (const mL of [5, 6]) {
+    await page.evaluate(id => window.ChemLabDynamicLab.select(id), mn.b)
+    await page.locator('[data-qa-in="to"]').selectOption(mn.v)
+    await page.locator('[data-qa-in="ml"]').fill(String(mL))
+    await page.locator('.dlab-actionbar [data-qa="pour"]').click()
+  }
+  await page.waitForFunction(v => { const d = window.ChemLabDynamicLab.describe(v); return !(d.dissolved['Fe2+'] > 1e-9) && d.dissolved['MnO4-'] > 0 }, mn.v, { timeout: 30000 })
+  check('KMnO₄ + Fe²⁺ (new model) through the UI: Fe²⁺ used up, MnO₄⁻ in excess', true)
+  // Save and open again (IndexedDB on this device).
+  const saved = await page.evaluate(async () => { const L = window.ChemLabDynamicLab; await L.save('smoke 7.1'); const list = await L.list(); const e = list.find(x => x.name === 'smoke 7.1'); const n = L.state.objects.length; L.reset(); await L.load(e.id); return { n, m: L.state.objects.length } })
+  check('save / open restores the bench', saved.n > 0 && saved.m === saved.n, JSON.stringify(saved))
+  // Guided: the chooser lists bench labs and the curriculum lessons; both start.
   await page.getByRole('button', { name: 'Có hướng dẫn', exact: true }).click()
-  await page.evaluate(() => window.ChemLabDynamicLab.startGuided('acid-base'))
+  await page.locator('.ulab-guided').waitFor()
+  await page.locator('[data-ulab-guided="acid-base"]').click()
   await page.waitForFunction(() => window.ChemLabDynamicLab.guided()?.id === 'acid-base', null, { timeout: 30000 })
-  check('Guided lab starts', true)
-  // Direct reload of the lab route.
+  check('guided bench lab starts from the chooser', true)
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('chemlab:open-guided-lesson', { detail: { grade: 10, lessonId: 'g10-l22', experimentId: 'g10-halide-chloride' } })))
+  await page.waitForFunction(() => window.ChemLabGuidedLab?.context?.()?.experiment?.id === 'g10-halide-chloride', null, { timeout: 30000 })
+  check('curriculum lesson opens inside the Laboratory, with its dynamic twin offered', await page.locator('[data-ulab-twin="exp-chloride-test"]').waitFor({ timeout: 10000 }).then(() => true, () => false))
+  await page.locator('[data-ulab-twin]').click()
+  await page.waitForFunction(() => window.ChemLabDynamicLab.state.objects.some(o => o.reagent === 'nacl'), null, { timeout: 30000 })
+  check('"Làm trên bàn thí nghiệm" lays the experiment out on the bench', true)
+  // Old links: #dlab (7.0) opens the same Laboratory and is rewritten to #lab; reload keeps working.
+  await page.goto(`${origin}/#dlab`)
+  await page.waitForFunction(() => window.ChemLabDynamicLab?.ready, null, { timeout: 60000 })
+  check('old link #dlab opens the Laboratory (rewritten to #lab)', page.url().endsWith('#lab'))
   await page.reload()
   await page.waitForFunction(() => window.ChemLabDynamicLab?.ready, null, { timeout: 60000 })
-  check('reload of #dlab works', page.url().endsWith('#dlab'))
+  check('reload of #lab works', page.url().endsWith('#lab'))
   // Earlier ChemLab features still load.
   for (const [view, sel] of [['periodic', '#view-periodic'], ['tools', '#view-tools'], ['learning', '#view-learning'], ['lab', '#view-lab']]) {
     await page.locator(`.app-sidebar [data-view="${view}"]`).click()
     await page.waitForTimeout(1200)
     check(`view ${view} opens`, await page.locator(sel).isVisible())
   }
-  check('lab page has the 7.0 entry card', await page.locator('.dlab-entry').isVisible())
   check('no console / page errors', errors.length === 0, errors.slice(0, 3).join(' | '))
   check('no failed requests, no ChemAI question sent', bad.length === 0, bad.slice(0, 3).join(' | '))
   await ctx.close()
 }
 
-// 2. Phone width: bottom nav → Thí nghiệm → entry card → lab.
+// 2. Phone width: the bottom-nav Laboratory opens the bench directly.
 {
   const { ctx, page, errors } = await open({ width: 390, height: 844 })
-  await page.goto(`${origin}/#lab`)
-  await page.locator('.dlab-entry').waitFor({ timeout: 30000 })
-  await page.locator('.dlab-entry').click()
+  await page.goto(`${origin}/`)
+  await page.locator('.app-bottom-nav [data-view="lab"], nav [data-view="lab"]:visible').first().click()
   await page.waitForFunction(() => window.ChemLabDynamicLab?.ready, null, { timeout: 60000 })
-  check('phone 390: entry card opens the lab', page.url().endsWith('#dlab'))
+  check('phone 390: bottom nav opens the Laboratory bench', page.url().endsWith('#lab'))
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   check('phone 390: no horizontal page scroll', overflow <= 1, String(overflow))
-  await shot(page, `${browserName}-dlab-390.png`)
+  await shot(page, `${browserName}-lab-390.png`)
   check('phone 390: no console errors', errors.length === 0, errors.slice(0, 2).join(' | '))
   await ctx.close()
 }
 
 // 3. ChemAI configuration (GET only) and service worker identity.
-const api = await (await fetch(`${origin}/api/chat`)).json()
+const api = await (await fetch(`${origin}/api/chat`)).json().catch(() => ({})) // the Vite dev server has no Functions
 check(`ChemAI release ${version}, access and configured (GET only)`, api.release === version && api.access === true && api.configured === true, JSON.stringify({ release: api.release, access: api.access, configured: api.configured }))
 const sw = await (await fetch(`${origin}/sw.js`)).text()
 check(`service worker cache chemlab-${version}`, sw.includes(`chemlab-${version}-`))

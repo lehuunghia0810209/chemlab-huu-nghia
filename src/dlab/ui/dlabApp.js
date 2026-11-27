@@ -4,7 +4,7 @@ import './dlab.css'
 import { createSim, SPEEDS, snapshot, restore, carry } from '../engine/sim.js'
 import { EQUIPMENT, CAPABILITIES } from '../data/equipment.js'
 import { REAGENTS, REAGENT_BY_ID, HAZARD_LABELS, IONS, PRECIPITATES, LIQUIDS, INDICATORS, molarMass } from '../data/materials.js'
-import { byId, isContainer, volumeOf, containerAt, containerBelow, surfaceY, label as objLabel } from '../engine/processes.js'
+import { byId, isContainer, volumeOf, containerAt, containerBelow, surfaceY, homogenize, label as objLabel } from '../engine/processes.js'
 import { createView, render, toWorld, toScreen, hit, bounds } from './render2d.js'
 import { icon, iconFor } from './icons.js'
 import { LIB_SHELVES, shelfOf, TOOLS, libraryItems, searchLibrary } from './library.js'
@@ -21,7 +21,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const num = (x, d = 2) => Number(x).toLocaleString('vi-VN', { maximumFractionDigits: d })
 const sub = f => String(f || '').replace(/(\d+)/g, d => [...d].map(ch => '₀₁₂₃₄₅₆₇₈₉'[ch]).join('')).replace(/\^?(\d?)([+-])$/, '$1$2')
 
-export function initDynamicLab(host) {
+// opts.onGuided: the unified Lab page shows its own guided chooser (bench labs + curriculum lessons) instead of the dialog.
+export function initDynamicLab(host, opts = {}) {
   if (!host || host.dataset.ready) return
   host.dataset.ready = '1'
   const sim = createSim(Date.now() >>> 0)
@@ -29,6 +30,12 @@ export function initDynamicLab(host) {
   const ui = { selected: null, hover: null, held: null, shelf: 'tools', group: 'all', query: '', theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark', highlight: [], mode: 'sandbox', guided: null, render3d: false, quality: 'high', dirty: false, sideTab: 'obs' }
   host.innerHTML = template()
   host.classList.add('dlab')
+  // Decorative motion (surface ripples, entry rings) follows the OS setting and ChemLab's own "Giảm chuyển động".
+  const motionMQ = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const syncMotion = () => { ui.reducedMotion = motionMQ.matches || document.documentElement.dataset.reduceMotion === 'true' }
+  syncMotion()
+  motionMQ.addEventListener?.('change', syncMotion)
+  new MutationObserver(syncMotion).observe(document.documentElement, { attributes: true, attributeFilter: ['data-reduce-motion'] })
   // Drawers start open only where they leave the bench wide enough; on tablets/phones they are sheets.
   // Same breakpoint as dlab.css: below it the drawers are bottom sheets over the bench.
   const wideMQ = window.matchMedia('(min-width: 1100px)')
@@ -135,7 +142,10 @@ export function initDynamicLab(host) {
   function resetSim() { ui.userView = false; ui.framePending = true; if (ui.guided) { ui.guided.done = []; ui.guided.doneH = [] } sim.reset() }
   function flushFrame() { if (ui.framePending && !drag) { ui.framePending = false; fitView() } }
   function reframe() { if (ui.framePending) flushFrame(); else maybeFit(); three?.reframe?.(insets()) }
-  new ResizeObserver(resize).observe(stage)
+  // Resize in the next frame: resizing the canvas inside the observer callback (e.g. when the bench is shown again after the
+  // guided chooser) re-triggers the observer and the browser reports "ResizeObserver loop completed…".
+  let resizeFrame = 0
+  new ResizeObserver(() => { cancelAnimationFrame(resizeFrame); resizeFrame = requestAnimationFrame(resize) }).observe(stage)
   for (const ev of ['pointerdown', 'pointermove', 'wheel']) stage.addEventListener(ev, () => { ui.lastPointer = performance.now() }, { capture: true, passive: true })
 
   let frame = null
@@ -386,9 +396,14 @@ export function initDynamicLab(host) {
       }
       if (ghost) { ghost.style.left = `${ev.clientX + 8}px`; ghost.style.top = `${ev.clientY + 8}px` }
     }
-    const up = ev => {
+    const stop = () => {
       document.removeEventListener('pointermove', move)
       document.removeEventListener('pointerup', up)
+      document.removeEventListener('pointercancel', cancel)
+    }
+    const cancel = () => { stop(); ghost?.remove() } // touch gesture or alert took the pointer: nothing is placed
+    const up = ev => {
+      stop()
       if (!ghost) return
       ghost.remove()
       ui.libDragged = true
@@ -399,6 +414,7 @@ export function initDynamicLab(host) {
     }
     document.addEventListener('pointermove', move)
     document.addEventListener('pointerup', up)
+    document.addEventListener('pointercancel', cancel)
   })
 
   host.addEventListener('click', e => {
@@ -925,7 +941,7 @@ export function initDynamicLab(host) {
       const hasStuff = sim.state.objects.length > 0
       bar.dataset.kind = 'hint'
       bar.dataset.owner = ''
-      patch(bar, `<p class="dlab-bar-hint">${icon('help')}<span>${hasStuff ? 'Chọn một vật trên bàn để thấy các thao tác chính. Kéo vật để di chuyển.' : 'Lấy dụng cụ và hóa chất từ Thư viện để bắt đầu.'}</span></p>`)
+      patch(bar, `<p class="dlab-bar-hint">${icon('help')}<span>${hasStuff ? 'Chọn một vật trên bàn để thấy các thao tác chính. Kéo vật để di chuyển.' : 'Lấy dụng cụ và hóa chất từ Tủ hóa chất, hoặc chọn một thí nghiệm trong Thư viện thí nghiệm.'}</span></p>`)
     }
     else {
       bar.dataset.kind = o.type
@@ -1258,7 +1274,9 @@ export function initDynamicLab(host) {
     $('.dlab-detail-pane').hidden = tab !== 'detail'
     $('.dlab-discover-pane').hidden = tab !== 'discover'
     if (tab === 'discover') paintDiscover()
+    host.classList.toggle('dlab--library', tab === 'discover') // the experiment library gets a wider panel
     ui.forcePanel = true
+    if (ui.booted) setModeButtons()
   }
   function toggleDrawer(which, force) {
     const cls = `dlab--show-${which}`
@@ -1268,6 +1286,7 @@ export function initDynamicLab(host) {
     if (which === 'side' && open) delete $('[data-hd="side"]').dataset.badge
     if (which === 'lib' && open) setTimeout(() => $('.dlab-search').focus({ preventScroll: true }), 0)
     syncDrawerButtons()
+    if (which === 'side' && ui.booted) setModeButtons()
     requestAnimationFrame(reframe)
   }
   function syncDrawerButtons() {
@@ -1281,8 +1300,9 @@ export function initDynamicLab(host) {
     const what = b.dataset.hd
     const menu = b.closest('.dlab-menu')
     if (menu) menu.open = false
-    if (what === 'sandbox') startSandbox()
-    if (what === 'guided') openGuidedPicker()
+    if (what === 'sandbox') toFree()
+    if (what === 'library') { toFree({ quiet: true }); openSide('discover') }
+    if (what === 'guided') { if (opts.onGuided) opts.onGuided(); else openGuidedPicker() }
     if (what === 'save') saveDialog()
     if (what === 'open') openDialog()
     if (what === 'view3d') toggle3d()
@@ -1302,6 +1322,16 @@ export function initDynamicLab(host) {
   })
   syncDrawerButtons()
 
+  // Leaving a guided lab keeps the bench as it is: the student continues from the current state (Về bàn trống starts over).
+  function toFree({ quiet = false } = {}) {
+    if (ui.mode === 'sandbox') { if (!quiet && ui.sideTab === 'discover') setSideTab('obs'); setModeButtons(); return }
+    ui.mode = 'sandbox'
+    ui.guided = null
+    ui.highlight = []
+    paintStrip(null)
+    setModeButtons()
+    if (!quiet) toast('Đã chuyển sang Tự do, giữ nguyên bàn thí nghiệm. Muốn bắt đầu lại: Thư viện thí nghiệm → Về bàn trống.')
+  }
   function startSandbox() {
     ui.mode = 'sandbox'
     ui.guided = null
@@ -1310,7 +1340,7 @@ export function initDynamicLab(host) {
     loadSim(restore(snapshot(seedSandbox())))
     sim.markInitial()
     setModeButtons()
-    toast('Thực hành tự do: lấy hóa chất và dụng cụ từ Thư viện.')
+    toast('Thực hành tự do: lấy hóa chất và dụng cụ từ Tủ hóa chất.')
   }
   // ── Sandbox discovery: modelled phenomena to try (from the reaction manifest). Laying out a card only puts
   // the vessel, the reagent bottle and the tool on the bench; the student performs the action.
@@ -1371,7 +1401,7 @@ export function initDynamicLab(host) {
     select(null)
     ui.userView = false
     fitView()
-    toast('Bàn đã trống. Lấy dụng cụ và hóa chất từ Thư viện, hoặc chọn một thí nghiệm.')
+    toast('Bàn đã trống. Lấy dụng cụ và hóa chất từ Tủ hóa chất, hoặc chọn một thí nghiệm.')
   }
   $('.dlab-discover-pane').addEventListener('input', e => { if (e.target.closest('[data-exp-search], [data-exp-f]')) filterExperiments() })
   $('.dlab-discover-pane').addEventListener('click', e => {
@@ -1386,23 +1416,27 @@ export function initDynamicLab(host) {
   // An Experiment Library entry: vessels with their starting solutions, then the bottles the steps use. Same commands
   // as the student's own (dispatch); the student then performs the steps.
   function layOutExperiment(exp) {
+    // One undo step for the whole lay-out (like "Về bàn trống"), not one per bottle and pour.
+    sim.record()
+    const quiet = { record: false }
     // "Bày lại": the previous lay-out of this experiment (vessels, bottles, tools and what is in them) is put away first.
-    for (const id of ui.laidOut?.[exp.id] || []) if (byId(sim.state, id)) sim.dispatch({ type: 'remove', id })
+    for (const id of ui.laidOut?.[exp.id] || []) if (byId(sim.state, id)) sim.dispatch({ type: 'remove', id }, quiet)
     const made = []
     for (const v of exp.setup.vessels) {
-      const r = sim.dispatch({ type: 'add', equipmentType: v.type, x: freeX(v.type), y: 0 })
+      const r = sim.dispatch({ type: 'add', equipmentType: v.type, x: freeX(v.type), y: 0 }, quiet)
       if (!r.ok) return
-      for (const [reagent, mL] of v.fill) sim.dispatch({ type: 'addReagentTo', id: r.id, reagent, mL }, { confirmed: true })
+      for (const [reagent, mL] of v.fill) sim.dispatch({ type: 'addReagentTo', id: r.id, reagent, mL }, { confirmed: true, record: false })
+      homogenize(byId(sim.state, r.id)) // a starting solution is already mixed
       made.push(r.id)
     }
     let first = null
     for (const reagent of exp.setup.bottles) {
-      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX('bottle'), y: 0, reagent })
+      const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX('bottle'), y: 0, reagent }, quiet)
       if (r.ok) { made.push(r.id); first ||= r.id }
     }
     for (const t of exp.setup.tools || []) {
       const { type, y = 0 } = typeof t === 'string' ? { type: t } : t // electrodes and the salt bridge hang above the bench
-      const r = sim.dispatch({ type: 'add', equipmentType: type, x: freeX(type), y })
+      const r = sim.dispatch({ type: 'add', equipmentType: type, x: freeX(type), y }, quiet)
       if (r.ok) { made.push(r.id); first ||= r.id }
     }
     ;(ui.laidOut ||= {})[exp.id] = made
@@ -1420,6 +1454,7 @@ export function initDynamicLab(host) {
     const v = sim.dispatch({ type: 'add', equipmentType: d.vessel, x, y: 0 })
     if (!v.ok) return
     for (const [reagent, mL] of d.fill) sim.dispatch({ type: 'addReagentTo', id: v.id, reagent, mL }, { confirmed: true })
+    homogenize(byId(sim.state, v.id))
     let next
     let task
     const vName = objLabel(byId(sim.state, v.id))
@@ -1453,7 +1488,9 @@ export function initDynamicLab(host) {
     return s.state
   }
   function setModeButtons() {
-    $('[data-hd="sandbox"]').setAttribute('aria-pressed', String(ui.mode === 'sandbox'))
+    const library = ui.mode === 'sandbox' && ui.sideTab === 'discover' && host.classList.contains('dlab--show-side')
+    $('[data-hd="sandbox"]').setAttribute('aria-pressed', String(ui.mode === 'sandbox' && !library))
+    $('[data-hd="library"]').setAttribute('aria-pressed', String(library))
     $('[data-hd="guided"]').setAttribute('aria-pressed', String(ui.mode === 'guided'))
     // "Khám phá" belongs to free practice; a guided lesson keeps its own steps.
     $('[data-side-tab="discover"]').hidden = ui.mode !== 'sandbox'
@@ -1594,7 +1631,7 @@ export function initDynamicLab(host) {
     const b = e.target.closest('[data-g]')
     if (!b || !ui.guided) return
     if (b.dataset.g === 'collapse') ui.guided.collapsed = !ui.guided.collapsed
-    if (b.dataset.g === 'exit') { ui.guided = null; ui.mode = 'sandbox'; setModeButtons(); paintStrip(null) }
+    if (b.dataset.g === 'exit') toFree()
     ui.forcePanel = true
   })
 
@@ -1756,7 +1793,7 @@ export function initDynamicLab(host) {
   // ── Onboarding: four short coach cards, skippable, reopened with the "?" button ──
   const COACH_KEY = 'chemlab-dlab-onboarded'
   const COACH = [
-    { target: '.dlab-lib', open: 'lib', title: 'Thư viện hóa chất & dụng cụ', text: 'Gõ tên để tìm (ví dụ “nước”, “natri”) hoặc chọn nhóm. Bấm một mục để lấy ra bàn, hoặc kéo thả thẳng vào cốc.' },
+    { target: '.dlab-lib', open: 'lib', title: 'Tủ hóa chất & kệ dụng cụ', text: 'Gõ tên để tìm (ví dụ “nước”, “natri”) hoặc chọn nhóm. Bấm một mục để lấy ra bàn, hoặc kéo thả thẳng vào cốc.' },
     { target: '.dlab-actionbar', title: 'Bàn thí nghiệm', text: 'Kéo dụng cụ để di chuyển. Bấm chọn một vật: các thao tác chính — rót, nhỏ giọt, nhúng, thả chất rắn — hiện ở thanh này, không cần nhớ phím tắt.' },
     { target: '.dlab-side', open: 'side', title: 'Bảng Quan sát', text: 'Hiện tượng đang diễn ra, kết luận và cảnh báo an toàn hiện ở đây. Nhật ký thao tác chi tiết được thu gọn ở cuối.' },
     { target: '.dlab-mode', title: 'Bắt đầu', text: 'Chọn “Có hướng dẫn” để làm theo từng bước, hoặc thực hành tự do: lấy Nước cất rót vào cốc, nhỏ phenolphtalein, rồi thả một mẩu natri. Mở lại hướng dẫn này bằng nút “?”.' }
@@ -1844,6 +1881,27 @@ export function initDynamicLab(host) {
     is3d: () => ui.render3d,
     guided: () => (ui.guided ? { id: ui.guided.lab.id, done: ui.guided.done.length, total: ui.guided.lab.steps.length } : null),
     startGuided: id => beginGuided(GUIDED.find(g => g.id === id), 1),
+    // Unified Lab: open a library experiment on the bench (from a curriculum lesson) or the library itself.
+    layOut: id => {
+      const exp = EXPERIMENTS.find(e => e.id === id)
+      if (!exp) return false
+      toFree({ quiet: true })
+      openSide('discover') // the card with its steps stays open next to the bench
+      layOutExperiment(exp)
+      const card = $(`[data-exp-card="${id}"]`)
+      if (card) { card.hidden = false; const d = card.querySelector('details'); if (d) d.open = true; card.scrollIntoView({ block: 'nearest' }) }
+      return true
+    },
+    // ChemAI context for the unified Laboratory page (read-only digest of the bench).
+    context: () => ({
+      mode: ui.mode === 'guided' ? 'guided' : ui.sideTab === 'discover' ? 'library' : 'free',
+      guided: ui.guided ? { id: ui.guided.lab.id, title: ui.guided.lab.title, step: ui.guided.done.length + 1 } : null,
+      selected: ui.selected,
+      containers: sim.state.objects.filter(o => o.contents && o.type !== 'bottle').slice(0, 8).map(o => { const d = describe(sim.state, o.id); return { label: objLabel(o), volumeML: d.volumeML, pH: d.pH, T: d.T, dissolved: d.dissolved, precipitates: d.precipitates, complexes: d.complexes } }),
+      events: (sim.state.events || []).slice(-6).map(e => e.text)
+    }),
+    showLibrary: () => { toFree(); openSide('discover') },
+    mode: () => (ui.mode === 'guided' ? 'guided' : ui.sideTab === 'discover' ? 'library' : 'free'),
     fastForward: limit => fastForward(limit),
     labels: () => [...labelEls.values()].filter(el => !el.hidden).map(el => el.textContent),
     save: name => saveExperiment({ name, state: sim.state }),
@@ -1873,9 +1931,10 @@ function template() {
   return `
   <div class="dlab-shell">
     <header class="dlab-header">
-      <div class="dlab-brand"><span class="dlab-kicker">ChemLab 7.0</span><h2>Phòng thí nghiệm động</h2></div>
-      <div class="dlab-seg dlab-mode" role="group" aria-label="Chế độ thực hành">
+      <div class="dlab-brand"><span class="dlab-kicker">ChemLab</span><h1>Phòng thí nghiệm</h1></div>
+      <div class="dlab-seg dlab-mode" role="group" aria-label="Cách sử dụng phòng thí nghiệm">
         <button type="button" class="dlab-btn" data-hd="sandbox" aria-pressed="true">Tự do</button>
+        <button type="button" class="dlab-btn" data-hd="library" aria-pressed="false">Thư viện thí nghiệm</button>
         <button type="button" class="dlab-btn" data-hd="guided" aria-pressed="false">Có hướng dẫn</button>
       </div>
       <div class="dlab-head-actions">
@@ -1900,10 +1959,10 @@ function template() {
       <div class="dlab-3d" hidden></div>
       <div class="dlab-labels" aria-hidden="true"></div>
       <div class="dlab-actionbar" role="toolbar" aria-label="Thao tác với vật đang chọn"></div>
-      <button type="button" class="dlab-btn dlab-fab dlab-fab--lib" data-hd="lib" aria-controls="dlab-lib">${icon('library')}<span>Thư viện</span></button>
+      <button type="button" class="dlab-btn dlab-fab dlab-fab--lib" data-hd="lib" aria-controls="dlab-lib">${icon('library')}<span>Tủ hóa chất</span></button>
       <button type="button" class="dlab-btn dlab-fab dlab-fab--side" data-hd="side" aria-controls="dlab-insp">${icon('panel')}<span>Quan sát</span></button>
-      <aside class="dlab-lib dlab-drawer" id="dlab-lib" aria-label="Thư viện dụng cụ và hóa chất">
-        <div class="dlab-drawer-head"><h3>Tủ hóa chất &amp; kệ dụng cụ</h3><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="lib" aria-label="Thu gọn thư viện">${icon('close')}</button></div>
+      <aside class="dlab-lib dlab-drawer" id="dlab-lib" aria-label="Tủ hóa chất và kệ dụng cụ">
+        <div class="dlab-drawer-head"><h3>Tủ hóa chất &amp; kệ dụng cụ</h3><button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="lib" aria-label="Thu gọn tủ hóa chất">${icon('close')}</button></div>
         <label class="dlab-searchbox">${icon('search')}<input type="search" class="dlab-search dlab-in" placeholder="Tìm tên hoặc công thức: nước, CuSO4, kẹp…" aria-label="Tìm hóa chất hoặc dụng cụ (có dấu, không dấu, công thức)"></label>
         <div class="dlab-tabs dlab-shelves" role="tablist" aria-label="Khu vực">${tabs}</div>
         <div class="dlab-groups" role="group" aria-label="Nhóm"></div>
@@ -1914,8 +1973,8 @@ function template() {
         <div class="dlab-drawer-head">
           <div class="dlab-sidetabs" role="tablist" aria-label="Bảng bên phải">
             <button type="button" role="tab" class="dlab-tab" data-side-tab="obs" aria-selected="true">Quan sát</button>
-            <button type="button" role="tab" class="dlab-tab" data-side-tab="detail" aria-selected="false">Chi tiết vật</button>
-            <button type="button" role="tab" class="dlab-tab" data-side-tab="discover" aria-selected="false">Khám phá</button>
+            <button type="button" role="tab" class="dlab-tab" data-side-tab="detail" aria-selected="false">Chi tiết</button>
+            <button type="button" role="tab" class="dlab-tab" data-side-tab="discover" aria-selected="false">Thư viện</button>
           </div>
           <button type="button" class="dlab-btn dlab-btn--icon dlab-btn--ghost" data-close="side" aria-label="Thu gọn bảng quan sát">${icon('close')}</button>
         </div>

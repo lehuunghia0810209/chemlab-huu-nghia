@@ -8,7 +8,7 @@ import { REAGENTS, PRECIPITATES, molarMass } from '../src/dlab/data/materials.js
 import { EXPERIMENTS } from '../src/dlab/data/experiments.js'
 
 // IUPAC 2021 standard atomic weights (abridged/conventional values, CIAAW): independent of src/data/elements.js.
-const AW = { H: 1.008, C: 12.011, N: 14.007, O: 15.999, Na: 22.990, Mg: 24.305, S: 32.06, Cl: 35.45, K: 39.098, Ca: 40.078, Fe: 55.845, Cu: 63.546, Zn: 65.38, Ag: 107.868, I: 126.904, Ba: 137.327 }
+const AW = { H: 1.008, C: 12.011, N: 14.007, O: 15.999, Na: 22.990, Mg: 24.305, S: 32.06, Cl: 35.45, K: 39.098, Ca: 40.078, Fe: 55.845, Cu: 63.546, Zn: 65.38, Ag: 107.868, I: 126.904, Ba: 137.327, Mn: 54.938 } // IUPAC 2021 standard atomic weights (abridged)
 const SUB = '₀₁₂₃₄₅₆₇₈₉'
 const SUP = { '⁰': 0, '¹': 1, '²': 2, '³': 3, '⁴': 4, '⁵': 5, '⁶': 6, '⁷': 7, '⁸': 8, '⁹': 9 }
 const plain = s => [...s].map(ch => (SUB.includes(ch) ? String(SUB.indexOf(ch)) : ch)).join('')
@@ -110,7 +110,7 @@ for (const p of Object.values(PRECIPITATES)) {
   const a = molarMass(p.formula); const b = ref(p.formula)
   if (Number.isFinite(b)) check(`M(${p.formula})`, Math.abs(a - b) / b < 1e-3, `engine ${a.toFixed(3)} vs IUPAC ${b.toFixed(3)} g/mol`)
   // A precipitate's formula must match its cation/anion and p:q.
-  const cat = p.cation.replace(/\d?[+-]$/, ''); const an = { OH: 'OH', 'Cl-': 'Cl', 'I-': 'I', SO4: 'SO4', CO3: 'CO3' }[p.anion]
+  const cat = p.cation.replace(/\d?[+-]$/, ''); const an = { OH: 'OH', 'Cl-': 'Cl', 'I-': 'I', SO4: 'SO4', CO3: 'CO3', 'SCN-': 'SCN' }[p.anion]
   if (an && !p.redox) {
     const expect = formulaAtoms(`${cat}${p.p > 1 ? p.p : ''}${p.q > 1 ? `(${an})${p.q}` : an}`)
     check(`ppt ${p.formula}`, JSON.stringify(Object.entries(expect).sort()) === JSON.stringify(Object.entries(formulaAtoms(plain(p.formula))).sort()), `formula vs ${p.cation} × ${p.p} + ${p.anion} × ${p.q}`)

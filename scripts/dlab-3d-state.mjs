@@ -18,9 +18,9 @@ const SCENARIOS = [
     state: d => d.pH > 12, pixel: true, what: 'phenolphtalein trong NaOH: hồng' },
   { id: 'precipitate', pours: [['fecl3', 10], ['naoh', 20]], run: 30,
     state: d => (d.precipitates['Fe(OH)3'] || 0) > 0, pixel: true, what: 'Fe(OH)₃↓ nâu đỏ' },
-  { id: 'dissolution', pours: [['cuso4', 20], ['naoh', 10], ['hcl', 20]], run: 30,
+  { id: 'dissolution', pours: [['cuso4', 20], ['naoh', 10], ['hcl', 20]], run: 30, stir: true,
     state: d => !Object.values(d.precipitates).some(n => n > 1e-6) && (d.dissolved['Cu2+'] || 0) > 0, pixel: true, what: 'Cu(OH)₂ tan trong HCl: dung dịch xanh, không còn kết tủa',
-    knownLimit: 'P2: dung dịch màu nhạt (Cu²⁺ ≈ 0,2 M, độ phủ 0,34) gần như không thấy màu trong 3D; 2D và state đúng' },
+    knownLimit: 'P2: Cu²⁺ ≈ 0,2 M vẫn nhạt trong 3D ở chế độ sáng (kính và ánh sáng làm nhạt màu); 2D và state đúng' },
   { id: 'complex', pours: [['cuso4', 5], ['nh3-2m', 30]], run: 30,
     state: d => (d.complexes['Cu2+'] || 0) > 0, pixel: true, what: '[Cu(NH₃)₄]²⁺ xanh thẫm' },
   { id: 'coat', pours: [['cuso4', 40]], solid: ['fe', 2], run: 40,
@@ -46,6 +46,7 @@ for (const sc of SCENARIOS) {
     const T = L.dispatch({ type: 'add', equipmentType: 'beaker100', x: 380, y: 0 }, { record: false }).id
     L.dispatch({ type: 'addReagentTo', id: R, reagent: 'water', mL: sc.pours.reduce((s, p) => s + p[1], 0) }, { record: false })
     for (const [reagent, mL] of sc.pours) L.dispatch({ type: 'addReagentTo', id: T, reagent, mL }, { record: false, confirmed: true })
+    if (sc.stir) L.dispatch({ type: 'stir', id: T, amount: 1 }, { record: false }) // what a student does after pouring
     if (sc.solid) {
       const tg = L.dispatch({ type: 'add', equipmentType: 'tongs', x: 520, y: 0 }, { record: false }).id
       L.dispatch({ type: 'move', id: tg, x: 380, y: 160 }, { record: false })

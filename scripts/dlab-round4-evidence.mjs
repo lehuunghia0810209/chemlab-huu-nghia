@@ -111,7 +111,7 @@ for (const [name, setup, wait] of [
 // 4. Sandbox: the Discover tab with the new complex cards.
 {
   const p = await page()
-  await sideTab(p, 'Khám phá')
+  await sideTab(p, 'Thư viện')
   await p.waitForTimeout(600)
   await p.getByText('Phức chất', { exact: false }).first().scrollIntoViewIfNeeded().catch(() => {})
   await p.waitForTimeout(400)

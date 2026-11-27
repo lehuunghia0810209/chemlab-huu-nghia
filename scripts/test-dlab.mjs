@@ -9,7 +9,7 @@ import { createSim, benchInventory, checkInvariants, snapshot, restore, H, SCHEM
 import { describe, SPECIES, experimentTemplate } from '../src/dlab/engine/domain.js'
 import { EXPERIMENTS, experimentValidation } from '../src/dlab/data/experiments.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
-import { volumeOf, surfaceY, byId, label, bulkColor } from '../src/dlab/engine/processes.js'
+import { volumeOf, surfaceY, byId, label, bulkColor, starchColorShare } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
 import { GUIDED, moreToAdd } from '../src/dlab/guided.js'
 import { MANIFEST, DISCOVER } from '../src/dlab/data/manifest.js'
@@ -598,6 +598,16 @@ test('Daniell cell: tenfold dilution of Cu²⁺ lowers E by RT·ln10/2F (hand so
   near(v2.reading, 1.100 + 0.05916 / 2, 0.003, 'E with diluted Zn²⁺')
 })
 
+// 7.1: a metal that reacts directly (acid attack, displacement) or is coated is not a Nernst electrode.
+test('Daniell cell: an electrode with a side reaction gives no Nernst value (OUT_OF_MODEL_RANGE)', () => {
+  const ok = daniellCell([['znso4', 50]], [['cuso4', 50]])
+  assert.ok(ok.v.reading > 1.09, 'control: normal cell reads 1,10 V')
+  const acid = daniellCell([['znso4', 40], ['hcl', 20]], [['cuso4', 50]]) // Zn + 2H⁺ → Zn²⁺ + H₂ at the anode
+  assert.equal(acid.v.reading, null, 'Zn in acid: no voltage')
+  assert.ok(acid.l.s().events.some(e => e.key.startsWith('daniell-side-') && e.outcome === 'OUT_OF_MODEL_RANGE'), 'reported')
+  const mixed = daniellCell([['znso4', 30], ['cuso4', 20]], [['cuso4', 50]]) // Zn coated by Cu in its own half-cell
+  assert.equal(mixed.v.reading, null, 'Zn in a Cu²⁺ solution: no voltage')
+})
 test('Daniell cell: NH₃ complexes Cu²⁺ → no free-ion Nernst value (OUT_OF_MODEL_RANGE)', () => {
   const { l, v } = daniellCell([['znso4', 50]], [['cuso4', 25], ['nh3-2m', 25]])
   assert.equal(v.reading, null, 'no voltage invented')
@@ -1242,7 +1252,9 @@ test('safety: every blocked condition in the manifest is refused', () => {
 test('electrolysis refuses every interference: no Cu, no Cl₂, the reason is named', () => {
   // Amounts above the 1 % trace threshold (KI is 0,1 M). In I⁻'s case the redox on mixing leaves I₂, also refused.
   // Ag⁺ cannot stay free next to CuCl₂'s chloride (AgCl, Ksp 1,8·10⁻¹⁰), so it is checked as "no refusal" below.
-  const ADD = { 'I-': [['ki', 20]], I2: [['ki', 20]], 'Fe3+': [['fecl3', 5]], 'Fe2+': [['feso4', 5]], 'NO3-': [['hno3', 10]], NH3: [['nh3', 60]] }
+  const ADD = { 'I-': [['ki', 20]], I2: [['ki', 20]], 'Fe3+': [['fecl3', 5]], 'Fe2+': [['feso4', 5]], 'NO3-': [['hno3', 10]], NH3: [['nh3', 60]], 'MnO4-': [['kmno4', 15]], 'SCN-': [['kscn', 5]] }
+  // Ag⁺ cannot stay free next to chloride (AgCl): the only interferer that no bench reaches. Every other one is tested.
+  for (const x of ELECTRO.electrolysisCuCl2.interferes) assert.ok(ADD[x.ion] || x.ion === 'Ag+', `electrolysis interferer ${x.ion} has a test bench`)
   for (const x of ELECTRO.electrolysisCuCl2.interferes) {
     if (!ADD[x.ion]) continue
     const l = lab(70); const B = l.put('beaker250', 300); l.fill(B, 'cucl2', x.ion === 'NH3' ? 10 : 40) // NH₃ must be in excess over 2·Cu²⁺
@@ -1573,7 +1585,7 @@ function runExperiment(e, seed) {
   const l = lab(seed)
   const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 140, { y: 0 }); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id })
   const tools = {}
-  ;(e.setup.tools || []).map(t => (typeof t === 'string' ? { type: t, y: t === 'tongs' ? 160 : 0 } : t)).forEach((t, i) => { tools[t.type] = l.put(t.type, 80 + i * 30 + (t.type === 'electrodes' ? 600 : 0), { y: t.y }) })
+  ;(e.setup.tools || []).map(t => (typeof t === 'string' ? { type: t, y: t === 'tongs' || t === 'spatula' ? 160 : 0 } : t)).forEach((t, i) => { tools[t.type] = l.put(t.type, 80 + i * 30 + (t.type === 'electrodes' ? 600 : 0), { y: t.y }) })
   const ok = (r, what) => assert.equal(r.outcome, 'APPLIED', `${e.id}: ${what}`)
   for (const s of e.steps) {
     const a = s.act
@@ -1588,11 +1600,12 @@ function runExperiment(e, seed) {
     else if (a.voltmeter) for (const m of a.voltmeter) ok(l.sim.dispatch({ type: 'wire', from: tools.voltmeter.id, to: l.s().objects.find(o => o.type === 'solid' && o.reagent === m && ids.includes(o.in)).id }, { record: false }), s.text)
     else {
       const v = byId(l.s(), ids[a.to])
-      l.sim.dispatch({ type: 'move', id: tools.tongs.id, x: v.x, y: 160 }, { record: false })
-      ok(l.sim.dispatch({ type: 'pick', tool: tools.tongs.id, reagent: a.solid, massG: a.massG }, { confirmed: true, record: false }), `${e.id}: pick`)
-      ok(l.sim.dispatch({ type: 'release', tool: tools.tongs.id }, { confirmed: true, record: false }), s.text)
+      const tool = tools[REAGENT_BY_ID[a.solid].tool] // tongs for lumps, spatula for powders (the student's own tool)
+      l.sim.dispatch({ type: 'move', id: tool.id, x: v.x, y: 160 }, { record: false })
+      ok(l.sim.dispatch({ type: 'pick', tool: tool.id, reagent: a.solid, massG: a.massG }, { confirmed: true, record: false }), `${e.id}: pick`)
+      ok(l.sim.dispatch({ type: 'release', tool: tool.id }, { confirmed: true, record: false }), s.text)
     }
-    l.sim.runFor(a.solid ? 30 : a.power != null ? 90 : 0.3)
+    l.sim.runFor(a.solid ? (REAGENT_BY_ID[a.solid].tool === 'spatula' ? 180 : 30) : a.power != null ? 90 : 0.3)
   }
   return { l, ids, tools }
 }
@@ -1615,6 +1628,16 @@ function checkState(e, x, l, ids, tools) {
   if (x.left) assert.ok((d.dissolved[x.left] || 0) > 1e-6, `${e.id}: ${x.left} left`)
   if (x.gone) assert.ok(!((d.dissolved[x.gone] || 0) > 1e-6), `${e.id}: ${x.gone} used up`)
   if (x.noPrecipitate) assert.ok(!((d.precipitates[x.noPrecipitate] || 0) > 0), `${e.id}: no ${x.noPrecipitate}`)
+  if (x.complex) { const n = d.complexes[x.complex[0]] || 0; assert.ok(n >= x.complex[1] && n <= x.complex[2], `${e.id}: ${x.complex[0]} ${n} in [${x.complex[1]}, ${x.complex[2]}] mol`) }
+  if (x.noComplex) assert.ok(!((d.complexes[x.noComplex] || 0) > 1e-9), `${e.id}: no ${x.noComplex}`)
+  if (x.starch != null) assert.equal(starchOn(d), x.starch, `${e.id}: starch–iodine colour ${x.starch}`)
+  if (x.warm) assert.ok(d.T - 25 >= x.warm[0] && d.T - 25 <= x.warm[1], `${e.id}: ΔT ${d.T - 25} in ${x.warm}`)
+  if (x.solidLeft) { const m = d.solids.reduce((a, s) => a + s.massG, 0); assert.ok(m >= x.solidLeft[0] && m <= x.solidLeft[1], `${e.id}: undissolved ${m} g in ${x.solidLeft}`) }
+}
+// Starch–iodine colour from the canonical state (same thresholds as materials.js: 2·10⁻⁵ M I₂, 10⁻⁴ M I⁻).
+function starchOn(d) {
+  const V = d.volumeML / 1000
+  return (d.indicators.starch || 0) > 0 && (d.dissolved.I2 || 0) / V >= 2e-5 && (d.dissolved['I-'] || 0) / V >= 1e-4
 }
 // Experiment Library: every experiment runs on the engine from its own definition (setup + student steps) and gives
 // the phenomena it promises; its validation status is derived from the matrix, never better than its processes.
@@ -1638,7 +1661,7 @@ test('experiment library: every experiment runs on the engine', () => {
   // Validation: derived, the weakest of its processes.
   assert.equal(experimentValidation(EXPERIMENTS.find(x => x.id === 'exp-chloride-test')), 'VALIDATED')
   assert.equal(experimentValidation(EXPERIMENTS.find(x => x.id === 'exp-copper-ammine')), 'EDUCATIONAL APPROXIMATION')
-  assert.equal(experimentValidation({ processRefs: ['ppt-AgCl', 'ppt-CaCO3'] }), 'UNVERIFIED')
+  assert.equal(experimentValidation({ processRefs: ['ppt-AgCl', 'ppt-ZnCO3'] }), 'UNVERIFIED')
   assert.equal(experimentValidation({ processRefs: ['no-such-process'] }), 'UNVERIFIED')
 })
 
@@ -1683,7 +1706,7 @@ test('gate 1: every manifest scenario conserves elements (input from formulas vs
     const d = e.demo
     const input = {}
     const addIn = (f, mol) => { for (const [el, n] of Object.entries(atoms(f))) if (el !== 'H' && el !== 'O') input[el] = (input[el] || 0) + n * mol }
-    for (const [r, mL] of [...d.fill, ...(d.pour ? [d.pour] : [])]) { const R = REAGENT_BY_ID[r]; if (R.kind === 'solution') addIn(R.formula, R.M * mL / 1000) }
+    for (const [r, mL] of [...d.fill, ...(d.pour ? [d.pour] : [])]) { const R = REAGENT_BY_ID[r]; if (R.kind === 'solution') for (const [f, k] of R.components || [[R.formula, 1]]) addIn(f, k * R.M * mL / 1000) }
     if (d.solid) addIn(REAGENT_BY_ID[d.solid[0]].formula, d.solid[1] / molarMass(REAGENT_BY_ID[d.solid[0]].formula))
     const { s } = runDemo(d)
     const out = {}
@@ -1740,6 +1763,214 @@ test('manifest: every entry is complete and every Sandbox suggestion has a demo'
   // An entry without a demo must name unit tests that exist; the report counts the rest as not verified.
   const titles = [...readFileSync(new URL(import.meta.url), 'utf8').matchAll(/^test\('([^']+)'/gm)].map(m => m[1])
   for (const e of MANIFEST) for (const t of e.tests || []) assert.ok(titles.some(x => x.startsWith(t)), `${e.id}: no test titled "${t}…"`)
+})
+
+// ── ChemLab 7.1: hand solutions for the new models and library experiments (constants written here from the cited
+// tables, not read from the engine; the engine only supplies the state being checked).
+test('competitive precipitation: the least soluble salt forms first; AgCl turns into AgI (hand solution)', () => {
+  const { sim, put, fill, s } = makeLab(7)
+  const A = put('beaker100', 250)
+  fill(A, 'nacl', 2); fill(A, 'ki', 10); fill(A, 'agno3', 5) // 1 mmol Cl⁻, 1 mmol I⁻, 0,5 mmol Ag⁺
+  const B = put('beaker100', 400)
+  fill(B, 'nacl', 5); fill(B, 'agno3', 5) // 0,5 mmol AgCl, 2 mmol Cl⁻ left
+  sim.runFor(1)
+  assert.ok(byId(s(), B.id).contents.precipitates.AgCl > 0.49e-3, 'AgCl first in B')
+  fill(B, 'ki', 10) // 1 mmol I⁻: AgCl(s) + I⁻ → AgI(s) + Cl⁻, K = 1,77·10⁻¹⁰ / 8,52·10⁻¹⁷ ≈ 2·10⁶
+  sim.runFor(1)
+  const a = describe(s(), A.id)
+  const b = describe(s(), B.id)
+  rel(a.precipitates.AgI, 0.5e-3, 0.001, 'A: all Ag⁺ as AgI')
+  assert.ok(!(a.precipitates.AgCl > 1e-9), 'A: no AgCl while I⁻ is left (Q(AgCl) ≪ Ksp)')
+  rel(b.precipitates.AgI, 0.5e-3, 0.001, 'B: AgCl converted to AgI')
+  assert.ok(!(b.precipitates.AgCl > 1e-9), 'B: no AgCl left')
+  rel(b.dissolved['Cl-'], 2.5e-3, 0.001, 'B: chloride all back in solution')
+})
+// Regression (Antigravity review, 7.1): the order of competing salts follows the actual supersaturation, not the
+// pure-water solubility. [Cl⁻]/[SCN⁻] = 190 > Ksp(AgCl)/Ksp(AgSCN) = 172 → no AgSCN; Zn²⁺ + a little carbonate at pH < 6 →
+// ZnCO₃ only ([Zn²⁺][OH⁻]² ≪ Ksp of Zn(OH)₂ there).
+test('competitive precipitation: counter-ion excess decides (AgCl vs AgSCN; ZnCO₃ vs Zn(OH)₂)', () => {
+  const { sim, put, fill, s } = makeLab(4)
+  const A = put('beaker250', 250)
+  fill(A, 'agno3', 5); fill(A, 'nacl', 20); fill(A, 'kscn', 0.5)
+  const B = put('beaker250', 450)
+  fill(B, 'znso4', 20); fill(B, 'na2co3', 10)
+  sim.runFor(2)
+  const a = describe(s(), A.id)
+  rel(a.precipitates.AgCl, 0.5e-3, 0.001, 'all Ag⁺ as AgCl')
+  assert.ok(!(a.precipitates.AgSCN > 1e-9), 'no AgSCN while Cl⁻/SCN⁻ exceeds the Ksp ratio')
+  const b = describe(s(), B.id)
+  rel(b.precipitates.ZnCO3, 2e-3, 0.01, 'carbonate as ZnCO₃')
+  assert.ok(!(b.precipitates['Zn(OH)2'] > 1e-9), `no Zn(OH)₂ at pH ${b.pH}`)
+})
+test('AgSCN: equimolar mixture leaves √Ksp dissolved', () => {
+  const { sim, put, fill, s } = makeLab(5)
+  const B = put('beaker250', 300)
+  fill(B, 'agno3', 10); fill(B, 'kscn', 10) // 1 mmol each
+  sim.runFor(0.5)
+  const c = byId(s(), B.id)
+  rel(c.contents.ions['Ag+'] / 0.02, Math.sqrt(1.03e-12), 0.02, 'dissolved Ag⁺ = √Ksp (CRC 1,03·10⁻¹²)')
+})
+test('heat of neutralisation: temperature rise matches the hand calculation', () => {
+  const { sim, put, fill, s } = makeLab(3)
+  const B = put('beaker100', 300)
+  fill(B, 'hcl', 25); fill(B, 'naoh', 25)
+  // q = 12,5 mmol × 55,84 kJ/mol (NBS ΔfH°); C = 50 mL × 0,997 g/mL × 4,18 J/(g·K) + 60 g glass × 0,84 J/(g·K).
+  const q = 12.5e-3 * 55840
+  const C = 50 * 0.997 * 4.18 + EQUIPMENT.beaker100.glassMassG * 0.84
+  rel(byId(s(), B.id).T - 25, q / C, 0.05, 'ΔT')
+})
+test('salt hydrolysis: FeCl₃ pH matches the first-hydrolysis quadratic', () => {
+  const { put, fill, s } = makeLab(3)
+  const B = put('beaker100', 300)
+  fill(B, 'fecl3', 20); fill(B, 'water', 20)
+  const C = 0.1
+  const Ka = 10 ** -2.19 // Baes & Mesmer 1976, Fe³⁺ + H₂O ⇌ FeOH²⁺ + H⁺
+  const h = (-Ka + Math.sqrt(Ka * Ka + 4 * Ka * C)) / 2
+  near(describe(s(), B.id).pH, -Math.log10(h), 0.02, 'pH 0,1 M FeCl₃')
+})
+test('rate: marble in HCl releases CO₂ in proportion to [H⁺] (model)', () => {
+  const { sim, put, fill, s } = makeLab(3)
+  const A = put('beaker100', 250)
+  const B = put('beaker100', 400)
+  fill(A, 'hcl', 30); fill(B, 'hcl', 15); fill(B, 'water', 15)
+  for (const v of [A, B]) {
+    const t = put('tongs', v.x, { y: 160 })
+    sim.dispatch({ type: 'pick', tool: t.id, reagent: 'caco3', massG: 1 }, { confirmed: true, record: false })
+    sim.dispatch({ type: 'release', tool: t.id }, { confirmed: true, record: false })
+  }
+  sim.runFor(20)
+  const gA = describe(s(), A.id).gasReleased.CO2
+  const gB = describe(s(), B.id).gasReleased.CO2
+  assert.ok(gA > 0 && gB > 0, 'gas in both')
+  near(gA / gB, 2, 0.2, 'twice the [H⁺] → about twice the CO₂ in the same time')
+})
+test('carbonate order: HCl into Na₂CO₃ gives HCO₃⁻ first (no gas), excess acid gives CO₂ (hand solution)', () => {
+  const { sim, put, fill, s } = makeLab(3)
+  const A = put('beaker100', 250)
+  fill(A, 'na2co3', 20); fill(A, 'hcl', 8) // 4 mmol CO₃²⁻ + 4 mmol H⁺ → 4 mmol HCO₃⁻
+  sim.runFor(5)
+  let d = describe(s(), A.id)
+  assert.ok(!(d.gasReleased.CO2 > 0), 'no CO₂ yet')
+  near(d.pH, (6.35 + 10.33) / 2, 0.05, 'amphiprotic HCO₃⁻: pH = ½(pKa1 + pKa2)')
+  fill(A, 'hcl', 12) // 6 mmol more H⁺: 4 mmol HCO₃⁻ → CO₂
+  sim.runFor(30)
+  d = describe(s(), A.id)
+  assert.ok(d.gasReleased.CO2 > 1e-3, 'CO₂ released once H⁺ exceeds CO₃²⁻')
+})
+test('saturated NaCl: undissolved salt equals mass − solubility (hand solution)', () => {
+  const { sim, put, fill, s } = makeLab(3)
+  const B = put('beaker100', 300)
+  fill(B, 'water', 20)
+  const sp = put('spatula', 300, { y: 160 })
+  sim.dispatch({ type: 'pick', tool: sp.id, reagent: 'nacl-s', massG: 10 }, { confirmed: true, record: false })
+  sim.dispatch({ type: 'release', tool: sp.id }, { confirmed: true, record: false })
+  sim.runFor(180)
+  // CRC: 35,9 g/100 g at 20 °C, 36,4 at 40 °C → 36,03 at 25 °C; 20 mL water = 19,94 g.
+  const dissolvedMax = 19.94 * (35.9 + (36.4 - 35.9) * 5 / 20) / 100
+  const left = describe(s(), B.id).solids.reduce((m, x) => m + x.massG, 0)
+  near(left, 10 - dissolvedMax, 0.05, 'undissolved NaCl (g)')
+})
+// Independent solve for MCO₃ from equimolar M²⁺ + CO₃²⁻ (both 0,1 M after mixing): [M²⁺] = s, C(carbonate) = s, Ksp = s²·α2(h),
+// charge 2s + h + [Na⁺] = [Cl⁻] + Kw/h + s(α1 + 2α2) with [Na⁺] = [Cl⁻] = 0,2 M → bisection on lg h. CRC Ksp, Ka1 4,45·10⁻⁷, Ka2 4,69·10⁻¹¹.
+test('carbonates: BaCO₃/CaCO₃ residual matches an independent Ksp + carbonate solve', () => {
+  const Ka1 = 4.45e-7
+  const Ka2 = 4.69e-11
+  for (const [salt, Ksp, ion] of [['bacl2', 2.58e-9, 'Ba2+'], ['cacl2', 3.36e-9, 'Ca2+']]) {
+    const alpha = h => { const D = h * h + Ka1 * h + Ka1 * Ka2; return [Ka1 * h / D, Ka1 * Ka2 / D] }
+    const sOf = h => Math.sqrt(Ksp / alpha(h)[1])
+    const f = lg => { const h = 10 ** lg; const s = sOf(h); const [a1, a2] = alpha(h); return 2 * s + h - 1e-14 / h - s * (a1 + 2 * a2) }
+    let lo = -13
+    let hi = -6
+    for (let i = 0; i < 100; i += 1) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m }
+    const sHand = sOf(10 ** lo)
+    const { sim, put, fill, s } = makeLab(3)
+    const B = put('beaker100', 300)
+    fill(B, salt, 10); fill(B, 'na2co3', 10) // 2 mmol each, V = 20 mL
+    sim.runFor(2)
+    const d = describe(s(), B.id)
+    rel(d.dissolved[ion] / 0.02, sHand, 0.03, `${salt}: dissolved ${ion}`)
+    near(d.pH, -lo, 0.03, `${salt}: pH`)
+    rel(d.precipitates[ion === 'Ba2+' ? 'BaCO3' : 'CaCO3'], 2e-3 - sHand * 0.02, 0.001, `${salt}: precipitate`)
+  }
+})
+// FeSCN²⁺ (1:1): with b = 1 + Ka/h, y solves K·y² − (b + K(Cs + Cf))·y + K·Cs·Cf = 0 (K = 10^3,03, Ka = 10^-2,19).
+test('thiocyanate: FeSCN²⁺ matches the 1:1 quadratic and shifts as Le Chatelier predicts', () => {
+  const K = 10 ** 3.03
+  const Ka = 10 ** -2.19
+  const { sim, put, fill, s } = makeLab(3)
+  const base = [['water', 40], ['hno3', 2], ['fecl3', 0.1], ['kscn', 0.2]]
+  const [A, Bv, Cv, D] = [0, 1, 2, 3].map(i => { const v = put(i === 3 ? 'beaker250' : 'beaker100', 200 + i * 150); for (const [r, mL] of base) fill(v, r, mL); return v })
+  fill(Bv, 'fecl3', 0.5); fill(Cv, 'kscn', 0.5); fill(D, 'water', 40)
+  sim.runFor(1)
+  const hand = v => {
+    const c = byId(s(), v.id)
+    const V = c.contents.liquids.water / 1000
+    const Cf = c.contents.ions['Fe3+'] / V
+    const Cs = c.contents.ions['SCN-'] / V
+    const h = 10 ** -describe(s(), v.id).pH
+    const B2 = 1 + Ka / h + K * (Cs + Cf)
+    return (B2 - Math.sqrt(B2 * B2 - 4 * K * K * Cs * Cf)) / (2 * K) * V
+  }
+  const n = v => describe(s(), v.id).complexes['FeSCN2+']
+  for (const v of [A, Bv, Cv, D]) rel(n(v), hand(v), 0.01, `FeSCN²⁺ in ${v.id}`)
+  assert.ok(n(Bv) > 2 * n(A) && n(Cv) > 2 * n(A), 'adding Fe³⁺ or SCN⁻ shifts right')
+  assert.ok(n(D) < 0.7 * n(A), 'dilution shifts left (fewer moles of complex, not only a lower concentration)')
+  // No complex with Fe²⁺.
+  const F = put('testTube', 900)
+  fill(F, 'feso4', 2); fill(F, 'kscn', 1)
+  sim.runFor(1)
+  assert.ok(!(describe(s(), F.id).complexes['FeSCN2+'] > 0), 'Fe²⁺: no FeSCN²⁺')
+})
+test('starch: blue-black needs I₂ and I⁻, fades when hot', () => {
+  const { sim, put, fill, s } = makeLab(3)
+  const A = put('beaker100', 200)
+  fill(A, 'water', 20); fill(A, 'starch', 0.15); fill(A, 'iodine', 1)
+  const Bv = put('beaker100', 350)
+  fill(Bv, 'water', 20); fill(Bv, 'starch', 0.15); fill(Bv, 'ki', 2)
+  const Cv = put('beaker100', 500)
+  fill(Cv, 'water', 20); fill(Cv, 'iodine', 1)
+  sim.runFor(1)
+  const share = v => starchColorShare(byId(s(), v.id).contents, byId(s(), v.id).T)
+  assert.ok(share(A) > 0.5, 'starch + I₂/I⁻: blue-black')
+  assert.ok(share(Bv) === 0, 'starch + I⁻ only: no colour')
+  assert.ok(share(Cv) === 0, 'iodine without starch: no starch colour')
+  const c = byId(s(), A.id).contents
+  assert.ok(starchColorShare(c, 80) === 0 && starchColorShare(c, 25) > 0.5, 'fades above ≈ 65 °C, returns on cooling')
+  // Below the visual threshold (2·10⁻⁵ M I₂): no colour.
+  const t = structuredClone(c)
+  t.ions.I2 = 1e-5 * 0.021
+  assert.ok(starchColorShare(t, 25) === 0, 'below 2·10⁻⁵ M I₂: no colour')
+})
+test('permanganate: MnO₄⁻ + 5Fe²⁺ end point at n(MnO₄⁻) = n(Fe²⁺)/5; stops (out of range) without acid', () => {
+  const { sim, put, fill, s } = makeLab(3)
+  const A = put('beaker100', 250)
+  fill(A, 'feso4', 5); fill(A, 'h2so4', 10) // 1 mmol Fe²⁺
+  fill(A, 'kmno4', 9) // 0,18 mmol MnO₄⁻ < 0,2: all reduced
+  sim.runFor(1)
+  let d = describe(s(), A.id)
+  assert.ok(!(d.dissolved['MnO4-'] > 1e-9), 'before the end point no MnO₄⁻ is left')
+  rel(d.dissolved['Fe2+'], 1e-3 - 5 * 0.18e-3, 0.001, 'Fe²⁺ left = 1 − 5 × 0,18 mmol')
+  rel(d.dissolved['Mn2+'], 0.18e-3, 0.001, 'Mn²⁺ formed')
+  fill(A, 'kmno4', 2) // 0,22 mmol in all: 0,02 mmol in excess
+  sim.runFor(1)
+  d = describe(s(), A.id)
+  assert.ok(!(d.dissolved['Fe2+'] > 1e-9), 'after the end point no Fe²⁺')
+  rel(d.dissolved['MnO4-'], 0.02e-3, 0.001, 'excess MnO₄⁻ (pink)')
+  rel(d.dissolved['Fe3+'], 1e-3, 0.001, 'all iron as Fe³⁺')
+  // Acid runs out part-way (the acid-limited branch): the reaction stops at pH ≈ 2 and the rest is reported, not invented.
+  const P = put('beaker100', 650)
+  fill(P, 'feso4', 5); fill(P, 'h2so4', 2); fill(P, 'kmno4', 6) // pH 1,8 before; 0,12 mmol MnO₄⁻ needs 0,96 mmol H⁺: only part reacts
+  sim.runFor(1)
+  const p = describe(s(), P.id)
+  assert.ok(p.dissolved['Mn2+'] > 0 && p.dissolved['MnO4-'] > 0 && p.dissolved['Fe2+'] > 0, 'partial reaction, both reactants left')
+  assert.ok(p.pH <= 2.02, `stopped at the model boundary (pH ${p.pH})`)
+  assert.ok(s().events.some(e => e.container === P.id && e.outcome === 'OUT_OF_MODEL_RANGE'), 'the stop is reported')
+  // No added acid: Mn²⁺ is not the product (MnO₂ would form) — reported, nothing invented.
+  const B = put('beaker100', 450)
+  fill(B, 'feso4', 5); fill(B, 'kmno4', 2)
+  sim.runFor(1)
+  assert.ok(!(describe(s(), B.id).dissolved['Mn2+'] > 0), 'no Mn²⁺ without acid')
+  assert.ok(s().events.some(e => e.container === B.id && e.outcome === 'OUT_OF_MODEL_RANGE' && e.key.startsWith('redoxrange-mno4-fe')), 'OUT_OF_MODEL_RANGE reported')
 })
 
 const failed = results.filter(r => !r.pass)

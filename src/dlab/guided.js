@@ -54,8 +54,8 @@ export const GUIDED = [
     },
     steps: [
       { text: 'Nhúng đầu giấy quỳ vào ống A rồi quan sát màu.', done: 'Giấy quỳ ướt trong ống A và đổi màu.', help: 'Chọn giấy quỳ → “Nhúng vào” Ống A → Nhúng. Hoặc kéo giấy xuống miệng ống A.', target: ['paper', 'A'], check: (s, r) => papersIn(s, r.A).length > 0 },
-      { text: 'Lấy giấy quỳ mới (thư viện → Giấy quỳ tím), nhúng vào ống B.', done: 'Có giấy quỳ đã nhúng trong ống B.', help: 'Thư viện → Giấy quỳ tím (hoặc chọn giấy cũ → Chi tiết → Lấy giấy quỳ mới), rồi nhúng vào Ống B.', target: ['B'], check: (s, r) => papersIn(s, r.B).length > 0 },
-      { text: 'Lấy giấy quỳ mới, nhúng vào ống C.', done: 'Có giấy quỳ đã nhúng trong ống C.', help: 'Lấy giấy quỳ mới từ Thư viện rồi nhúng vào Ống C.', target: ['C'], check: (s, r) => papersIn(s, r.C).length > 0 },
+      { text: 'Lấy giấy quỳ mới (Tủ hóa chất → Giấy quỳ tím), nhúng vào ống B.', done: 'Có giấy quỳ đã nhúng trong ống B.', help: 'Tủ hóa chất → Giấy quỳ tím (hoặc chọn giấy cũ → Chi tiết → Lấy giấy quỳ mới), rồi nhúng vào Ống B.', target: ['B'], check: (s, r) => papersIn(s, r.B).length > 0 },
+      { text: 'Lấy giấy quỳ mới, nhúng vào ống C.', done: 'Có giấy quỳ đã nhúng trong ống C.', help: 'Lấy giấy quỳ mới từ Tủ hóa chất rồi nhúng vào Ống C.', target: ['C'], check: (s, r) => papersIn(s, r.C).length > 0 },
       { text: 'Hút phenolphtalein bằng ống nhỏ giọt, nhỏ 2–3 giọt vào ống làm quỳ hóa xanh.', done: 'Ống B có phenolphtalein.', help: 'Chọn ống nhỏ giọt → “Hút từ” chai Phenolphtalein → “Nhỏ vào” Ống B → 1 giọt (vài lần).', target: ['dropper', 'phph', 'B'], check: (s, r) => (obj(s, r.B).contents.indicators.phenolphthalein || 0) > 0 },
       { text: 'Thêm từ từ HCl vào ống B đến khi vừa mất màu hồng.', done: 'Màu hồng trong ống B biến mất (pH < 8,2).', help: 'Chọn chai HCl → Rót khoảng 7 mL vào Ống B, rồi nhỏ tiếp từng ít (rót hoặc dùng ống nhỏ giọt sạch) đến khi vừa mất màu hồng.', target: ['acid', 'B'], check: (s, r) => { const b = obj(s, r.B); return (b.contents.indicators.phenolphthalein || 0) > 0 && (b.contents.ions['Cl-'] || 0) > 0 && b.pH != null && b.pH < 8.2 && s.notes[`neutral-${r.B}`] != null } }
     ],

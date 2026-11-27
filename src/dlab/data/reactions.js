@@ -25,9 +25,9 @@ export const NO_REACTION = [
 // Standard reduction potentials E° (V, 25 °C; CRC Handbook, "Electrochemical Series") for the metal ions and
 // metals on the bench. Used only to classify a metal + ion pair the registry has no rule for:
 // a weaker oxidant → NO_REACTION; a stronger one → UNSUPPORTED (it would react, but is not modelled).
-export const ION_E0 = { 'K+': -2.93, 'Ba2+': -2.91, 'Ca2+': -2.87, 'Na+': -2.71, 'Mg2+': -2.37, 'Zn2+': -0.76, 'Fe2+': -0.44, 'Cu2+': 0.34, 'Ag+': 0.80 }
+export const ION_E0 = { 'K+': -2.93, 'Ba2+': -2.91, 'Ca2+': -2.87, 'Na+': -2.71, 'Mg2+': -2.37, 'Mn2+': -1.18, 'Zn2+': -0.76, 'Fe2+': -0.44, 'Cu2+': 0.34, 'Ag+': 0.80 }
 export const METAL_E0 = { mg: -2.37, zn: -0.76, fe: -0.44, cu: 0.34 }
-export const ION_NAME = { 'K+': 'K⁺', 'Ba2+': 'Ba²⁺', 'Ca2+': 'Ca²⁺', 'Na+': 'Na⁺', 'Mg2+': 'Mg²⁺', 'Zn2+': 'Zn²⁺', 'Fe2+': 'Fe²⁺', 'Cu2+': 'Cu²⁺', 'Ag+': 'Ag⁺' }
+export const ION_NAME = { 'K+': 'K⁺', 'Ba2+': 'Ba²⁺', 'Ca2+': 'Ca²⁺', 'Na+': 'Na⁺', 'Mg2+': 'Mg²⁺', 'Mn2+': 'Mn²⁺', 'Zn2+': 'Zn²⁺', 'Fe2+': 'Fe²⁺', 'Cu2+': 'Cu²⁺', 'Ag+': 'Ag⁺' }
 
 // Solution-phase processes outside the model, detected from the dissolved species alone.
 // minPH/maxPH: only in that pH range. Reported as "Chưa hỗ trợ mô phỏng", never given a guessed product.
@@ -49,7 +49,17 @@ export const ION_HINTS = [
   { all: ['Ca2+', 'SO4'], qMin: { anion: 'SO4', n: 1, K: 2.3e-4 }, reason: 'Ca²⁺ với SO₄²⁻ ở nồng độ cao tạo kết tủa trắng CaSO₄ ít tan — chưa được mô hình hóa định lượng.' },
   { all: ['Mg2+', 'CO3'], minPH: 8, reason: 'Mg²⁺ với cacbonat thực tế tạo magie cacbonat bazơ màu trắng; mô phỏng chỉ có Mg(OH)₂ — chưa mô hình hóa chính xác.' },
   { all: ['Fe2+', 'CO3'], minPH: 6.5, reason: 'Fe²⁺ với cacbonat thực tế tạo FeCO₃ màu trắng xanh; mô phỏng chỉ có Fe(OH)₂ — chưa mô hình hóa chính xác.' },
-  { all: ['Zn2+'], minPH: 12, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' }
+  { all: ['Zn2+'], minPH: 12, reason: 'Zn(OH)₂ lưỡng tính tan trong kiềm dư tạo [Zn(OH)₄]²⁻ — chưa được mô hình hóa.' },
+  // E°(MnO₄⁻/Mn²⁺) 1,51 V > E°(Cl₂/Cl⁻) 1,36 V: why the permanganate titration is acidified with H₂SO₄, never HCl.
+  { all: ['MnO4-', 'Cl-'], maxPH: 2, reason: 'MnO₄⁻ trong axit có thể oxi hóa Cl⁻ thành khí Cl₂ độc (vì vậy chuẩn độ pemanganat dùng H₂SO₄, không dùng HCl) — phản ứng với Cl⁻ chưa được mô hình hóa.' },
+  { all: ['MnO4-', 'SCN-'], reason: 'MnO₄⁻ oxi hóa SCN⁻ — chưa được mô hình hóa.' },
+  { all: ['Cu2+', 'SCN-'], reason: 'Cu²⁺ với SCN⁻ tạo kết tủa Cu(SCN)₂ đen rồi CuSCN trắng — chưa được mô hình hóa.' },
+  { all: ['MnO4-', 'I-'], reason: 'MnO₄⁻ oxi hóa I⁻ thành I₂ (sản phẩm của Mn phụ thuộc pH) — chưa được mô hình hóa.' },
+  { all: ['MnO4-', 'Mn2+'], minPH: 2.5, reason: 'MnO₄⁻ và Mn²⁺ ở môi trường gần trung tính tạo MnO₂ nâu đen — chưa được mô hình hóa.' },
+  // Mn(OH)₂ Ksp ≈ 2·10⁻¹³ (CRC): white, browns in air; not in the Ksp table.
+  { all: ['Mn2+'], minPH: 8.5, reason: 'Mn²⁺ trong môi trường kiềm tạo kết tủa Mn(OH)₂ trắng, hóa nâu trong không khí — chưa được mô hình hóa.' },
+  // Fe(SCN)₂⁺ … Fe(SCN)₆³⁻: ≥ 10 % of the iron when free SCN⁻ ≳ 5 mM (K2 ≈ 16–20): the 1:1 model then understates the red.
+  { all: ['Fe3+', 'SCN-'], minFree: { ion: 'SCN-', c: 5e-3 }, reason: 'SCN⁻ dư nhiều (> 5 mM) tạo thêm phức Fe(SCN)₂⁺, Fe(SCN)₃… màu đỏ sẫm hơn; mô phỏng chỉ tính phức FeSCN²⁺ (1:1).' }
 ]
 
 // Fast ionic redox in solution, run to completion (K ≫ 1). E° (CRC, 25 °C): Cu²⁺/CuI 0,86 V, Fe³⁺/Fe²⁺ 0,771 V,
@@ -60,7 +70,12 @@ export const ION_HINTS = [
 // falls below 0,54 V; Cu²⁺/I⁻ up to pH 7 (Cu(OH)₂ from pH ≈ 5 at 0,1 M — model boundary, not a measured limit).
 export const ION_REDOX = [
   { id: 'cu-i', maxPH: 7, reactants: { 'Cu2+': 2, 'I-': 4 }, products: { I2: 1 }, precipitate: { CuI: 2 }, equation: '2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂', observe: 'xuất hiện kết tủa CuI màu trắng ngà, dung dịch chuyển vàng nâu do I₂ (I₃⁻ khi dư I⁻).' },
-  { id: 'fe-i', maxPH: 3, reactants: { 'Fe3+': 2, 'I-': 2 }, products: { 'Fe2+': 2, I2: 1 }, equation: '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂', observe: 'dung dịch chuyển vàng nâu do I₂ (I₃⁻ khi dư I⁻) sinh ra.' }
+  { id: 'fe-i', maxPH: 3, reactants: { 'Fe3+': 2, 'I-': 2 }, products: { 'Fe2+': 2, I2: 1 }, equation: '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂', observe: 'dung dịch chuyển vàng nâu do I₂ (I₃⁻ khi dư I⁻) sinh ra.', inputs: 'FeCl₃ + KI', demo: { fill: [['fecl3', 10]], pour: ['ki', 20], expect: { ion: 'I2' } } },
+  // E°(MnO₄⁻/Mn²⁺) = 1,51 V vs E°(Fe³⁺/Fe²⁺) = 0,771 V: K ≈ 10⁶² for 5 e⁻, fast at 25 °C (the permanganate titration of iron(II)).
+  // Mn²⁺ is the product only in clearly acidic solution: at pH ≈ 3–10 MnO₂ (brown-black) forms, in strong base MnO₄²⁻ (green)
+  // — not modelled, reported instead (maxPH 2: model boundary taken from the titration practice of 0,5–1 M H₂SO₄).
+  // acid: 8 H⁺ per ξ, supplied by the solution (charge balance); the extent stops where the solution would pass maxPH.
+  { id: 'mno4-fe', maxPH: 2, acid: 8, reactants: { 'MnO4-': 1, 'Fe2+': 5 }, products: { 'Mn2+': 1, 'Fe3+': 5 }, equation: 'MnO₄⁻ + 5Fe²⁺ + 8H⁺ → Mn²⁺ + 5Fe³⁺ + 4H₂O', observe: 'MnO₄⁻ (tím hồng) bị khử thành Mn²⁺ gần như không màu, Fe²⁺ thành Fe³⁺ (vàng nhạt); khi Fe²⁺ đã hết, MnO₄⁻ dư giữ màu tím hồng.', inputs: 'FeSO₄ + H₂SO₄ loãng + KMnO₄', rangeNote: 'Ở pH > 2 (thiếu axit), MnO₄⁻ bị khử thành MnO₂ kết tủa nâu đen chứ không thành Mn²⁺', source: 'E° MnO₄⁻/Mn²⁺ 1,51 V; Fe³⁺/Fe²⁺ 0,771 V (CRC); ε(MnO₄⁻) ≈ 2400 L/(mol·cm) ở 525 nm', limits: 'Chỉ trong môi trường axit rõ (pH ≤ 2); thiếu axit thì phần còn lại được báo là ngoài phạm vi mô hình.', demo: { fill: [['feso4', 5], ['h2so4', 10]], pour: ['kmno4', 5], expect: { ion: 'Fe3+' } } }
 ]
 
 // Electrochemistry. E° in volts (25 °C, CRC). Faraday quantities are exact; cell resistance is illustrative.
@@ -77,7 +92,9 @@ export const ELECTRO = {
       { ion: 'Fe3+', why: 'Fe³⁺ bị khử ở catot trước Cu²⁺ (E° Fe³⁺/Fe²⁺ 0,77 V > 0,34 V)' },
       { ion: 'Fe2+', why: 'Fe²⁺ bị oxi hóa ở anot trước Cl⁻ (E° Fe³⁺/Fe²⁺ 0,77 V < 1,36 V)' },
       { ion: 'NO3-', maxPH: 3, why: 'HNO₃ hòa tan đồng bám ở catot và bị khử tạo NO' },
-      { ion: 'NH3', ammine: { metal: 'Cu2+' }, why: 'NH₃ dư tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' } // complex share, not NH₃ presence: NH₄⁺ does not complex
+      { ion: 'NH3', ammine: { metal: 'Cu2+' }, why: 'NH₃ dư tạo phức với Cu²⁺ ([Cu(NH₃)₄]²⁺), thay đổi phản ứng ở catot' }, // complex share, not NH₃ presence: NH₄⁺ does not complex
+      { ion: 'MnO4-', why: 'MnO₄⁻ bị khử ở catot trước Cu²⁺ (E° 1,51 V > 0,34 V)' },
+      { ion: 'SCN-', why: 'SCN⁻ bị oxi hóa ở anot trước Cl⁻ (E° (SCN)₂/SCN⁻ ≈ 0,77 V < 1,36 V)' }
     ]
   },
   // E°(T) = E°(298) + ΔS°/(nF)·(T − 298,15); ΔS° from NBS S° (J/(mol·K)): Zn²⁺ −112,1, Cu 33,150, Zn 41,63,
@@ -100,5 +117,6 @@ export const UNSUPPORTED_HINTS = [
   { all: ['Fe3+', 'zn'], reason: 'Zn + Fe³⁺ (khử Fe³⁺) chưa được mô hình hóa.' },
   { all: ['Fe3+', 'mg'], reason: 'Mg + Fe³⁺ (khử Fe³⁺) chưa được mô hình hóa.' },
   { all: ['SO4', 'caco3'], maxPH: 3, reason: 'CaCO₃ + H₂SO₄: lớp CaSO₄ ít tan bao phủ đá vôi làm phản ứng chậm dần rồi dừng — chưa được mô hình hóa.' },
+  ...['mg', 'zn', 'fe', 'cu'].map(m => ({ all: ['MnO4-', m], reason: 'Kim loại khử MnO₄⁻ (sản phẩm của Mn phụ thuộc pH) — chưa được mô hình hóa.' })),
   { all: ['zn'], minPH: 12.5, reason: 'Zn tan trong kiềm mạnh (Zn + 2OH⁻ + 2H₂O → [Zn(OH)₄]²⁻ + H₂↑) chưa được mô hình hóa.' }
 ]

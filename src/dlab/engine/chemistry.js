@@ -163,6 +163,19 @@ function warmBracket(f, guess, d, min, max, fmax) {
   return [min, max, f(min), fmax]
 }
 
+// Fe³⁺ + SCN⁻ ⇌ FeSCN²⁺ (1:1 only) at [H⁺] = h. With b = 1 + Ka/h (free Fe³⁺ + FeOH²⁺ per free Fe³⁺), the complex y solves
+// K1·y² − (b + K1(Cs + Cf))·y + K1·Cs·Cf = 0 (smaller root). Returns free Fe³⁺ x, free SCN⁻ L and y, all mol/L.
+export function thiocyanatePair(Cf, Cs, h) {
+  const info = IONS['Fe3+']
+  const b = 1 + info.hydrolysisKa / h
+  if (!(Cf > 0) || !(Cs > 0)) return { x: Cf > 0 ? Cf / b : 0, L: Cs > 0 ? Cs : 0, y: 0 }
+  const K = info.scnK1
+  const B = b + K * (Cs + Cf)
+  const y = (2 * Cs * Cf) / (B / K + Math.sqrt(Math.max(0, (B / K) ** 2 - 4 * Cs * Cf))) // stable form of the smaller root
+  return { x: (Cf - y) / b, L: Cs - y, y }
+}
+const concOf = (conc, ion) => conc.find(([k]) => k === ion)?.[1] || 0
+
 function chargeAt(h, conc, L) {
   let sum = h - KW / h
   for (const [ion, c] of conc) {
@@ -172,7 +185,9 @@ function chargeAt(h, conc, L) {
     else {
       sum += info.z * c // a complex keeps the metal's charge
       if (info.hydrolysisKa) {
-        const x = freeMetal(info, c, h, info.ammine && L > 0 ? ammineSums(info, L)[0] : 0)
+        // FeSCN²⁺ carries the same total charge as Fe³⁺ + SCN⁻: only the hydrolysed share of the free Fe³⁺ changes.
+        const scn = info.scnK1 ? concOf(conc, 'SCN-') : 0
+        const x = scn > 0 ? thiocyanatePair(c, scn, h).x : freeMetal(info, c, h, info.ammine && L > 0 ? ammineSums(info, L)[0] : 0)
         sum -= x * info.hydrolysisKa / h + (info.dimerBeta ? 2 * info.dimerBeta * x * x / (h * h) : 0)
       }
     }
@@ -241,6 +256,8 @@ export function freeConc(ion, contents, h, V) {
   if (!info) return 0
   if (info.ammine && (contents.ions.NH3 || 0) > 0) return freeMetal(info, C, h, ammineSums(info, freeAmmonia(concList(contents.ions, V), h))[0])
   if (info.ammine && !info.hydrolysisKa) return C
+  if (info.scnK1 && (contents.ions['SCN-'] || 0) > 0) return thiocyanatePair(C, contents.ions['SCN-'] / V, h).x
+  if (ion === 'SCN-' && (contents.ions['Fe3+'] || 0) > 0) return thiocyanatePair(contents.ions['Fe3+'] / V, C, h).L
   if (info.hydrolysisKa) return freeMetal(info, C, h)
   if (info.weak === 'sulfate') return C * WEAK.sulfate.Ka2 / (WEAK.sulfate.Ka2 + h)
   if (info.weak === 'carbonate') {
@@ -267,6 +284,15 @@ export function ammineComplexes(contents) {
     if (held > 1e-12) out[ion] = held
   }
   return out
+}
+
+// Moles of FeSCN²⁺ (the analytical totals stay in contents.ions['Fe3+'] and ['SCN-']).
+export function thiocyanateComplex(contents) {
+  const V = aqueousLitres(contents)
+  const f = contents.ions['Fe3+'] || 0
+  const s = contents.ions['SCN-'] || 0
+  if (V < 1e-6 || !(f > 0) || !(s > 0)) return 0
+  return thiocyanatePair(f / V, s / V, solveH(contents.ions, V)).y * V
 }
 
 // Dissolved CO₂ (H₂CO₃*) concentration, used for degassing.
@@ -309,8 +335,8 @@ export function ionRedox(contents, formed = {}) {
   const ran = {}
   const V = aqueousLitres(contents)
   if (V < 1e-6) return ran
-  const pH = -Math.log10(solveH(contents.ions, V))
   for (const r of ION_REDOX) {
+    const pH = -Math.log10(solveH(contents.ions, V)) // an earlier rule may have changed it
     // Acidic/neutral solution only: in base the cation is a hydroxide (Fe(OH)₃, Cu(OH)₂) and the couple's
     // potential drops far below I₂/I⁻, so no iodine forms. Below pH 7 only the dissolved cation reacts; a
     // hydroxide redissolves through the Ksp step and is converted on later steps.
@@ -318,8 +344,27 @@ export function ionRedox(contents, formed = {}) {
     let xi = Infinity
     for (const [ion, n] of Object.entries(r.reactants)) xi = Math.min(xi, (contents.ions[ion] || 0) / n)
     if (!(xi > 1e-12)) continue
-    for (const [ion, n] of Object.entries(r.reactants)) contents.ions[ion] = Math.max(0, contents.ions[ion] - n * xi)
-    for (const [ion, n] of Object.entries(r.products || {})) contents.ions[ion] = (contents.ions[ion] || 0) + n * xi
+    const apply = (ions, x) => {
+      for (const [ion, n] of Object.entries(r.reactants)) ions[ion] = Math.max(0, (ions[ion] || 0) - n * x)
+      for (const [ion, n] of Object.entries(r.products || {})) ions[ion] = (ions[ion] || 0) + n * x
+    }
+    // A reaction that uses H⁺ (r.acid per ξ; the charge balance takes it from the solution's acidity) runs only while the
+    // solution stays at pH ≤ maxPH: bisection on ξ. What is left is reported by redoxNotes (outside the model).
+    if (r.acid) {
+      // Over Fe(OH)₃ the solution is no longer clearly acidic at the solid (and precipitating Fe(OH)₃ releases H⁺ that
+      // would let the reaction run on): outside the model, reported by redoxNotes.
+      if ((contents.precipitates['Fe(OH)3'] || 0) > 0) { Object.defineProperty(ran, `${r.id}:acid`, { value: true, enumerable: false }); continue }
+      const pHAfter = x => { const t = { ...contents.ions }; apply(t, x); return -Math.log10(solveH(t, V)) }
+      if (pHAfter(xi) > r.maxPH) {
+        let lo = 0
+        let hi = xi
+        for (let i = 0; i < 40; i += 1) { const mid = (lo + hi) / 2; if (pHAfter(mid) > r.maxPH) hi = mid; else lo = mid }
+        xi = lo
+        Object.defineProperty(ran, `${r.id}:acid`, { value: true, enumerable: false })
+        if (!(xi > 1e-12)) continue
+      }
+    }
+    apply(contents.ions, xi)
     for (const [key, n] of Object.entries(r.precipitate || {})) {
       contents.precipitates[key] = (contents.precipitates[key] || 0) + n * xi
       formed[key] = (formed[key] || 0) + n * xi
@@ -358,7 +403,7 @@ export function equilibrate(contents) {
   if (aqueousLitres(contents) < 1e-6) return formed
   kspEquilibrium(contents, formed)
   const ran = ionRedox(contents, formed)
-  if (Object.keys(ran).length) {
+  if (Reflect.ownKeys(ran).length) { // includes a rule stopped for lack of acid (non-enumerable flag)
     Object.defineProperty(formed, 'redox', { value: ran }) // non-enumerable: callers iterate precipitates only
     kspEquilibrium(contents, formed)
   }
@@ -366,11 +411,28 @@ export function equilibrate(contents) {
   return formed
 }
 
+const sharesIon = (a, b) => a.cation === b.cation || a.anion === b.anion
+
+// Salts that compete for a common ion (Ag⁺ between AgCl and AgI, OH⁻ between hydroxides, Zn²⁺ between Zn(OH)₂ and ZnCO₃):
+// their existing solids are first returned to solution, then the salt that needs the LOWEST level of the shared ion to
+// precipitate goes first: order by (log Q − log Ksp)/p in the redissolved solution, i.e. by [M]/[M]needed with
+// [M]needed = (Ksp/[X]^q)^(1/p). This uses the actual counter-ion concentrations (Cl⁻ in large excess keeps a trace of
+// SCN⁻ in solution; I⁻ takes Ag⁺ before Cl⁻), not the pure-water solubility. Every salt then settles at Q = Ksp
+// (repeated until nothing moves); a re-formed solid needs no new nucleation.
 function kspEquilibrium(contents, formed) {
   const V = aqueousLitres(contents)
-  const keys = candidatePrecipitates(contents)
+  let keys = candidatePrecipitates(contents)
   if (!keys.length) return formed
-  for (let round = 0; round < 6; round += 1) {
+  const before = Object.fromEntries(keys.map(k => [k, contents.precipitates[k] || 0]))
+  for (const key of keys) {
+    const ppt = PRECIPITATES[key]
+    if (before[key] > 0 && keys.some(j => j !== key && sharesIon(ppt, PRECIPITATES[j]))) shift(contents, ppt, key, -before[key])
+  }
+  if (keys.length > 1) {
+    const drive = Object.fromEntries(keys.map(k => [k, (logQ(PRECIPITATES[k], contents, V) - Math.log10(PRECIPITATES[k].Ksp)) / PRECIPITATES[k].p]))
+    keys = [...keys].sort((a, b) => drive[b] - drive[a])
+  }
+  for (let round = 0; round < 40; round += 1) {
     let moved = 0
     for (const key of keys) {
       const ppt = PRECIPITATES[key]
@@ -387,7 +449,7 @@ function kspEquilibrium(contents, formed) {
       let lo = -solid
       let hi = maxXi * (1 - 1e-12)
       // A new solid needs supersaturation to nucleate (metastable zone); an existing solid equilibrates at Ksp.
-      if (solid <= 0 && trial(0) < NUCLEATION_LOG) continue
+      if (solid <= 0 && !(before[key] > 0) && trial(0) < NUCLEATION_LOG) continue
       if (trial(lo) <= 0) {
         if (solid > 0) { shift(contents, ppt, key, -solid); moved += solid }
         continue
@@ -399,10 +461,15 @@ function kspEquilibrium(contents, formed) {
       if (Math.abs(xi) > 1e-15) {
         shift(contents, ppt, key, xi)
         moved += Math.abs(xi)
-        if (xi > 0) formed[key] = (formed[key] || 0) + xi
       }
     }
     if (moved < 1e-14) break
+  }
+  // Newly formed solid only (a redissolved and re-formed solid is not new: no extra particles).
+  for (const key of keys) {
+    const net = (contents.precipitates[key] || 0) - before[key]
+    if (net > 0) formed[key] = (formed[key] || 0) + net
+    if (!((contents.precipitates[key] || 0) > 0)) delete contents.precipitates[key]
   }
   return formed
 }
@@ -535,7 +602,7 @@ export function elementInventory(contents, extra = {}) {
     }
     for (const [s, c] of Object.entries(atoms)) inv[s] = (inv[s] || 0) + c * n
   }
-  const ionFormula = { I2: 'I2', 'Cu+': 'Cu', 'Na+': 'Na', 'K+': 'K', 'Ag+': 'Ag', 'Ba2+': 'Ba', 'Ca2+': 'Ca', 'Mg2+': 'Mg', 'Zn2+': 'Zn', 'Cu2+': 'Cu', 'Fe2+': 'Fe', 'Fe3+': 'Fe', 'Cl-': 'Cl', 'NO3-': 'NO3', 'I-': 'I', SO4: 'SO4', OAc: 'C2O2', NH3: 'N', CO3: 'CO3' }
+  const ionFormula = { 'SCN-': 'SCN', 'MnO4-': 'MnO4', 'Mn2+': 'Mn', I2: 'I2', 'Cu+': 'Cu', 'Na+': 'Na', 'K+': 'K', 'Ag+': 'Ag', 'Ba2+': 'Ba', 'Ca2+': 'Ca', 'Mg2+': 'Mg', 'Zn2+': 'Zn', 'Cu2+': 'Cu', 'Fe2+': 'Fe', 'Fe3+': 'Fe', 'Cl-': 'Cl', 'NO3-': 'NO3', 'I-': 'I', SO4: 'SO4', OAc: 'C2O2', NH3: 'N', CO3: 'CO3' }
   for (const [ion, n] of Object.entries(contents.ions)) add(ionFormula[ion], n)
   for (const [key, n] of Object.entries(contents.precipitates)) {
     // Hydroxide O/H come from water, so only the metal and non-OH anion are tracked.

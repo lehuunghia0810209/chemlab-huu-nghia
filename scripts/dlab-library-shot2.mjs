@@ -21,7 +21,7 @@ async function open(viewport, theme = 'light') {
   await page.evaluate(t => { document.documentElement.dataset.theme = t }, theme)
   await page.getByRole('button', { name: 'Tự do', exact: true }).click()
   if (!(await page.locator('.dlab-sidetabs').isVisible())) await page.locator('.dlab-fab--side').click()
-  await page.getByRole('tab', { name: 'Khám phá' }).click()
+  await page.getByRole('tab', { name: 'Thư viện', exact: true }).click()
   return page
 }
 const confirm = async page => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }

@@ -73,7 +73,7 @@
 .dlab--dragging .dlab-label:not(.is-held):not(.is-sel) { opacity: .35 }
 .dlab-bar-sep { width: 1px; align-self: stretch; background: var(--dlab-line) }
 
-.dlab-brand h2 { margin: 0; font-size: var(--text-md, 1rem); line-height: 1.2 }
+.dlab-brand h1 { margin: 0; font-size: var(--text-md, 1rem); line-height: 1.2 }
 .dlab-kicker { display: block; margin: 0; font-size: var(--text-xs, .8125rem); color: var(--dlab-muted); letter-spacing: .02em }
 .dlab-head-actions { display: flex; align-items: center; gap: 8px; margin-left: auto }
 .dlab-seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--dlab-line); border-radius: var(--radius-sm, 8px); background: var(--dlab-panel) }
@@ -156,6 +156,7 @@
 }
 .dlab-lib { left: var(--dlab-gap); width: var(--dlab-lib-w) }
 .dlab-side { right: var(--dlab-gap); width: var(--dlab-side-w); overflow: hidden }
+.dlab.dlab--library { --dlab-side-w: 380px }
 .dlab--show-lib .dlab-lib, .dlab--show-side .dlab-side { display: flex }
 .dlab-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 8px }
 .dlab-drawer-head h3 { margin: 0; font-size: var(--text-sm, .875rem) }
