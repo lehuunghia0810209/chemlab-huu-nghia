@@ -1,6 +1,6 @@
 
 const VERSION =
-  'chemlab-6.7.0-access-1'
+  'chemlab-7.0.0-access-1'
 
 
 const STATIC_CACHE =

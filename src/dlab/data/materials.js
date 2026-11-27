@@ -136,7 +136,9 @@ export function solubilityAt(key, T) {
 export const INDICATORS = {
   // Litmus has a broad violet plateau around neutral, so it is charted rather than a single sigmoid.
   litmus: { name: 'Quỳ tím', validation: 'qualitative', range: 'đỏ < 5 · tím 5,5–7,5 · xanh > 8,3', neutral: [130, 70, 160], chart: [[4.5, [210, 50, 60]], [5.5, [130, 70, 160]], [7.5, [130, 70, 160]], [8.3, [50, 80, 200]]] },
-  phenolphthalein: { name: 'Phenolphtalein', ethanolFraction: 0.5, pKin: 9.4, acid: [255, 255, 255, 0], base: [230, 40, 150], validation: 'quantitative-range', range: 'không màu < 8,2 · hồng 8,2–10' },
+  // Drawn colour (not chemistry): Beer–Lambert on the pink form. A(1 %, 1 cm) = 700–750 at 552 nm, pH 9.8 (Merck 107233
+  // specification); stock 1 % in 50 % ethanol (school preparation); 1 cm drawn path.
+  phenolphthalein: { name: 'Phenolphtalein', ethanolFraction: 0.5, pKin: 9.4, acid: [255, 255, 255, 0], base: [230, 40, 150], validation: 'quantitative-range', range: 'không màu < 8,2 · hồng 8,2–10', absorbance1pct: 725, absorbancePH: 9.8, stockPct: 1 },
   methylOrange: { name: 'Metyl da cam', pKin: 3.46, acid: [220, 40, 40], base: [245, 190, 40], validation: 'quantitative-range', range: 'đỏ < 3,1 · vàng > 4,4' },
   universal: {
     name: 'Chất chỉ thị vạn năng',

@@ -1,0 +1,16 @@
+You are an independent chemistry reviewer. READ-ONLY: do not run terminal commands and do not modify any file.
+
+Review the scientific correctness of five new experiment definitions in D:\EduLab\ChemLab\src\dlab\data\experiments.js
+(ids: exp-daniell-cell, exp-daniell-concentration, exp-electrolysis-cucl2, exp-copper-iodide, exp-iron3-iodide) and the
+engine code they rely on: D:\EduLab\ChemLab\src\dlab\engine\processes.js (functions for the voltmeter / Daniell cell,
+electrolysis, redoxNotes) and D:\EduLab\ChemLab\src\dlab\engine\chemistry.js (ionRedox, iodine/triiodide capacity),
+D:\EduLab\ChemLab\src\dlab\data\reactions.js (ION_REDOX, ELECTRO).
+
+Check: anode/cathode and electrode signs; electron flow in the external circuit; half-reactions and overall equations
+(element, charge and electron balance); Nernst equation and its conditions (free-ion concentration, complexes, 25 °C);
+the stated numbers (E = 1.10 V, 1.070 V after tenfold Cu²⁺ dilution, U > 1.42 V for CuCl₂, K ≈ 10^8 for Fe³⁺/I⁻,
+limiting-reagent amounts 1 mmol CuI / 0.5 mmol I₂ / 4 mmol Cu²⁺ left / 3 mmol I⁻ left); safety notes; whether any
+claim is stronger than the model supports; whether a Vietnamese grade-10/12 student could be misled.
+
+Report in English as a markdown list of findings, each with severity P0 (wrong science shown as fact), P1 (misleading),
+P2 (minor/wording), the exact file and text, and a suggested correction. Say explicitly if you find no P0/P1 issues.

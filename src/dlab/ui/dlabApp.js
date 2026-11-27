@@ -737,7 +737,7 @@ export function initDynamicLab(host) {
     const V = Object.entries(c.contents.liquids).filter(([k]) => LIQUIDS[k].aqueous).reduce((s, [, v]) => s + v, 0) / 1000
     for (const [k, v] of Object.entries(c.contents.ions)) if (v > 1e-9) lines.push(`${IONS[k].label}: ${num(v * 1000, 3)} mmol${V > 0 ? ` (${num(v / V, 3)} M)` : ''}`)
     for (const [k, v] of Object.entries(c.contents.precipitates)) if (v > 1e-9) lines.push(`${sub(PRECIPITATES[k].formula)}↓: ${num(v * 1000, 3)} mmol = ${num(v * molarMass(PRECIPITATES[k].formula) * 1000, 1)} mg`)
-    for (const [k, v] of Object.entries(c.contents.indicators)) if (v > 0.01) lines.push(`${INDICATORS[k].name}: ${num(v, 1)} giọt`)
+    for (const [k, v] of Object.entries(c.contents.indicators)) if (v > 0.01) lines.push(`${INDICATORS[k].name}: ${num(v, 1)} giọt (khoảng đổi màu ${INDICATORS[k].range}; màu trên hình là biểu diễn trực quan)`)
     return lines
   }
 
@@ -801,6 +801,8 @@ export function initDynamicLab(host) {
     if (o.type === 'litmusPaper') {
       const wet = (o.seg || []).filter(s => s.wet > 0.4).length
       h += `<p class="dlab-note">${wet ? `${wet}/${def.segments} phần giấy đã ướt.` : 'Giấy khô, màu tím.'}</p><button type="button" class="dlab-btn" data-act="newpaper">Lấy giấy quỳ mới</button><p class="dlab-hint">Kéo giấy xuống để nhúng vào dung dịch; nhúng càng sâu, vùng đổi màu càng dài.</p>`
+    }
+    if (o.type === 'litmusPaper' || o.type === 'electrodes') {
       // Alternative to dragging (small screens, keyboard): dip to a chosen depth below the surface.
       const wetTargets = st.objects.filter(x => isContainer(x) && volumeOf(x) > 0.5 && x.condition !== 'UNUSABLE')
       if (wetTargets.length) h += `<fieldset class="dlab-act"><legend>Nhúng bằng thông số</legend><div class="dlab-row"><select data-in="dip-to" aria-label="Nhúng vào">${wetTargets.map(x => `<option value="${x.id}">${esc(objLabel(x))}</option>`).join('')}</select></div><div class="dlab-row"><input type="number" class="dlab-in" data-in="dip-mm" min="2" max="60" step="2" value="10" aria-label="Độ sâu nhúng (mm)"><span>mm dưới mặt thoáng</span></div><div class="dlab-row"><button type="button" class="dlab-btn" data-act="dip">Nhúng</button><button type="button" class="dlab-btn" data-act="lift" ${o.inside ? '' : 'disabled'}>Lấy ra</button></div></fieldset>`
@@ -1321,7 +1323,7 @@ export function initDynamicLab(host) {
     const expCard = e => {
       const [cls, word] = BADGE[experimentValidation(e)]
       const search = [e.title, e.grade, e.difficulty, ...e.keywords, ...e.chemicals].join(' ')
-      return `<li class="dlab-exp" data-exp-card="${esc(e.id)}" data-difficulty="${esc(e.difficulty)}" data-search="${esc(foldText(search))}"><b>${esc(e.title)}</b><span class="dlab-exp-meta"><span class="dlab-exp-badge dlab-exp-badge--${cls}">${esc(word)}</span> ${esc(e.grade)} · ${esc(e.difficulty)}</span>` +
+      return `<li class="dlab-exp" data-exp-card="${esc(e.id)}" data-difficulty="${esc(e.difficulty)}" data-group="${esc(e.group)}" data-grade="${esc(e.grade)}" data-status="${esc(experimentValidation(e))}" data-search="${esc(foldText(search))}"><b>${esc(e.title)}</b><span class="dlab-exp-meta"><span class="dlab-exp-badge dlab-exp-badge--${cls}">${esc(word)}</span> ${esc(e.grade)} · ${esc(e.difficulty)}</span>` +
         `<button type="button" class="dlab-btn dlab-btn--sm" data-experiment="${esc(e.id)}">Bày dụng cụ</button>` +
         `<details><summary>Hướng dẫn</summary><dl>` +
         `<dt>Mục tiêu</dt><dd>${esc(e.objective)}</dd><dt>Dụng cụ, hóa chất</dt><dd>${esc([...e.equipment, ...e.chemicals].join('; '))}</dd>` +
@@ -1330,27 +1332,48 @@ export function initDynamicLab(host) {
         `<dt>Giải thích</dt><dd>${esc(e.explanation)}</dd><dt>An toàn</dt><dd>${esc(e.safety)}</dd><dt>Nguồn</dt><dd>${esc(e.references.join('; '))}</dd></dl></details></li>`
     }
     pane.innerHTML = `<p class="dlab-hint">Thí nghiệm có hướng dẫn: bấm “Bày dụng cụ” rồi làm theo các bước. Mọi kết quả do mô hình hóa học tính, không phải hoạt cảnh; nhãn cho biết mức kiểm chứng khoa học.</p>` +
-      `<div class="dlab-exp-filter"><input type="search" class="dlab-in" data-exp-search placeholder="Tìm thí nghiệm: tên, hóa chất, từ khóa" aria-label="Tìm thí nghiệm"><select class="dlab-in" data-exp-difficulty aria-label="Mức độ"><option value="">Mọi mức độ</option>${DIFFICULTY.map(d => `<option>${esc(d)}</option>`).join('')}</select></div>` +
+      `<div class="dlab-exp-filter"><input type="search" class="dlab-in" data-exp-search placeholder="Tìm thí nghiệm: tên, hóa chất, từ khóa" aria-label="Tìm thí nghiệm">` +
+      `<select class="dlab-in" data-exp-f="group" aria-label="Nhóm kiến thức"><option value="">Mọi nhóm</option>${EXPERIMENT_GROUPS.map(g => `<option value="${esc(g.id)}">${esc(g.title)}</option>`).join('')}</select>` +
+      `<select class="dlab-in" data-exp-f="grade" aria-label="Lớp"><option value="">Mọi lớp</option>${[...new Set(EXPERIMENTS.map(e => e.grade))].sort().map(g => `<option>${esc(g)}</option>`).join('')}</select>` +
+      `<select class="dlab-in" data-exp-f="difficulty" data-exp-difficulty aria-label="Mức độ"><option value="">Mọi mức độ</option>${DIFFICULTY.map(d => `<option>${esc(d)}</option>`).join('')}</select>` +
+      `<select class="dlab-in" data-exp-f="status" aria-label="Mức kiểm chứng"><option value="">Mọi mức kiểm chứng</option>${Object.entries(BADGE).map(([k, [, w]]) => `<option value="${esc(k)}">${esc(w)}</option>`).join('')}</select></div>` +
+      `<div class="dlab-row dlab-exp-tools"><span class="dlab-hint" data-exp-count aria-live="polite"></span><button type="button" class="dlab-btn dlab-btn--sm dlab-btn--ghost" data-exp-clear>Về bàn trống</button></div>` +
       `<p class="dlab-hint" data-exp-empty hidden>Không có thí nghiệm phù hợp. Vẫn có thể tự làm trên bàn trống với hóa chất trong Tủ hóa chất.</p>` +
       EXPERIMENT_GROUPS.map(g => `<section data-exp-group="${esc(g.id)}"><h3 class="dlab-disc-group">${esc(g.title)} · ${esc(g.grade)}</h3><ul class="dlab-disc dlab-exps">${EXPERIMENTS.filter(e => e.group === g.id).map(expCard).join('')}</ul></section>`).join('') +
       `<p class="dlab-hint">Các hiện tượng dưới đây được mô phỏng từ mô hình hóa học (không phải hoạt cảnh). Bấm “Bày dụng cụ”, rồi tự làm thí nghiệm. Tổ hợp khác vẫn thử được: mô phỏng sẽ nói rõ khi không phản ứng hoặc chưa hỗ trợ.</p>` +
       groups.map(g => `<h3 class="dlab-disc-group">${esc(g)}</h3><ul class="dlab-disc">${DISCOVER.filter(e => e.group === g).map(e => `<li><b>${esc(e.title)}</b><span>${esc(e.inputs)}</span><button type="button" class="dlab-btn dlab-btn--sm" data-discover="${esc(e.id)}">Bày dụng cụ</button></li>`).join('')}</ul>`).join('')
+    filterExperiments()
   }
   const foldText = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[₀-₉]/g, c => String(c.charCodeAt(0) - 0x2080))
   function filterExperiments() {
     const pane = $('.dlab-discover-pane')
     const q = foldText(pane.querySelector('[data-exp-search]')?.value || '').trim()
-    const d = pane.querySelector('[data-exp-difficulty]')?.value || ''
+    const f = [...pane.querySelectorAll('[data-exp-f]')].filter(x => x.value).map(x => [x.dataset.expF, x.value])
     let shown = 0
     for (const li of pane.querySelectorAll('[data-exp-card]')) {
-      const ok = (!q || li.dataset.search.includes(q)) && (!d || li.dataset.difficulty === d)
+      const ok = (!q || li.dataset.search.includes(q)) && f.every(([k, v]) => li.dataset[k] === v)
       li.hidden = !ok
       if (ok) shown += 1
     }
     for (const g of pane.querySelectorAll('[data-exp-group]')) g.hidden = !g.querySelector('[data-exp-card]:not([hidden])')
     pane.querySelector('[data-exp-empty]').hidden = shown > 0
+    pane.querySelector('[data-exp-count]').textContent = `${shown}/${EXPERIMENTS.length} thí nghiệm`
   }
-  $('.dlab-discover-pane').addEventListener('input', e => { if (e.target.closest('[data-exp-search], [data-exp-difficulty]')) filterExperiments() })
+  // "Về bàn trống": everything on the bench is put away as ONE undoable step; the open Sandbox stays available.
+  async function clearBench() {
+    if (!sim.state.objects.length) return
+    if (!(await confirmDialog('Về bàn trống?', ['Mọi dụng cụ và hóa chất trên bàn sẽ được cất. Có thể hoàn tác.']))) return
+    sim.record()
+    sim.dispatch({ type: 'cleanup' }, { record: false })
+    for (const o of [...sim.state.objects]) sim.dispatch({ type: 'remove', id: o.id }, { record: false })
+    ui.laidOut = {}
+    for (const b of document.querySelectorAll('.dlab-discover-pane [data-experiment]')) b.textContent = 'Bày dụng cụ'
+    select(null)
+    ui.userView = false
+    fitView()
+    toast('Bàn đã trống. Lấy dụng cụ và hóa chất từ Thư viện, hoặc chọn một thí nghiệm.')
+  }
+  $('.dlab-discover-pane').addEventListener('input', e => { if (e.target.closest('[data-exp-search], [data-exp-f]')) filterExperiments() })
   $('.dlab-discover-pane').addEventListener('click', e => {
     const b = e.target.closest('[data-discover]')
     const entry = b && DISCOVER.find(x => x.id === b.dataset.discover)
@@ -1358,6 +1381,7 @@ export function initDynamicLab(host) {
     const x = e.target.closest('[data-experiment]')
     const exp = x && EXPERIMENTS.find(y => y.id === x.dataset.experiment)
     if (exp) layOutExperiment(exp)
+    if (e.target.closest('[data-exp-clear]')) clearBench()
   })
   // An Experiment Library entry: vessels with their starting solutions, then the bottles the steps use. Same commands
   // as the student's own (dispatch); the student then performs the steps.
@@ -1376,8 +1400,9 @@ export function initDynamicLab(host) {
       const r = sim.dispatch({ type: 'add', equipmentType: 'bottle', x: freeX('bottle'), y: 0, reagent })
       if (r.ok) { made.push(r.id); first ||= r.id }
     }
-    for (const type of exp.setup.tools || []) {
-      const r = sim.dispatch({ type: 'add', equipmentType: type, x: freeX(type), y: 0 })
+    for (const t of exp.setup.tools || []) {
+      const { type, y = 0 } = typeof t === 'string' ? { type: t } : t // electrodes and the salt bridge hang above the bench
+      const r = sim.dispatch({ type: 'add', equipmentType: type, x: freeX(type), y })
       if (r.ok) { made.push(r.id); first ||= r.id }
     }
     ;(ui.laidOut ||= {})[exp.id] = made
@@ -1848,7 +1873,7 @@ function template() {
   return `
   <div class="dlab-shell">
     <header class="dlab-header">
-      <div class="dlab-brand"><span class="dlab-kicker">ChemLab 7.0 · Thử nghiệm</span><h2>Phòng thí nghiệm động</h2></div>
+      <div class="dlab-brand"><span class="dlab-kicker">ChemLab 7.0</span><h2>Phòng thí nghiệm động</h2></div>
       <div class="dlab-seg dlab-mode" role="group" aria-label="Chế độ thực hành">
         <button type="button" class="dlab-btn" data-hd="sandbox" aria-pressed="true">Tự do</button>
         <button type="button" class="dlab-btn" data-hd="guided" aria-pressed="false">Có hướng dẫn</button>

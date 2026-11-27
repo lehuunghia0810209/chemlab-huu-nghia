@@ -117,8 +117,13 @@ export function bulkColor(contents, pH) {
     for (const [key, drops] of Object.entries(contents.indicators)) {
       if (!(drops > 0) || pH == null) continue
       const [r, g, b, a0] = indicatorColor(key, pH)
-      const strength = (1 - Math.exp(-drops / (V * 1000) * 1.2)) * a0
-      rgb = mixRgb(rgb, [r, g, b], strength)
+      const ind = INDICATORS[key]
+      // With absorbance data: Beer–Lambert, A ∝ concentration × coloured fraction (a0 = that fraction for phenolphthalein).
+      // Otherwise the older drops-per-mL saturation curve.
+      const strength = ind.absorbance1pct
+        ? 1 - 10 ** -(ind.absorbance1pct * (drops * 0.05 * ind.stockPct) / (V * 1000) * a0 / indicatorColor(key, ind.absorbancePH)[3])
+        : (1 - Math.exp(-drops / (V * 1000) * 1.2)) * a0
+      rgb = mixRgb(rgb, ind.absorbance1pct ? ind.base : [r, g, b], strength) // Beer–Lambert: the fraction is already in A
       alpha = Math.max(alpha, 0.18 + 0.7 * strength)
     }
     let suspended = 0
@@ -354,6 +359,16 @@ function redoxNotes(state, c, formed) {
       c.activeReactions[`redox-${id}`] = state.t
       noteOnce(state, `redox-${id}-${c.id}`, `${r.equation}: trong ${label(c)} ${r.observe}`)
     }
+  }
+  // Both reactants present but the solution is basic (hydroxide or NH₃ complex): the model computes these redox
+  // reactions only at pH ≤ 7, so it says so instead of silently showing nothing.
+  const V = aqueousLitres(c.contents)
+  if (V < 1e-6) return
+  let pH = null
+  for (const r of ION_REDOX) {
+    if (!Object.keys(r.reactants).every(ion => (c.contents.ions[ion] || 0) > 1e-7)) continue
+    pH ??= -Math.log10(solveH(c.contents.ions, V))
+    if (pH > r.maxPH) noteOnce(state, `redoxrange-${r.id}-${c.id}`, `${r.equation} chỉ được mô hình hóa trong môi trường axit hoặc trung tính (pH ≤ ${r.maxPH}). Ở pH ≈ ${vn(pH, 1)} kim loại ở dạng hiđroxit hoặc phức ammin (phức với NH₃): ngoài phạm vi mô hình, không hiển thị sản phẩm.`, 'info')
   }
 }
 
@@ -676,10 +691,20 @@ export function stepElectro(state, h) {
     if (!zn || !cu || zn.c.id === cu.c.id) { m.status = 'Mô hình hỗ trợ pin Zn–Cu (Daniell).'; continue }
     const Vz = aqueousLitres(zn.c.contents)
     const Vc = aqueousLitres(cu.c.contents)
-    const cZn = (zn.c.contents.ions['Zn2+'] || 0) / Vz
-    const cCu = (cu.c.contents.ions['Cu2+'] || 0) / Vc
-    if (!(cZn > 0) || !(cCu > 0)) { m.reading = 0; m.status = 'Cần dung dịch Zn²⁺ quanh thanh Zn và Cu²⁺ quanh thanh Cu.'; continue }
+    // Nernst uses the free ions (hydrolysis and NH₃ complexes removed by freeConc).
+    const cZn = Vz > 0 ? freeConc('Zn2+', zn.c.contents, solveH(zn.c.contents.ions, Vz), Vz) : 0
+    const cCu = Vc > 0 ? freeConc('Cu2+', cu.c.contents, solveH(cu.c.contents.ions, Vc), Vc) : 0
+    if (!(cZn > 0) || !(cCu > 0)) { m.reading = null; m.status = 'Cần dung dịch Zn²⁺ quanh kẽm và Cu²⁺ quanh đồng: không có ion của kim loại thì mô hình không tính được suất điện động.'; continue }
     if (![zn.c, cu.c].every(x => polarPhase(x.contents).pHApplies)) { m.reading = null; m.status = 'Chưa hỗ trợ: pin Daniell chỉ được mô hình hóa trong dung dịch nước (etanol ≤ 10 %).'; continue }
+    // Nernst needs the FREE ion concentration. With NH₃ present much of Zn²⁺/Cu²⁺ is complexed and the model does not
+    // compute free-ion activities for the cell, so no voltage is invented.
+    const held = [[zn.c, 'Zn2+'], [cu.c, 'Cu2+']].some(([c, ion]) => (ammineComplexes(c.contents)[ion] || 0) > 0.01 * (c.contents.ions[ion] || 0))
+    if (held) {
+      m.reading = null
+      m.status = 'Ngoài phạm vi mô hình: có NH₃ tạo phức với Zn²⁺/Cu²⁺, nồng độ ion tự do trong pin chưa được tính nên không áp dụng Nernst.'
+      noteOnce(state, `daniell-complex-${m.id}`, 'Pin Zn–Cu có NH₃ tạo phức: nồng độ ion tự do thay đổi, mô hình không tính suất điện động trong trường hợp này.', 'info')
+      continue
+    }
     const d = ELECTRO.daniell
     const TK = 273.15 + (zn.c.T + cu.c.T) / 2
     const E0T = d.E0 + d.dS / (d.n * FARADAY) * (TK - 298.15)

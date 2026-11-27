@@ -32,9 +32,9 @@ const STORAGE_KEYS = {
 applySavedPreferences()
 
 
-// 'dlab' (ChemLab 7.0 preview) is routable but not in the main navigation.
+// 'dlab' (ChemLab 7.0 Dynamic Lab) is in the sidebar; the phone bottom nav keeps five items and reaches it from 'lab'.
 const NAV_VIEWS = ['home', 'periodic', 'tools', 'learning', 'lab']
-const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab', 'dlab']) // dlab is routable but not in the bottom nav
+const VALID_VIEWS = new Set(['home', 'periodic', 'tools', 'learning', 'lab', 'dlab']) // dlab: sidebar only, not in the bottom nav
 
 const VIEW_INFO = {
   home: {
@@ -71,7 +71,7 @@ const VIEW_INFO = {
     title: 'Phòng thí nghiệm động 7.0',
     nav: 'Thí nghiệm',
     icon: 'lab',
-    subtitle: 'Bản thử nghiệm · mô phỏng theo trạng thái'
+    subtitle: 'Bàn trống · thư viện thí nghiệm · mô phỏng theo trạng thái'
   }
 }
 
@@ -89,7 +89,7 @@ const COMMANDS = [
   { group: 'Điều hướng', name: 'Công cụ hóa học', description: 'Mở trung tâm công cụ', icon: 'tools', view: 'tools', keywords: 'cong cu tools chemistry' },
   { group: 'Điều hướng', name: 'Học tập', description: 'Bài học lớp 10–12 và luyện tập', icon: 'learn', view: 'learning', keywords: 'hoc learning quiz mastery bai hoc' },
   { group: 'Điều hướng', name: 'Phòng thí nghiệm', description: 'Mô phỏng phản ứng hóa học', icon: 'lab', view: 'lab', keywords: 'lab thi nghiem laboratory phong' },
-  { group: 'Điều hướng', name: 'Phòng thí nghiệm động 7.0', description: 'Bản thử nghiệm: kéo thả, rót, nhúng quỳ, mô phỏng định lượng', icon: 'lab', view: 'dlab', keywords: 'dynamic lab 7.0 phong thi nghiem dong sandbox guided quy tim' },
+  { group: 'Điều hướng', name: 'Phòng thí nghiệm động 7.0', description: 'Bàn thí nghiệm mở và thư viện thí nghiệm: kéo thả, rót, nhúng quỳ, điện hóa, mô phỏng định lượng', icon: 'lab', view: 'dlab', keywords: 'dynamic lab 7.0 phong thi nghiem dong sandbox guided quy tim' },
   { group: 'Trợ lý', name: 'ChemAI', description: 'Hỏi trợ lý Hóa học theo ngữ cảnh', icon: 'ai', ai: true, keywords: 'ai chemai tro ly hoa hoc hoi dap tutor' },
   { group: 'Công cụ', name: 'Cân bằng PTHH', description: 'Cân bằng phương trình hóa học', icon: 'scale', view: 'tools', tool: 'balancer', keywords: 'can bang pthh equation balancer phuong trinh' },
   { group: 'Công cụ', name: 'Máy tính hóa học', description: 'Mol, nồng độ và khối lượng', icon: 'calculator', view: 'tools', tool: 'calculator', keywords: 'may tinh mol nong do concentration calculator' },
@@ -170,6 +170,7 @@ app.innerHTML = `
         ${navButton('tools', 'tools', 'Công cụ')}
         ${navButton('learning', 'learn', 'Học tập')}
         ${navButton('lab', 'lab', 'Thí nghiệm')}
+        ${navButton('dlab', 'lab', 'Phòng thí nghiệm động')}
       </nav>
 
       <div class="app-sidebar__section" aria-labelledby="quick-tools-label">

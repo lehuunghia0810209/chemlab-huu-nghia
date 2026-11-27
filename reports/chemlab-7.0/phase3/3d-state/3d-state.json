@@ -1,0 +1,320 @@
+[
+ {
+  "id": "indicator",
+  "what": "phenolphtalein trong NaOH: hồng",
+  "quality": "Đồ họa: Cao",
+  "stateOk": true,
+  "pixelOk": true,
+  "pixel": {
+   "test": {
+    "r": 239,
+    "g": 214,
+    "b": 231
+   },
+   "reference": {
+    "r": 181,
+    "g": 185,
+    "b": 192
+   },
+   "screenShift": [
+    16,
+    -13,
+    -3
+   ],
+   "stateShift": [
+    104.66666666666667,
+    -101.33333333333333,
+    -3.3333333333333286
+   ],
+   "cosine": 0.989
+  },
+  "target": {
+   "T": [
+    230,
+    40,
+    150,
+    0.8799999800536096
+   ],
+   "R": [
+    222,
+    238,
+    250,
+    0.18
+   ]
+  },
+  "pH": 13.7,
+  "precipitates": {},
+  "complexes": {},
+  "coat": [],
+  "gas": {},
+  "errors": [],
+  "shot": "indicator-3d.png"
+ },
+ {
+  "id": "precipitate",
+  "what": "Fe(OH)₃↓ nâu đỏ",
+  "quality": "Đồ họa: Cao",
+  "stateOk": true,
+  "pixelOk": true,
+  "pixel": {
+   "test": {
+    "r": 215,
+    "g": 204,
+    "b": 200
+   },
+   "reference": {
+    "r": 186,
+    "g": 191,
+    "b": 198
+   },
+   "screenShift": [
+    14.333333333333334,
+    -1.666666666666666,
+    -12.666666666666666
+   ],
+   "stateShift": [
+    43.33333333333333,
+    -5.666666666666671,
+    -37.66666666666667
+   ],
+   "cosine": 1
+  },
+  "target": {
+   "T": [
+    190,
+    157,
+    137,
+    0.6452582743885992
+   ],
+   "R": [
+    222,
+    238,
+    250,
+    0.18
+   ]
+  },
+  "pH": 13.12,
+  "precipitates": {
+   "Fe(OH)3": 0.002
+  },
+  "complexes": {},
+  "coat": [],
+  "gas": {},
+  "errors": [],
+  "shot": "precipitate-3d.png"
+ },
+ {
+  "id": "dissolution",
+  "what": "Cu(OH)₂ tan trong HCl: dung dịch xanh, không còn kết tủa",
+  "quality": "Đồ họa: Cao",
+  "stateOk": true,
+  "pixelOk": false,
+  "pixel": {
+   "test": {
+    "r": 217,
+    "g": 222,
+    "b": 227
+   },
+   "reference": {
+    "r": 190,
+    "g": 196,
+    "b": 204
+   },
+   "screenShift": [
+    1.6666666666666679,
+    0.6666666666666679,
+    -2.333333333333332
+   ],
+   "stateShift": [
+    -17.333333333333332,
+    -2.333333333333332,
+    19.666666666666668
+   ],
+   "cosine": -0.985
+  },
+  "target": {
+   "T": [
+    180,
+    211,
+    245,
+    0.34431057775578544
+   ],
+   "R": [
+    222,
+    238,
+    250,
+    0.18
+   ]
+  },
+  "pH": 2.074,
+  "precipitates": {},
+  "complexes": {},
+  "coat": [],
+  "gas": {},
+  "errors": [],
+  "shot": "dissolution-3d.png"
+ },
+ {
+  "id": "complex",
+  "what": "[Cu(NH₃)₄]²⁺ xanh thẫm",
+  "quality": "Đồ họa: Cao",
+  "stateOk": true,
+  "pixelOk": true,
+  "pixel": {
+   "test": {
+    "r": 196,
+    "g": 201,
+    "b": 229
+   },
+   "reference": {
+    "r": 186,
+    "g": 191,
+    "b": 198
+   },
+   "screenShift": [
+    -7,
+    -7,
+    14
+   ],
+   "stateShift": [
+    -29.666666666666657,
+    -29.666666666666657,
+    59.33333333333334
+   ],
+   "cosine": 1
+  },
+  "target": {
+   "T": [
+    45,
+    61,
+    162,
+    0.7096085003335431
+   ],
+   "R": [
+    222,
+    238,
+    250,
+    0.18
+   ]
+  },
+  "pH": 11.7,
+  "precipitates": {},
+  "complexes": {
+   "Cu2+": 0.0025
+  },
+  "coat": [],
+  "gas": {},
+  "errors": [],
+  "shot": "complex-3d.png"
+ },
+ {
+  "id": "coat",
+  "what": "Cu bám trên đinh sắt (xem ảnh)",
+  "quality": "Đồ họa: Cao",
+  "stateOk": true,
+  "pixelOk": null,
+  "pixel": {
+   "test": {
+    "r": 203,
+    "g": 223,
+    "b": 239
+   },
+   "reference": {
+    "r": 187,
+    "g": 193,
+    "b": 201
+   },
+   "screenShift": [
+    -12,
+    2,
+    10
+   ],
+   "stateShift": [
+    -31.333333333333336,
+    -3.3333333333333357,
+    34.666666666666664
+   ],
+   "cosine": 0.971
+  },
+  "target": {
+   "T": [
+    143,
+    187,
+    237,
+    0.49209315820672134
+   ],
+   "R": [
+    222,
+    238,
+    250,
+    0.18
+   ]
+  },
+  "pH": 4.169,
+  "precipitates": {},
+  "complexes": {},
+  "coat": [
+   {
+    "Cu": 0.00164473469
+   }
+  ],
+  "gas": {},
+  "errors": [],
+  "shot": "coat-3d.png"
+ },
+ {
+  "id": "gas",
+  "what": "Mg + HCl: bọt H₂ (xem ảnh)",
+  "quality": "Đồ họa: Cao",
+  "stateOk": true,
+  "pixelOk": null,
+  "pixel": {
+   "test": {
+    "r": 207,
+    "g": 210,
+    "b": 215
+   },
+   "reference": {
+    "r": 186,
+    "g": 191,
+    "b": 198
+   },
+   "screenShift": [
+    2,
+    0,
+    -2
+   ],
+   "stateShift": [
+    0,
+    0,
+    0
+   ],
+   "cosine": 0
+  },
+  "target": {
+   "T": [
+    222,
+    238,
+    250,
+    0.18
+   ],
+   "R": [
+    222,
+    238,
+    250,
+    0.18
+   ]
+  },
+  "pH": 0.311,
+  "precipitates": {},
+  "complexes": {},
+  "coat": [
+   {}
+  ],
+  "gas": {
+   "H2": 0.000170209965
+  },
+  "errors": [],
+  "shot": "gas-3d.png"
+ }
+]

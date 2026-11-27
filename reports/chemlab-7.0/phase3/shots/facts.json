@@ -1,0 +1,128 @@
+{
+ "exp-daniell-cell": {
+  "vessels": [
+   {
+    "pH": 5.484,
+    "coat": [
+     {}
+    ],
+    "gas": {},
+    "precipitates": {},
+    "dissolved": {
+     "Zn2+": 0.025,
+     "SO4": 0.025
+    }
+   },
+   {
+    "pH": 4.144,
+    "coat": [
+     {}
+    ],
+    "gas": {},
+    "precipitates": {},
+    "dissolved": {
+     "Cu2+": 0.025,
+     "SO4": 0.025
+    }
+   }
+  ],
+  "voltmeter": 1.1
+ },
+ "exp-daniell-concentration": {
+  "vessels": [
+   {
+    "pH": 5.484,
+    "coat": [
+     {}
+    ],
+    "gas": {},
+    "precipitates": {},
+    "dissolved": {
+     "Zn2+": 0.025,
+     "SO4": 0.025
+    }
+   },
+   {
+    "pH": 4.49,
+    "coat": [
+     {}
+    ],
+    "gas": {},
+    "precipitates": {},
+    "dissolved": {
+     "Cu2+": 0.01,
+     "SO4": 0.01
+    }
+   }
+  ],
+  "voltmeter": 1.070420223225905
+ },
+ "exp-electrolysis-cucl2": {
+  "vessels": [
+   {
+    "pH": 3.566,
+    "coat": [],
+    "gas": {
+     "Cl2": 0.000029272253
+    },
+    "precipitates": {},
+    "dissolved": {
+     "Cu2+": 0.0249707277,
+     "Cl-": 0.0499414555
+    }
+   }
+  ],
+  "cathodeCu": 0.00002927225302724103
+ },
+ "exp-copper-iodide": {
+  "vessels": [
+   {
+    "pH": 4.37,
+    "coat": [],
+    "gas": {},
+    "precipitates": {
+     "CuI": 0.001,
+     "I2s": 0.0004601
+    },
+    "dissolved": {
+     "Cu2+": 0.004,
+     "SO4": 0.005,
+     "K+": 0.002,
+     "I2": 0.0000399
+    }
+   },
+   {
+    "pH": 7.233,
+    "coat": [],
+    "gas": {},
+    "precipitates": {
+     "CuI": 0.001
+    },
+    "dissolved": {
+     "SO4": 0.001,
+     "K+": 0.005,
+     "I-": 0.003,
+     "I2": 0.0005
+    }
+   }
+  ]
+ },
+ "exp-iron3-iodide": {
+  "vessels": [
+   {
+    "pH": 5.338,
+    "coat": [],
+    "gas": {},
+    "precipitates": {
+     "I2s": 0.0009601
+    },
+    "dissolved": {
+     "Cl-": 0.006,
+     "K+": 0.002,
+     "Fe2+": 0.002,
+     "I2": 0.0000399
+    }
+   }
+  ]
+ }
+}

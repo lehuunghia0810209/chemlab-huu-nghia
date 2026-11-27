@@ -334,11 +334,15 @@ export function ionRedox(contents, formed = {}) {
 // (I₂ + I⁻ ⇌ I₃⁻, K ≈ 700). shortcut: capacity = 1.33 mM·V + n(I⁻); the excess is solid iodine (I2s), which
 // redissolves when capacity returns. Upgrade with the I₃⁻ equilibrium if a lesson needs exact colours.
 export const I2_SOLUBILITY = 1.33e-3
+const I3_K = 710
+const I3_PER_IODIDE = (I3_K * I2_SOLUBILITY) / (1 + I3_K * I2_SOLUBILITY)
 function iodineSolubility(contents, V) {
   const dissolved = contents.ions.I2 || 0
   const solid = contents.precipitates.I2s || 0
   if (!(dissolved + solid > 0)) return
-  const cap = I2_SOLUBILITY * V + (contents.ions['I-'] || 0)
+  // At saturation [I₂(aq)] = S₀, [I₃⁻] = K·S₀·[I⁻]free and C(I⁻) = [I⁻]free + [I₃⁻] → [I₃⁻] ≤ K·S₀/(1 + K·S₀)·C(I⁻) ≈ 0,486·C(I⁻)
+  // (K = 710, Harris; S₀ = 1,33 mM): about 0,05 M I₂ in 0,1 M KI, as measured.
+  const cap = I2_SOLUBILITY * V + I3_PER_IODIDE * (contents.ions['I-'] || 0)
   const want = Math.min(dissolved + solid, cap)
   contents.ions.I2 = want
   const s = dissolved + solid - want

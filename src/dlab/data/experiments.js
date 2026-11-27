@@ -5,11 +5,14 @@
 //
 // Schema: id, group, grade, difficulty (DIFFICULTY), safetyLevel, keywords (search), title, objective, equipment, chemicals,
 // conditions, setup { vessels: [{ type, fill: [[reagent, mL]] }], bottles: [reagent], tools: [equipment type] },
+// tools: equipment type or { type, y } (height above the bench, e.g. electrodes, salt bridge),
 // steps: [{ text, act }] with act = { pour: reagent, to: vessel index, mL }, { drops: indicator, to } (3 drops, the bottle's
-// "Nhỏ 3 giọt" control) or { solid: reagent, massG, to } (the same
+// "Nhỏ 3 giọt" control), { dip: vessel index, mm } (electrodes), { power: volts } (wire to the electrodes, set, switch on),
+// { bridge: [a, b] } (salt bridge), { voltmeter: [metal, metal] } (leads to those metals) or { solid: reagent, massG, to } (the same
 // actions a student does with the action bar), phenomena, equation, explanation, safety, processRefs, references, tests,
 // expect: event key prefixes (state.events) that must appear in the named vessel once the steps are done,
-// expectState: [{ vessel, pH: [lo, hi], indicator: [key, word], coat, gas, noGas, noCoat }] checked on the final state.
+// expectState: [{ vessel, pH: [lo, hi], indicator: [key, word], coat, gas, noGas, noCoat, precipitate, noPrecipitate, left: ion, gone: ion }
+// or { object: equipment type, reading: [lo, hi], deposit }] checked on the final state.
 import { MANIFEST } from './manifest.js'
 import { validationOf } from './validation.js'
 
@@ -22,7 +25,9 @@ export function experimentValidation(exp) {
 export const EXPERIMENT_GROUPS = [
   { id: 'acid-base', title: 'Axit – bazơ và chất chỉ thị', grade: 'Hóa học 11' },
   { id: 'metals', title: 'Kim loại và dãy hoạt động hóa học', grade: 'Hóa học 12' },
-  { id: 'precipitation', title: 'Kết tủa, hòa tan và tạo phức', grade: 'Hóa học 11–12' }
+  { id: 'precipitation', title: 'Kết tủa, hòa tan và tạo phức', grade: 'Hóa học 11–12' },
+  { id: 'electrochem', title: 'Điện hóa: pin và điện phân', grade: 'Hóa học 12' },
+  { id: 'redox', title: 'Oxi hóa – khử', grade: 'Hóa học 10' }
 ]
 export const DIFFICULTY = ['Cơ bản', 'Trung bình', 'Nâng cao']
 
@@ -325,5 +330,98 @@ export const EXPERIMENTS = [
     safety: 'ZnSO₄ có thể gây tổn thương mắt: đeo kính.',
     processRefs: ['norx-cu-Zn2+', 'norx-fe-Zn2+'], expect: [{ vessel: 0, key: 'norx-cu-' }, { vessel: 1, key: 'norx-fe-' }], expectState: [{ vessel: 0, noGas: true, noCoat: true }, { vessel: 1, noGas: true, noCoat: true }],
     references: ['E°: CRC Handbook'], tests: ['reaction coverage: unmodelled metal/ion pairs are NO_REACTION or UNSUPPORTED by E°, with no invented product', 'experiment library: every experiment runs on the engine']
+  },
+  {
+    id: 'exp-daniell-cell', group: 'electrochem', grade: 'Hóa học 12', difficulty: 'Trung bình', safetyLevel: 'Thấp', keywords: ['pin điện hóa', 'Daniell', 'Zn', 'Cu', 'cầu muối', 'vôn kế', 'suất điện động'],
+    title: 'Pin điện hóa Zn–Cu (pin Daniell)',
+    objective: 'Lắp pin Zn–Cu với cầu muối, đo suất điện động; xác định cực âm, cực dương và chiều electron ở mạch ngoài.',
+    equipment: ['2 cốc thủy tinh 100 mL', 'Kẹp hóa chất', 'Cầu muối KNO₃', 'Vôn kế'], chemicals: ['ZnSO₄ 0,5 M', 'CuSO₄ 0,5 M', 'Kẽm (viên)', 'Dây đồng'],
+    conditions: '25 °C; [Zn²⁺] = [Cu²⁺] = 0,5 M; vôn kế điện trở lớn (không có dòng đáng kể).',
+    setup: { vessels: [{ type: 'beaker100', fill: [['znso4', 50]] }, { type: 'beaker100', fill: [['cuso4', 50]] }], bottles: [], tools: ['tongs', { type: 'bridge', y: 130 }, 'voltmeter'] },
+    steps: [
+      { text: 'Dùng kẹp thả kẽm (2 g) vào cốc ZnSO₄.', act: { solid: 'zn', massG: 2, to: 0 } },
+      { text: 'Dùng kẹp thả dây đồng (2 g) vào cốc CuSO₄.', act: { solid: 'cu', massG: 2, to: 1 } },
+      { text: 'Chọn vôn kế → Chi tiết → nối dây tới kẽm và dây đồng: chưa có cầu muối, vôn kế chỉ 0 (mạch hở).', act: { voltmeter: ['zn', 'cu'] } },
+      { text: 'Chọn cầu muối → Chi tiết → nối hai cốc. Đọc số chỉ vôn kế.', act: { bridge: [0, 1] } }
+    ],
+    phenomena: 'Khi chưa có cầu muối vôn kế chỉ 0. Đặt cầu muối: vôn kế chỉ ≈ 1,10 V.',
+    equation: 'Zn + Cu²⁺ → Zn²⁺ + Cu',
+    explanation: 'Anot (cực âm): Zn → Zn²⁺ + 2e. Catot (cực dương): Cu²⁺ + 2e → Cu. Electron đi ở mạch ngoài từ Zn sang Cu; cầu muối khép kín mạch bằng dòng ion. Ở 25 °C: E = E°(Cu²⁺/Cu) − E°(Zn²⁺/Zn) = 0,34 − (−0,76) = 1,10 V khi hai nồng độ bằng nhau. Mô phỏng chỉ tính suất điện động (vôn kế không lấy dòng), không mô phỏng pin phóng điện.',
+    safety: 'Đeo kính bảo hộ (ZnSO₄ gây tổn thương mắt). Muối đồng và kẽm độc khi nuốt và độc với sinh vật nước: thu gom, không đổ xuống cống.',
+    processRefs: ['daniell'], expect: [], expectState: [{ object: 'voltmeter', reading: [1.09, 1.11] }],
+    references: ['E°: CRC Handbook', 'Nernst: Atkins, Physical Chemistry'], tests: ['Daniell cell: Nernst voltage, open circuit without bridge', 'experiment library: every experiment runs on the engine']
+  },
+  {
+    id: 'exp-daniell-concentration', group: 'electrochem', grade: 'Hóa học 12', difficulty: 'Nâng cao', safetyLevel: 'Thấp', keywords: ['Nernst', 'nồng độ', 'pin điện hóa', 'pha loãng', 'suất điện động'],
+    title: 'Nồng độ ảnh hưởng đến suất điện động (phương trình Nernst)',
+    objective: 'Pha loãng dung dịch Cu²⁺ 10 lần và thấy suất điện động giảm khoảng 0,03 V như phương trình Nernst dự đoán.',
+    equipment: ['Cốc 100 mL', 'Cốc 250 mL', 'Kẹp hóa chất', 'Cầu muối KNO₃', 'Vôn kế', 'Chai nước cất'], chemicals: ['ZnSO₄ 0,5 M', 'CuSO₄ 0,5 M', 'Nước cất', 'Kẽm (viên)', 'Dây đồng'],
+    conditions: '25 °C; mô phỏng dùng dung dịch lí tưởng (hoạt độ = nồng độ) và bỏ qua thế tiếp xúc lỏng; không có chất tạo phức (NH₃) trong pin.',
+    setup: { vessels: [{ type: 'beaker100', fill: [['znso4', 50]] }, { type: 'beaker250', fill: [['cuso4', 20]] }], bottles: ['water'], tools: ['tongs', { type: 'bridge', y: 130 }, 'voltmeter'] },
+    steps: [
+      { text: 'Thả kẽm (2 g) vào cốc ZnSO₄.', act: { solid: 'zn', massG: 2, to: 0 } },
+      { text: 'Thả dây đồng (2 g) vào cốc CuSO₄ (cốc 250 mL).', act: { solid: 'cu', massG: 2, to: 1 } },
+      { text: 'Nối cầu muối giữa hai cốc.', act: { bridge: [0, 1] } },
+      { text: 'Nối hai dây vôn kế vào kẽm và dây đồng: vôn kế chỉ ≈ 1,10 V.', act: { voltmeter: ['zn', 'cu'] } },
+      { text: 'Rót 180 mL nước cất vào cốc CuSO₄ ([Cu²⁺]: 0,5 → 0,05 M). Đọc lại vôn kế.', act: { pour: 'water', to: 1, mL: 180 } }
+    ],
+    phenomena: 'Vôn kế giảm từ ≈ 1,100 V xuống ≈ 1,070 V; màu xanh trong cốc Cu nhạt đi.',
+    equation: 'Zn + Cu²⁺ → Zn²⁺ + Cu',
+    explanation: 'Ở 25 °C: E = E° − (0,0592/2)·lg([Zn²⁺]/[Cu²⁺]). Khi [Cu²⁺] giảm 10 lần, lg tăng 1 nên E giảm 0,0296 V: 1,100 → 1,070 V. Đây là kết quả của phương trình Nernst với dung dịch lí tưởng (như SGK). Ở 0,05–0,5 M hệ số hoạt độ khác 1 nhiều (γ± của CuSO₄ ≈ 0,06 ở 0,5 M, ≈ 0,22 ở 0,05 M) nên pin thật chỉ giảm khoảng 0,014 V. Phương trình dùng nồng độ ion tự do; khi có NH₃ tạo phức, mô phỏng không tính suất điện động.',
+    safety: 'Đeo kính bảo hộ (ZnSO₄ gây tổn thương mắt). Muối đồng và kẽm độc với sinh vật nước: thu gom, không đổ xuống cống.',
+    processRefs: ['daniell', 'nernst-ideal'], expect: [], expectState: [{ object: 'voltmeter', reading: [1.065, 1.076] }],
+    references: ['E°: CRC Handbook', 'Nernst: Atkins, Physical Chemistry', 'γ±: Robinson & Stokes, Electrolyte Solutions'], tests: ['Daniell cell: tenfold dilution of Cu²⁺ lowers E by RT·ln10/2F (hand solution)', 'Daniell cell: NH₃ complexes Cu²⁺ → no free-ion Nernst value (OUT_OF_MODEL_RANGE)', 'experiment library: every experiment runs on the engine']
+  },
+  {
+    id: 'exp-electrolysis-cucl2', group: 'electrochem', grade: 'Hóa học 12', difficulty: 'Trung bình', safetyLevel: 'Cao', keywords: ['điện phân', 'CuCl2', 'catot', 'anot', 'Faraday', 'clo'],
+    title: 'Điện phân dung dịch CuCl₂ với điện cực than chì',
+    objective: 'Quan sát đồng bám ở catot và khí clo ở anot; liên hệ lượng đồng với điện lượng (định luật Faraday).',
+    equipment: ['Cốc thủy tinh 100 mL', 'Cặp điện cực than chì', 'Nguồn điện một chiều'], chemicals: ['CuCl₂ 0,5 M'],
+    conditions: 'Điện phân dung dịch (đpdd). Trong mô phỏng U > 1,42 V (thế phân hủy chuẩn 1,02 V + quá thế minh họa 0,4 V; thực tế trên than chì bắt đầu khoảng 1,1–1,3 V); dung dịch nước CuCl₂ không chứa ion điện phân cạnh tranh; [Cl⁻] ≥ 0,1 M.',
+    setup: { vessels: [{ type: 'beaker100', fill: [['cucl2', 50]] }], bottles: [], tools: [{ type: 'electrodes', y: 110 }, 'power'] },
+    steps: [
+      { text: 'Chọn cặp điện cực → Chi tiết → Nhúng vào cốc CuCl₂ (10 mm dưới mặt thoáng).', act: { dip: 0, mm: 10 } },
+      { text: 'Chọn nguồn điện → Chi tiết → Nối dây tới điện cực, đặt 6 V, bật nguồn (xác nhận cảnh báo khí Cl₂). Chờ (có thể tua 4×).', act: { power: 6 } }
+    ],
+    phenomena: 'Catot (cực −) phủ lớp đồng đỏ; anot (cực +) sủi bọt khí vàng lục mùi hắc; màu xanh dung dịch nhạt dần.',
+    equation: 'CuCl₂ → Cu + Cl₂↑',
+    explanation: 'Catot (nối cực âm của nguồn): Cu²⁺ + 2e → Cu. Anot (nối cực dương): 2Cl⁻ → Cl₂ + 2e. Ở mạch ngoài electron đi từ anot qua nguồn về catot; số mol electron bằng nhau ở hai điện cực; m(Cu) = A·I·t/(n·F). Điện trở bình và quá thế trong mô phỏng là minh họa nên tốc độ là minh họa; tỉ lệ mol Cu : Cl₂ sinh ra là 1 : 1 và khối lượng theo điện lượng là đúng (thực tế một phần Cl₂ tan trong nước).',
+    safety: 'Khí Cl₂ độc: chỉ điện phân trong tủ hút, hiệu điện thế thấp, thời gian ngắn. Ngắt nguồn trước khi lấy điện cực ra. Đeo kính và găng tay; CuCl₂ độc khi nuốt và độc với sinh vật nước: thu gom, không đổ xuống cống.',
+    processRefs: ['electrolysis-cucl2'], expect: [{ vessel: 0, key: 'electro-' }], expectState: [{ vessel: 0, gas: 'Cl2' }, { object: 'electrodes', deposit: true }],
+    references: ['F = 96485 C/mol (CODATA)', 'E°: CRC Handbook'], tests: ['electrolysis CuCl2 follows Faraday', 'experiment library: every experiment runs on the engine']
+  },
+  {
+    id: 'exp-copper-iodide', group: 'redox', grade: 'Hóa học 10', difficulty: 'Nâng cao', safetyLevel: 'Trung bình', keywords: ['oxi hóa khử', 'iot', 'KI', 'CuI', 'chất giới hạn', 'Cu2+'],
+    title: 'Cu²⁺ oxi hóa I⁻: chất nào hết trước?',
+    objective: 'Quan sát 2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂ và xác định chất hết trước trong hai tỉ lệ khác nhau.',
+    equipment: ['2 cốc thủy tinh 100 mL', 'Chai KI'], chemicals: ['CuSO₄ 0,5 M', 'KI 0,1 M'],
+    conditions: '25 °C, môi trường axit yếu (Cu²⁺ chưa kết tủa thành Cu(OH)₂, thực tế pH dưới khoảng 5); không có NH₃.',
+    setup: { vessels: [{ type: 'beaker100', fill: [['cuso4', 10]] }, { type: 'beaker100', fill: [['cuso4', 2]] }], bottles: ['ki'], tools: [] },
+    steps: [
+      { text: 'Rót 20 mL KI vào cốc A (5 mmol Cu²⁺, 2 mmol I⁻).', act: { pour: 'ki', to: 0, mL: 20 } },
+      { text: 'Rót 50 mL KI vào cốc B (1 mmol Cu²⁺, 5 mmol I⁻).', act: { pour: 'ki', to: 1, mL: 50 } }
+    ],
+    phenomena: 'Cả hai cốc tạo kết tủa CuI trắng ngà và iot màu nâu. Cốc A: I⁻ hết, phần lớn I₂ vượt độ tan (≈ 0,3 g/L) tách ra thành iot rắn màu tím đen; màu nâu của iot che màu xanh của Cu²⁺ còn dư (xem thành phần trong Chi tiết). Cốc B: Cu²⁺ hết; I⁻ dư giữ I₂ tan dưới dạng I₃⁻ (dung dịch nâu, không có iot rắn).',
+    equation: '2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂',
+    explanation: 'Cu²⁺ oxi hóa I⁻ thành I₂ và bị khử thành Cu⁺, Cu⁺ kết tủa ngay dưới dạng CuI. Tỉ lệ Cu²⁺ : I⁻ = 2 : 4. Cốc A: I⁻ hết trước (2 mmol I⁻ cho 1 mmol CuI, 0,5 mmol I₂; dư 4 mmol Cu²⁺). Cốc B: Cu²⁺ hết trước (1 mmol CuI, 0,5 mmol I₂; dư 3 mmol I⁻ giữ I₂ tan dưới dạng I₃⁻). Mở rộng lớp 12: E°(Cu²⁺/Cu⁺) = +0,15 V nhỏ hơn E°(I₂/I⁻) = +0,54 V, nhưng CuI rất ít tan (Ksp ≈ 1,3·10⁻¹²) nên E°(Cu²⁺/CuI) = +0,86 V: chính sự tạo kết tủa CuI làm phản ứng xảy ra.',
+    safety: 'Đeo kính và găng tay. Muối đồng độc khi nuốt và độc với sinh vật nước: thu gom, không đổ xuống cống; I₂ gây vết bẩn và kích ứng.',
+    processRefs: ['redox-cu-i'], expect: [{ vessel: 0, key: 'redox-cu-i' }, { vessel: 1, key: 'redox-cu-i' }],
+    expectState: [{ vessel: 0, precipitate: 'CuI', left: 'Cu2+', gone: 'I-' }, { vessel: 0, precipitate: 'I2s' }, { vessel: 1, precipitate: 'CuI', left: 'I-', gone: 'Cu2+' }],
+    references: ['Harris, Quantitative Chemical Analysis (iodometry of copper)', 'Ksp CuI: CRC Handbook'], tests: ['Cu²⁺ + I⁻: the scarcer reagent decides, either way (hand solution)', 'Cu²⁺ + I⁻ in NH₃ (pH > 7): no CuI/I₂ shown, OUT_OF_MODEL_RANGE event instead', 'experiment library: every experiment runs on the engine']
+  },
+  {
+    id: 'exp-iron3-iodide', group: 'redox', grade: 'Hóa học 10', difficulty: 'Trung bình', safetyLevel: 'Trung bình', keywords: ['oxi hóa khử', 'iot', 'KI', 'Fe3+', 'FeCl3'],
+    title: 'Fe³⁺ oxi hóa I⁻ thành I₂',
+    objective: 'Quan sát Fe³⁺ oxi hóa I⁻ (dùng dư KI): dung dịch chuyển vàng nâu do I₃⁻; Fe³⁺ bị khử thành Fe²⁺.',
+    equipment: ['Cốc thủy tinh 100 mL', 'Chai KI'], chemicals: ['FeCl₃ 0,2 M', 'KI 0,1 M'],
+    conditions: '25 °C, môi trường axit (dung dịch FeCl₃ tự có tính axit do thủy phân); mô phỏng tính phản ứng khi pH dưới khoảng 3 — cao hơn, Fe³⁺ kết tủa thành Fe(OH)₃ và không oxi hóa được I⁻. Dư I⁻.',
+    setup: { vessels: [{ type: 'beaker100', fill: [['fecl3', 5]] }], bottles: ['ki'], tools: [] },
+    steps: [{ text: 'Rót 30 mL KI vào cốc FeCl₃ (1 mmol Fe³⁺, 3 mmol I⁻: dư I⁻).', act: { pour: 'ki', to: 0, mL: 30 } }],
+    phenomena: 'Dung dịch chuyển vàng nâu do I₃⁻ (I₂ tan trong KI dư); không có iot rắn, không có kết tủa.',
+    equation: '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂',
+    explanation: 'Fe³⁺ oxi hóa I⁻ thành I₂; với I⁻ dư, I₂ tan thành I₃⁻ (màu nâu). 1 mmol Fe³⁺ cho 0,5 mmol I₂, còn dư 2 mmol I⁻. Mở rộng lớp 12: E°(Fe³⁺/Fe²⁺) = +0,77 V > E°(I₃⁻/I⁻) ≈ +0,54 V, K ≈ 10⁸ khi dư I⁻ nên phản ứng gần như hoàn toàn; mô phỏng coi là hoàn toàn (xấp xỉ giáo dục).',
+    safety: 'FeCl₃ ăn mòn, gây kích ứng da và mắt: đeo kính và găng tay. I₂ gây vết bẩn và kích ứng.',
+    processRefs: ['redox-fe-i'], expect: [{ vessel: 0, key: 'redox-fe-i' }], expectState: [{ vessel: 0, left: 'Fe2+', gone: 'Fe3+', noPrecipitate: 'I2s' }, { vessel: 0, left: 'I2' }],
+    references: ['E°: CRC Handbook'], tests: ['experiment library: every experiment runs on the engine']
   }
 ]

@@ -642,20 +642,27 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
   // to "Tiết kiệm" and says so; a quality the student picked is never overridden.
   if (browserName === 'chromium') await test('P03 máy chậm: tự chuyển Đồ họa Tiết kiệm và báo rõ, không ghi đè lựa chọn', async page => {
     await bench(page, Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`B${i}`, { type: 'beaker100', x: 140 + i * 70, fill: [['cuso4', 40]] }])))
-    const cdp = await page.context().newCDPSession(page)
+    // A slow machine is made deterministic: every frame carries 60 ms of main-thread work (≈ 16 fps on any host).
+    // CPU throttling (CDP) was host-dependent — a fast host stayed above 25 fps and the precondition failed.
+    const slowFrames = on => page.evaluate(on => {
+      window.__dlabBurn = on
+      if (!on) return
+      const f = () => { if (!window.__dlabBurn) return; const t = performance.now(); while (performance.now() - t < 60) {} requestAnimationFrame(f) }
+      requestAnimationFrame(f)
+    }, on)
     const fps = () => page.evaluate(() => new Promise(r => { let n = 0; const t0 = performance.now(); const f = () => { if (++n < 20) requestAnimationFrame(f); else r(20000 / (performance.now() - t0)) }; requestAnimationFrame(f) }))
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
+    await slowFrames(true)
     const slow = await fps()
     assert.ok(slow < 25 && slow > 2, `throttled frame rate is in the fallback window: ${slow}`) // proves the condition really occurred
     await page.locator('.dlab-toast', { hasText: 'Máy đang chạy chậm' }).waitFor({ timeout: 30000 })
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
+    await slowFrames(false)
     assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Tiết kiệm')
     // The student picks "Cao" again: kept even when slow.
     await menu(page, 'Đồ họa: Tiết kiệm')
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
+    await slowFrames(true)
     const slow2 = await fps()
     await page.waitForTimeout(6000)
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
+    await slowFrames(false)
     assert.ok(slow2 < 25, `still slow while the choice is tested: ${slow2}`)
     assert.equal((await page.locator('[data-hd="quality"]').textContent()).trim(), 'Đồ họa: Cao', 'student choice kept')
   })
@@ -1517,37 +1524,74 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await card.locator('summary').click()
     if (e.equation !== '—') await card.locator('.dlab-exp-eq', { hasText: e.equation.split(';')[0].trim() }).waitFor()
     await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
-    const laid = await st(page, L => L.state.objects.map(o => ({ id: o.id, type: o.type, reagent: o.reagent || null, x: o.x, w: L.equipmentWidth?.(o.type) ?? null })))
-    const vessels = laid.filter(o => !['bottle', 'tongs', 'spatula'].includes(o.type)).map(o => o.id)
+    const laid = await st(page, L => L.state.objects.map(o => ({ id: o.id, type: o.type, reagent: o.reagent || null, x: o.x, y: o.y, w: L.equipmentWidth?.(o.type) ?? null })))
+    const TOOLS = new Set(['bottle', 'tongs', 'spatula', 'electrodes', 'power', 'bridge', 'voltmeter'])
+    const vessels = laid.filter(o => !TOOLS.has(o.type)).map(o => o.id)
+    const tools = Object.fromEntries(laid.filter(o => TOOLS.has(o.type) && o.type !== 'bottle').map(o => [o.type, o.id]))
     const bottle = Object.fromEntries(laid.filter(o => o.type === 'bottle').map(o => [o.reagent, o.id]))
     assert.equal(vessels.length, e.setup.vessels.length, 'vessels laid out')
     for (const r of e.setup.bottles) assert.ok(bottle[r], `bottle ${r}`)
-    // Nothing laid out covers anything else (the bottle used to sit over the beaker).
-    for (let i = 0; i < laid.length; i += 1) for (let j = i + 1; j < laid.length; j += 1) {
-      const a = laid[i]; const b = laid[j]
+    // Nothing standing on the bench covers anything else (the bottle used to sit over the beaker). Electrodes and the
+    // salt bridge hang above the bench and are not footprints.
+    const onBench = laid.filter(o => o.y < 5)
+    for (let i = 0; i < onBench.length; i += 1) for (let j = i + 1; j < onBench.length; j += 1) {
+      const a = onBench[i]; const b = onBench[j]
       assert.ok(Math.abs(a.x - b.x) >= ((a.w ?? W(a.type)) + (b.w ?? W(b.type))) / 2, `${a.type} ${a.x} overlaps ${b.type} ${b.x}`)
     }
     const confirm = async () => { const b = page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }); if (await b.isVisible({ timeout: 700 }).catch(() => false)) await b.click() }
-    const tongs = laid.find(o => o.type === 'tongs')?.id
-    if (tongs) await page.locator('[data-speed="4"]').first().click()
+    const insp = page.locator('.dlab-inspector')
+    if (tools.tongs || tools.power) await page.locator('[data-speed="4"]').first().click()
     for (const s of e.steps) {
-      if (s.act.pour) { await pourUI(page, bottle[s.act.pour], vessels[s.act.to], s.act.mL); continue }
-      if (s.act.drops) { await select(page, bottle[s.act.drops]); await page.locator('[data-qa-in="to"]').selectOption(vessels[s.act.to]); await page.locator('.dlab-actionbar [data-qa="drops"]').click(); continue }
-      await select(page, tongs)
-      await page.locator('[data-qa-in="solid"]').selectOption(s.act.solid)
-      await page.locator('[data-qa-in="mass"]').fill(String(s.act.massG))
+      const a = s.act
+      if (a.pour) { await pourUI(page, bottle[a.pour], vessels[a.to], a.mL); continue }
+      if (a.drops) { await select(page, bottle[a.drops]); await page.locator('[data-qa-in="to"]').selectOption(vessels[a.to]); await page.locator('.dlab-actionbar [data-qa="drops"]').click(); continue }
+      if (a.dip != null) { // the "Nhúng bằng thông số" control in Chi tiết (keyboard alternative to dragging)
+        await select(page, tools.electrodes); await showDetails(page)
+        await insp.locator('[data-in="dip-to"]').selectOption(vessels[a.dip]); await insp.locator('[data-in="dip-mm"]').fill(String(a.mm))
+        await insp.getByRole('button', { name: 'Nhúng', exact: true }).click(); continue
+      }
+      if (a.power != null) {
+        await select(page, tools.power); await showDetails(page)
+        await insp.locator('[data-in="wire"]').selectOption(tools.electrodes); await insp.getByRole('button', { name: 'Nối dây', exact: true }).click()
+        await insp.locator('[data-in="volts"]').fill(String(a.power)); await insp.getByRole('button', { name: 'Bật nguồn', exact: true }).click(); await confirm(); continue
+      }
+      if (a.bridge) {
+        await select(page, tools.bridge); await showDetails(page)
+        await insp.locator('[data-in="la"]').selectOption(vessels[a.bridge[0]]); await insp.locator('[data-in="lb"]').selectOption(vessels[a.bridge[1]])
+        await insp.getByRole('button', { name: 'Đặt cầu muối', exact: true }).click(); continue
+      }
+      if (a.voltmeter) {
+        for (const m of a.voltmeter) {
+          const id = await st(page, (L, q) => L.state.objects.find(o => o.type === 'solid' && o.reagent === q.m && q.v.includes(o.in))?.id, { m, v: vessels })
+          await select(page, tools.voltmeter); await showDetails(page)
+          await insp.locator('[data-in="lead"]').selectOption(id); await insp.getByRole('button', { name: 'Nối dây', exact: true }).click()
+        }
+        continue
+      }
+      await select(page, tools.tongs)
+      await page.locator('[data-qa-in="solid"]').selectOption(a.solid)
+      await page.locator('[data-qa-in="mass"]').fill(String(a.massG))
       await page.locator('.dlab-actionbar [data-qa="pick"]').click()
       await confirm()
-      await page.locator('[data-qa-in="to"]').selectOption(vessels[s.act.to])
+      await page.locator('[data-qa-in="to"]').selectOption(vessels[a.to])
       await page.locator('.dlab-actionbar [data-qa="drop-solid"]').click()
       await confirm()
     }
+    // Same final-state rules as the unit test (checkState in test-dlab.mjs), read through the page's public API.
     await wait(page, (L, a) => a.expect.every(x => L.events().some(ev => ev.container === a.vessels[x.vessel] && ev.key.startsWith(x.key))) &&
-      a.state.every(x => { const d = L.describe(a.vessels[x.vessel]); return (!x.pH || (d.pH >= x.pH[0] && d.pH <= x.pH[1])) && (!x.coat || d.solids.some(s => (s.coat[x.coat] || 0) > 0)) && (!x.gas || (d.gasReleased[x.gas] || 0) > 0) }),
-    { expect: e.expect, state: e.expectState || [], vessels }, 90000)
-    const after = await st(page, (L, v) => ({ bad: L.events().filter(ev => v.includes(ev.container) && ev.outcome === 'UNSUPPORTED').length, d: v.map(id => L.describe(id)) }), vessels)
-    assert.equal(after.bad, 0, 'nothing unsupported')
+      a.state.every(x => {
+        if (x.object) { const o = L.state.objects.find(y => y.id === a.tools[x.object]); return (!x.reading || (o.reading >= x.reading[0] && o.reading <= x.reading[1])) && (!x.deposit || (o.cuDeposit || 0) > 0) }
+        const d = L.describe(a.vessels[x.vessel])
+        return (!x.pH || (d.pH >= x.pH[0] && d.pH <= x.pH[1])) && (!x.coat || d.solids.some(s => (s.coat[x.coat] || 0) > 0)) && (!x.gas || (d.gasReleased[x.gas] || 0) > 0) &&
+          (!x.precipitate || (d.precipitates[x.precipitate] || 0) > 0) && (!x.left || (d.dissolved[x.left] || 0) > 1e-6) && (!x.gone || !((d.dissolved[x.gone] || 0) > 1e-6)) && (!x.noPrecipitate || !((d.precipitates[x.noPrecipitate] || 0) > 0))
+      }),
+    { expect: e.expect, state: e.expectState || [], vessels, tools }, 120000)
+    // The experiment's vessels and bench-wide notes (a cell, a meter); a stock bottle's own note (phenolphthalein is made up
+    // in 50 % ethanol, so no pH there) is not about the experiment.
+    const after = await st(page, (L, v) => ({ bad: L.events().filter(ev => (ev.container == null || v.includes(ev.container)) && (ev.outcome === 'UNSUPPORTED' || ev.outcome === 'OUT_OF_MODEL_RANGE')).map(ev => ev.key), d: v.map(id => L.describe(id)) }), vessels)
+    assert.deepEqual(after.bad, [], `nothing unsupported or out of range: ${after.bad}`)
     for (const x of e.expectState || []) {
+      if (x.object) continue
       const d = after.d[x.vessel]
       if (x.noGas) assert.ok(!Object.keys(d.gasReleased).length, 'no gas')
       if (x.noCoat) assert.ok(!d.solids.some(s => Object.keys(s.coat).length), 'no deposit')
@@ -1555,7 +1599,7 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     }
   })
 
-  await test('EXP Thư viện: tìm kiếm, lọc mức độ, bày lại, axe trên thẻ thí nghiệm (sáng/tối)', async page => {
+  await test('EXP Thư viện: tìm kiếm, lọc nhóm/lớp/mức độ/kiểm chứng, bày lại, về bàn trống, axe (sáng/tối)', async page => {
     await btn(page, 'Tự do').click()
     await bench(page, {})
     await sideTab(page, 'Khám phá')
@@ -1571,12 +1615,29 @@ export default async function ({ test, bench, st, wait, pixel, screen, dragWorld
     await page.locator('[data-exp-empty]').waitFor()
     await page.locator('[data-exp-search]').fill('')
     await page.locator('[data-exp-difficulty]').selectOption('')
+    // Group, grade and validation filters combine; the count follows.
+    await page.locator('[data-exp-f="group"]').selectOption('electrochem')
+    await page.locator('[data-exp-f="status"]').selectOption('VALIDATED')
+    const want = EXPERIMENTS.filter(e => e.group === 'electrochem' && experimentValidation(e) === 'VALIDATED').length
+    assert.equal(await visible(), want)
+    assert.equal((await page.locator('[data-exp-count]').textContent()).trim(), `${want}/${EXPERIMENTS.length} thí nghiệm`)
+    await page.locator('[data-exp-f="group"]').selectOption('')
+    await page.locator('[data-exp-f="status"]').selectOption('')
+    await page.locator('[data-exp-f="grade"]').selectOption('Hóa học 10')
+    assert.equal(await visible(), EXPERIMENTS.filter(e => e.grade === 'Hóa học 10').length)
+    await page.locator('[data-exp-f="grade"]').selectOption('')
     // Lay out twice: the second lay-out replaces the first (no duplicate vessels left on the bench).
     const card = page.locator('[data-exp-card="exp-neutralisation-excess"]')
     await card.getByRole('button', { name: 'Bày dụng cụ' }).click()
     const n0 = await st(page, L => L.state.objects.length)
     await card.getByRole('button', { name: 'Bày lại' }).click()
     assert.equal(await st(page, L => L.state.objects.length), n0, 'bày lại: same number of objects')
+    // "Về bàn trống" empties the bench (after confirming) as one undoable step.
+    await page.locator('[data-exp-clear]').click()
+    await page.getByRole('button', { name: 'Tôi hiểu, tiếp tục' }).click()
+    assert.equal(await st(page, L => L.state.objects.length), 0, 'empty bench')
+    await btn(page, 'Hoàn tác').click()
+    assert.equal(await st(page, L => L.state.objects.length), n0, 'undo brings the bench back')
     await card.locator('summary').click()
     for (const theme of ['light', 'dark']) {
       await page.evaluate(t => { document.documentElement.dataset.theme = t }, theme)

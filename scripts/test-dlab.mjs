@@ -9,7 +9,7 @@ import { createSim, benchInventory, checkInvariants, snapshot, restore, H, SCHEM
 import { describe, SPECIES, experimentTemplate } from '../src/dlab/engine/domain.js'
 import { EXPERIMENTS, experimentValidation } from '../src/dlab/data/experiments.js'
 import { levelForVolume, volumeBelow, EQUIPMENT } from '../src/dlab/data/equipment.js'
-import { volumeOf, surfaceY, byId, label } from '../src/dlab/engine/processes.js'
+import { volumeOf, surfaceY, byId, label, bulkColor } from '../src/dlab/engine/processes.js'
 import { migrate, validateSave } from '../src/dlab/persistence.js'
 import { GUIDED, moreToAdd } from '../src/dlab/guided.js'
 import { MANIFEST, DISCOVER } from '../src/dlab/data/manifest.js'
@@ -98,6 +98,18 @@ test('pH weak acid / base (quadratic)', () => {
 })
 // Hand solutions (Kw 1e-14, Ka CH₃COOH 1,75e-5, Ka NH₄⁺ 5,6e-10, ideal solution): dilution of strong and weak acids/bases,
 // and the acetic acid titration (half-equivalence: charge balance of the buffer; equivalence: acetate hydrolysis).
+test('phenolphthalein colour: Beer–Lambert on the pink form (3 drops in 30 mL)', () => {
+  // Hand solution: c = 0.15 mL × 1 % / 30 mL = 0.005 % (w/v); A = 725 × 0.005 × f / f(9.8), f = 1 / (1 + 10^(9.4 − pH)).
+  const f = pH => 1 / (1 + 10 ** (9.4 - pH))
+  const A = pH => 725 * (0.15 * 1 / 30) * f(pH) / f(9.8)
+  const c = emptyContents(); c.liquids.water = 30; c.indicators.phenolphthalein = 3
+  const pinkness = pH => { const [r, g] = bulkColor(c, pH); return (r - g) / 255 } // pink = red well above green
+  assert.ok(Math.abs(A(9.14) - 1.79) < 0.02 && Math.abs(A(7) - 0.02) < 0.01, 'hand values')
+  assert.ok(pinkness(7) < 0.05, `pH 7 colourless: ${pinkness(7)}`)
+  assert.ok(pinkness(9.14) > 0.5, `pH 9.14 clearly pink: ${pinkness(9.14)}`)
+  assert.ok(pinkness(8.2) > pinkness(7) + 0.15 && pinkness(8.2) < pinkness(9.14), 'pale pink at the start of the range')
+})
+
 test('acid–base: dilution and weak-acid titration match hand solutions', () => {
   const Ka = 1.75e-5; const Kb = 1e-14 / 5.6e-10; const KbAc = 1e-14 / Ka
   const weak = (K, C) => (-K + Math.sqrt(K * K + 4 * K * C)) / 2
@@ -557,6 +569,77 @@ test('Daniell cell: Nernst voltage, open circuit without bridge', () => {
   l.sim.dispatch({ type: 'link', id: bridge.id, a: A.id, b: B.id }, { record: false })
   l.sim.runFor(0.1)
   near(v.reading, 1.10, 0.002, 'E at equal concentrations')
+})
+
+// Shared by the concentration and complex tests: a Zn–Cu cell with the given fillings, bridge and voltmeter in place.
+function daniellCell(fillZn, fillCu) {
+  const l = makeLab()
+  const A = l.put('beaker100', 200)
+  const B = l.put('beaker100', 400)
+  for (const [r, mL] of fillZn) l.fill(A, r, mL)
+  for (const [r, mL] of fillCu) l.fill(B, r, mL)
+  const zn = dropSolid(l, A, 'zn', 2)
+  const cu = dropSolid(l, B, 'cu', 2)
+  l.sim.runFor(1)
+  const v = l.put('voltmeter', 300, { y: 0 })
+  l.sim.dispatch({ type: 'wire', from: v.id, to: zn.id }, { record: false })
+  l.sim.dispatch({ type: 'wire', from: v.id, to: cu.id }, { record: false })
+  const bridge = l.put('bridge', 300, { y: 80 })
+  l.sim.dispatch({ type: 'link', id: bridge.id, a: A.id, b: B.id }, { record: false })
+  l.sim.runFor(0.1)
+  return { l, v }
+}
+
+test('Daniell cell: tenfold dilution of Cu²⁺ lowers E by RT·ln10/2F (hand solution)', () => {
+  // E = E° − (0.05916/2)·lg([Zn²⁺]/[Cu²⁺]); [Zn²⁺] = 0.5 M, [Cu²⁺] = 0.05 M → E = 1.100 − 0.02958 = 1.0704 V at 25 °C.
+  const { v } = daniellCell([['znso4', 50]], [['cuso4', 5], ['water', 45]])
+  near(v.reading, 1.100 - 0.05916 / 2, 0.003, 'E with diluted Cu²⁺')
+  const { v: v2 } = daniellCell([['znso4', 5], ['water', 45]], [['cuso4', 50]])
+  near(v2.reading, 1.100 + 0.05916 / 2, 0.003, 'E with diluted Zn²⁺')
+})
+
+test('Daniell cell: NH₃ complexes Cu²⁺ → no free-ion Nernst value (OUT_OF_MODEL_RANGE)', () => {
+  const { l, v } = daniellCell([['znso4', 50]], [['cuso4', 25], ['nh3-2m', 25]])
+  assert.equal(v.reading, null, 'no voltage invented')
+  assert.ok(l.s().events.some(e => e.key.startsWith('daniell-complex-') && e.outcome === 'OUT_OF_MODEL_RANGE'), 'event says out of model range')
+})
+
+test('I₂ in KI: dissolves up to S₀·V + K·S₀/(1 + K·S₀)·n(I⁻) (K = 710), the rest is solid iodine', () => {
+  // 50 mL, 5 mmol I⁻, 5 mmol I₂: cap = 1.33e-3·0.05 + 0.4857·5e-3 = 2.495 mmol dissolved; 2.505 mmol I₂(s).
+  const c = emptyContents(); c.liquids.water = 50; c.ions['K+'] = 5e-3; c.ions['I-'] = 5e-3; c.ions.I2 = 5e-3
+  equilibrate(c)
+  const f = 710 * 1.33e-3 / (1 + 710 * 1.33e-3)
+  near(c.ions.I2, 1.33e-3 * 0.05 + f * 5e-3, 1e-7, 'dissolved I₂ (as I₂ + I₃⁻)')
+  near(c.precipitates.I2s, 5e-3 - (1.33e-3 * 0.05 + f * 5e-3), 1e-7, 'solid iodine')
+})
+
+test('Cu²⁺ + I⁻: the scarcer reagent decides, either way (hand solution)', () => {
+  // 2Cu²⁺ + 4I⁻ → 2CuI + I₂. A: 5 mmol Cu²⁺ + 2 mmol I⁻ → ξ = 0.5: 1 mmol CuI, 0.5 mmol I₂, 4 mmol Cu²⁺ left.
+  // B: 1 mmol Cu²⁺ + 5 mmol I⁻ → ξ = 0.5: 1 mmol CuI, 0.5 mmol I₂ (all dissolved as I₃⁻), 3 mmol I⁻ left.
+  for (const [cu, ki, left] of [[10, 20, { 'Cu2+': 4e-3, 'I-': 0 }], [2, 50, { 'Cu2+': 0, 'I-': 3e-3 }]]) {
+    const l = makeLab()
+    const A = l.put('beaker100', 200)
+    l.fill(A, 'cuso4', cu)
+    l.fill(A, 'ki', ki)
+    l.sim.runFor(3)
+    const c = A.contents
+    near(c.precipitates.CuI, 1e-3, 1e-7, 'CuI')
+    near((c.ions.I2 || 0) + (c.precipitates.I2s || 0), 0.5e-3, 1e-7, 'I₂ total')
+    near(c.ions['Cu2+'] || 0, left['Cu2+'], 1e-7, 'Cu²⁺ left')
+    near(c.ions['I-'] || 0, left['I-'], 1e-7, 'I⁻ left')
+    if (left['I-']) assert.ok(!((c.precipitates.I2s || 0) > 0), 'excess I⁻ keeps I₂ dissolved (I₃⁻)')
+  }
+})
+
+test('Cu²⁺ + I⁻ in NH₃ (pH > 7): no CuI/I₂ shown, OUT_OF_MODEL_RANGE event instead', () => {
+  const l = makeLab()
+  const A = l.put('beaker100', 200)
+  l.fill(A, 'cuso4', 5)
+  l.fill(A, 'nh3-2m', 30)
+  l.fill(A, 'ki', 20)
+  l.sim.runFor(3)
+  assert.ok(!((A.contents.precipitates.CuI || 0) > 0) && !((A.contents.ions.I2 || 0) > 0), 'no products invented')
+  assert.ok(l.s().events.some(e => e.key.startsWith('redoxrange-cu-i-') && e.outcome === 'OUT_OF_MODEL_RANGE'))
 })
 
 test('CuCl₂ + KI: 2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂ before any electrolysis; atoms and charge conserved', () => {
@@ -1488,22 +1571,50 @@ test('foundation: open-ended scenarios from an empty bench (A acid–base, B pre
 // Runs an experiment definition the way a student does: lay out, then each step (pour, or tongs → drop a solid), with time.
 function runExperiment(e, seed) {
   const l = lab(seed)
-  const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 140); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id })
-  const tool = (e.setup.tools || []).length ? l.put(e.setup.tools[0], 100, { y: 160 }) : null
+  const ids = e.setup.vessels.map((v, i) => { const o = l.put(v.type, 250 + i * 140, { y: 0 }); for (const [r, mL] of v.fill) l.fill(o, r, mL); return o.id })
+  const tools = {}
+  ;(e.setup.tools || []).map(t => (typeof t === 'string' ? { type: t, y: t === 'tongs' ? 160 : 0 } : t)).forEach((t, i) => { tools[t.type] = l.put(t.type, 80 + i * 30 + (t.type === 'electrodes' ? 600 : 0), { y: t.y }) })
+  const ok = (r, what) => assert.equal(r.outcome, 'APPLIED', `${e.id}: ${what}`)
   for (const s of e.steps) {
-    let r
-    if (s.act.pour) r = l.sim.dispatch({ type: 'addReagentTo', id: ids[s.act.to], reagent: s.act.pour, mL: s.act.mL }, { record: false })
-    else if (s.act.drops) r = l.sim.dispatch({ type: 'addReagentTo', id: ids[s.act.to], reagent: s.act.drops, mL: 3 * EQUIPMENT.dropper.dropML }, { record: false }) // the bottle's "Nhỏ 3 giọt"
-    else {
-      const v = byId(l.s(), ids[s.act.to])
-      l.sim.dispatch({ type: 'move', id: tool.id, x: v.x, y: 160 }, { record: false })
-      assert.equal(l.sim.dispatch({ type: 'pick', tool: tool.id, reagent: s.act.solid, massG: s.act.massG }, { confirmed: true, record: false }).outcome, 'APPLIED', `${e.id}: pick`)
-      r = l.sim.dispatch({ type: 'release', tool: tool.id }, { confirmed: true, record: false })
+    const a = s.act
+    if (a.pour) ok(l.sim.dispatch({ type: 'addReagentTo', id: ids[a.to], reagent: a.pour, mL: a.mL }, { record: false }), s.text)
+    else if (a.drops) ok(l.sim.dispatch({ type: 'addReagentTo', id: ids[a.to], reagent: a.drops, mL: 3 * EQUIPMENT.dropper.dropML }, { record: false }), s.text) // the bottle's "Nhỏ 3 giọt"
+    else if (a.dip != null) { const v = byId(l.s(), ids[a.dip]); ok(l.sim.dispatch({ type: 'move', id: tools.electrodes.id, x: v.x, y: Math.max(v.y + 3, surfaceY(v) - a.mm) }, { record: false }), s.text) }
+    else if (a.power != null) {
+      ok(l.sim.dispatch({ type: 'wire', from: tools.power.id, to: tools.electrodes.id }, { record: false }), 'wire')
+      ok(l.sim.dispatch({ type: 'power', id: tools.power.id, on: true, volts: a.power }, { record: false, confirmed: true }), s.text)
     }
-    assert.equal(r.outcome, 'APPLIED', `${e.id}: ${s.text}`)
-    l.sim.runFor(s.act.solid ? 30 : 0.3)
+    else if (a.bridge) ok(l.sim.dispatch({ type: 'link', id: tools.bridge.id, a: ids[a.bridge[0]], b: ids[a.bridge[1]] }, { record: false }), s.text)
+    else if (a.voltmeter) for (const m of a.voltmeter) ok(l.sim.dispatch({ type: 'wire', from: tools.voltmeter.id, to: l.s().objects.find(o => o.type === 'solid' && o.reagent === m && ids.includes(o.in)).id }, { record: false }), s.text)
+    else {
+      const v = byId(l.s(), ids[a.to])
+      l.sim.dispatch({ type: 'move', id: tools.tongs.id, x: v.x, y: 160 }, { record: false })
+      ok(l.sim.dispatch({ type: 'pick', tool: tools.tongs.id, reagent: a.solid, massG: a.massG }, { confirmed: true, record: false }), `${e.id}: pick`)
+      ok(l.sim.dispatch({ type: 'release', tool: tools.tongs.id }, { confirmed: true, record: false }), s.text)
+    }
+    l.sim.runFor(a.solid ? 30 : a.power != null ? 90 : 0.3)
   }
-  return { l, ids }
+  return { l, ids, tools }
+}
+// One expectState entry against the final state (unit test, E2E and evidence script share these rules).
+function checkState(e, x, l, ids, tools) {
+  if (x.object) {
+    const o = tools[x.object]
+    if (x.reading) assert.ok(o.reading >= x.reading[0] && o.reading <= x.reading[1], `${e.id}: ${x.object} reads ${o.reading}, expected ${x.reading}`)
+    if (x.deposit) assert.ok((o.cuDeposit || 0) > 0, `${e.id}: deposit on the cathode`)
+    return
+  }
+  const d = describe(l.s(), ids[x.vessel])
+  if (x.pH) assert.ok(d.pH >= x.pH[0] && d.pH <= x.pH[1], `${e.id}: pH ${d.pH} in ${x.pH}`)
+  if (x.indicator) assert.match(indicatorReading(x.indicator[0], d.pH), new RegExp(x.indicator[1]), `${e.id}: ${x.indicator}`)
+  if (x.coat) assert.ok(d.solids.some(s => (s.coat[x.coat] || 0) > 0), `${e.id}: ${x.coat} deposited`)
+  if (x.gas) assert.ok((d.gasReleased[x.gas] || 0) > 0, `${e.id}: ${x.gas} released`)
+  if (x.noGas) assert.ok(!Object.keys(d.gasReleased).length, `${e.id}: no gas`)
+  if (x.noCoat) assert.ok(!d.solids.some(s => Object.keys(s.coat).length), `${e.id}: no deposit`)
+  if (x.precipitate) assert.ok((d.precipitates[x.precipitate] || 0) > 0, `${e.id}: ${x.precipitate}↓`)
+  if (x.left) assert.ok((d.dissolved[x.left] || 0) > 1e-6, `${e.id}: ${x.left} left`)
+  if (x.gone) assert.ok(!((d.dissolved[x.gone] || 0) > 1e-6), `${e.id}: ${x.gone} used up`)
+  if (x.noPrecipitate) assert.ok(!((d.precipitates[x.noPrecipitate] || 0) > 0), `${e.id}: no ${x.noPrecipitate}`)
 }
 // Experiment Library: every experiment runs on the engine from its own definition (setup + student steps) and gives
 // the phenomena it promises; its validation status is derived from the matrix, never better than its processes.
@@ -1513,18 +1624,10 @@ test('experiment library: every experiment runs on the engine', () => {
     for (const f of ['objective', 'equipment', 'chemicals', 'conditions', 'steps', 'phenomena', 'equation', 'explanation', 'safety', 'processRefs', 'references', 'tests']) assert.ok(e[f] && (e[f].length ?? 1) > 0, `${e.id}: ${f}`)
     for (const id of e.processRefs) assert.ok(MANIFEST.some(m => m.id === id), `${e.id}: process ${id} in the manifest`)
     for (const t of e.tests) assert.ok(readFileSync(new URL(import.meta.url), 'utf8').includes(`test('${t}`), `${e.id}: test "${t}" exists`)
-    const { l, ids } = runExperiment(e, 120)
+    const { l, ids, tools } = runExperiment(e, 120)
     for (const x of e.expect) assert.ok(l.s().events.some(ev => ev.container === ids[x.vessel] && ev.key.startsWith(x.key)), `${e.id}: ${x.key} in vessel ${x.vessel}`)
-    assert.ok(!l.s().events.some(ev => ids.includes(ev.container) && ev.outcome === 'UNSUPPORTED'), `${e.id}: nothing unsupported`)
-    for (const x of e.expectState || []) {
-      const d = describe(l.s(), ids[x.vessel])
-      if (x.pH) assert.ok(d.pH >= x.pH[0] && d.pH <= x.pH[1], `${e.id}: pH ${d.pH} in ${x.pH}`)
-      if (x.indicator) assert.match(indicatorReading(x.indicator[0], d.pH), new RegExp(x.indicator[1]), `${e.id}: ${x.indicator}`)
-      if (x.coat) assert.ok(d.solids.some(s => (s.coat[x.coat] || 0) > 0), `${e.id}: ${x.coat} deposited`)
-      if (x.gas) assert.ok((d.gasReleased[x.gas] || 0) > 0, `${e.id}: ${x.gas} released`)
-      if (x.noGas) assert.ok(!Object.keys(d.gasReleased).length, `${e.id}: no gas`)
-      if (x.noCoat) assert.ok(!d.solids.some(s => Object.keys(s.coat).length), `${e.id}: no deposit`)
-    }
+    assert.ok(!l.s().events.some(ev => ev.outcome === 'UNSUPPORTED' || ev.outcome === 'OUT_OF_MODEL_RANGE'), `${e.id}: nothing unsupported or out of range`)
+    for (const x of e.expectState || []) checkState(e, x, l, ids, tools)
   }
   // Results the definitions state, from the engine.
   const run = id => { const { l, ids } = runExperiment(EXPERIMENTS.find(x => x.id === id), 121); return ids.map(i => describe(l.s(), i)) }

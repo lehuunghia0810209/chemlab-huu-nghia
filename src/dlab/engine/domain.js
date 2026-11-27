@@ -77,7 +77,7 @@ export function classifyNote(key) {
   if (/^(norx)-/.test(key)) return { outcome: 'NO_REACTION_UNDER_MODELED_CONDITIONS', process: null, validation: null }
   if (/^(unsup|ionhint|electro-unsup|unsupported-hno3)-/.test(key)) return { outcome: 'UNSUPPORTED', process: null, validation: null }
   // Outside the model's range: pH/equilibria in ethanol-rich liquid; a temperature difference between Daniell half-cells.
-  if (/^(solvent-mix|solvent-eth|daniell-dT)-/.test(key)) return { outcome: 'OUT_OF_MODEL_RANGE', process: null, validation: null }
+  if (/^(solvent-mix|solvent-eth|daniell-dT|daniell-complex|redoxrange)-/.test(key)) return { outcome: 'OUT_OF_MODEL_RANGE', process: null, validation: null }
   const process = processOf(key)
   if (!process) return { outcome: 'OBSERVATION', process: null, validation: null }
   const entry = MANIFEST_BY_ID[process]

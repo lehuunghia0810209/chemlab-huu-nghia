@@ -7,6 +7,7 @@ const G1 = `${T} "gate 1: every manifest scenario conserves elements"`
 
 // status, quantitative evidence (independent of the engine), conservation evidence, extra limits
 export const VALIDATION = {
+  'nernst-ideal': ['EDUCATIONAL APPROXIMATION', `${T} "Daniell cell: tenfold dilution of Cu²⁺ lowers E by RT·ln10/2F (hand solution)" (ideal Nernst)`, '—', 'Hoạt độ = nồng độ; ở 0,05–0,5 M độ giảm thực tế ≈ 0,014 V thay vì 0,030 V.'],
   'acid-base-ph': ['VALIDATED', `${T} "pH strong acid / base", "pH weak acid / base (quadratic)", "acid–base: dilution and weak-acid titration match hand solutions" (closed form)`, G1, 'Lý tưởng: không có hệ số hoạt độ.'],
   'weak-acid-titration': ['VALIDATED', `${T} "acid–base: dilution and weak-acid titration match hand solutions" (half-equivalence pH = pKa; equivalence from acetate hydrolysis)`, G1],
   neutralisation: ['VALIDATED', `${T} "pH strong acid / base", "pH weak acid / base (quadratic)" (closed form)`, G1],

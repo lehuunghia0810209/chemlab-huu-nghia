@@ -53,11 +53,14 @@ export const ION_HINTS = [
 ]
 
 // Fast ionic redox in solution, run to completion (K ≫ 1). E° (CRC, 25 °C): Cu²⁺/CuI 0,86 V, Fe³⁺/Fe²⁺ 0,771 V,
-// I₂/I⁻ 0,5355 V → log K = nΔE°/0,05916 ≈ 11 (Cu) and 7,9 (Fe). shortcut: complete conversion; at < 1 mM
-// the Fe³⁺/I⁻ equilibrium would leave a few % unreacted — upgrade with an equilibrium solve if needed.
+// I₂(s)/I⁻ 0,5355 V, I₃⁻/I⁻ 0,536 V → log K = nΔE°/0,05916 ≈ 11 (Cu) and 7,9 (Fe, to I₂(s) or I₃⁻). For dissolved
+// I₂(aq) (0,621 V) K is only ≈ 10⁵: a dilute stoichiometric Fe³⁺ + I⁻ mixture (~1 mM) leaves ~20 % unreacted.
+// shortcut: complete conversion; the library uses excess I⁻ (I₃⁻), where conversion is > 99,9 %.
+// maxPH: Fe³⁺/I⁻ only below pH ≈ 3 — above it Fe(OH)₃ (Ksp 2,8·10⁻³⁹) forms and E(Fe(OH)₃/Fe²⁺) ≈ 1,07 − 0,18·pH V
+// falls below 0,54 V; Cu²⁺/I⁻ up to pH 7 (Cu(OH)₂ from pH ≈ 5 at 0,1 M — model boundary, not a measured limit).
 export const ION_REDOX = [
-  { id: 'cu-i', maxPH: 7, reactants: { 'Cu2+': 2, 'I-': 4 }, products: { I2: 1 }, precipitate: { CuI: 2 }, equation: '2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂', observe: 'xuất hiện kết tủa CuI màu trắng ngà, dung dịch chuyển vàng nâu do I₂ (I₃⁻).' },
-  { id: 'fe-i', maxPH: 7, reactants: { 'Fe3+': 2, 'I-': 2 }, products: { 'Fe2+': 2, I2: 1 }, equation: '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂', observe: 'dung dịch chuyển vàng nâu do I₂ (I₃⁻) sinh ra.' }
+  { id: 'cu-i', maxPH: 7, reactants: { 'Cu2+': 2, 'I-': 4 }, products: { I2: 1 }, precipitate: { CuI: 2 }, equation: '2Cu²⁺ + 4I⁻ → 2CuI↓ + I₂', observe: 'xuất hiện kết tủa CuI màu trắng ngà, dung dịch chuyển vàng nâu do I₂ (I₃⁻ khi dư I⁻).' },
+  { id: 'fe-i', maxPH: 3, reactants: { 'Fe3+': 2, 'I-': 2 }, products: { 'Fe2+': 2, I2: 1 }, equation: '2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂', observe: 'dung dịch chuyển vàng nâu do I₂ (I₃⁻ khi dư I⁻) sinh ra.' }
 ]
 
 // Electrochemistry. E° in volts (25 °C, CRC). Faraday quantities are exact; cell resistance is illustrative.

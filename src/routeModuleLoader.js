@@ -336,7 +336,7 @@ export function createRouteModuleLoader({
       const entry = document.createElement('a')
       entry.className = 'dlab-entry'
       entry.href = '#dlab'
-      entry.innerHTML = '<strong>Thử Phòng thí nghiệm động 7.0</strong><span>Bản thử nghiệm: kéo thả dụng cụ, rót theo góc nghiêng, nhúng giấy quỳ, phản ứng định lượng theo thời gian.</span>'
+      entry.innerHTML = '<strong>Phòng thí nghiệm động 7.0</strong><span>Bàn thí nghiệm mở và thư viện thí nghiệm có hướng dẫn: kéo thả dụng cụ, rót, nhúng giấy quỳ, pin điện hóa, phản ứng định lượng theo thời gian.</span>'
       hosts.lab.prepend(entry)
     }
 

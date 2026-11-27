@@ -51,6 +51,14 @@ Các sửa lỗi khoa học và an toàn của `91ac642` phải được giữ n
 - UI: tìm kiếm, lọc mức độ, "Bày lại"; vị trí bày theo bề rộng thật (sửa lỗi chai đè cốc).
 - Bằng chứng: `reports/chemlab-7.0/library/RESULTS.md`, ảnh ở `library/shots/`.
 
+## 0.18 Phase 3 và phát hành 7.0.0 (2026-11-27)
+
+- Thêm nhóm Điện hóa (3 thí nghiệm) và Oxi hóa – khử (2 thí nghiệm); thư viện có 22 thí nghiệm. Catalog có lọc theo nhóm, lớp, mức độ, mức kiểm chứng, và nút "Về bàn trống". Chi tiết ở `EXPERIMENT_LIBRARY_PLAN.md` §2b.
+- Sửa engine: Nernst dùng ion tự do và chặn khi có phức NH₃; Fe³⁺/I⁻ chỉ tính khi pH < 3; sức chứa I₃⁻ dùng K = 710; báo OUT_OF_MODEL_RANGE khi redox iotua nằm ngoài khoảng pH; màu phenolphtalein theo Beer–Lambert.
+- P03 (máy chậm) không còn phụ thuộc tốc độ máy: mỗi khung hình bị tải đúng 60 ms ngay trong trang, ngưỡng giữ nguyên.
+- Kiểm 3D theo state: `node scripts/dlab-3d-state.mjs <url> <out>` (6 hiện tượng; đạt 5/6, 1 giới hạn P2: dung dịch màu nhạt gần như không thấy màu trong 3D).
+- Version 7.0.0; phòng thí nghiệm động có trong thanh bên. Báo cáo phát hành: `reports/chemlab-7.0/release/RELEASE_7.0.0.md`.
+
 
 
 - Một engine, một state. Không gắn cứng sản phẩm theo id thẻ hoặc id bài.
@@ -96,7 +104,7 @@ Các sửa lỗi khoa học và an toàn của `91ac642` phải được giữ n
 ## 4. Lệnh kiểm tra (chạy tuần tự)
 
 ```
-node scripts/test-dlab.mjs                 # unit + validation + gate 1 + foundation + library (132 test)
+node scripts/test-dlab.mjs                 # unit + validation + gate 1 + foundation + library (138 test)
 node scripts/dlab-sci-validate.mjs         # phương trình, tỉ lượng, khối lượng mol (độc lập)
 node scripts/dlab-sci-matrix.mjs           # tạo lại ma trận
 node scripts/dlab-manifest.mjs             # tạo lại REACTION_SUPPORT_MANIFEST.md

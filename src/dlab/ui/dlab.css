@@ -480,7 +480,9 @@
 /* Experiment Library cards: validation badge and the expandable guide */
 .dlab-exp details { grid-column: 1 / -1; font-size: 0.82rem; }
 .dlab-exp-meta { grid-column: 1; font-size: 0.78rem; color: var(--dlab-muted, #5b6474); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.dlab-exp-filter { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin: 8px 0 4px; }
+.dlab-exp-filter { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 4px; }
+.dlab-exp-filter [data-exp-search] { grid-column: 1 / -1; }
+.dlab-exp-tools { justify-content: space-between; align-items: center; margin: 2px 0 6px; }
 .dlab-exp-filter .dlab-in { min-height: 36px; min-width: 0; }
 .dlab-exp[hidden], [data-exp-group][hidden] { display: none; }
 .dlab-exp summary { cursor: pointer; padding: 4px 0; min-height: 24px; text-decoration: underline; }
