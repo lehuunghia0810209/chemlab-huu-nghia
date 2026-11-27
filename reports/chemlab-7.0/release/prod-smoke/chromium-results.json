@@ -1,0 +1,128 @@
+{
+ "origin": "https://chemlab-edulab.pages.dev",
+ "version": "7.0.0",
+ "browserName": "chromium",
+ "at": "2026-11-27T00:52:38.307Z",
+ "results": [
+  {
+   "name": "home 200",
+   "ok": true,
+   "detail": "200"
+  },
+  {
+   "name": "version 7.0.0 shown",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "sidebar \"Phòng thí nghiệm động\" opens #dlab",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "catalog lists 22 experiments",
+   "ok": true,
+   "detail": "22"
+  },
+  {
+   "name": "catalog group filter",
+   "ok": true,
+   "detail": "3"
+  },
+  {
+   "name": "catalog accent-free search",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "\"Về bàn trống\" empties the bench",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "Cu²⁺ + I⁻ through the UI: CuI in both beakers, Cu²⁺ left in A, I⁻ left in B",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "2D canvas drawn",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "3D view initialises",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "Guided lab starts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "reload of #dlab works",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "view periodic opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "view tools opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "view learning opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "view lab opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "lab page has the 7.0 entry card",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no console / page errors",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no failed requests, no ChemAI question sent",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone 390: entry card opens the lab",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone 390: no horizontal page scroll",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "name": "phone 390: no console errors",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "ChemAI release 7.0.0, access and configured (GET only)",
+   "ok": true,
+   "detail": "{\"release\":\"7.0.0\",\"access\":true,\"configured\":true}"
+  },
+  {
+   "name": "service worker cache chemlab-7.0.0",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

@@ -68,3 +68,30 @@ Mức Firefox/WebKit này giống round 4 (môi trường headless, không phả
 - **Vôn kế:** không báo khi điện cực đang có phản ứng phụ (ví dụ Zn trong axit); suất điện động khi đó vẫn tính theo Nernst. Mức P1, chưa sửa, không có trong thí nghiệm nào của thư viện.
 - **Cu²⁺/I⁻:** mô hình tính đến pH 7, trong khi Cu(OH)₂ thực tế kết tủa từ pH ≈ 5.
 - **Phần chưa được kiểm chứng:** ma trận còn 5 mục UNVERIFIED và 36 mục UNSUPPORTED (có nhãn rõ, không hiện như kết quả). Chưa có chuyên gia giáo dục duyệt nội dung. Chưa kiểm trên điện thoại hoặc GPU thật.
+
+## 6. Phát hành và kiểm tra trên production (2026-11-27)
+
+| Bước | Kết quả |
+|---|---|
+| Tag rollback `chemlab-6.7.0` → `8ce6f35` | Đã push lên GitHub |
+| `CHEMAI_PUBLIC_APPROVAL` `groq:6.7.0` → `groq:7.0.0`, đổi trước khi push | Chỉ biến này đổi (`cf-inventory-before.json` / `cf-inventory-after.json`); bản 6.7.0 đang chạy vẫn `access:true` |
+| `git push origin HEAD:main` | SUCCESS, fast-forward `8ce6f35..9143b88`, không force |
+| Cloudflare Pages | SUCCESS, deployment production `2ee3d496` = `9143b88`, https://chemlab-edulab.pages.dev |
+| GET `/api/chat` (không gửi câu hỏi) | `release 7.0.0`, `access:true`, `configured:true` |
+| Service worker | `chemlab-7.0.0-access-1` |
+| `node scripts/dlab-prod-smoke.mjs https://chemlab-edulab.pages.dev 7.0.0 … <browser>` | Chromium 24/24 · Firefox 24/24 · WebKit 24/24 |
+
+Smoke kiểm tra trên website thật:
+- Trang chủ 200, hiển thị version 7.0.0.
+- Mục thanh bên mở `#dlab`; nạp lại trực tiếp `#dlab` vẫn chạy.
+- Catalog có 22 thí nghiệm; lọc theo nhóm và tìm không dấu hoạt động.
+- "Về bàn trống" hoạt động.
+- Cu²⁺ + I⁻ làm qua thanh rót cho kết quả đúng chất hết trước.
+- 2D vẽ được; 3D khởi tạo được; Guided khởi động được.
+- Các trang Bảng tuần hoàn, Công cụ, Học tập, Thí nghiệm vẫn mở được; trang Thí nghiệm có thẻ 7.0.
+- Ở 390 px: thẻ ở trang Thí nghiệm mở được lab, không có cuộn ngang.
+- 0 lỗi console, 0 request lỗi, không có yêu cầu ChemAI nào ngoài GET.
+
+Ghi chú WebKit: khi Playwright chụp ảnh, nó chèn một thẻ `<style>`, và CSP của ChemLab chặn đúng thẻ này ("Refused to apply a stylesheet", `style-src-elem`, inline). Đã kiểm chứng: cùng trang, không chụp ảnh thì 0 lỗi; chụp ảnh thì 1 lỗi. Đây là hiện tượng của công cụ kiểm thử, không phải lỗi của trang. Script chỉ bỏ qua đúng thông báo đó trong lúc chụp ảnh.
+
+Ảnh và kết quả: `reports/chemlab-7.0/release/prod-smoke/`.

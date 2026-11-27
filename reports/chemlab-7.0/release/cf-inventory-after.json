@@ -1,0 +1,61 @@
+{
+ "production": {
+  "env_vars": {
+   "CHEMAI_ACCESS_MODE": "plain_text: public",
+   "CHEMAI_DAILY_NEURONS": "plain_text",
+   "CHEMAI_PUBLIC_APPROVAL": "plain_text: groq:7.0.0",
+   "CHEMAI_PUBLIC_HOSTS": "plain_text",
+   "GEMINI_API_KEY": "secret_text",
+   "GROQ_API_KEY": "secret_text"
+  },
+  "bindings": {
+   "durable_object_namespaces": [
+    "CHEMAI_BUDGET"
+   ],
+   "ai_bindings": [
+    "AI"
+   ]
+  },
+  "compatibility_date": "2026-10-14"
+ },
+ "preview": {
+  "env_vars": {
+   "CF_ACCESS_AUD": "plain_text",
+   "CF_ACCESS_TEAM_DOMAIN": "plain_text",
+   "CHEMAI_ACCESS_MODE": "plain_text: internal_testing",
+   "CHEMAI_APPROVED_EMAILS": "plain_text",
+   "CHEMAI_BUDGET_SCOPE": "plain_text",
+   "CHEMAI_DAILY_NEURONS": "plain_text",
+   "CHEMAI_INTERNAL_HOSTS": "plain_text",
+   "GROQ_API_KEY": "secret_text"
+  },
+  "bindings": {
+   "durable_object_namespaces": [
+    "CHEMAI_BUDGET"
+   ],
+   "ai_bindings": [
+    "AI"
+   ]
+  },
+  "compatibility_date": "2026-10-14"
+ },
+ "production_branch": "main",
+ "build": {
+  "command": "npm run build",
+  "output": "dist"
+ },
+ "source": {
+  "repo": "lehuunghia0810209/chemlab-huu-nghia",
+  "production_branch": "main",
+  "deployments_enabled": true
+ },
+ "latest": {
+  "id": "fb8df880-003a-4df1-8efd-b4f7388b145c",
+  "branch": "feature/chemlab-7.0-dynamic-laboratory",
+  "commit": "9143b88"
+ },
+ "canonical": {
+  "id": "2ee3d496-e591-435e-8f34-4d747d5deb0f",
+  "commit": "9143b88"
+ }
+}
